@@ -972,6 +972,7 @@ dependencies = [
  "image",
  "imageproc",
  "nalgebra",
+ "rayon",
  "stl_io",
 ]
 
