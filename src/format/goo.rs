@@ -1,29 +1,5 @@
 use super::serde::{Serializer, SizedString};
 
-pub struct PreviewImage<const WIDTH: usize, const HEIGHT: usize> {
-    data: [[u16; WIDTH]; HEIGHT],
-}
-
-impl<const WIDTH: usize, const HEIGHT: usize> PreviewImage<WIDTH, HEIGHT> {
-    pub const fn empty() -> Self {
-        Self {
-            data: [[0; WIDTH]; HEIGHT],
-        }
-    }
-
-    pub fn serializes(&self, serializer: &mut Serializer) {
-        for row in self.data.iter() {
-            for pixel in row.iter() {
-                serializer.write_u16(*pixel);
-            }
-        }
-    }
-}
-
-pub struct EncodedLayer {
-    data: Vec<u8>,
-}
-
 pub struct HeaderInfo {
     pub version: SizedString<4>,
     pub software_info: SizedString<32>,
@@ -104,6 +80,110 @@ pub struct LayerContent {
     pub second_retract_speed: f32,
     pub light_pwm: u16,
     pub data: Vec<u8>,
+}
+
+pub struct PreviewImage<const WIDTH: usize, const HEIGHT: usize> {
+    data: [[u16; WIDTH]; HEIGHT],
+}
+
+pub struct EncodedLayer {
+    data: Vec<u8>,
+    last_value: u8,
+}
+
+impl<const WIDTH: usize, const HEIGHT: usize> PreviewImage<WIDTH, HEIGHT> {
+    pub const fn empty() -> Self {
+        Self {
+            data: [[0; WIDTH]; HEIGHT],
+        }
+    }
+
+    pub fn serializes(&self, serializer: &mut Serializer) {
+        for row in self.data.iter() {
+            for pixel in row.iter() {
+                serializer.write_u16(*pixel);
+            }
+        }
+    }
+}
+
+impl EncodedLayer {
+    pub fn new() -> Self {
+        Self {
+            data: Vec::new(),
+            last_value: 0,
+        }
+    }
+
+    pub fn add_run(&mut self, length: u64, value: u8) {
+        // byte 0: aabbcccc
+        // a => 0: full black, 1: full white, 2: small diff, 3: large diff
+        // b => 0: 4 bit length, 1: 12 bit value, 2: 20 bit value, 3: 28 bit value
+        // c => the first 4 bits of the value
+        // byte 1-3: optional, the rest of the value
+
+        let diff = value as i16 - self.last_value as i16;
+        let byte_0: u8 = match value {
+            // Full black and full white are always encoded as is
+            0x00 => 0b00,
+            0xFF => 0b11,
+            _ if !self.data.is_empty() && diff.abs() <= 15 => {
+                // 0babcccc
+                // a => 0: add diff, 1: sub diff
+                // b => 0: length of 1, 1: length is next byte
+                // c => the diff
+
+                if length > 255 {
+                    self.add_run(255, value);
+                    self.add_run(length - 255, value);
+                    return;
+                }
+
+                let byte_0 = (0b10 << 6)
+                    | (((diff > 0) as u8) << 5)
+                    | (((length != 1) as u8) << 4)
+                    | (diff.abs() as u8);
+                self.data.push(byte_0);
+
+                if length != 1 {
+                    self.data.push(length as u8);
+                }
+
+                self.last_value = value;
+                return;
+            }
+            _ => 0b01,
+        } << 6;
+
+        let chunk_length_size = match length {
+            0x0000000..=0x000000F => 0b00,
+            0x0000010..=0x0000FFF => 0b01,
+            0x0001000..=0x00FFFFF => 0b10,
+            0x0100000..=0xFFFFFFF => 0b11,
+            _ => {
+                self.add_run(0xFFFFFFF, value);
+                self.add_run(length - 0xFFFFFFF, value);
+                return;
+            }
+        };
+
+        self.data
+            .push(byte_0 | (chunk_length_size << 4) | (length as u8 & 0x0F));
+        match chunk_length_size {
+            1 => self.data.extend_from_slice(&[(length >> 4) as u8]),
+            2 => self
+                .data
+                .extend_from_slice(&[(length >> 12) as u8, (length >> 4) as u8]),
+            3 => self.data.extend_from_slice(&[
+                (length >> 20) as u8,
+                (length >> 12) as u8,
+                (length >> 4) as u8,
+            ]),
+            _ => {}
+        }
+
+        self.last_value = value;
+    }
 }
 
 impl HeaderInfo {

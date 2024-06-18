@@ -1,6 +1,6 @@
 # sla_slicer
 
-A work in progress slicer for resin printer.
+A work in progress FOSS slicer for resin printers.
 
 ## References
 
