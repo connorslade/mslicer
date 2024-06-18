@@ -68,8 +68,8 @@ struct Header {
 struct ImageData {
     u32 data_size;
     u8 magic;
-    u8 data[data_size - 9];
-    u64 checksum;
+    u8 data[data_size - 2];
+    u8 checksum;
     u8 delimiter[0x02];
 };
 
