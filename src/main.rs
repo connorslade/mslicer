@@ -41,15 +41,8 @@ fn main() -> Result<()> {
     let mut mesh = load_mesh(&mut file, "stl")?;
     let (min, max) = mesh.minmax_point();
 
-    let x_ppmm = slice_config.platform_resolution.x as f32 / slice_config.platform_size.x;
-    let y_ppmm = slice_config.platform_resolution.y as f32 / slice_config.platform_size.y;
-
-    let x_scale = slice_config.platform_resolution.x as f32 / (max.x - min.x) * x_ppmm;
-    let y_scale = slice_config.platform_resolution.y as f32 / (max.y - min.y) * y_ppmm;
-    let z_scale = slice_config.platform_size.z / (max.z - min.z);
-    dbg!(x_scale, y_scale, z_scale);
-    let real_scale = x_scale.min(y_scale).min(z_scale);
-    mesh.scale = dbg!(Pos::new(real_scale, real_scale, real_scale));
+    let real_scale = 15.0;
+    mesh.scale = Pos::new(real_scale, real_scale, real_scale);
 
     let center = slice_config.platform_resolution / 2;
     let mesh_center = (min + max) / 2.0;
