@@ -1,0 +1,17 @@
+[package]
+name = "slicer"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = "1.0.86"
+image = "0.25.1"
+imageproc = "0.25.0"
+nalgebra = "0.32.6"
+rayon = "1.10.0"
+stl_io = "0.7.0"
+
+common = { path = "../common" }
+goo_format = { path = "../goo_format" }

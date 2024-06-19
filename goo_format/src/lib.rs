@@ -1,4 +1,4 @@
-use super::serde::{Serializer, SizedString};
+use common::serde::{Serializer, SizedString};
 
 pub struct HeaderInfo {
     pub version: SizedString<4>,
