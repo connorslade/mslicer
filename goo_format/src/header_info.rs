@@ -138,9 +138,7 @@ impl HeaderInfo {
         ser.write_u16(self.transition_layers);
     }
 
-    pub fn deserialize(buf: &[u8]) -> Result<Self> {
-        let mut des = Deserializer::new(buf);
-
+    pub fn deserialize(des: &mut Deserializer) -> Result<Self> {
         let version = des.read_sized_string();
         ensure!(des.read_bytes(8) == [0x07, 0x00, 0x00, 0x00, 0x44, 0x4C, 0x50, 0x00]);
         let software_info = des.read_sized_string();
@@ -152,9 +150,9 @@ impl HeaderInfo {
         let anti_aliasing_level = des.read_u16();
         let grey_level = des.read_u16();
         let blur_level = des.read_u16();
-        let small_preview = PreviewImage::deserializes(&mut des);
+        let small_preview = PreviewImage::deserializes(des);
         ensure!(des.read_bytes(2) == [0xd, 0xa]);
-        let big_preview = PreviewImage::deserializes(&mut des);
+        let big_preview = PreviewImage::deserializes(des);
         ensure!(des.read_bytes(2) == [0xd, 0xa]);
         let layer_count = des.read_u32();
         let x_resolution = des.read_u16();

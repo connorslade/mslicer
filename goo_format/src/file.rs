@@ -27,11 +27,11 @@ impl File {
     pub fn deserialize(buf: &[u8]) -> Result<Self> {
         let mut des = Deserializer::new(buf);
 
-        let header = HeaderInfo::deserialize(&buf[0..HeaderInfo::SIZE])?;
+        let header = HeaderInfo::deserialize(&mut des)?;
         let mut layers = Vec::with_capacity(header.layer_count as usize);
 
         for _ in 0..header.layer_count {
-            layers.push(LayerContent::deserialize(&buf[HeaderInfo::SIZE..])?);
+            layers.push(LayerContent::deserialize(&mut des)?);
         }
 
         ensure!(des.read_bytes(ENDING_STRING.len()) == ENDING_STRING);

@@ -52,9 +52,7 @@ impl LayerContent {
         ser.write_bytes(DELIMITER);
     }
 
-    pub fn deserialize(buf: &[u8]) -> Result<Self> {
-        let mut des = Deserializer::new(buf);
-
+    pub fn deserialize(des: &mut Deserializer) -> Result<Self> {
         let pause_flag = des.read_u16();
         let pause_position_z = des.read_f32();
         let layer_position_z = des.read_f32();
@@ -72,6 +70,7 @@ impl LayerContent {
         let second_retract_distance = des.read_f32();
         let second_retract_speed = des.read_f32();
         let light_pwm = des.read_u16();
+        ensure!(des.read_bytes(2) == DELIMITER);
         let data_len = des.read_u32() as usize - 2;
         ensure!(des.read_u8() == 0x55);
         let data = des.read_bytes(data_len);
