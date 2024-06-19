@@ -7,8 +7,14 @@ pub struct PreviewImage<const WIDTH: usize, const HEIGHT: usize> {
 
 impl<const WIDTH: usize, const HEIGHT: usize> PreviewImage<WIDTH, HEIGHT> {
     pub fn empty() -> Self {
+        let mut data = vec![0; WIDTH * HEIGHT];
+
+        for (i, pixel) in data.iter_mut().enumerate() {
+            *pixel = u16::MAX * (i % 2 == 0) as u16;
+        }
+
         Self {
-            data: vec![0; WIDTH * HEIGHT].into_boxed_slice(),
+            data: data.into_boxed_slice(),
         }
     }
 

@@ -12,7 +12,7 @@ impl Default for HeaderInfo {
             printer_name: SizedString::new(b"standard"),
             printer_type: SizedString::new(b"Default"),
             profile_name: SizedString::new(b"New Script"),
-            anti_aliasing_level: 8,
+            anti_aliasing_level: 0,
             grey_level: 0,
             blur_level: 0,
             small_preview: PreviewImage::empty(),

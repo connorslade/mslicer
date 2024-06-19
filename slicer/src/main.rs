@@ -69,7 +69,7 @@ fn main() -> Result<()> {
     mesh.position = Vector3::new(
         center.x as f32 - mesh_center.x,
         center.y as f32 - mesh_center.y,
-        mesh.position.z,
+        mesh.position.z - 0.05,
     );
 
     println!(
@@ -84,7 +84,6 @@ fn main() -> Result<()> {
     let layers = (max.z / slice_config.slice_height).ceil() as u32;
 
     let layers = (0..layers)
-        // .par_bridge()
         .map(|layer| {
             let height = layer as f32 * slice_config.slice_height;
 
@@ -159,12 +158,22 @@ fn main() -> Result<()> {
         })
         .collect::<Vec<_>>();
 
+    let layer_time = slice_config.exposure_config.exposure_time
+        + slice_config.exposure_config.lift_distance / slice_config.exposure_config.lift_speed;
+    let bottom_layer_time = slice_config.first_exposure_config.exposure_time
+        + slice_config.first_exposure_config.lift_distance
+            / slice_config.first_exposure_config.lift_speed;
+    let total_time = (layers.len() as u32 - slice_config.first_layers) as f32 * layer_time
+        + slice_config.first_layers as f32 * bottom_layer_time;
+
     let goo = GooFile::new(
         HeaderInfo {
             layer_count: layers.len() as u32,
 
+            printing_time: total_time as u32,
             layer_thickness: slice_config.slice_height,
             bottom_layers: slice_config.first_layers,
+            transition_layers: slice_config.first_layers as u16 + 1,
 
             exposure_time: slice_config.exposure_config.exposure_time,
             lift_distance: slice_config.exposure_config.lift_distance,
@@ -199,7 +208,7 @@ impl Default for ExposureConfig {
             lift_distance: 5.0,
             lift_speed: 65.0,
             retract_distance: 5.0,
-            retract_speed: 0.0,
+            retract_speed: 150.0,
         }
     }
 }
