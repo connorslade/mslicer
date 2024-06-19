@@ -45,6 +45,7 @@ impl LayerContent {
         ser.write_f32(self.second_retract_distance);
         ser.write_f32(self.second_retract_speed);
         ser.write_u16(self.light_pwm);
+        ser.write_bytes(DELIMITER);
         ser.write_u32(self.data.len() as u32 + 2);
         ser.write_bytes(&[0x55]);
         ser.write_bytes(&self.data);

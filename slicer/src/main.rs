@@ -1,16 +1,20 @@
-use std::{fs::File, time::Instant};
+use std::{
+    fs::{self, File},
+    time::Instant,
+};
 
 use anyhow::Result;
-use image::RgbImage;
-use imageproc::point::Point;
+use common::serde::DynamicSerializer;
+use goo_format::{File as GooFile, HeaderInfo, LayerContent, LayerEncoder};
+use image::{Rgb, RgbImage};
 use mesh::load_mesh;
 use nalgebra::{Vector2, Vector3};
-use tmp_image::{draw_line_segment_invert_mut, draw_polygon_with_mut};
+use ordered_float::OrderedFloat;
+use rayon::iter::{ParallelBridge, ParallelIterator};
 
 type Pos = Vector3<f32>;
 
 mod mesh;
-mod tmp_image;
 
 struct SliceConfig {
     platform_resolution: Vector2<u32>,
@@ -20,6 +24,7 @@ struct SliceConfig {
 
 fn main() -> Result<()> {
     const FILE_PATH: &str = "teapot.stl";
+    const OUTPUT_PATH: &str = "output.goo";
 
     let slice_config = SliceConfig {
         // platform_resolution: Vector2::new(1920, 1080),
@@ -32,8 +37,12 @@ fn main() -> Result<()> {
     let mut mesh = load_mesh(&mut file, "stl")?;
     let (min, max) = mesh.minmax_point();
 
-    let real_scale = 100.0;
-    mesh.scale = Pos::new(real_scale, real_scale, 1.0);
+    let real_scale = 1.0;
+    mesh.scale = Pos::new(
+        real_scale / slice_config.platform_size.x * slice_config.platform_resolution.x as f32,
+        real_scale / slice_config.platform_size.y * slice_config.platform_resolution.y as f32,
+        real_scale,
+    );
 
     let center = slice_config.platform_resolution / 2;
     let mesh_center = (min + max) / 2.0;
@@ -51,104 +60,83 @@ fn main() -> Result<()> {
 
     let now = Instant::now();
 
-    let mut height = 0.0;
-    let mut i = 0;
-
-    let mut image = RgbImage::new(
-        slice_config.platform_resolution.x,
-        slice_config.platform_resolution.y,
-    );
-
     let max = mesh.transform(&max);
-    while height < max.z {
-        let intersections = mesh.intersect_plane(height);
-        println!("Height: {}, Intersections: {}", height, intersections.len());
+    let layers = (max.z / slice_config.slice_height).ceil() as u32;
 
-        let mut segments = intersections
-            .chunks(2)
-            .map(|x| (x[0], x[1]))
-            .collect::<Vec<_>>();
+    let layers = (0..layers)
+        .par_bridge()
+        .map(|layer| {
+            let height = layer as f32 * slice_config.slice_height;
 
-        if segments.is_empty() {
-            height += slice_config.slice_height;
-            i += 1;
-            continue;
-        }
+            let intersections = mesh.intersect_plane(height);
+            println!("Height: {}, Intersections: {}", height, intersections.len());
 
-        fn points_equal(a: &Pos, b: &Pos) -> bool {
-            (a.x - b.x).abs() < 0.0001 && (a.y - b.y).abs() < 0.0001
-        }
-
-        fn points_equal_int(a: &Pos, b: &Pos) -> bool {
-            (a.x as i32 == b.x as i32) && (a.y as i32 == b.y as i32)
-        }
-
-        let mut polygons = Vec::new();
-        let mut polygon = Vec::new();
-
-        'outer: loop {
-            if polygon.is_empty() {
-                if segments.is_empty() {
-                    break;
-                }
-
-                let first = segments.remove(0);
-                polygon.push(first.0);
-                polygon.push(first.1);
-            }
-
-            for j in 0..segments.len() {
-                let (a, b) = segments[j];
-                let last = polygon.last().unwrap();
-
-                if points_equal(&last, &a) {
-                    polygon.push(b);
-                    segments.remove(j);
-                    continue 'outer;
-                } else if points_equal(&last, &b) {
-                    polygon.push(a);
-                    segments.remove(j);
-                    continue 'outer;
-                }
-            }
-
-            polygons.push(polygon.clone());
-            polygon.clear();
-        }
-
-        for mut polygon in polygons {
-            while !polygon.is_empty() && points_equal(&polygon[0], polygon.last().unwrap()) {
-                polygon.pop();
-            }
-
-            while points_equal_int(&polygon[0], polygon.last().unwrap()) {
-                polygon[0].x -= 1.0;
-            }
-
-            if polygon.len() < 3 {
-                continue;
-            }
-
-            let polygons = polygon
-                .into_iter()
-                .map(|x| Point::new(x.x as i32, x.y as i32))
+            let segments = intersections
+                .chunks(2)
+                .map(|x| (x[0], x[1]))
                 .collect::<Vec<_>>();
 
-            draw_polygon_with_mut(
-                &mut image,
-                &polygons,
-                image::Rgb([255, 255, 255]),
-                draw_line_segment_invert_mut,
-            );
-        }
+            let mut out = Vec::new();
+            for y in 0..slice_config.platform_resolution.y {
+                let mut intersections = segments
+                    .iter()
+                    .filter_map(|(a, b)| {
+                        let y = y as f32;
+                        if a.y <= y && b.y >= y {
+                            let t = (y - a.y) / (b.y - a.y);
+                            let x = a.x + t * (b.x - a.x);
+                            Some(x)
+                        } else if b.y <= y && a.y >= y {
+                            let t = (y - b.y) / (a.y - b.y);
+                            let x = b.x + t * (a.x - b.x);
+                            Some(x)
+                        } else {
+                            None
+                        }
+                    })
+                    .collect::<Vec<_>>();
 
-        let filename = format!("slice_output/{i}.png");
-        image.save(filename)?;
-        image.fill(0);
+                intersections.sort_by_key(|&x| OrderedFloat(x));
+                intersections.dedup();
 
-        height += slice_config.slice_height;
-        i += 1;
-    }
+                for span in intersections.chunks_exact(2) {
+                    out.push((span[0] as u64, span[1] as u64));
+                }
+            }
+
+            let mut encoder = LayerEncoder::new();
+
+            let mut last = 0;
+            for (start, end) in out {
+                if start > last {
+                    encoder.add_run(start - last, 0);
+                }
+
+                encoder.add_run(end - start, 1);
+                last = end;
+            }
+
+            let (data, checksum) = encoder.finish();
+            println!("#{layer} Data Size: {}", data.len());
+            LayerContent {
+                data,
+                checksum,
+                ..Default::default()
+            }
+        })
+        .collect::<Vec<_>>();
+
+    let goo = GooFile::new(
+        HeaderInfo {
+            layer_count: layers.len() as u32,
+            ..Default::default()
+        },
+        layers,
+    );
+
+    let mut serializer = DynamicSerializer::new();
+    goo.serialize(&mut serializer);
+    fs::write(OUTPUT_PATH, serializer.into_inner())?;
 
     println!("Done. Elapsed: {:.1}s", now.elapsed().as_secs_f32());
 

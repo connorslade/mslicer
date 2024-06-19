@@ -93,6 +93,11 @@ impl LayerEncoder {
 
         self.last_value = value;
     }
+
+    pub fn finish(self) -> (Vec<u8>, u8) {
+        let checksum = calculate_checksum(&self.data);
+        (self.data, checksum)
+    }
 }
 
 impl<'a> LayerDecoder<'a> {
