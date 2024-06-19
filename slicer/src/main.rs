@@ -6,11 +6,9 @@ use std::{
 use anyhow::Result;
 use common::serde::DynamicSerializer;
 use goo_format::{File as GooFile, HeaderInfo, LayerContent, LayerEncoder};
-use image::{Rgb, RgbImage};
 use mesh::load_mesh;
 use nalgebra::{Vector2, Vector3};
 use ordered_float::OrderedFloat;
-use rayon::iter::{ParallelBridge, ParallelIterator};
 
 type Pos = Vector3<f32>;
 
@@ -20,6 +18,18 @@ struct SliceConfig {
     platform_resolution: Vector2<u32>,
     platform_size: Vector3<f32>,
     slice_height: f32,
+
+    exposure_config: ExposureConfig,
+    first_exposure_config: ExposureConfig,
+    first_layers: u32,
+}
+
+struct ExposureConfig {
+    exposure_time: f32,
+    lift_distance: f32,
+    lift_speed: f32,
+    retract_distance: f32,
+    retract_speed: f32,
 }
 
 fn main() -> Result<()> {
@@ -31,6 +41,16 @@ fn main() -> Result<()> {
         platform_resolution: Vector2::new(11520, 5121),
         platform_size: Vector3::new(218.88, 122.904, 260.0),
         slice_height: 0.05,
+
+        exposure_config: ExposureConfig {
+            exposure_time: 3.0,
+            ..Default::default()
+        },
+        first_exposure_config: ExposureConfig {
+            exposure_time: 50.0,
+            ..Default::default()
+        },
+        first_layers: 10,
     };
 
     let mut file = File::open(FILE_PATH)?;
@@ -64,7 +84,7 @@ fn main() -> Result<()> {
     let layers = (max.z / slice_config.slice_height).ceil() as u32;
 
     let layers = (0..layers)
-        .par_bridge()
+        // .par_bridge()
         .map(|layer| {
             let height = layer as f32 * slice_config.slice_height;
 
@@ -100,7 +120,8 @@ fn main() -> Result<()> {
                 intersections.dedup();
 
                 for span in intersections.chunks_exact(2) {
-                    out.push((span[0] as u64, span[1] as u64));
+                    let y_offset = (slice_config.platform_resolution.x * y) as u64;
+                    out.push((y_offset + span[0] as u64, y_offset + span[1] as u64));
                 }
             }
 
@@ -117,10 +138,22 @@ fn main() -> Result<()> {
             }
 
             let (data, checksum) = encoder.finish();
-            println!("#{layer} Data Size: {}", data.len());
+            let layer_exposure = if layer < slice_config.first_layers {
+                &slice_config.first_exposure_config
+            } else {
+                &slice_config.exposure_config
+            };
+
             LayerContent {
                 data,
                 checksum,
+                layer_position_z: slice_config.slice_height * layer as f32,
+
+                layer_exposure_time: layer_exposure.exposure_time,
+                lift_distance: layer_exposure.lift_distance,
+                lift_speed: layer_exposure.lift_speed,
+                retract_distance: layer_exposure.retract_distance,
+                retract_speed: layer_exposure.retract_speed,
                 ..Default::default()
             }
         })
@@ -129,6 +162,22 @@ fn main() -> Result<()> {
     let goo = GooFile::new(
         HeaderInfo {
             layer_count: layers.len() as u32,
+
+            layer_thickness: slice_config.slice_height,
+            bottom_layers: slice_config.first_layers,
+
+            exposure_time: slice_config.exposure_config.exposure_time,
+            lift_distance: slice_config.exposure_config.lift_distance,
+            lift_speed: slice_config.exposure_config.lift_speed,
+            retract_distance: slice_config.exposure_config.retract_distance,
+            retract_speed: slice_config.exposure_config.retract_speed,
+
+            bottom_exposure_time: slice_config.first_exposure_config.exposure_time,
+            bottom_lift_distance: slice_config.first_exposure_config.lift_distance,
+            bottom_lift_speed: slice_config.first_exposure_config.lift_speed,
+            bottom_retract_distance: slice_config.first_exposure_config.retract_distance,
+            bottom_retract_speed: slice_config.first_exposure_config.retract_speed,
+
             ..Default::default()
         },
         layers,
@@ -141,4 +190,16 @@ fn main() -> Result<()> {
     println!("Done. Elapsed: {:.1}s", now.elapsed().as_secs_f32());
 
     Ok(())
+}
+
+impl Default for ExposureConfig {
+    fn default() -> Self {
+        Self {
+            exposure_time: 3.0,
+            lift_distance: 5.0,
+            lift_speed: 65.0,
+            retract_distance: 5.0,
+            retract_speed: 0.0,
+        }
+    }
 }

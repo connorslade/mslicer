@@ -1095,12 +1095,9 @@ dependencies = [
  "anyhow",
  "common",
  "goo_format",
- "image",
  "imageproc",
  "nalgebra",
  "ordered-float",
- "rand",
- "rayon",
  "stl_io",
 ]
 

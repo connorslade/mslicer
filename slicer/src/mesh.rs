@@ -1,7 +1,6 @@
 use std::io::{Read, Seek};
 
 use anyhow::Result;
-use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
 use crate::Pos;
 
@@ -44,7 +43,7 @@ impl Mesh {
 
     pub fn intersect_plane(&self, height: f32) -> Vec<Pos> {
         self.faces
-            .par_iter()
+            .iter()
             .flat_map(|face| {
                 let v0 = self.transform(&self.vertices[face[0]]);
                 let v1 = self.transform(&self.vertices[face[1]]);

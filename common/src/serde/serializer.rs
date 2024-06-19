@@ -111,3 +111,9 @@ impl Serializer for DynamicSerializer {
         self.buffer.extend_from_slice(&data.data);
     }
 }
+
+impl Default for DynamicSerializer {
+    fn default() -> Self {
+        Self::new()
+    }
+}
