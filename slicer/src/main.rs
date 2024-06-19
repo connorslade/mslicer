@@ -135,6 +135,10 @@ fn main() -> Result<()> {
                 last = end;
             }
 
+            let image_size = slice_config.platform_resolution.x as u64
+                * slice_config.platform_resolution.y as u64;
+            encoder.add_run(image_size - last, 0);
+
             let (data, checksum) = encoder.finish();
             let layer_exposure = if layer < slice_config.first_layers {
                 &slice_config.first_exposure_config
