@@ -37,8 +37,7 @@ fn main() -> Result<()> {
     const OUTPUT_PATH: &str = "output.goo";
 
     let slice_config = SliceConfig {
-        // platform_resolution: Vector2::new(1920, 1080),
-        platform_resolution: Vector2::new(11520, 5121),
+        platform_resolution: Vector2::new(11520, 5120),
         platform_size: Vector3::new(218.88, 122.904, 260.0),
         slice_height: 0.05,
 
@@ -168,8 +167,12 @@ fn main() -> Result<()> {
 
     let goo = GooFile::new(
         HeaderInfo {
-            layer_count: layers.len() as u32,
+            x_resolution: slice_config.platform_resolution.x as u16,
+            y_resolution: slice_config.platform_resolution.y as u16,
+            x_size: slice_config.platform_size.x,
+            y_size: slice_config.platform_size.y,
 
+            layer_count: layers.len() as u32,
             printing_time: total_time as u32,
             layer_thickness: slice_config.slice_height,
             bottom_layers: slice_config.first_layers,
