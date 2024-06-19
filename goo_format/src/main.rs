@@ -53,9 +53,10 @@ fn main() -> Result<()> {
         println!("Exporting layers as images:\n");
         for (i, layer) in goo.layers.iter().enumerate() {
             print!(
-                "\r{i}/{} ({:.1}%)",
+                "\r{}/{} ({:.1}%)",
+                i + 1,
                 goo.header.layer_count,
-                i as f32 / goo.header.layer_count as f32 * 100.0
+                (1.0 + i as f32) / goo.header.layer_count as f32 * 100.0
             );
             stdout().flush()?;
 
@@ -72,12 +73,14 @@ fn main() -> Result<()> {
                 goo.header.y_resolution as u32,
             );
 
+            // not optimized, but its just for debugging so whatever
             for Run { length, value } in decoder {
+                let color = image::Rgb([value, value, value]);
                 for _ in 0..length {
                     let x = pixel % goo.header.x_resolution as u32;
                     let y = pixel / goo.header.x_resolution as u32;
 
-                    image.put_pixel(x, y, image::Rgb([value, value, value]));
+                    image.put_pixel(x, y, color);
                     pixel += 1;
                 }
             }
