@@ -2,11 +2,7 @@ use anyhow::{ensure, Result};
 
 use common::serde::{Deserializer, Serializer};
 
-use crate::{HeaderInfo, LayerContent};
-
-const ENDING_STRING: &[u8] = &[
-    0x00, 0x00, 0x00, 0x07, 0x00, 0x00, 0x00, 0x44, 0x4C, 0x50, 0x00,
-];
+use crate::{HeaderInfo, LayerContent, ENDING_STRING};
 
 pub struct File {
     pub header: HeaderInfo,

@@ -51,7 +51,7 @@ impl LayerEncoder {
                 let byte_0 = (0b10 << 6)
                     | (((diff > 0) as u8) << 5)
                     | (((length != 1) as u8) << 4)
-                    | (diff.abs() as u8);
+                    | (diff.unsigned_abs() as u8);
                 self.data.push(byte_0);
 
                 if length != 1 {
@@ -105,7 +105,7 @@ impl<'a> LayerDecoder<'a> {
     }
 
     pub fn checksum(&self) -> u8 {
-        calculate_checksum(&self.data)
+        calculate_checksum(self.data)
     }
 }
 
@@ -181,5 +181,11 @@ impl Iterator for LayerDecoder<'_> {
             length,
             value: self.color,
         })
+    }
+}
+
+impl Default for LayerEncoder {
+    fn default() -> Self {
+        Self::new()
     }
 }

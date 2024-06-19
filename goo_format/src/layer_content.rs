@@ -1,6 +1,8 @@
-use anyhow::{bail, ensure, Result};
+use anyhow::{ensure, Result};
 
 use common::serde::{Deserializer, Serializer};
+
+use crate::DELIMITER;
 
 pub struct LayerContent {
     pub pause_flag: u16,
@@ -47,7 +49,7 @@ impl LayerContent {
         ser.write_bytes(&[0x55]);
         ser.write_bytes(&self.data);
         ser.write_u8(calculate_checksum(&self.data));
-        ser.write_bytes(&[0xd, 0xa]);
+        ser.write_bytes(DELIMITER);
     }
 
     pub fn deserialize(buf: &[u8]) -> Result<Self> {
@@ -74,7 +76,7 @@ impl LayerContent {
         ensure!(des.read_u8() == 0x55);
         let data = des.read_bytes(data_len);
         let checksum = des.read_u8();
-        ensure!(des.read_bytes(2) == [0xd, 0xa]);
+        ensure!(des.read_bytes(2) == DELIMITER);
 
         Ok(Self {
             pause_flag,

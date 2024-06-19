@@ -4,7 +4,7 @@ use anyhow::{ensure, Result};
 
 use common::serde::{Deserializer, Serializer, SizedString};
 
-use crate::PreviewImage;
+use crate::{PreviewImage, DELIMITER, MAGIC_TAG};
 
 pub struct HeaderInfo {
     pub version: SizedString<4>,
@@ -75,7 +75,7 @@ impl HeaderInfo {
 impl HeaderInfo {
     pub fn serialize<T: Serializer>(&self, ser: &mut T) {
         ser.write_sized_string(&self.version);
-        ser.write_bytes(&[0x07, 0x00, 0x00, 0x00, 0x44, 0x4C, 0x50, 0x00]);
+        ser.write_bytes(MAGIC_TAG);
         ser.write_sized_string(&self.software_info);
         ser.write_sized_string(&self.software_version);
         ser.write_sized_string(&self.file_time);
@@ -86,9 +86,9 @@ impl HeaderInfo {
         ser.write_u16(self.grey_level);
         ser.write_u16(self.blur_level);
         self.small_preview.serializes(ser);
-        ser.write_bytes(&[0xd, 0xa]);
+        ser.write_bytes(DELIMITER);
         self.big_preview.serializes(ser);
-        ser.write_bytes(&[0xd, 0xa]);
+        ser.write_bytes(DELIMITER);
         ser.write_u32(self.layer_count);
         ser.write_u16(self.x_resolution);
         ser.write_u16(self.y_resolution);
