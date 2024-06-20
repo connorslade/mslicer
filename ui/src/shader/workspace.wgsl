@@ -9,20 +9,27 @@ struct VertexOutput {
     position: vec4<f32>,
     @location(0)
     tex_coord: vec2<f32>,
+    @location(1)
+    normal: vec3<f32>,
 };
 
 @vertex
 fn vert(
     @location(0) position: vec4<f32>,
     @location(1) tex_coord: vec2<f32>,
+    @location(2) normal: vec3<f32>,
 ) -> VertexOutput {
     var out: VertexOutput;
     out.position = context.transform * position;
     out.tex_coord = tex_coord;
+    out.normal = normal;
     return out;
 }
 
 @fragment
 fn frag(in: VertexOutput) -> @location(0) vec4<f32> {
-    return vec4<f32>(1.0, 1.0, 1.0, 1.0);
+    let ambient = 0.03;
+    let light_dir = normalize(vec3<f32>(0.0, 1.0, 1.0));
+    let intensity = max(dot(in.normal, light_dir), 0.0) + ambient;
+    return vec4<f32>(intensity, intensity, intensity, 1.0);
 }

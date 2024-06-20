@@ -25,7 +25,6 @@ impl eframe::App for App {
                 let (rect, response) = ui.allocate_exact_size(ui.available_size(), Sense::drag());
 
                 let drag_delta = response.drag_delta();
-                self.camera.eye.x += drag_delta.x;
                 self.camera.eye.y -= drag_delta.y;
 
                 let callback = Callback::new_paint_callback(

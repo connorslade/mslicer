@@ -83,6 +83,11 @@ fn main() -> Result<()> {
                         offset: 4 * 4,
                         shader_location: 1,
                     },
+                    VertexAttribute {
+                        format: VertexFormat::Float32x3,
+                        offset: 4 * 4 + 4 * 2,
+                        shader_location: 2,
+                    },
                 ],
             }];
 
@@ -113,6 +118,13 @@ fn main() -> Result<()> {
                     ..Default::default()
                 },
                 depth_stencil: None,
+                // Some(DepthStencilState {
+                //     format: TextureFormat::Depth24PlusStencil8,
+                //     depth_write_enabled: true,
+                //     depth_compare: CompareFunction::Less,
+                //     stencil: Default::default(),
+                //     bias: Default::default(),
+                // }),
                 multisample: MultisampleState::default(),
                 multiview: None,
             });

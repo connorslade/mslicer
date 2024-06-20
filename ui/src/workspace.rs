@@ -1,5 +1,5 @@
 use egui_wgpu::CallbackTrait;
-use nalgebra::Matrix4;
+use nalgebra::{Matrix4, Vector3};
 use wgpu::{BindGroup, Buffer, IndexFormat, RenderPipeline};
 
 use crate::render::ModelVertex;
@@ -33,13 +33,47 @@ impl CallbackTrait for WorkspaceRenderCallback {
             .get::<WorkspaceRenderResources>()
             .unwrap();
 
+        let normals = resources
+            .modal
+            .faces
+            .iter()
+            .enumerate()
+            .map(|(idx, face)| {
+                let (p1, p2, p3) = (
+                    resources.modal.vertices[face[0] as usize],
+                    resources.modal.vertices[face[1] as usize],
+                    resources.modal.vertices[face[2] as usize],
+                );
+                let a = p2 - p1;
+                let b = p3 - p1;
+                (idx, a.cross(&b).normalize())
+            })
+            .collect::<Vec<_>>();
+        // maps face idx -> normal
+
+        // maps vertex idx -> face idx
+        let mut vertex_faces = vec![Vec::new(); resources.modal.vertices.len()];
+        for (face_idx, face) in resources.modal.faces.iter().enumerate() {
+            for vertex_idx in face.iter() {
+                vertex_faces[*vertex_idx as usize].push(face_idx);
+            }
+        }
+
         let vertices = resources
             .modal
             .vertices
             .iter()
-            .map(|v| ModelVertex {
+            .enumerate()
+            .map(|(idx, v)| ModelVertex {
                 position: [v.x, v.y, v.z, 1.0],
                 tex_coords: [0.0, 0.0],
+                normal: {
+                    let mut normal = Vector3::new(0.0, 0.0, 0.0);
+                    for face_idx in &vertex_faces[idx] {
+                        normal += normals[*face_idx].1;
+                    }
+                    normal.normalize().into()
+                },
             })
             .collect::<Vec<ModelVertex>>();
 
