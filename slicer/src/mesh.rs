@@ -6,7 +6,7 @@ use crate::Pos;
 
 pub struct Mesh {
     pub vertices: Vec<Pos>,
-    pub faces: Vec<[usize; 3]>,
+    pub faces: Vec<[u32; 3]>,
 
     pub position: Pos,
     pub scale: Pos,
@@ -45,9 +45,9 @@ impl Mesh {
         self.faces
             .iter()
             .flat_map(|face| {
-                let v0 = self.transform(&self.vertices[face[0]]);
-                let v1 = self.transform(&self.vertices[face[1]]);
-                let v2 = self.transform(&self.vertices[face[2]]);
+                let v0 = self.transform(&self.vertices[face[0] as usize]);
+                let v1 = self.transform(&self.vertices[face[1] as usize]);
+                let v2 = self.transform(&self.vertices[face[2] as usize]);
 
                 let dot0 = v0.z - height;
                 let dot1 = v1.z - height;
@@ -100,7 +100,13 @@ pub fn load_mesh<T: Read + Seek>(reader: &mut T, format: &str) -> Result<Mesh> {
                 faces: modal
                     .faces
                     .iter()
-                    .map(|f| [f.vertices[0], f.vertices[1], f.vertices[2]])
+                    .map(|f| {
+                        [
+                            f.vertices[0] as u32,
+                            f.vertices[1] as u32,
+                            f.vertices[2] as u32,
+                        ]
+                    })
                     .collect(),
 
                 position: Pos::new(0.0, 0.0, 0.0),

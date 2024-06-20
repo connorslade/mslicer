@@ -6,31 +6,14 @@ use std::{
 use anyhow::Result;
 use common::serde::DynamicSerializer;
 use goo_format::{File as GooFile, HeaderInfo, LayerContent, LayerEncoder};
-use mesh::load_mesh;
 use nalgebra::{Vector2, Vector3};
 use ordered_float::OrderedFloat;
 
-type Pos = Vector3<f32>;
-
-mod mesh;
-
-struct SliceConfig {
-    platform_resolution: Vector2<u32>,
-    platform_size: Vector3<f32>,
-    slice_height: f32,
-
-    exposure_config: ExposureConfig,
-    first_exposure_config: ExposureConfig,
-    first_layers: u32,
-}
-
-struct ExposureConfig {
-    exposure_time: f32,
-    lift_distance: f32,
-    lift_speed: f32,
-    retract_distance: f32,
-    retract_speed: f32,
-}
+use slicer::{
+    mesh::load_mesh,
+    slicer::{ExposureConfig, SliceConfig},
+    Pos,
+};
 
 fn main() -> Result<()> {
     const FILE_PATH: &str = "teapot.stl";
@@ -212,16 +195,4 @@ fn main() -> Result<()> {
     println!("\nDone. Elapsed: {:.1}s", now.elapsed().as_secs_f32());
 
     Ok(())
-}
-
-impl Default for ExposureConfig {
-    fn default() -> Self {
-        Self {
-            exposure_time: 3.0,
-            lift_distance: 5.0,
-            lift_speed: 65.0,
-            retract_distance: 5.0,
-            retract_speed: 150.0,
-        }
-    }
 }
