@@ -32,7 +32,7 @@ impl LayerEncoder {
         // byte 1-3: optional, the rest of the value
 
         let diff = value as i16 - self.last_value as i16;
-        let byte_0: u8 = match value {
+        let chunk_type: u8 = match value {
             // Full black and full white are always encoded as is
             0x00 => 0b00,
             0xFF => 0b11,
@@ -49,7 +49,7 @@ impl LayerEncoder {
                 }
 
                 let byte_0 = (0b10 << 6)
-                    | (((diff > 0) as u8) << 5)
+                    | (((diff < 0) as u8) << 5)
                     | (((length != 1) as u8) << 4)
                     | (diff.unsigned_abs() as u8);
                 self.data.push(byte_0);
@@ -62,7 +62,7 @@ impl LayerEncoder {
                 return;
             }
             _ => 0b01,
-        } << 6;
+        };
 
         let chunk_length_size = match length {
             0x0000000..=0x000000F => 0b00,
@@ -77,7 +77,12 @@ impl LayerEncoder {
         };
 
         self.data
-            .push(byte_0 | (chunk_length_size << 4) | (length as u8 & 0x0F));
+            .push((chunk_type << 6) | (chunk_length_size << 4) | (length as u8 & 0x0F));
+
+        if chunk_type == 0b01 {
+            self.data.push(value);
+        }
+
         match chunk_length_size {
             1 => self.data.extend_from_slice(&[(length >> 4) as u8]),
             2 => self

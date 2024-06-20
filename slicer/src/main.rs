@@ -37,7 +37,7 @@ fn main() -> Result<()> {
     const OUTPUT_PATH: &str = "output.goo";
 
     let slice_config = SliceConfig {
-        platform_resolution: Vector2::new(11520, 5120),
+        platform_resolution: Vector2::new(11_520, 5_120),
         platform_size: Vector3::new(218.88, 122.904, 260.0),
         slice_height: 0.05,
 
@@ -83,11 +83,16 @@ fn main() -> Result<()> {
     let layers = (max.z / slice_config.slice_height).ceil() as u32;
 
     let layers = (0..layers)
+        .inspect(|&layer| {
+            print!(
+                "\rLayer: {}/{layers} ({:.1}%)",
+                layer + 1,
+                (layer as f32 + 1.0) / layers as f32 * 100.0
+            );
+        })
         .map(|layer| {
             let height = layer as f32 * slice_config.slice_height;
-
             let intersections = mesh.intersect_plane(height);
-            println!("Height: {}, Intersections: {}", height, intersections.len());
 
             let segments = intersections
                 .chunks(2)
@@ -131,7 +136,7 @@ fn main() -> Result<()> {
                     encoder.add_run(start - last, 0);
                 }
 
-                encoder.add_run(end - start, 1);
+                encoder.add_run(end - start, 255);
                 last = end;
             }
 
@@ -149,13 +154,14 @@ fn main() -> Result<()> {
             LayerContent {
                 data,
                 checksum,
-                layer_position_z: slice_config.slice_height * layer as f32,
+                layer_position_z: slice_config.slice_height * (layer + 1) as f32,
 
                 layer_exposure_time: layer_exposure.exposure_time,
                 lift_distance: layer_exposure.lift_distance,
                 lift_speed: layer_exposure.lift_speed,
                 retract_distance: layer_exposure.retract_distance,
                 retract_speed: layer_exposure.retract_speed,
+                pause_position_z: slice_config.platform_size.z,
                 ..Default::default()
             }
         })
@@ -203,7 +209,7 @@ fn main() -> Result<()> {
     goo.serialize(&mut serializer);
     fs::write(OUTPUT_PATH, serializer.into_inner())?;
 
-    println!("Done. Elapsed: {:.1}s", now.elapsed().as_secs_f32());
+    println!("\nDone. Elapsed: {:.1}s", now.elapsed().as_secs_f32());
 
     Ok(())
 }
