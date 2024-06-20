@@ -6,14 +6,14 @@ pub mod status;
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct Response<Data> {
-    id: String,
-    data: Data,
+    pub id: String,
+    pub data: Data,
 }
 
 #[derive(Debug)]
 pub struct Resolution {
-    x: u16,
-    y: u16,
+    pub x: u16,
+    pub y: u16,
 }
 
 pub fn parse_resolution<'de, D>(from: D) -> Result<Resolution, D::Error>

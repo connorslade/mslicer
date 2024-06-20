@@ -12,23 +12,23 @@ pub struct StatusData {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct Attributes {
-    name: String,
-    machine_name: String,
-    protocol_version: String,
-    firmware_version: String,
+    pub name: String,
+    pub machine_name: String,
+    pub protocol_version: String,
+    pub firmware_version: String,
     #[serde(deserialize_with = "parse_resolution")]
-    resolution: Resolution,
+    pub resolution: Resolution,
     #[serde(rename = "MainboardIP")]
-    mainboard_ip: String,
+    pub mainboard_ip: String,
     #[serde(rename = "MainboardID")]
-    mainboard_id: String,
+    pub mainboard_id: String,
     #[serde(rename = "SDCPStatus")]
-    sdcp_status: u8,
+    pub sdcp_status: u8,
     #[serde(rename = "LocalSDCPAddress")]
-    local_sdcp_address: String,
+    pub local_sdcp_address: String,
     #[serde(rename = "SDCPAddress")]
-    sdcp_address: String,
-    capabilities: Vec<Capability>,
+    pub sdcp_address: String,
+    pub capabilities: Vec<Capability>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -41,30 +41,30 @@ pub enum Capability {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct Status {
-    current_status: u8,
-    previous_status: u8,
-    print_info: PrintInfo,
-    file_transfer_info: FileTransferInfo,
+    pub current_status: u8,
+    pub previous_status: u8,
+    pub print_info: PrintInfo,
+    pub file_transfer_info: FileTransferInfo,
 }
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct PrintInfo {
-    status: u8,
-    current_layer: u32,
-    total_layer: u32,
-    current_ticks: u32,
-    total_ticks: u32,
-    error_number: u8,
-    filename: String,
+    pub status: u8,
+    pub current_layer: u32,
+    pub total_layer: u32,
+    pub current_ticks: u32,
+    pub total_ticks: u32,
+    pub error_number: u8,
+    pub filename: String,
 }
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct FileTransferInfo {
-    status: u8,
-    download_offset: u32,
-    check_offset: u32,
-    file_total_size: u32,
-    filename: String,
+    pub status: u8,
+    pub download_offset: u32,
+    pub check_offset: u32,
+    pub file_total_size: u32,
+    pub filename: String,
 }

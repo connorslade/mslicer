@@ -15,7 +15,7 @@ fn main() -> Result<()> {
 
     let received = String::from_utf8_lossy(&buffer[..len]);
     let response = serde_json::from_str::<Response<StatusData>>(&received)?;
-    dbg!(response);
+    println!("Got status from `{}`", response.data.attributes.machine_name);
 
     Ok(())
 }
