@@ -29,7 +29,9 @@ pub struct ModelVertex {
 }
 
 pub struct RenderedMesh {
+    pub name: String,
     pub mesh: Mesh,
+    pub hidden: bool,
     vertices: Vec<ModelVertex>,
     buffers: Option<RenderedMeshBuffers>,
 }
@@ -83,9 +85,16 @@ impl RenderedMesh {
 
         Self {
             mesh,
+            name: String::new(),
+            hidden: false,
             vertices,
             buffers: None,
         }
+    }
+
+    pub fn with_name(mut self, name: String) -> Self {
+        self.name = name;
+        self
     }
 
     pub fn try_get_buffers(&self) -> Option<&RenderedMeshBuffers> {

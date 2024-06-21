@@ -1,7 +1,8 @@
 use std::sync::{Arc, RwLock};
 
 use egui::{
-    emath::Numeric, CentralPanel, DragValue, Frame, Grid, Sense, Slider, TopBottomPanel, Ui, Window,
+    emath::Numeric, CentralPanel, Color32, DragValue, Frame, Grid, RichText, Sense, Slider,
+    TopBottomPanel, Ui, Window,
 };
 use egui_wgpu::Callback;
 use nalgebra::{Vector2, Vector3};
@@ -16,6 +17,9 @@ pub struct App {
     pub meshes: Arc<RwLock<Vec<RenderedMesh>>>,
 
     pub show_about: bool,
+    pub show_slice_config: bool,
+    pub show_transform: bool,
+    pub show_modals: bool,
 }
 
 impl eframe::App for App {
@@ -31,12 +35,15 @@ impl eframe::App for App {
                         if let Some(path) =
                             FileDialog::new().add_filter("STL", &["stl"]).pick_file()
                         {
+                            let name = path.file_name().unwrap().to_str().unwrap().to_string();
+
                             let mut file = std::fs::File::open(path).unwrap();
                             let modal = slicer::mesh::load_mesh(&mut file, "stl").unwrap();
+
                             self.meshes
                                 .write()
                                 .unwrap()
-                                .push(RenderedMesh::from_mesh(modal));
+                                .push(RenderedMesh::from_mesh(modal).with_name(name));
                         }
                     }
 
@@ -45,6 +52,12 @@ impl eframe::App for App {
                     if ui.button("Organize windows").clicked() {
                         ui.ctx().memory_mut(|mem| mem.reset_areas());
                     }
+                });
+
+                ui.menu_button("🖹 View", |ui| {
+                    self.show_modals ^= ui.button("Modals").clicked();
+                    self.show_slice_config ^= ui.button("Slice Config").clicked();
+                    self.show_transform ^= ui.button("Transform").clicked();
                 });
 
                 self.show_about ^= ui.button("About").clicked();
@@ -57,66 +70,118 @@ impl eframe::App for App {
             });
         });
 
-        Window::new("Transform").show(ctx, |ui| {
-            ui.add(Slider::new(&mut self.camera.pos.x, -10.0..=10.0).text("X"));
-            ui.add(Slider::new(&mut self.camera.pos.y, -10.0..=10.0).text("Y"));
-            ui.add(Slider::new(&mut self.camera.pos.z, -10.0..=10.0).text("Z"));
+        if self.show_transform {
+            Window::new("Transform").default_width(0.0).show(ctx, |ui| {
+                ui.add(Slider::new(&mut self.camera.pos.x, -10.0..=10.0).text("X"));
+                ui.add(Slider::new(&mut self.camera.pos.y, -10.0..=10.0).text("Y"));
+                ui.add(Slider::new(&mut self.camera.pos.z, -10.0..=10.0).text("Z"));
 
-            ui.separator();
+                ui.separator();
 
-            ui.add(
-                Slider::new(
-                    &mut self.camera.pitch,
-                    -std::f32::consts::PI..=std::f32::consts::PI,
-                )
-                .text("Pitch"),
-            );
-            ui.add(
-                Slider::new(
-                    &mut self.camera.yaw,
-                    -std::f32::consts::PI..=std::f32::consts::PI,
-                )
-                .text("Yaw"),
-            );
+                ui.add(
+                    Slider::new(
+                        &mut self.camera.pitch,
+                        -std::f32::consts::PI..=std::f32::consts::PI,
+                    )
+                    .text("Pitch"),
+                );
+                ui.add(
+                    Slider::new(
+                        &mut self.camera.yaw,
+                        -std::f32::consts::PI..=std::f32::consts::PI,
+                    )
+                    .text("Yaw"),
+                );
 
-            ui.separator();
+                ui.separator();
 
-            ui.add(Slider::new(&mut self.camera.fov, 0.0..=2.0 * std::f32::consts::PI).text("FOV"));
-            ui.add(Slider::new(&mut self.camera.near, 0.0..=10.0).text("Near"));
-            ui.add(Slider::new(&mut self.camera.far, 0.0..=100.0).text("Far"));
-        });
+                ui.add(
+                    Slider::new(&mut self.camera.fov, 0.0..=2.0 * std::f32::consts::PI).text("FOV"),
+                );
+                ui.add(Slider::new(&mut self.camera.near, 0.0..=10.0).text("Near"));
+                ui.add(Slider::new(&mut self.camera.far, 0.0..=100.0).text("Far"));
+            });
+        }
 
-        Window::new("Slice Config").show(ctx, |ui| {
-            Grid::new("slice_config")
-                .num_columns(2)
-                .spacing([40.0, 4.0])
-                .striped(true)
-                .show(ui, |ui| {
-                    ui.label("Platform Resolution");
-                    vec2_dragger::<u32>(ui, self.slice_config.platform_resolution.as_mut());
-                    ui.end_row();
+        if self.show_slice_config {
+            Window::new("Slice Config").show(ctx, |ui| {
+                Grid::new("slice_config")
+                    .num_columns(2)
+                    .spacing([40.0, 4.0])
+                    .striped(true)
+                    .show(ui, |ui| {
+                        ui.label("Platform Resolution");
+                        vec2_dragger::<u32>(ui, self.slice_config.platform_resolution.as_mut());
+                        ui.end_row();
 
-                    ui.label("Platform Size");
-                    vec3_dragger::<f32>(ui, self.slice_config.platform_size.as_mut());
-                    ui.end_row();
+                        ui.label("Platform Size");
+                        vec3_dragger::<f32>(ui, self.slice_config.platform_size.as_mut());
+                        ui.end_row();
 
-                    ui.label("Slice Height");
-                    ui.add(DragValue::new(&mut self.slice_config.slice_height));
-                    ui.end_row();
+                        ui.label("Slice Height");
+                        ui.add(DragValue::new(&mut self.slice_config.slice_height));
+                        ui.end_row();
 
-                    ui.label("First Layers");
-                    ui.add(DragValue::new(&mut self.slice_config.first_layers));
-                    ui.end_row();
+                        ui.label("First Layers");
+                        ui.add(DragValue::new(&mut self.slice_config.first_layers));
+                        ui.end_row();
+                    });
+
+                ui.collapsing("Exposure Config", |ui| {
+                    exposure_config_grid(ui, &mut self.slice_config.exposure_config);
                 });
 
-            ui.collapsing("Exposure Config", |ui| {
-                exposure_config_grid(ui, &mut self.slice_config.exposure_config);
+                ui.collapsing("First Exposure Config", |ui| {
+                    exposure_config_grid(ui, &mut self.slice_config.first_exposure_config);
+                });
             });
+        }
 
-            ui.collapsing("First Exposure Config", |ui| {
-                exposure_config_grid(ui, &mut self.slice_config.first_exposure_config);
+        if self.show_modals {
+            Window::new("Modals").show(ctx, |ui| {
+                let mut meshes = self.meshes.write().unwrap();
+
+                if meshes.is_empty() {
+                    ui.label("No modals loaded yet.");
+                    return;
+                }
+
+                Grid::new("modals")
+                    .num_columns(2)
+                    .spacing([40.0, 4.0])
+                    .striped(true)
+                    .show(ui, |ui| {
+                        for (i, mesh) in meshes.iter_mut().enumerate() {
+                            ui.label(RichText::new(&mesh.name).color(if mesh.hidden {
+                                Color32::RED
+                            } else {
+                                Color32::from_rgb(0x88, 0x88, 0x88)
+                            }));
+
+                            ui.horizontal(|ui| {
+                                mesh.hidden ^= ui.button("👁").clicked();
+
+                                ui.collapsing("Details", |ui| {
+                                    Grid::new(format!("modal_{}", i))
+                                        .num_columns(2)
+                                        .spacing([40.0, 4.0])
+                                        .striped(true)
+                                        .show(ui, |ui| {
+                                            ui.label("Vertices");
+                                            ui.monospace(mesh.mesh.vertices.len().to_string());
+                                            ui.end_row();
+
+                                            ui.label("Triangles");
+                                            ui.monospace(mesh.mesh.faces.len().to_string());
+                                            ui.end_row();
+                                        });
+                                });
+                            });
+                            ui.end_row()
+                        }
+                    });
             });
-        });
+        }
 
         if self.show_about {
             Window::new("About").show(ctx, |ui| {
@@ -233,6 +298,9 @@ impl Default for App {
 
             meshes: Arc::new(RwLock::new(Vec::new())),
             show_about: false,
+            show_slice_config: true,
+            show_transform: true,
+            show_modals: false,
         }
     }
 }
