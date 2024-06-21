@@ -2,6 +2,7 @@ use std::{fs::File, mem};
 
 use anyhow::Result;
 use eframe::NativeOptions;
+use egui::Vec2;
 use render::ModelVertex;
 use wgpu::{
     BindGroupEntry, BindGroupLayoutDescriptor, BufferAddress, BufferBinding, BufferDescriptor,
@@ -24,6 +25,10 @@ fn main() -> Result<()> {
     eframe::run_native(
         "mslicer",
         NativeOptions {
+            window_builder: Some(Box::new(|builder| {
+                builder.with_inner_size(Vec2::new(1920.0, 1080.0))
+            })),
+
             depth_buffer: 24,
             stencil_buffer: 8,
             ..Default::default()
