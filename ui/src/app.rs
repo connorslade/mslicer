@@ -1,3 +1,5 @@
+use std::sync::{Arc, RwLock};
+
 use egui::{
     emath::Numeric, CentralPanel, DragValue, Frame, Grid, Sense, Slider, TopBottomPanel, Ui, Window,
 };
@@ -6,11 +8,12 @@ use nalgebra::{Vector2, Vector3};
 use rfd::FileDialog;
 use slicer::slicer::{ExposureConfig, SliceConfig};
 
-use crate::{camera::Camera, workspace::WorkspaceRenderCallback};
+use crate::{camera::Camera, render::RenderedMesh, workspace::WorkspaceRenderCallback};
 
 pub struct App {
     pub camera: Camera,
     pub slice_config: SliceConfig,
+    pub meshes: Arc<RwLock<Vec<RenderedMesh>>>,
 
     pub show_about: bool,
 }
@@ -29,8 +32,11 @@ impl eframe::App for App {
                             .pick_file()
                             .map(|path| {
                                 let mut file = std::fs::File::open(path).unwrap();
-                                let _modal = slicer::mesh::load_mesh(&mut file, "stl").unwrap();
-                                unimplemented!()
+                                let modal = slicer::mesh::load_mesh(&mut file, "stl").unwrap();
+                                self.meshes
+                                    .write()
+                                    .unwrap()
+                                    .push(RenderedMesh::from_mesh(modal));
                             });
                     }
 
@@ -133,6 +139,7 @@ impl eframe::App for App {
                         transform: self
                             .camera
                             .view_projection_matrix(rect.width() / rect.height()),
+                        modals: self.meshes.clone(),
                     },
                 );
                 ui.painter().add(callback);
@@ -218,6 +225,7 @@ impl Default for App {
                 first_layers: 10,
             },
 
+            meshes: Arc::new(RwLock::new(Vec::new())),
             show_about: false,
         }
     }

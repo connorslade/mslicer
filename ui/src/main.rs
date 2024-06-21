@@ -33,25 +33,10 @@ fn main() -> Result<()> {
             stencil_buffer: 8,
             ..Default::default()
         },
+        // todo: move to some other file or somthin
         Box::new(|cc| {
             let render_state = cc.wgpu_render_state.as_ref().unwrap();
             let device = &render_state.device;
-
-            let mut test_modal_file = File::open("teapot.stl").unwrap();
-            let test_modal = slicer::mesh::load_mesh(&mut test_modal_file, "stl").unwrap();
-
-            let vertex_buffer = device.create_buffer(&BufferDescriptor {
-                label: None,
-                size: test_modal.vertices.len() as u64 * std::mem::size_of::<ModelVertex>() as u64,
-                usage: BufferUsages::VERTEX | BufferUsages::COPY_DST,
-                mapped_at_creation: false,
-            });
-            let index_buffer = device.create_buffer(&BufferDescriptor {
-                label: None,
-                size: 3 * test_modal.faces.len() as u64 * std::mem::size_of::<u32>() as u64,
-                usage: BufferUsages::INDEX | BufferUsages::COPY_DST,
-                mapped_at_creation: false,
-            });
 
             let shader = device.create_shader_module(ShaderModuleDescriptor {
                 label: None,
@@ -156,14 +141,10 @@ fn main() -> Result<()> {
                 .write()
                 .callback_resources
                 .insert(WorkspaceRenderResources {
-                    vertex_buffer,
-                    index_buffer,
                     uniform_buffer,
 
                     render_pipeline,
                     bind_group,
-
-                    modal: test_modal,
                 });
 
             Box::new(App::default())
