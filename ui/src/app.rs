@@ -27,17 +27,17 @@ impl eframe::App for App {
 
                 ui.menu_button("🖹 File", |ui| {
                     if ui.button("Import Modal").clicked() {
-                        FileDialog::new()
-                            .add_filter("STL", &["stl"])
-                            .pick_file()
-                            .map(|path| {
-                                let mut file = std::fs::File::open(path).unwrap();
-                                let modal = slicer::mesh::load_mesh(&mut file, "stl").unwrap();
-                                self.meshes
-                                    .write()
-                                    .unwrap()
-                                    .push(RenderedMesh::from_mesh(modal));
-                            });
+                        // TODO: async
+                        if let Some(path) =
+                            FileDialog::new().add_filter("STL", &["stl"]).pick_file()
+                        {
+                            let mut file = std::fs::File::open(path).unwrap();
+                            let modal = slicer::mesh::load_mesh(&mut file, "stl").unwrap();
+                            self.meshes
+                                .write()
+                                .unwrap()
+                                .push(RenderedMesh::from_mesh(modal));
+                        }
                     }
 
                     ui.separator();
@@ -48,6 +48,12 @@ impl eframe::App for App {
                 });
 
                 self.show_about ^= ui.button("About").clicked();
+
+                ui.separator();
+
+                if ui.button("Slice").clicked() {
+                    unimplemented!();
+                }
             });
         });
 

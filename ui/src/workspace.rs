@@ -40,11 +40,11 @@ impl CallbackTrait for WorkspaceRenderCallback {
         if !to_generate.is_empty() {
             let mut meshes = self.modals.write().unwrap();
             for idx in to_generate {
-                meshes[idx].get_buffers(&device);
+                meshes[idx].get_buffers(device);
             }
         }
 
-        // only do on change
+        // todo: only do on change
         queue.write_buffer(&resources.uniform_buffer, 0, &self.to_wgsl());
 
         Vec::new()
