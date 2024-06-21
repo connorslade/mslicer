@@ -1,6 +1,6 @@
 use egui_wgpu::CallbackTrait;
 use nalgebra::{Matrix4, Vector3};
-use wgpu::{BindGroup, Buffer, IndexFormat, RenderPipeline};
+use wgpu::{BindGroup, Buffer, CommandEncoder, IndexFormat, RenderPassDescriptor, RenderPipeline};
 
 use crate::render::ModelVertex;
 use slicer::mesh::Mesh;
@@ -49,9 +49,7 @@ impl CallbackTrait for WorkspaceRenderCallback {
                 (idx, a.cross(&b).normalize())
             })
             .collect::<Vec<_>>();
-        // maps face idx -> normal
 
-        // maps vertex idx -> face idx
         let mut vertex_faces = vec![Vec::new(); resources.modal.vertices.len()];
         for (face_idx, face) in resources.modal.faces.iter().enumerate() {
             for vertex_idx in face.iter() {
@@ -110,8 +108,10 @@ impl CallbackTrait for WorkspaceRenderCallback {
 
 impl WorkspaceRenderCallback {
     fn to_wgsl(&self) -> Vec<u8> {
+        let transform: [[f32; 4]; 4] = self.transform.into();
+
         let mut out = Vec::new();
-        out.extend_from_slice(bytemuck::cast_slice(self.transform.as_slice()));
+        out.extend_from_slice(bytemuck::cast_slice(&transform));
         out
     }
 }

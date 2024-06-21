@@ -5,9 +5,10 @@ use eframe::NativeOptions;
 use render::ModelVertex;
 use wgpu::{
     BindGroupEntry, BindGroupLayoutDescriptor, BufferAddress, BufferBinding, BufferDescriptor,
-    BufferUsages, ColorTargetState, ColorWrites, FragmentState, MultisampleState,
-    PipelineLayoutDescriptor, PrimitiveState, RenderPipelineDescriptor, ShaderModuleDescriptor,
-    TextureFormat, VertexAttribute, VertexBufferLayout, VertexFormat, VertexState, VertexStepMode,
+    BufferUsages, ColorTargetState, ColorWrites, CompareFunction, DepthStencilState, FragmentState,
+    MultisampleState, PipelineLayoutDescriptor, PrimitiveState, RenderPipelineDescriptor,
+    ShaderModuleDescriptor, TextureFormat, VertexAttribute, VertexBufferLayout, VertexFormat,
+    VertexState, VertexStepMode,
 };
 
 const TEXTURE_FORMAT: TextureFormat = TextureFormat::Bgra8Unorm;
@@ -22,7 +23,11 @@ use workspace::{WorkspaceRenderCallback, WorkspaceRenderResources};
 fn main() -> Result<()> {
     eframe::run_native(
         "mslicer",
-        NativeOptions::default(),
+        NativeOptions {
+            depth_buffer: 24,
+            stencil_buffer: 8,
+            ..Default::default()
+        },
         Box::new(|cc| {
             let render_state = cc.wgpu_render_state.as_ref().unwrap();
             let device = &render_state.device;
@@ -117,14 +122,13 @@ fn main() -> Result<()> {
                 primitive: PrimitiveState {
                     ..Default::default()
                 },
-                depth_stencil: None,
-                // Some(DepthStencilState {
-                //     format: TextureFormat::Depth24PlusStencil8,
-                //     depth_write_enabled: true,
-                //     depth_compare: CompareFunction::Less,
-                //     stencil: Default::default(),
-                //     bias: Default::default(),
-                // }),
+                depth_stencil: Some(DepthStencilState {
+                    format: TextureFormat::Depth24PlusStencil8,
+                    depth_write_enabled: true,
+                    depth_compare: CompareFunction::Less,
+                    stencil: Default::default(),
+                    bias: Default::default(),
+                }),
                 multisample: MultisampleState::default(),
                 multiview: None,
             });
@@ -157,9 +161,7 @@ fn main() -> Result<()> {
                     modal: test_modal,
                 });
 
-            Box::new(App {
-                camera: Default::default(),
-            })
+            Box::new(App::default())
         }),
     )
     .unwrap();

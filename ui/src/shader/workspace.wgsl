@@ -28,8 +28,8 @@ fn vert(
 
 @fragment
 fn frag(in: VertexOutput) -> @location(0) vec4<f32> {
-    let ambient = 0.03;
-    let light_dir = normalize(vec3<f32>(0.0, 1.0, 1.0));
-    let intensity = max(dot(in.normal, light_dir), 0.0) + ambient;
-    return vec4<f32>(intensity, intensity, intensity, 1.0);
+    // let light_dir = normalize(vec3<f32>(0.0, 0.0, 1.0));
+    // let intensity = max(dot(in.normal, light_dir), 0.0);
+    let intensity = in.normal;
+    return vec4<f32>(intensity, 1.0);
 }
