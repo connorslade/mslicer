@@ -1,7 +1,6 @@
 @group(0) @binding(0) var<uniform> context: Context;
 
 struct Context {
-    bed_size: vec3<f32>,
     transform: mat4x4<f32>,
     render_style: u32,
 }

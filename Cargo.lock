@@ -1316,6 +1316,7 @@ checksum = "5a9299a95fa5671ddf29ecc22b00e121843a65cb9ff24911e394b4ae556baf36"
 dependencies = [
  "const_panic",
  "encase_derive",
+ "nalgebra",
  "thiserror",
 ]
 

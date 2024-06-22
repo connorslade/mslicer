@@ -10,7 +10,8 @@ use nalgebra::{Vector2, Vector3};
 use crate::{
     windows::{self, Windows},
     workspace::{
-        camera::Camera, rendered_mesh::RenderedMesh, RenderStyle, WorkspaceRenderCallback,
+        camera::Camera, pipelines::model::RenderStyle, rendered_mesh::RenderedMesh,
+        WorkspaceRenderCallback,
     },
 };
 use goo_format::File as GooFile;

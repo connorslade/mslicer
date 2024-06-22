@@ -3,7 +3,6 @@
 struct Context {
     bed_size: vec3<f32>,
     transform: mat4x4<f32>,
-    render_style: u32,
 }
 
 struct VertexOutput {

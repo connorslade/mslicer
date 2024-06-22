@@ -9,7 +9,7 @@ bytemuck = "1.16.1"
 eframe = { version = "0.27.2", features = ["wgpu"] }
 egui = "0.27.2"
 egui-wgpu = "0.27.2"
-encase = "0.8.0"
+encase = { version = "0.8.0", features = ["nalgebra"] }
 image = "0.25.1"
 nalgebra = "0.32.6"
 rfd = "0.14.1"
