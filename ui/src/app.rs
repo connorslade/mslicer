@@ -1,8 +1,10 @@
-use std::sync::{Arc, RwLock};
+use std::{
+    sync::{Arc, RwLock},
+    time::Instant,
+};
 
 use egui::{
-    emath::Numeric, CentralPanel, Color32, DragValue, Frame, Grid, RichText, Sense, Slider,
-    TopBottomPanel, Ui, Window,
+    emath::Numeric, CentralPanel, DragValue, Frame, Grid, Sense, Slider, TopBottomPanel, Ui, Window,
 };
 use egui_wgpu::Callback;
 use nalgebra::{Vector2, Vector3};
@@ -16,14 +18,24 @@ pub struct App {
     pub slice_config: SliceConfig,
     pub meshes: Arc<RwLock<Vec<RenderedMesh>>>,
 
+    fps: FpsTracker,
+
     pub show_about: bool,
     pub show_slice_config: bool,
     pub show_transform: bool,
     pub show_modals: bool,
+    pub show_stats: bool,
+}
+
+struct FpsTracker {
+    last_frame: Instant,
+    last_frame_time: f32,
 }
 
 impl eframe::App for App {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        self.fps.update();
+
         TopBottomPanel::top("top_panel").show(ctx, |ui| {
             ui.horizontal(|ui| {
                 ui.heading("mslicer");
@@ -46,32 +58,40 @@ impl eframe::App for App {
                                 .push(RenderedMesh::from_mesh(modal).with_name(name));
                         }
                     }
+                });
 
-                    ui.separator();
+                ui.menu_button("🖹 View", |ui| {
+                    fn show_entry(ui: &mut Ui, name: &str, show: &mut bool) {
+                        *show ^= ui
+                            .button(format!("{} {name}", if *show { "👁" } else { "🗙" }))
+                            .clicked();
+                    }
 
                     if ui.button("Organize windows").clicked() {
                         ui.ctx().memory_mut(|mem| mem.reset_areas());
                     }
-                });
 
-                ui.menu_button("🖹 View", |ui| {
-                    self.show_modals ^= ui.button("Modals").clicked();
-                    self.show_slice_config ^= ui.button("Slice Config").clicked();
-                    self.show_transform ^= ui.button("Transform").clicked();
-                });
+                    ui.separator();
 
-                self.show_about ^= ui.button("About").clicked();
+                    show_entry(ui, "About", &mut self.show_about);
+                    show_entry(ui, "Modals", &mut self.show_modals);
+                    show_entry(ui, "Slice Config", &mut self.show_slice_config);
+                    show_entry(ui, "Stats", &mut self.show_stats);
+                    show_entry(ui, "Transform", &mut self.show_transform);
+                });
 
                 ui.separator();
 
-                if ui.button("Slice").clicked() {
+                if ui.button("Slice!").clicked() {
                     unimplemented!();
                 }
             });
         });
 
-        if self.show_transform {
-            Window::new("Transform").default_width(0.0).show(ctx, |ui| {
+        Window::new("Transform")
+            .open(&mut self.show_transform)
+            .default_width(0.0)
+            .show(ctx, |ui| {
                 ui.add(Slider::new(&mut self.camera.pos.x, -10.0..=10.0).text("X"));
                 ui.add(Slider::new(&mut self.camera.pos.y, -10.0..=10.0).text("Y"));
                 ui.add(Slider::new(&mut self.camera.pos.z, -10.0..=10.0).text("Z"));
@@ -101,10 +121,10 @@ impl eframe::App for App {
                 ui.add(Slider::new(&mut self.camera.near, 0.0..=10.0).text("Near"));
                 ui.add(Slider::new(&mut self.camera.far, 0.0..=100.0).text("Far"));
             });
-        }
 
-        if self.show_slice_config {
-            Window::new("Slice Config").show(ctx, |ui| {
+        Window::new("Slice Config")
+            .open(&mut self.show_slice_config)
+            .show(ctx, |ui| {
                 Grid::new("slice_config")
                     .num_columns(2)
                     .spacing([40.0, 4.0])
@@ -135,10 +155,10 @@ impl eframe::App for App {
                     exposure_config_grid(ui, &mut self.slice_config.first_exposure_config);
                 });
             });
-        }
 
-        if self.show_modals {
-            Window::new("Modals").show(ctx, |ui| {
+        Window::new("Modals")
+            .open(&mut self.show_modals)
+            .show(ctx, |ui| {
                 let mut meshes = self.meshes.write().unwrap();
 
                 if meshes.is_empty() {
@@ -152,14 +172,11 @@ impl eframe::App for App {
                     .striped(true)
                     .show(ui, |ui| {
                         for (i, mesh) in meshes.iter_mut().enumerate() {
-                            ui.label(RichText::new(&mesh.name).color(if mesh.hidden {
-                                Color32::RED
-                            } else {
-                                Color32::from_rgb(0x88, 0x88, 0x88)
-                            }));
+                            ui.label(&mesh.name);
 
                             ui.horizontal(|ui| {
-                                mesh.hidden ^= ui.button("👁").clicked();
+                                mesh.hidden ^=
+                                    ui.button(if mesh.hidden { "🗙" } else { "👁" }).clicked();
 
                                 ui.collapsing("Details", |ui| {
                                     Grid::new(format!("modal_{}", i))
@@ -181,10 +198,20 @@ impl eframe::App for App {
                         }
                     });
             });
-        }
 
-        if self.show_about {
-            Window::new("About").show(ctx, |ui| {
+        Window::new("Stats")
+            .open(&mut self.show_stats)
+            .show(ctx, |ui| {
+                ui.label(format!(
+                    "Frame Time: {:.2}ms",
+                    self.fps.frame_time() * 1000.0
+                ));
+                ui.label(format!("FPS: {:.2}", 1.0 / self.fps.frame_time()));
+            });
+
+        Window::new("About")
+            .open(&mut self.show_about)
+            .show(ctx, |ui| {
                 ui.monospace(concat!("mslicer v", env!("CARGO_PKG_VERSION")));
                 ui.label(
                     "A work in progress FOSS slicer for resin printers. Created by Connor Slade.",
@@ -197,7 +224,6 @@ impl eframe::App for App {
                     );
                 });
             });
-        }
 
         CentralPanel::default()
             .frame(Frame::none())
@@ -215,6 +241,26 @@ impl eframe::App for App {
                 );
                 ui.painter().add(callback);
             });
+    }
+}
+
+impl FpsTracker {
+    fn new() -> Self {
+        Self {
+            last_frame: Instant::now(),
+            last_frame_time: 0.0,
+        }
+    }
+
+    fn update(&mut self) {
+        let now = Instant::now();
+        let elapsed = now - self.last_frame;
+        self.last_frame_time = elapsed.as_secs_f32();
+        self.last_frame = now;
+    }
+
+    fn frame_time(&self) -> f32 {
+        self.last_frame_time
     }
 }
 
@@ -295,12 +341,14 @@ impl Default for App {
                 },
                 first_layers: 10,
             },
+            fps: FpsTracker::new(),
 
             meshes: Arc::new(RwLock::new(Vec::new())),
             show_about: false,
-            show_slice_config: true,
-            show_transform: true,
             show_modals: false,
+            show_slice_config: true,
+            show_stats: false,
+            show_transform: true,
         }
     }
 }
