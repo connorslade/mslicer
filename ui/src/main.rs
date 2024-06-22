@@ -7,7 +7,9 @@ const TEXTURE_FORMAT: TextureFormat = TextureFormat::Bgra8Unorm;
 
 mod app;
 mod camera;
+mod components;
 mod render;
+mod windows;
 mod workspace;
 use app::App;
 
