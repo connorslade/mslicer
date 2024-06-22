@@ -8,10 +8,9 @@ use egui_wgpu::Callback;
 use nalgebra::{Vector2, Vector3};
 
 use crate::{
-    camera::Camera,
     render::RenderedMesh,
     windows::{self, Windows},
-    workspace::WorkspaceRenderCallback,
+    workspace::{camera::Camera, WorkspaceRenderCallback},
 };
 use goo_format::File as GooFile;
 use slicer::slicer::{ExposureConfig, SliceConfig};

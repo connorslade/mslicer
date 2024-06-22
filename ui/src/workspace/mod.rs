@@ -6,6 +6,9 @@ use wgpu::{BindGroup, Buffer, IndexFormat, RenderPipeline};
 
 use crate::render::{RenderedMesh, RenderedMeshBuffers};
 
+pub mod camera;
+pub mod render;
+
 pub struct WorkspaceRenderResources {
     pub render_pipeline: RenderPipeline,
     pub uniform_buffer: Buffer,

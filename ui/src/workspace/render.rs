@@ -131,7 +131,7 @@ pub fn init_wgpu(cc: &CreationContext) {
 
     let shader = device.create_shader_module(ShaderModuleDescriptor {
         label: None,
-        source: wgpu::ShaderSource::Wgsl(include_str!("shader/workspace.wgsl").into()),
+        source: wgpu::ShaderSource::Wgsl(include_str!("../shaders/workspace.wgsl").into()),
     });
 
     let uniform_buffer = device.create_buffer(&BufferDescriptor {
