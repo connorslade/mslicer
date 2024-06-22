@@ -3806,6 +3806,7 @@ dependencies = [
  "egui-wgpu",
  "encase",
  "goo_format",
+ "image 0.25.1",
  "nalgebra",
  "rfd",
  "slicer",
