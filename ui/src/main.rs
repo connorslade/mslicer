@@ -27,6 +27,7 @@ fn main() -> Result<()> {
                 }),
             depth_buffer: 24,
             stencil_buffer: 8,
+            multisampling: 4,
             ..Default::default()
         },
         Box::new(|cc| {

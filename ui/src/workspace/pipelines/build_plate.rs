@@ -101,9 +101,7 @@ impl BuildPlatePipeline {
                     write_mask: ColorWrites::all(),
                 })],
             }),
-            primitive: PrimitiveState {
-                ..Default::default()
-            },
+            primitive: PrimitiveState::default(),
             depth_stencil: Some(DepthStencilState {
                 format: TextureFormat::Depth24PlusStencil8,
                 depth_write_enabled: true,
@@ -111,7 +109,10 @@ impl BuildPlatePipeline {
                 stencil: Default::default(),
                 bias: Default::default(),
             }),
-            multisample: MultisampleState::default(),
+            multisample: MultisampleState {
+                count: 4,
+                ..Default::default()
+            },
             multiview: None,
         });
 
