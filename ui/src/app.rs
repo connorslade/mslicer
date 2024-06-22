@@ -3,14 +3,15 @@ use std::{
     time::Instant,
 };
 
-use egui::{CentralPanel, Frame, Key, PointerButton, Sense};
+use egui::{CentralPanel, Frame, Sense};
 use egui_wgpu::Callback;
 use nalgebra::{Vector2, Vector3};
 
 use crate::{
-    render::RenderedMesh,
     windows::{self, Windows},
-    workspace::{camera::Camera, RenderStyle, WorkspaceRenderCallback},
+    workspace::{
+        camera::Camera, rendered_mesh::RenderedMesh, RenderStyle, WorkspaceRenderCallback,
+    },
 };
 use goo_format::File as GooFile;
 use slicer::slicer::{ExposureConfig, SliceConfig};
@@ -55,6 +56,7 @@ impl eframe::App for App {
                 let callback = Callback::new_paint_callback(
                     rect,
                     WorkspaceRenderCallback {
+                        bed_size: self.slice_config.platform_size,
                         transform: self
                             .camera
                             .view_projection_matrix(rect.width() / rect.height()),

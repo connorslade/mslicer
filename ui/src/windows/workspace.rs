@@ -1,9 +1,9 @@
 use eframe::Frame;
-use egui::{ComboBox, Context, Slider, Window};
+use egui::{ComboBox, Context, Window};
 
 use crate::{
     app::App,
-    components::{vec2_dragger, vec3_dragger},
+    components::{dragger, vec2_dragger, vec3_dragger},
     workspace::RenderStyle,
 };
 
@@ -21,7 +21,7 @@ pub fn ui(app: &mut App, ctx: &Context, _frame: &mut Frame) {
             ui.collapsing("Camera", |ui| {
                 ui.label("Position");
 
-                vec3_dragger(ui, &mut app.camera.pos.as_mut());
+                vec3_dragger(ui, app.camera.pos.as_mut());
 
                 ui.add_space(12.0);
                 ui.label("Target");
@@ -34,11 +34,9 @@ pub fn ui(app: &mut App, ctx: &Context, _frame: &mut Frame) {
                 ui.add_space(12.0);
                 ui.label("Misc");
 
-                ui.add(
-                    Slider::new(&mut app.camera.fov, 0.0..=2.0 * std::f32::consts::PI).text("FOV"),
-                );
-                ui.add(Slider::new(&mut app.camera.near, 0.0..=10.0).text("Near"));
-                ui.add(Slider::new(&mut app.camera.far, 0.0..=100.0).text("Far"));
+                dragger(ui, "FOV", &mut app.camera.fov, |x| x.speed(0.01));
+                dragger(ui, "Near", &mut app.camera.near, |x| x);
+                dragger(ui, "Far", &mut app.camera.far, |x| x);
             });
         });
 }

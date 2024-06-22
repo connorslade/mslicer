@@ -4,13 +4,15 @@ use std::{
 };
 
 use egui_wgpu::CallbackTrait;
-use nalgebra::Matrix4;
-use wgpu::{BindGroup, Buffer, IndexFormat, RenderPipeline, COPY_BUFFER_ALIGNMENT};
+use nalgebra::{Matrix4, Vector3};
+use pipelines::{build_plate::BuildPlatePipeline, model::ModelPipeline, CachedPipeline, Pipeline};
+use wgpu::{BindGroup, Buffer, COPY_BUFFER_ALIGNMENT};
 
-use crate::render::{RenderedMesh, RenderedMeshBuffers};
-
+use rendered_mesh::RenderedMesh;
 pub mod camera;
+pub mod pipelines;
 pub mod render;
+pub mod rendered_mesh;
 
 #[derive(Copy, Clone, PartialEq, Eq)]
 #[repr(u8)]
@@ -20,12 +22,15 @@ pub enum RenderStyle {
 }
 
 pub struct WorkspaceRenderResources {
-    pub render_pipeline: RenderPipeline,
     pub uniform_buffer: Buffer,
     pub bind_group: BindGroup,
+
+    build_plate_pipeline: CachedPipeline<BuildPlatePipeline>,
+    model_pipeline: CachedPipeline<ModelPipeline>,
 }
 
 pub struct WorkspaceRenderCallback {
+    pub bed_size: Vector3<f32>,
     pub transform: Matrix4<f32>,
     pub modals: Arc<RwLock<Vec<RenderedMesh>>>,
     pub render_style: RenderStyle,
@@ -74,18 +79,16 @@ impl CallbackTrait for WorkspaceRenderCallback {
             .get::<WorkspaceRenderResources>()
             .unwrap();
 
-        render_pass.set_pipeline(&resources.render_pipeline);
         render_pass.set_bind_group(0, &resources.bind_group, &[]);
 
-        let modals = self.modals.read().unwrap();
-        for modal in modals.iter() {
-            // SAFETY: im really tired and i dont care anymore
-            let buffers: &RenderedMeshBuffers =
-                unsafe { &*(modal.try_get_buffers().unwrap() as *const _) };
-            render_pass.set_vertex_buffer(0, buffers.vertex_buffer.slice(..));
-            render_pass.set_index_buffer(buffers.index_buffer.slice(..), IndexFormat::Uint32);
-            render_pass.draw_indexed(0..(3 * modal.mesh.faces.len() as u32), 0, 0..1);
-        }
+        render_pass.set_pipeline(resources.build_plate_pipeline.get_render_pipeline());
+        resources
+            .build_plate_pipeline
+            .pipeline
+            .paint(render_pass, self);
+
+        render_pass.set_pipeline(resources.model_pipeline.get_render_pipeline());
+        resources.model_pipeline.pipeline.paint(render_pass, self);
     }
 }
 
@@ -96,7 +99,9 @@ impl WorkspaceRenderCallback {
 
     fn to_wgsl(&self) -> Vec<u8> {
         let mut out = Vec::with_capacity(Self::PADDED_SIZE as usize);
-        out.extend_from_slice(bytemuck::cast_slice(&self.transform.as_slice()));
+        out.extend_from_slice(bytemuck::cast_slice(self.bed_size.as_slice()));
+        out.extend_from_slice(&[0, 0, 0, 0]);
+        out.extend_from_slice(bytemuck::cast_slice(self.transform.as_slice()));
         out.push(self.render_style as u8);
         out.resize(Self::PADDED_SIZE as usize, 0);
         out

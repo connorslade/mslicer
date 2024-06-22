@@ -1,7 +1,7 @@
 use eframe::Frame;
 use egui::{Context, Grid, Window};
 
-use crate::app::App;
+use crate::{app::App, components::vec3_dragger};
 
 pub fn ui(app: &mut App, ctx: &Context, _frame: &mut Frame) {
     Window::new("Modals")
@@ -16,7 +16,6 @@ pub fn ui(app: &mut App, ctx: &Context, _frame: &mut Frame) {
 
             Grid::new("modals")
                 .num_columns(2)
-                .spacing([40.0, 4.0])
                 .striped(true)
                 .show(ui, |ui| {
                     for (i, mesh) in meshes.iter_mut().enumerate() {
@@ -28,9 +27,12 @@ pub fn ui(app: &mut App, ctx: &Context, _frame: &mut Frame) {
                             ui.collapsing("Details", |ui| {
                                 Grid::new(format!("modal_{}", i))
                                     .num_columns(2)
-                                    .spacing([40.0, 4.0])
                                     .striped(true)
                                     .show(ui, |ui| {
+                                        ui.label("Position");
+                                        vec3_dragger(ui, mesh.mesh.position.as_mut());
+                                        ui.end_row();
+
                                         ui.label("Vertices");
                                         ui.monospace(mesh.mesh.vertices.len().to_string());
                                         ui.end_row();

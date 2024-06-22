@@ -91,7 +91,7 @@ impl Default for Camera {
 
             fov: std::f32::consts::PI / 2.0,
             near: 0.1,
-            far: 100.0,
+            far: 10_000.0,
         }
     }
 }

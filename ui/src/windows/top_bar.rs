@@ -11,10 +11,7 @@ use egui::{Context, TopBottomPanel, Ui};
 use rfd::FileDialog;
 use slicer::slicer::slice_goo;
 
-use crate::{
-    app::{App, SliceProgress},
-    render::RenderedMesh,
-};
+use crate::{app::{App, SliceProgress}, workspace::rendered_mesh::RenderedMesh};
 
 pub fn ui(app: &mut App, ctx: &Context, _frame: &mut Frame) {
     TopBottomPanel::top("top_panel").show(ctx, |ui| {
