@@ -123,7 +123,7 @@ impl ModelPipeline {
 
 impl Pipeline for ModelPipeline {
     fn prepare(
-        &self,
+        &mut self,
         device: &Device,
         queue: &Queue,
         _screen_descriptor: &ScreenDescriptor,

@@ -8,7 +8,7 @@ pub mod model;
 
 pub trait Pipeline {
     fn prepare(
-        &self,
+        &mut self,
         device: &Device,
         queue: &Queue,
         screen_descriptor: &ScreenDescriptor,

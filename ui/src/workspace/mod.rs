@@ -72,7 +72,7 @@ impl CallbackTrait for WorkspaceRenderCallback {
         encoder: &mut CommandEncoder,
         resources: &mut CallbackResources,
     ) -> Vec<CommandBuffer> {
-        let resources = resources.get::<WorkspaceRenderResources>().unwrap();
+        let resources = resources.get_mut::<WorkspaceRenderResources>().unwrap();
 
         resources
             .build_plate_pipeline
