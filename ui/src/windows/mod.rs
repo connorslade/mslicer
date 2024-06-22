@@ -15,7 +15,7 @@ pub struct Windows {
     pub show_about: bool,
     pub show_slice_config: bool,
     pub show_workspace: bool,
-    pub show_modals: bool,
+    pub show_models: bool,
     pub show_stats: bool,
 }
 
@@ -35,7 +35,7 @@ impl Default for Windows {
             show_about: false,
             show_slice_config: true,
             show_workspace: false,
-            show_modals: true,
+            show_models: true,
             show_stats: false,
         }
     }

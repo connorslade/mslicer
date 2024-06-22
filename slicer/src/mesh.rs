@@ -91,14 +91,14 @@ impl Mesh {
 pub fn load_mesh<T: Read + Seek>(reader: &mut T, format: &str) -> Result<Mesh> {
     match format {
         "stl" => {
-            let modal = stl_io::read_stl(reader)?;
+            let model = stl_io::read_stl(reader)?;
             Ok(Mesh {
-                vertices: modal
+                vertices: model
                     .vertices
                     .iter()
                     .map(|v| Pos::new(v[0], v[1], v[2]))
                     .collect(),
-                faces: modal
+                faces: model
                     .faces
                     .iter()
                     .map(|f| {

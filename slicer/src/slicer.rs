@@ -24,9 +24,9 @@ pub struct ExposureConfig {
     pub retract_speed: f32,
 }
 
-pub fn slice_goo(slice_config: &SliceConfig, modal: &Mesh, progress: impl Fn(u32, u32)) -> GooFile {
-    let (_, max) = modal.minmax_point();
-    let max = modal.transform(&max);
+pub fn slice_goo(slice_config: &SliceConfig, model: &Mesh, progress: impl Fn(u32, u32)) -> GooFile {
+    let (_, max) = model.minmax_point();
+    let max = model.transform(&max);
     let layers = (max.z / slice_config.slice_height).ceil() as u32;
 
     let layers = (0..layers)
@@ -35,7 +35,7 @@ pub fn slice_goo(slice_config: &SliceConfig, modal: &Mesh, progress: impl Fn(u32
         })
         .map(|layer| {
             let height = layer as f32 * slice_config.slice_height;
-            let intersections = modal.intersect_plane(height);
+            let intersections = model.intersect_plane(height);
 
             let segments = intersections
                 .chunks(2)

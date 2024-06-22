@@ -66,14 +66,14 @@ impl Pipeline for ModelPipeline {
     }
 
     fn paint<'a>(&'a self, render_pass: &mut RenderPass<'a>, resources: &WorkspaceRenderCallback) {
-        let modals = resources.modals.read().unwrap();
-        for modal in modals.iter().filter(|x| !x.hidden) {
+        let models = resources.models.read().unwrap();
+        for model in models.iter().filter(|x| !x.hidden) {
             // SAFETY: im really tired and i dont care anymore
             let buffers: &RenderedMeshBuffers =
-                unsafe { &*(modal.try_get_buffers().unwrap() as *const _) };
+                unsafe { &*(model.try_get_buffers().unwrap() as *const _) };
             render_pass.set_vertex_buffer(0, buffers.vertex_buffer.slice(..));
             render_pass.set_index_buffer(buffers.index_buffer.slice(..), IndexFormat::Uint32);
-            render_pass.draw_indexed(0..(3 * modal.mesh.faces.len() as u32), 0, 0..1);
+            render_pass.draw_indexed(0..(3 * model.mesh.faces.len() as u32), 0, 0..1);
         }
     }
 }

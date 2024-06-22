@@ -11,7 +11,10 @@ use egui::{Context, TopBottomPanel, Ui};
 use rfd::FileDialog;
 use slicer::slicer::slice_goo;
 
-use crate::{app::{App, SliceProgress}, workspace::rendered_mesh::RenderedMesh};
+use crate::{
+    app::{App, SliceProgress},
+    workspace::rendered_mesh::RenderedMesh,
+};
 
 pub fn ui(app: &mut App, ctx: &Context, _frame: &mut Frame) {
     TopBottomPanel::top("top_panel").show(ctx, |ui| {
@@ -20,18 +23,18 @@ pub fn ui(app: &mut App, ctx: &Context, _frame: &mut Frame) {
             ui.separator();
 
             ui.menu_button("🖹 File", |ui| {
-                if ui.button("Import Modal").clicked() {
+                if ui.button("Import Model").clicked() {
                     // TODO: async
                     if let Some(path) = FileDialog::new().add_filter("STL", &["stl"]).pick_file() {
                         let name = path.file_name().unwrap().to_str().unwrap().to_string();
 
                         let mut file = std::fs::File::open(path).unwrap();
-                        let modal = slicer::mesh::load_mesh(&mut file, "stl").unwrap();
+                        let model = slicer::mesh::load_mesh(&mut file, "stl").unwrap();
 
                         app.meshes
                             .write()
                             .unwrap()
-                            .push(RenderedMesh::from_mesh(modal).with_name(name));
+                            .push(RenderedMesh::from_mesh(model).with_name(name));
                     }
                 }
             });
@@ -50,7 +53,7 @@ pub fn ui(app: &mut App, ctx: &Context, _frame: &mut Frame) {
                 ui.separator();
 
                 show_entry(ui, "About", &mut app.windows.show_about);
-                show_entry(ui, "Modals", &mut app.windows.show_modals);
+                show_entry(ui, "Model", &mut app.windows.show_models);
                 show_entry(ui, "Slice Config", &mut app.windows.show_slice_config);
                 show_entry(ui, "Stats", &mut app.windows.show_stats);
                 show_entry(ui, "Workspace", &mut app.windows.show_workspace);

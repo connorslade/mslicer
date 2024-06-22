@@ -60,7 +60,7 @@ impl eframe::App for App {
                         transform: self
                             .camera
                             .view_projection_matrix(rect.width() / rect.height()),
-                        modals: self.meshes.clone(),
+                        models: self.meshes.clone(),
                         render_style: self.render_style,
                     },
                 );

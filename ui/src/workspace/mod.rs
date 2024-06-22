@@ -32,7 +32,7 @@ pub struct WorkspaceRenderResources {
 pub struct WorkspaceRenderCallback {
     pub bed_size: Vector3<f32>,
     pub transform: Matrix4<f32>,
-    pub modals: Arc<RwLock<Vec<RenderedMesh>>>,
+    pub models: Arc<RwLock<Vec<RenderedMesh>>>,
     pub render_style: RenderStyle,
 }
 
@@ -51,14 +51,14 @@ impl CallbackTrait for WorkspaceRenderCallback {
 
         // todo: bring into Pipeline::prepare
         let mut to_generate = Vec::new();
-        for (idx, modal) in self.modals.read().unwrap().iter().enumerate() {
-            if modal.try_get_buffers().is_none() {
+        for (idx, model) in self.models.read().unwrap().iter().enumerate() {
+            if model.try_get_buffers().is_none() {
                 to_generate.push(idx);
             }
         }
 
         if !to_generate.is_empty() {
-            let mut meshes = self.modals.write().unwrap();
+            let mut meshes = self.models.write().unwrap();
             for idx in to_generate {
                 meshes[idx].get_buffers(device);
             }

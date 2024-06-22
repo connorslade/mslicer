@@ -4,17 +4,17 @@ use egui::{Context, Grid, Window};
 use crate::{app::App, components::vec3_dragger};
 
 pub fn ui(app: &mut App, ctx: &Context, _frame: &mut Frame) {
-    Window::new("Modals")
-        .open(&mut app.windows.show_modals)
+    Window::new("Models")
+        .open(&mut app.windows.show_models)
         .show(ctx, |ui| {
             let mut meshes = app.meshes.write().unwrap();
 
             if meshes.is_empty() {
-                ui.label("No modals loaded yet.");
+                ui.label("No models loaded yet.");
                 return;
             }
 
-            Grid::new("modals")
+            Grid::new("models")
                 .num_columns(2)
                 .striped(true)
                 .show(ui, |ui| {
@@ -25,7 +25,7 @@ pub fn ui(app: &mut App, ctx: &Context, _frame: &mut Frame) {
                             mesh.hidden ^= ui.button(if mesh.hidden { "🗙" } else { "👁" }).clicked();
 
                             ui.collapsing("Details", |ui| {
-                                Grid::new(format!("modal_{}", i))
+                                Grid::new(format!("model_{}", i))
                                     .num_columns(2)
                                     .striped(true)
                                     .show(ui, |ui| {
