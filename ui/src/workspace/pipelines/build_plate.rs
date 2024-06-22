@@ -12,10 +12,7 @@ use wgpu::{
 
 use crate::{
     include_shader,
-    workspace::{
-        render::{ModelVertex, VERTEX_BUFFER_LAYOUT},
-        WorkspaceRenderCallback,
-    },
+    workspace::{ModelVertex, WorkspaceRenderCallback, VERTEX_BUFFER_LAYOUT},
     TEXTURE_FORMAT,
 };
 

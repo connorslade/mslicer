@@ -6,7 +6,7 @@ use wgpu::{
 
 use slicer::mesh::Mesh;
 
-use super::render::ModelVertex;
+use super::ModelVertex;
 
 pub struct RenderedMesh {
     pub name: String,

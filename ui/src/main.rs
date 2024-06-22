@@ -10,7 +10,6 @@ mod components;
 mod windows;
 mod workspace;
 use app::App;
-use workspace::render;
 
 const ICON: &[u8] = include_bytes!("assets/icon.png");
 
@@ -31,7 +30,7 @@ fn main() -> Result<()> {
             ..Default::default()
         },
         Box::new(|cc| {
-            render::init_wgpu(cc);
+            workspace::init_wgpu(cc);
             Box::new(App::default())
         }),
     )

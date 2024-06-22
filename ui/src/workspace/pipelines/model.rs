@@ -12,7 +12,7 @@ use wgpu::{
 use crate::{
     include_shader,
     workspace::{
-        render::VERTEX_BUFFER_LAYOUT, rendered_mesh::RenderedMeshBuffers, WorkspaceRenderCallback,
+        rendered_mesh::RenderedMeshBuffers, WorkspaceRenderCallback, VERTEX_BUFFER_LAYOUT,
     },
     TEXTURE_FORMAT,
 };
@@ -48,7 +48,7 @@ impl ModelPipeline {
 
         let uniform_buffer = device.create_buffer(&BufferDescriptor {
             label: None,
-            size: ModelUniforms::SHADER_SIZE.get() as u64,
+            size: ModelUniforms::SHADER_SIZE.get(),
             usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
@@ -124,12 +124,26 @@ impl ModelPipeline {
 impl Pipeline for ModelPipeline {
     fn prepare(
         &self,
-        _device: &Device,
+        device: &Device,
         queue: &Queue,
         _screen_descriptor: &ScreenDescriptor,
         _encoder: &mut CommandEncoder,
         resources: &WorkspaceRenderCallback,
     ) {
+        let mut to_generate = Vec::new();
+        for (idx, model) in resources.models.read().unwrap().iter().enumerate() {
+            if model.try_get_buffers().is_none() {
+                to_generate.push(idx);
+            }
+        }
+
+        if !to_generate.is_empty() {
+            let mut meshes = resources.models.write().unwrap();
+            for idx in to_generate {
+                meshes[idx].get_buffers(device);
+            }
+        }
+
         let uniforms = ModelUniforms {
             transform: resources.transform,
             render_style: resources.render_style as u8 as u32,
