@@ -3,14 +3,14 @@ use std::{
     time::Instant,
 };
 
-use egui::{CentralPanel, Frame, Sense};
+use egui::{CentralPanel, Frame, Key, PointerButton, Sense};
 use egui_wgpu::Callback;
 use nalgebra::{Vector2, Vector3};
 
 use crate::{
     render::RenderedMesh,
     windows::{self, Windows},
-    workspace::{camera::Camera, WorkspaceRenderCallback},
+    workspace::{camera::Camera, RenderStyle, WorkspaceRenderCallback},
 };
 use goo_format::File as GooFile;
 use slicer::slicer::{ExposureConfig, SliceConfig};
@@ -22,6 +22,7 @@ pub struct App {
 
     pub slice_progress: Option<Arc<SliceProgress>>,
 
+    pub render_style: RenderStyle,
     pub fps: FpsTracker,
     pub windows: Windows,
 }
@@ -40,6 +41,7 @@ pub struct FpsTracker {
 
 impl eframe::App for App {
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
+        ctx.request_repaint();
         self.fps.update();
 
         windows::ui(self, ctx, frame);
@@ -47,7 +49,8 @@ impl eframe::App for App {
         CentralPanel::default()
             .frame(Frame::none())
             .show(ctx, |ui| {
-                let (rect, _response) = ui.allocate_exact_size(ui.available_size(), Sense::drag());
+                let (rect, response) = ui.allocate_exact_size(ui.available_size(), Sense::drag());
+                self.camera.handle_movement(&response, ui);
 
                 let callback = Callback::new_paint_callback(
                     rect,
@@ -56,6 +59,7 @@ impl eframe::App for App {
                             .camera
                             .view_projection_matrix(rect.width() / rect.height()),
                         modals: self.meshes.clone(),
+                        render_style: self.render_style,
                     },
                 );
                 ui.painter().add(callback);
@@ -106,6 +110,7 @@ impl Default for App {
             slice_progress: None,
             meshes: Arc::new(RwLock::new(Vec::new())),
             windows: Windows::default(),
+            render_style: RenderStyle::Normals,
         }
     }
 }

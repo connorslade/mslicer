@@ -2,6 +2,7 @@
 
 struct Context {
     transform: mat4x4<f32>,
+    render_style: u32,
 }
 
 struct VertexOutput {
@@ -28,8 +29,11 @@ fn vert(
 
 @fragment
 fn frag(in: VertexOutput) -> @location(0) vec4<f32> {
-    // let light_dir = normalize(vec3<f32>(0.0, 0.0, 1.0));
-    // let intensity = max(dot(in.normal, light_dir), 0.0);
-    let intensity = in.normal;
-    return vec4<f32>(intensity, 1.0);
+  if context.render_style == 0 {
+        return vec4<f32>(in.normal, 1.0);
+    } else {
+        let light_dir = normalize(vec3<f32>(0.0, 0.0, 1.0));
+        let intensity = max(dot(in.normal, light_dir), 0.0);
+        return vec4<f32>(intensity, intensity, intensity, 1.0);
+    }
 }

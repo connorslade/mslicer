@@ -1,13 +1,23 @@
-use std::sync::{Arc, RwLock};
+use std::{
+    mem,
+    sync::{Arc, RwLock},
+};
 
 use egui_wgpu::CallbackTrait;
 use nalgebra::Matrix4;
-use wgpu::{BindGroup, Buffer, IndexFormat, RenderPipeline};
+use wgpu::{BindGroup, Buffer, IndexFormat, RenderPipeline, COPY_BUFFER_ALIGNMENT};
 
 use crate::render::{RenderedMesh, RenderedMeshBuffers};
 
 pub mod camera;
 pub mod render;
+
+#[derive(Copy, Clone, PartialEq, Eq)]
+#[repr(u8)]
+pub enum RenderStyle {
+    Normals,
+    Rended,
+}
 
 pub struct WorkspaceRenderResources {
     pub render_pipeline: RenderPipeline,
@@ -18,6 +28,7 @@ pub struct WorkspaceRenderResources {
 pub struct WorkspaceRenderCallback {
     pub transform: Matrix4<f32>,
     pub modals: Arc<RwLock<Vec<RenderedMesh>>>,
+    pub render_style: RenderStyle,
 }
 
 impl CallbackTrait for WorkspaceRenderCallback {
@@ -79,11 +90,24 @@ impl CallbackTrait for WorkspaceRenderCallback {
 }
 
 impl WorkspaceRenderCallback {
-    fn to_wgsl(&self) -> Vec<u8> {
-        let transform: [[f32; 4]; 4] = self.transform.into();
+    const PADDED_SIZE: u64 = ((mem::size_of::<Self>() as u64 + COPY_BUFFER_ALIGNMENT - 1)
+        / COPY_BUFFER_ALIGNMENT)
+        * COPY_BUFFER_ALIGNMENT;
 
-        let mut out = Vec::new();
-        out.extend_from_slice(bytemuck::cast_slice(&transform));
+    fn to_wgsl(&self) -> Vec<u8> {
+        let mut out = Vec::with_capacity(Self::PADDED_SIZE as usize);
+        out.extend_from_slice(bytemuck::cast_slice(&self.transform.as_slice()));
+        out.push(self.render_style as u8);
+        out.resize(Self::PADDED_SIZE as usize, 0);
         out
+    }
+}
+
+impl RenderStyle {
+    pub fn name(&self) -> &'static str {
+        match self {
+            RenderStyle::Normals => "Normals",
+            RenderStyle::Rended => "Rended",
+        }
     }
 }

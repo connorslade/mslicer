@@ -56,7 +56,7 @@ pub fn ui(app: &mut App, ctx: &Context, _frame: &mut Frame) {
                 show_entry(ui, "Modals", &mut app.windows.show_modals);
                 show_entry(ui, "Slice Config", &mut app.windows.show_slice_config);
                 show_entry(ui, "Stats", &mut app.windows.show_stats);
-                show_entry(ui, "Transform", &mut app.windows.show_transform);
+                show_entry(ui, "Workspace", &mut app.windows.show_workspace);
             });
 
             ui.separator();
