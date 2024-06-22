@@ -17,11 +17,11 @@ pub fn ui(app: &mut App, ctx: &Context, _frame: &mut Frame) {
                 .striped(true)
                 .show(ui, |ui| {
                     ui.label("Platform Resolution");
-                    vec2_dragger::<u32>(ui, app.slice_config.platform_resolution.as_mut());
+                    vec2_dragger(ui, app.slice_config.platform_resolution.as_mut(), |x| x);
                     ui.end_row();
 
                     ui.label("Platform Size");
-                    vec3_dragger::<f32>(ui, app.slice_config.platform_size.as_mut());
+                    vec3_dragger(ui, app.slice_config.platform_size.as_mut(), |x| x);
                     ui.end_row();
 
                     ui.label("Slice Height");

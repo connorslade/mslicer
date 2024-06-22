@@ -1,4 +1,4 @@
-use nalgebra::Vector3;
+use nalgebra::{Matrix4, Vector3};
 use wgpu::{
     util::{BufferInitDescriptor, DeviceExt},
     Buffer, BufferUsages, Device,
@@ -102,5 +102,12 @@ impl RenderedMesh {
         }
 
         self.buffers.as_ref().unwrap()
+    }
+
+    pub fn transformation_matrix(&self) -> Matrix4<f32> {
+        let translation = Matrix4::new_translation(&self.mesh.position);
+        let scale = Matrix4::new_nonuniform_scaling(&self.mesh.scale);
+
+        translation * scale
     }
 }

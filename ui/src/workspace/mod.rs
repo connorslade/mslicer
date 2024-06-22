@@ -65,7 +65,15 @@ impl CallbackTrait for WorkspaceRenderCallback {
         }
 
         // todo: only do on change
-        queue.write_buffer(&resources.uniform_buffer, 0, &self.to_wgsl());
+        if let Some(mesh) = self.models.read().unwrap().first() {
+            queue.write_buffer(
+                &resources.uniform_buffer,
+                0,
+                &self.to_wgsl2(self.transform * mesh.transformation_matrix()),
+            );
+        } else {
+            queue.write_buffer(&resources.uniform_buffer, 0, &self.to_wgsl());
+        }
 
         Vec::new()
     }
@@ -103,6 +111,16 @@ impl WorkspaceRenderCallback {
         out.extend_from_slice(bytemuck::cast_slice(self.bed_size.as_slice()));
         out.extend_from_slice(&[0, 0, 0, 0]);
         out.extend_from_slice(bytemuck::cast_slice(self.transform.as_slice()));
+        out.push(self.render_style as u8);
+        out.resize(Self::PADDED_SIZE as usize, 0);
+        out
+    }
+
+    fn to_wgsl2(&self, transform: Matrix4<f32>) -> Vec<u8> {
+        let mut out = Vec::with_capacity(Self::PADDED_SIZE as usize);
+        out.extend_from_slice(bytemuck::cast_slice(self.bed_size.as_slice()));
+        out.extend_from_slice(&[0, 0, 0, 0]);
+        out.extend_from_slice(bytemuck::cast_slice(transform.as_slice()));
         out.push(self.render_style as u8);
         out.resize(Self::PADDED_SIZE as usize, 0);
         out

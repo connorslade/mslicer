@@ -30,7 +30,13 @@ pub fn ui(app: &mut App, ctx: &Context, _frame: &mut Frame) {
                                     .striped(true)
                                     .show(ui, |ui| {
                                         ui.label("Position");
-                                        vec3_dragger(ui, mesh.mesh.position.as_mut());
+                                        vec3_dragger(ui, mesh.mesh.position.as_mut(), |x| x);
+                                        ui.end_row();
+
+                                        ui.label("Scale");
+                                        vec3_dragger(ui, mesh.mesh.scale.as_mut(), |x| {
+                                            x.speed(0.01)
+                                        });
                                         ui.end_row();
 
                                         ui.label("Vertices");

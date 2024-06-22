@@ -12,20 +12,29 @@ pub fn dragger<Num: Numeric>(
     });
 }
 
-pub fn vec2_dragger<Num: Numeric>(ui: &mut Ui, val: &mut [Num; 2]) {
+pub fn vec2_dragger<Num: Numeric>(
+    ui: &mut Ui,
+    val: &mut [Num; 2],
+
+    func: fn(DragValue) -> DragValue,
+) {
     ui.horizontal(|ui| {
-        ui.add(DragValue::new(&mut val[0]));
+        ui.add(func(DragValue::new(&mut val[0])));
         ui.label("x");
-        ui.add(DragValue::new(&mut val[1]));
+        ui.add(func(DragValue::new(&mut val[1])));
     });
 }
 
-pub fn vec3_dragger<Num: Numeric>(ui: &mut Ui, val: &mut [Num; 3]) {
+pub fn vec3_dragger<Num: Numeric>(
+    ui: &mut Ui,
+    val: &mut [Num; 3],
+    func: fn(DragValue) -> DragValue,
+) {
     ui.horizontal(|ui| {
-        ui.add(DragValue::new(&mut val[0]));
+        ui.add(func(DragValue::new(&mut val[0])));
         ui.label("x");
-        ui.add(DragValue::new(&mut val[1]));
+        ui.add(func(DragValue::new(&mut val[1])));
         ui.label("x");
-        ui.add(DragValue::new(&mut val[2]));
+        ui.add(func(DragValue::new(&mut val[2])));
     });
 }
