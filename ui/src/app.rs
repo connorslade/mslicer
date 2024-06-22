@@ -1,30 +1,47 @@
 use std::{
-    sync::{Arc, RwLock},
+    fs::File,
+    io::Write,
+    sync::{
+        atomic::{AtomicU32, Ordering},
+        Arc, Mutex, RwLock,
+    },
+    thread,
     time::Instant,
 };
 
+use common::serde::DynamicSerializer;
 use egui::{
-    emath::Numeric, CentralPanel, DragValue, Frame, Grid, Sense, Slider, TopBottomPanel, Ui, Window,
+    emath::Numeric, CentralPanel, DragValue, Frame, Grid, ProgressBar, Sense, Slider,
+    TopBottomPanel, Ui, Window,
 };
 use egui_wgpu::Callback;
 use nalgebra::{Vector2, Vector3};
 use rfd::FileDialog;
-use slicer::slicer::{ExposureConfig, SliceConfig};
 
 use crate::{camera::Camera, render::RenderedMesh, workspace::WorkspaceRenderCallback};
+use goo_format::File as GooFile;
+use slicer::slicer::{slice_goo, ExposureConfig, SliceConfig};
 
 pub struct App {
     pub camera: Camera,
     pub slice_config: SliceConfig,
     pub meshes: Arc<RwLock<Vec<RenderedMesh>>>,
 
-    fps: FpsTracker,
+    slice_progress: Option<Arc<SliceProgress>>,
 
-    pub show_about: bool,
-    pub show_slice_config: bool,
-    pub show_transform: bool,
-    pub show_modals: bool,
-    pub show_stats: bool,
+    fps: FpsTracker,
+    show_about: bool,
+    show_slice_config: bool,
+    show_transform: bool,
+    show_modals: bool,
+    show_stats: bool,
+}
+
+struct SliceProgress {
+    current: AtomicU32,
+    total: AtomicU32,
+
+    result: Mutex<Option<GooFile>>,
 }
 
 struct FpsTracker {
@@ -83,7 +100,23 @@ impl eframe::App for App {
                 ui.separator();
 
                 if ui.button("Slice!").clicked() {
-                    unimplemented!();
+                    let slice_config = self.slice_config.clone();
+                    let mesh = self.meshes.read().unwrap().first().unwrap().mesh.clone();
+
+                    let progress = Arc::new(SliceProgress {
+                        current: AtomicU32::new(0),
+                        total: AtomicU32::new(0),
+                        result: Mutex::new(None),
+                    });
+                    self.slice_progress = Some(progress.clone());
+
+                    thread::spawn(move || {
+                        let result = slice_goo(&slice_config, &mesh, |current, total| {
+                            progress.current.store(current, Ordering::Relaxed);
+                            progress.total.store(total, Ordering::Relaxed);
+                        });
+                        progress.result.lock().unwrap().replace(result);
+                    });
                 }
             });
         });
@@ -225,6 +258,34 @@ impl eframe::App for App {
                 });
             });
 
+        if let Some(progress) = self.slice_progress.as_ref() {
+            let current = progress.current.load(Ordering::Relaxed) + 1;
+            let total = progress.total.load(Ordering::Relaxed);
+
+            Window::new("Slice Progress").show(ctx, |ui| {
+                ui.add(
+                    ProgressBar::new(current as f32 / total as f32)
+                        .text(format!("{:.2}%", current as f32 / total as f32 * 100.0)),
+                );
+
+                if current < total {
+                    ui.label(format!("Slicing... {}/{}", current, total));
+                    ctx.request_repaint();
+                } else {
+                    ui.label("Slicing complete!");
+                    if ui.button("Save").clicked() {
+                        let result = progress.result.lock().unwrap().take().unwrap();
+                        if let Some(path) = FileDialog::new().save_file() {
+                            let mut file = File::create(path).unwrap();
+                            let mut serializer = DynamicSerializer::new();
+                            result.serialize(&mut serializer);
+                            file.write_all(&serializer.into_inner()).unwrap();
+                        }
+                    }
+                }
+            });
+        }
+
         CentralPanel::default()
             .frame(Frame::none())
             .show(ctx, |ui| {
@@ -342,6 +403,7 @@ impl Default for App {
                 first_layers: 10,
             },
             fps: FpsTracker::new(),
+            slice_progress: None,
 
             meshes: Arc::new(RwLock::new(Vec::new())),
             show_about: false,

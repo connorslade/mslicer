@@ -4,6 +4,7 @@ use anyhow::Result;
 
 use crate::Pos;
 
+#[derive(Debug, Clone)]
 pub struct Mesh {
     pub vertices: Vec<Pos>,
     pub faces: Vec<[u32; 3]>,

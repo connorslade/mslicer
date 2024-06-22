@@ -9,9 +9,11 @@ bytemuck = "1.16.1"
 eframe = { version = "0.27.2", features = ["wgpu"] }
 egui = "0.27.2"
 egui-wgpu = "0.27.2"
-wgpu = "0.19.4"
 encase = "0.8.0"
 nalgebra = "0.32.6"
-
-slicer = { path = "../slicer" }
 rfd = "0.14.1"
+wgpu = "0.19.4"
+
+common = { path = "../common" }
+goo_format = { path = "../goo_format" }
+slicer = { path = "../slicer" }

@@ -3800,10 +3800,12 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "bytemuck",
+ "common",
  "eframe",
  "egui",
  "egui-wgpu",
  "encase",
+ "goo_format",
  "nalgebra",
  "rfd",
  "slicer",
