@@ -49,6 +49,7 @@ impl CallbackTrait for WorkspaceRenderCallback {
             .get::<WorkspaceRenderResources>()
             .unwrap();
 
+        // todo: bring into Pipeline::prepare
         let mut to_generate = Vec::new();
         for (idx, modal) in self.modals.read().unwrap().iter().enumerate() {
             if modal.try_get_buffers().is_none() {

@@ -33,7 +33,13 @@ fn vert(
 
 @fragment
 fn frag(in: VertexOutput) -> @location(0) vec4<f32> {
-    if u32(abs(in.position.x)) % 10 == 0 || u32(abs(in.position.y)) % 10 == 0 {
+    let pos = in.position.xyz + context.bed_size / 2;
+    let grid_size = context.bed_size.x / 10.0;
+
+    let on_bed_border = pos.x < 1.0 || pos.y < 1.0 || pos.x > context.bed_size.x - 1.0 || pos.y > context.bed_size.y - 1.0;
+    let on_bed_grid = pos.x % grid_size < 1.0 || pos.y % grid_size < 1.0;
+
+    if on_bed_border || on_bed_grid {
         return vec4<f32>(1.0, 1.0, 1.0, 1.0);
     }
     
