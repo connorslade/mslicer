@@ -1,4 +1,5 @@
 use egui_wgpu::{CallbackResources, CallbackTrait, ScreenDescriptor};
+use nalgebra::Vector2;
 use wgpu::{CommandBuffer, CommandEncoder, Device, Queue};
 
 use super::pipelines::{slice_preview::SlicePreviewPipeline, Pipeline};
@@ -8,7 +9,10 @@ pub struct SlicePreviewRenderResources {
 }
 
 pub struct SlicePreviewRenderCallback {
-    pub dimensions: (u32, u32),
+    pub dimensions: Vector2<u32>,
+    pub offset: Vector2<f32>,
+    pub scale: f32,
+
     pub new_preview: Option<Vec<u8>>,
 }
 

@@ -38,8 +38,11 @@ pub struct SliceProgress {
 
 pub struct SliceResult {
     pub goo: GooFile,
+
     pub slice_preview_layer: usize,
     pub last_preview_layer: usize,
+    pub preview_offset: Vector2<f32>,
+    pub preview_scale: f32,
 }
 
 pub struct FpsTracker {

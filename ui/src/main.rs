@@ -7,8 +7,8 @@ const TEXTURE_FORMAT: TextureFormat = TextureFormat::Bgra8Unorm;
 
 mod app;
 mod components;
-mod windows;
 mod render;
+mod windows;
 use app::App;
 
 const ICON: &[u8] = include_bytes!("assets/icon.png");

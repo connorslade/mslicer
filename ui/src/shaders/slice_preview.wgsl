@@ -3,6 +3,7 @@
 
 struct Context {
     dimensions: vec2<u32>,
+    offset: vec2<f32>,
     scale: f32
 }
 
@@ -42,10 +43,10 @@ fn index(x: u32, y: u32) -> f32 {
 
 @fragment
 fn frag(in: VertexOutput) -> @location(0) vec4<f32> {
-    let pos = vec2(in.position.x / 2.0 + 0.5, in.position.y / 2.0 + 0.5);
+    let pos = vec2(in.position.x * context.scale / 2.0 + 0.5, in.position.y * context.scale / 2.0 + 0.5);
     let value = index(
-        u32(pos.x * f32(context.dimensions.x)),
-        u32(pos.y * f32(context.dimensions.y))
+        u32(pos.x * f32(context.dimensions.x) + context.offset.x),
+        u32(pos.y * f32(context.dimensions.y) + context.offset.y)
     );
     return vec4<f32>(value, value, value, 1.0);
 }

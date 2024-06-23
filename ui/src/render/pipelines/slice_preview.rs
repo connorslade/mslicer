@@ -34,6 +34,7 @@ pub struct SlicePreviewPipeline {
 #[derive(ShaderType)]
 struct SlicePreviewUniforms {
     dimensions: Vector2<u32>,
+    offset: Vector2<f32>,
     scale: f32,
 }
 
@@ -161,7 +162,7 @@ impl Pipeline<SlicePreviewRenderCallback> for SlicePreviewPipeline {
         let slice_buffer = self.slice_buffer.take().unwrap_or_else(|| {
             device.create_buffer(&BufferDescriptor {
                 label: None,
-                size: resources.dimensions.0 as u64 * resources.dimensions.1 as u64,
+                size: resources.dimensions.x as u64 * resources.dimensions.y as u64,
                 usage: BufferUsages::STORAGE | BufferUsages::COPY_DST,
                 mapped_at_creation: false,
             })
@@ -169,7 +170,7 @@ impl Pipeline<SlicePreviewRenderCallback> for SlicePreviewPipeline {
         self.slice_buffer = Some(slice_buffer);
 
         if let Some(new_preview) = &resources.new_preview {
-            queue.write_buffer(self.slice_buffer.as_ref().unwrap(), 0, &new_preview);
+            queue.write_buffer(self.slice_buffer.as_ref().unwrap(), 0, new_preview);
         }
 
         self.bind_group = Some(device.create_bind_group(&BindGroupDescriptor {
@@ -198,8 +199,9 @@ impl Pipeline<SlicePreviewRenderCallback> for SlicePreviewPipeline {
         let mut buffer = UniformBuffer::new(Vec::new());
         buffer
             .write(&SlicePreviewUniforms {
-                dimensions: Vector2::new(resources.dimensions.0, resources.dimensions.1),
-                scale: 1.0,
+                dimensions: resources.dimensions,
+                offset: resources.offset,
+                scale: resources.scale.recip(),
             })
             .unwrap();
         queue.write_buffer(&self.uniform_buffer, 0, &buffer.into_inner());

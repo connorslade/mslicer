@@ -180,7 +180,7 @@ impl Pipeline<WorkspaceRenderCallback> for BuildPlatePipeline {
 fn generate_mesh(bed_size: Vector3<f32>) -> Vec<ModelVertex> {
     let (a, b) = (bed_size / 2.0, -bed_size / 2.0);
 
-    let vert = [
+    [
         [a.x, a.y, 0.0],
         [b.x, a.y, 0.0],
         [b.x, b.y, 0.0],
@@ -194,7 +194,5 @@ fn generate_mesh(bed_size: Vector3<f32>) -> Vec<ModelVertex> {
         tex_coords: [0.0, 0.0],
         normal: [0.0, 0.0, 0.0],
     })
-    .collect::<Vec<_>>();
-
-    vert
+    .collect::<Vec<_>>()
 }

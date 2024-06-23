@@ -8,6 +8,7 @@ use std::{
 
 use eframe::Frame;
 use egui::{Context, TopBottomPanel, Ui};
+use nalgebra::Vector2;
 use rfd::FileDialog;
 use slicer::{slicer::slice_goo, Pos};
 
@@ -71,6 +72,11 @@ pub fn ui(app: &mut App, ctx: &Context, _frame: &mut Frame) {
                         / app.slice_config.platform_size.y,
                     1.0,
                 ));
+
+                let (min, max) = mesh.minmax_point();
+                let preview_scale = (app.slice_config.platform_size.x / (max.x - min.x))
+                    .min(app.slice_config.platform_size.y / (max.y - min.y));
+
                 mesh.position += Pos::new(
                     app.slice_config.platform_resolution.x as f32 / 2.0,
                     app.slice_config.platform_resolution.y as f32 / 2.0,
@@ -93,6 +99,8 @@ pub fn ui(app: &mut App, ctx: &Context, _frame: &mut Frame) {
                         goo,
                         slice_preview_layer: 0,
                         last_preview_layer: 0,
+                        preview_offset: Vector2::new(0.0, 0.0),
+                        preview_scale,
                     });
                 });
             }
