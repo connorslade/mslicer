@@ -3,7 +3,7 @@ use std::{
     time::Instant,
 };
 
-use egui::{CentralPanel, Frame, Sense};
+use egui::{CentralPanel, Frame, Sense, TextureHandle};
 use egui_wgpu::Callback;
 use nalgebra::{Vector2, Vector3};
 
@@ -33,7 +33,13 @@ pub struct SliceProgress {
     pub current: AtomicU32,
     pub total: AtomicU32,
 
-    pub result: Mutex<Option<GooFile>>,
+    pub result: Mutex<Option<SliceResult>>,
+}
+
+pub struct SliceResult {
+    pub goo: GooFile,
+    pub slice_preview_layer: usize,
+    pub current_preview: Option<TextureHandle>,
 }
 
 pub struct FpsTracker {

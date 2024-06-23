@@ -7,12 +7,12 @@ use std::{
 };
 
 use eframe::Frame;
-use egui::{Context, TopBottomPanel, Ui};
+use egui::{Context, TextureHandle, TopBottomPanel, Ui};
 use rfd::FileDialog;
 use slicer::{slicer::slice_goo, Pos};
 
 use crate::{
-    app::{App, SliceProgress},
+    app::{App, SliceProgress, SliceResult},
     workspace::rendered_mesh::RenderedMesh,
 };
 
@@ -85,11 +85,15 @@ pub fn ui(app: &mut App, ctx: &Context, _frame: &mut Frame) {
                 app.slice_progress = Some(progress.clone());
 
                 thread::spawn(move || {
-                    let result = slice_goo(&slice_config, &mesh, |current, total| {
+                    let goo = slice_goo(&slice_config, &mesh, |current, total| {
                         progress.current.store(current, Ordering::Relaxed);
                         progress.total.store(total, Ordering::Relaxed);
                     });
-                    progress.result.lock().unwrap().replace(result);
+                    progress.result.lock().unwrap().replace(SliceResult {
+                        goo,
+                        slice_preview_layer: 0,
+                        current_preview: None,
+                    });
                 });
             }
         });

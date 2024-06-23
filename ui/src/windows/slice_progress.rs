@@ -37,7 +37,7 @@ pub fn ui(app: &mut App, ctx: &Context, _frame: &mut Frame) {
                     if let Some(path) = FileDialog::new().save_file() {
                         let mut file = File::create(path).unwrap();
                         let mut serializer = DynamicSerializer::new();
-                        result.serialize(&mut serializer);
+                        result.goo.serialize(&mut serializer);
                         file.write_all(&serializer.into_inner()).unwrap();
                         save_complete = true;
                     }
