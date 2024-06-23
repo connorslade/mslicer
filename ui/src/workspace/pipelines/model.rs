@@ -1,11 +1,13 @@
 use egui_wgpu::ScreenDescriptor;
-use encase::{ShaderSize, ShaderType, UniformBuffer};
+use encase::{ShaderType, UniformBuffer};
 use nalgebra::Matrix4;
 use wgpu::{
-    BindGroup, BindGroupEntry, BindGroupLayoutDescriptor, Buffer, BufferDescriptor, BufferUsages,
-    ColorTargetState, ColorWrites, CommandEncoder, CompareFunction, DepthStencilState, Device,
-    FragmentState, IndexFormat, MultisampleState, PipelineLayoutDescriptor, PrimitiveState, Queue,
-    RenderPass, RenderPipeline, RenderPipelineDescriptor, ShaderModuleDescriptor, TextureFormat,
+    util::{BufferInitDescriptor, DeviceExt},
+    BindGroup, BindGroupEntry, BindGroupLayout, BindGroupLayoutDescriptor, BindingType,
+    BufferBindingType, BufferUsages, ColorTargetState, ColorWrites, CommandEncoder,
+    CompareFunction, DepthStencilState, Device, FragmentState, IndexFormat, MultisampleState,
+    PipelineLayoutDescriptor, PrimitiveState, Queue, RenderPass, RenderPipeline,
+    RenderPipelineDescriptor, ShaderModuleDescriptor, ShaderSource, ShaderStages, TextureFormat,
     VertexState,
 };
 
@@ -21,9 +23,9 @@ use super::Pipeline;
 
 pub struct ModelPipeline {
     render_pipeline: RenderPipeline,
-    bind_group: BindGroup,
+    bind_group_layout: BindGroupLayout,
 
-    uniform_buffer: Buffer,
+    bind_groups: Vec<BindGroup>,
 }
 
 #[derive(ShaderType)]
@@ -43,23 +45,16 @@ impl ModelPipeline {
     pub fn new(device: &Device) -> Self {
         let shader = device.create_shader_module(ShaderModuleDescriptor {
             label: None,
-            source: wgpu::ShaderSource::Wgsl(include_shader!("model.wgsl").into()),
-        });
-
-        let uniform_buffer = device.create_buffer(&BufferDescriptor {
-            label: None,
-            size: ModelUniforms::SHADER_SIZE.get(),
-            usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
-            mapped_at_creation: false,
+            source: ShaderSource::Wgsl(include_shader!("model.wgsl").into()),
         });
 
         let bind_group_layout = device.create_bind_group_layout(&BindGroupLayoutDescriptor {
             label: None,
             entries: &[wgpu::BindGroupLayoutEntry {
                 binding: 0,
-                visibility: wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT,
-                ty: wgpu::BindingType::Buffer {
-                    ty: wgpu::BufferBindingType::Uniform,
+                visibility: ShaderStages::VERTEX | ShaderStages::FRAGMENT,
+                ty: BindingType::Buffer {
+                    ty: BufferBindingType::Uniform,
                     has_dynamic_offset: false,
                     min_binding_size: None,
                 },
@@ -71,15 +66,6 @@ impl ModelPipeline {
             label: None,
             bind_group_layouts: &[&bind_group_layout],
             push_constant_ranges: &[],
-        });
-
-        let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            label: None,
-            layout: &bind_group_layout,
-            entries: &[BindGroupEntry {
-                binding: 0,
-                resource: uniform_buffer.as_entire_binding(),
-            }],
         });
 
         let render_pipeline = device.create_render_pipeline(&RenderPipelineDescriptor {
@@ -116,8 +102,8 @@ impl ModelPipeline {
 
         Self {
             render_pipeline,
-            bind_group,
-            uniform_buffer,
+            bind_group_layout,
+            bind_groups: Vec::new(),
         }
     }
 }
@@ -126,16 +112,43 @@ impl Pipeline for ModelPipeline {
     fn prepare(
         &mut self,
         device: &Device,
-        queue: &Queue,
+        _queue: &Queue,
         _screen_descriptor: &ScreenDescriptor,
         _encoder: &mut CommandEncoder,
         resources: &WorkspaceRenderCallback,
     ) {
+        self.bind_groups.clear();
         let mut to_generate = Vec::new();
+
         for (idx, model) in resources.models.read().unwrap().iter().enumerate() {
             if model.try_get_buffers().is_none() {
                 to_generate.push(idx);
             }
+
+            let uniforms = ModelUniforms {
+                transform: resources.transform * model.transformation_matrix(),
+                render_style: resources.render_style as u32,
+            };
+
+            let mut buffer = UniformBuffer::new(Vec::new());
+            buffer.write(&uniforms).unwrap();
+
+            let uniform_buffer = device.create_buffer_init(&BufferInitDescriptor {
+                label: None,
+                contents: &buffer.into_inner(),
+                usage: BufferUsages::UNIFORM,
+            });
+
+            let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+                label: None,
+                layout: &self.bind_group_layout,
+                entries: &[BindGroupEntry {
+                    binding: 0,
+                    resource: uniform_buffer.as_entire_binding(),
+                }],
+            });
+
+            self.bind_groups.push(bind_group);
         }
 
         if !to_generate.is_empty() {
@@ -144,29 +157,21 @@ impl Pipeline for ModelPipeline {
                 meshes[idx].get_buffers(device);
             }
         }
-
-        let uniforms = ModelUniforms {
-            transform: resources.transform,
-            render_style: resources.render_style as u8 as u32,
-        };
-
-        let mut buffer = UniformBuffer::new(Vec::new());
-        buffer.write(&uniforms).unwrap();
-        queue.write_buffer(&self.uniform_buffer, 0, &buffer.into_inner());
     }
 
     fn paint<'a>(&'a self, render_pass: &mut RenderPass<'a>, resources: &WorkspaceRenderCallback) {
         render_pass.set_pipeline(&self.render_pipeline);
-        render_pass.set_bind_group(0, &self.bind_group, &[]);
 
         let models = resources.models.read().unwrap();
-        for model in models.iter().filter(|x| !x.hidden) {
+        for (idx, model) in models.iter().enumerate().filter(|(_, x)| !x.hidden) {
+            render_pass.set_bind_group(0, &self.bind_groups[idx], &[]);
+
             // SAFETY: im really tired and i dont care anymore
-            let buffers: &RenderedMeshBuffers =
-                unsafe { &*(model.try_get_buffers().unwrap() as *const _) };
+            let buffers =
+                unsafe { &*(model.try_get_buffers().unwrap() as *const RenderedMeshBuffers) };
             render_pass.set_vertex_buffer(0, buffers.vertex_buffer.slice(..));
             render_pass.set_index_buffer(buffers.index_buffer.slice(..), IndexFormat::Uint32);
-            render_pass.draw_indexed(0..(3 * model.mesh.faces.len() as u32), 0, 0..1);
+            render_pass.draw_indexed(0..(model.face_count * 3), 0, 0..1);
         }
     }
 }

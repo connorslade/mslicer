@@ -1,5 +1,5 @@
 use eframe::Frame;
-use egui::{Context, Grid, Window};
+use egui::{CollapsingHeader, Context, Grid, Window};
 
 use crate::{app::App, components::vec3_dragger};
 
@@ -15,16 +15,16 @@ pub fn ui(app: &mut App, ctx: &Context, _frame: &mut Frame) {
             }
 
             Grid::new("models")
-                .num_columns(2)
+                .num_columns(3)
                 .striped(true)
                 .show(ui, |ui| {
                     for (i, mesh) in meshes.iter_mut().enumerate() {
+                        mesh.hidden ^= ui.button(if mesh.hidden { "🗙" } else { "👁" }).clicked();
                         ui.label(&mesh.name);
 
-                        ui.horizontal(|ui| {
-                            mesh.hidden ^= ui.button(if mesh.hidden { "🗙" } else { "👁" }).clicked();
-
-                            ui.collapsing("Details", |ui| {
+                        CollapsingHeader::new("Details")
+                            .id_source(format!("model_details_{i}"))
+                            .show(ui, |ui| {
                                 Grid::new(format!("model_{}", i))
                                     .num_columns(2)
                                     .striped(true)
@@ -48,7 +48,6 @@ pub fn ui(app: &mut App, ctx: &Context, _frame: &mut Frame) {
                                         ui.end_row();
                                     });
                             });
-                        });
                         ui.end_row()
                     }
                 });

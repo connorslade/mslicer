@@ -9,7 +9,7 @@ use std::{
 use eframe::Frame;
 use egui::{Context, TopBottomPanel, Ui};
 use rfd::FileDialog;
-use slicer::slicer::slice_goo;
+use slicer::{slicer::slice_goo, Pos};
 
 use crate::{
     app::{App, SliceProgress},
@@ -63,7 +63,19 @@ pub fn ui(app: &mut App, ctx: &Context, _frame: &mut Frame) {
 
             if ui.button("Slice!").clicked() {
                 let slice_config = app.slice_config.clone();
-                let mesh = app.meshes.read().unwrap().first().unwrap().mesh.clone();
+                let mut mesh = app.meshes.read().unwrap().first().unwrap().mesh.clone();
+                mesh.scale = mesh.scale.component_mul(&Pos::new(
+                    app.slice_config.platform_resolution.x as f32
+                        / app.slice_config.platform_size.x,
+                    app.slice_config.platform_resolution.y as f32
+                        / app.slice_config.platform_size.y,
+                    1.0,
+                ));
+                mesh.position += Pos::new(
+                    app.slice_config.platform_resolution.x as f32 / 2.0,
+                    app.slice_config.platform_resolution.y as f32 / 2.0,
+                    mesh.position.z - app.slice_config.slice_height,
+                );
 
                 let progress = Arc::new(SliceProgress {
                     current: AtomicU32::new(0),

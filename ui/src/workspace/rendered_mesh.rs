@@ -1,4 +1,4 @@
-use nalgebra::{Matrix4, Vector3};
+use nalgebra::Matrix4;
 use wgpu::{
     util::{BufferInitDescriptor, DeviceExt},
     Buffer, BufferUsages, Device,
@@ -12,6 +12,8 @@ pub struct RenderedMesh {
     pub name: String,
     pub mesh: Mesh,
     pub hidden: bool,
+    pub face_count: u32,
+
     vertices: Vec<ModelVertex>,
     buffers: Option<RenderedMeshBuffers>,
 }
@@ -23,47 +25,37 @@ pub struct RenderedMeshBuffers {
 
 impl RenderedMesh {
     pub fn from_mesh(mesh: Mesh) -> Self {
-        let normals = mesh
-            .faces
-            .iter()
-            .enumerate()
-            .map(|(idx, face)| {
-                let (p1, p2, p3) = (
-                    mesh.vertices[face[0] as usize],
-                    mesh.vertices[face[1] as usize],
-                    mesh.vertices[face[2] as usize],
-                );
-                let a = p2 - p1;
-                let b = p3 - p1;
-                (idx, a.cross(&b).normalize())
-            })
-            .collect::<Vec<_>>();
+        let mut vertices = Vec::new();
 
-        let mut vertex_faces = vec![Vec::new(); mesh.vertices.len()];
-        for (face_idx, face) in mesh.faces.iter().enumerate() {
-            for vertex_idx in face.iter() {
-                vertex_faces[*vertex_idx as usize].push(face_idx);
-            }
+        for face in &mesh.faces {
+            let (a, b, c) = (
+                mesh.vertices[face[0] as usize],
+                mesh.vertices[face[1] as usize],
+                mesh.vertices[face[2] as usize],
+            );
+            let normal = (b - a).cross(&(c - a)).normalize();
+
+            vertices.extend_from_slice(&[
+                ModelVertex {
+                    position: [a.x, a.y, a.z, 1.0],
+                    tex_coords: [0.0, 0.0],
+                    normal: normal.into(),
+                },
+                ModelVertex {
+                    position: [b.x, b.y, b.z, 1.0],
+                    tex_coords: [0.0, 0.0],
+                    normal: normal.into(),
+                },
+                ModelVertex {
+                    position: [c.x, c.y, c.z, 1.0],
+                    tex_coords: [0.0, 0.0],
+                    normal: normal.into(),
+                },
+            ]);
         }
 
-        let vertices = mesh
-            .vertices
-            .iter()
-            .enumerate()
-            .map(|(idx, v)| ModelVertex {
-                position: [v.x, v.y, v.z, 1.0],
-                tex_coords: [0.0, 0.0],
-                normal: {
-                    let mut normal = Vector3::new(0.0, 0.0, 0.0);
-                    for face_idx in &vertex_faces[idx] {
-                        normal += normals[*face_idx].1;
-                    }
-                    normal.normalize().into()
-                },
-            })
-            .collect::<Vec<ModelVertex>>();
-
         Self {
+            face_count: mesh.faces.len() as u32,
             mesh,
             name: String::new(),
             hidden: false,
@@ -91,7 +83,7 @@ impl RenderedMesh {
 
             let index_buffer = device.create_buffer_init(&BufferInitDescriptor {
                 label: None,
-                contents: bytemuck::cast_slice(&self.mesh.faces),
+                contents: bytemuck::cast_slice(&(0..self.face_count * 3).collect::<Vec<_>>()),
                 usage: BufferUsages::INDEX | BufferUsages::COPY_DST,
             });
 

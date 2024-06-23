@@ -4,7 +4,7 @@ use egui::Context;
 use crate::app::App;
 
 mod about;
-mod modals;
+mod models;
 mod slice_config;
 mod slice_progress;
 mod stats;
@@ -24,7 +24,7 @@ pub fn ui(app: &mut App, ctx: &Context, frame: &mut Frame) {
     slice_config::ui(app, ctx, frame);
     workspace::ui(app, ctx, frame);
     stats::ui(app, ctx, frame);
-    modals::ui(app, ctx, frame);
+    models::ui(app, ctx, frame);
     about::ui(app, ctx, frame);
     slice_progress::ui(app, ctx, frame);
 }

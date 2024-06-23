@@ -39,7 +39,7 @@ pub fn ui(app: &mut App, ctx: &Context, _frame: &mut Frame) {
                         let mut serializer = DynamicSerializer::new();
                         result.serialize(&mut serializer);
                         file.write_all(&serializer.into_inner()).unwrap();
-                        save_complete = false;
+                        save_complete = true;
                     }
                 }
             }
