@@ -4,7 +4,7 @@ use egui::{ComboBox, Context, Window};
 use crate::{
     app::App,
     components::{dragger, vec2_dragger, vec3_dragger},
-    workspace::pipelines::model::RenderStyle,
+    render::pipelines::model::RenderStyle,
 };
 
 pub fn ui(app: &mut App, ctx: &Context, _frame: &mut Frame) {

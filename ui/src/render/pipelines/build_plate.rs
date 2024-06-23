@@ -14,7 +14,7 @@ use wgpu::{
 
 use crate::{
     include_shader,
-    workspace::{ModelVertex, WorkspaceRenderCallback, VERTEX_BUFFER_LAYOUT},
+    render::{workspace::WorkspaceRenderCallback, ModelVertex, VERTEX_BUFFER_LAYOUT},
     TEXTURE_FORMAT,
 };
 
@@ -142,7 +142,7 @@ impl BuildPlatePipeline {
     }
 }
 
-impl Pipeline for BuildPlatePipeline {
+impl Pipeline<WorkspaceRenderCallback> for BuildPlatePipeline {
     fn prepare(
         &mut self,
         _device: &Device,

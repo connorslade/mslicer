@@ -8,7 +8,7 @@ const TEXTURE_FORMAT: TextureFormat = TextureFormat::Bgra8Unorm;
 mod app;
 mod components;
 mod windows;
-mod workspace;
+mod render;
 use app::App;
 
 const ICON: &[u8] = include_bytes!("assets/icon.png");
@@ -31,7 +31,7 @@ fn main() -> Result<()> {
             ..Default::default()
         },
         Box::new(|cc| {
-            workspace::init_wgpu(cc);
+            render::init_wgpu(cc);
             Box::new(App::default())
         }),
     )

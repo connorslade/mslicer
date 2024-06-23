@@ -13,8 +13,9 @@ use wgpu::{
 
 use crate::{
     include_shader,
-    workspace::{
-        rendered_mesh::RenderedMeshBuffers, WorkspaceRenderCallback, VERTEX_BUFFER_LAYOUT,
+    render::{
+        rendered_mesh::RenderedMeshBuffers, workspace::WorkspaceRenderCallback,
+        VERTEX_BUFFER_LAYOUT,
     },
     TEXTURE_FORMAT,
 };
@@ -108,7 +109,7 @@ impl ModelPipeline {
     }
 }
 
-impl Pipeline for ModelPipeline {
+impl Pipeline<WorkspaceRenderCallback> for ModelPipeline {
     fn prepare(
         &mut self,
         device: &Device,

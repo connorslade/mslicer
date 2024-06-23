@@ -3,16 +3,16 @@ use std::{
     time::Instant,
 };
 
-use egui::{CentralPanel, Frame, Sense, TextureHandle};
+use egui::{CentralPanel, Frame, Sense};
 use egui_wgpu::Callback;
 use nalgebra::{Vector2, Vector3};
 
 use crate::{
-    windows::{self, Windows},
-    workspace::{
+    render::{
         camera::Camera, pipelines::model::RenderStyle, rendered_mesh::RenderedMesh,
-        WorkspaceRenderCallback,
+        workspace::WorkspaceRenderCallback,
     },
+    windows::{self, Windows},
 };
 use goo_format::File as GooFile;
 use slicer::slicer::{ExposureConfig, SliceConfig};
@@ -39,7 +39,7 @@ pub struct SliceProgress {
 pub struct SliceResult {
     pub goo: GooFile,
     pub slice_preview_layer: usize,
-    pub current_preview: Option<TextureHandle>,
+    pub last_preview_layer: usize,
 }
 
 pub struct FpsTracker {
