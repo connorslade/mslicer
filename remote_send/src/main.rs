@@ -1,13 +1,10 @@
-use std::{net::UdpSocket, thread};
-
 use anyhow::Result;
+use std::net::UdpSocket;
 
-use remote_send::{mqtt, status::StatusData, Response};
+use remote_send::{mqtt::MqttServer, status::StatusData, Response};
 
 fn main() -> Result<()> {
-    thread::spawn(|| {
-        mqtt::start().unwrap();
-    });
+    MqttServer::new().start_async()?;
 
     let socket = UdpSocket::bind("0.0.0.0:3000")?;
 

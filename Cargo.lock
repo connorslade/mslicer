@@ -3184,6 +3184,7 @@ dependencies = [
  "anyhow",
  "bitflags 2.5.0",
  "common",
+ "parking_lot",
  "serde",
  "serde_json",
 ]
