@@ -3182,6 +3182,8 @@ name = "remote_send"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "bitflags 2.5.0",
+ "common",
  "serde",
  "serde_json",
 ]

@@ -1,6 +1,7 @@
 use anyhow::Result;
 use serde::{Deserialize, Deserializer};
 
+pub mod mqtt;
 pub mod status;
 
 #[derive(Debug, Deserialize)]

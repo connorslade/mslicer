@@ -76,4 +76,8 @@ impl<'a> Deserializer<'a> {
     pub fn read_sized_string<const SIZE: usize>(&mut self) -> SizedString<SIZE> {
         SizedString::new(self.read_bytes(SIZE))
     }
+
+    pub fn is_empty(&self) -> bool {
+        self.offset == self.buffer.len()
+    }
 }

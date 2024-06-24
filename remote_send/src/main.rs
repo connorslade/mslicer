@@ -1,13 +1,18 @@
-use std::net::UdpSocket;
+use std::{net::UdpSocket, thread};
 
 use anyhow::Result;
 
-use remote_send::{status::StatusData, Response};
+use remote_send::{mqtt, status::StatusData, Response};
 
 fn main() -> Result<()> {
+    thread::spawn(|| {
+        mqtt::start().unwrap();
+    });
+
     let socket = UdpSocket::bind("0.0.0.0:3000")?;
 
-    let msg = b"M99999";
+    // let msg = b"M99999";
+    let msg = b"M66666 1883";
     socket.send_to(msg, "192.168.1.233:3000")?;
 
     let mut buffer = [0; 1024];

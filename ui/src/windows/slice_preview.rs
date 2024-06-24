@@ -50,7 +50,7 @@ pub fn ui(app: &mut App, ctx: &Context, _frame: &mut Frame) {
                             None
                         };
 
-                        egui::Frame::default().show(ui, |ui| {
+                        egui::Frame::canvas(&ui.style()).show(ui, |ui| {
                             let available_size = ui.available_size();
                             let (rect, _response) = ui.allocate_exact_size(
                                 Vec2::new(
