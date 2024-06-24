@@ -1,7 +1,10 @@
 use std::{
     collections::HashMap,
     net::{TcpListener, TcpStream},
-    sync::Arc,
+    sync::{
+        atomic::{AtomicU16, Ordering},
+        Arc,
+    },
     thread,
 };
 
@@ -9,11 +12,11 @@ use anyhow::Result;
 use misc::next_id;
 use packets::{
     connect::ConnectPacket,
-    connect_ack::{ConnectAckFlags, ConnectAckPacket, ConnectReturnCode},
+    connect_ack::ConnectAckPacket,
     publish::{PublishFlags, PublishPacket},
     publish_ack::PublishAckPacket,
     subscribe::SubscribePacket,
-    subscribe_ack::{SubscribeAckPacket, SubscribeReturnCode},
+    subscribe_ack::SubscribeAckPacket,
     Packet,
 };
 use parking_lot::{lock_api::MutexGuard, MappedMutexGuard, Mutex};
@@ -21,33 +24,52 @@ use parking_lot::{lock_api::MutexGuard, MappedMutexGuard, Mutex};
 mod misc;
 pub mod packets;
 
-pub struct MqttServer {
-    clients: Mutex<HashMap<u64, MqttClient>>,
+pub struct MqttServer<H: MqttHandler> {
+    listeners: Mutex<Option<TcpListener>>,
+    clients: Mutex<HashMap<u64, TcpStream>>,
+    handler: H,
 }
 
-#[derive(Debug)]
-pub struct MqttClient {
-    stream: TcpStream,
-    subscriptions: Vec<String>,
+pub struct HandlerCtx<Handler: MqttHandler> {
+    pub server: Arc<MqttServer<Handler>>,
+    pub client_id: u64,
+    next_packet_id: AtomicU16,
 }
 
-impl MqttServer {
-    pub fn new() -> Arc<Self> {
+pub trait MqttHandler
+where
+    Self: Sized,
+{
+    fn on_connect(&self, ctx: &HandlerCtx<Self>, packet: ConnectPacket)
+        -> Result<ConnectAckPacket>;
+    fn on_subscribe(
+        &self,
+        ctx: &HandlerCtx<Self>,
+        packet: SubscribePacket,
+    ) -> Result<SubscribeAckPacket>;
+    fn on_publish(&self, ctx: &HandlerCtx<Self>, packet: PublishPacket) -> Result<()>;
+}
+
+impl<H: MqttHandler + Send + Sync + 'static> MqttServer<H> {
+    pub fn new(handler: H) -> Arc<Self> {
         Arc::new(Self {
+            listeners: Mutex::new(None),
             clients: Mutex::new(HashMap::new()),
+            handler,
         })
     }
 
     pub fn start_async(self: Arc<Self>) -> Result<()> {
         let socket = TcpListener::bind("0.0.0.0:1883")?;
+        *self.listeners.lock() = Some(socket.try_clone()?);
 
         thread::spawn(move || {
             for stream in socket.incoming() {
-                let stream = stream.unwrap();
+                let Ok(stream) = stream else { continue };
                 let client_id = next_id();
                 self.clients
                     .lock()
-                    .insert(client_id, MqttClient::new(stream.try_clone().unwrap()));
+                    .insert(client_id, stream.try_clone().unwrap());
 
                 println!("Connection established: {:?}", stream);
 
@@ -63,7 +85,13 @@ impl MqttServer {
         Ok(())
     }
 
-    fn get_client_mut(&self, client_id: u64) -> MappedMutexGuard<MqttClient> {
+    pub fn send_packet(&self, client_id: u64, packet: Packet) -> Result<()> {
+        let mut stream = self.get_client_mut(client_id);
+        packet.write(&mut *stream)?;
+        Ok(())
+    }
+
+    fn get_client_mut(&self, client_id: u64) -> MappedMutexGuard<TcpStream> {
         MutexGuard::map(self.clients.lock(), |x| x.get_mut(&client_id).unwrap())
     }
 
@@ -72,66 +100,62 @@ impl MqttServer {
     }
 }
 
-impl MqttClient {
-    fn new(stream: TcpStream) -> Self {
-        Self {
-            stream,
-            subscriptions: Vec::new(),
-        }
+impl<H: MqttHandler> HandlerCtx<H> {
+    pub fn next_packet_id(&self) -> u16 {
+        self.next_packet_id.fetch_add(1, Ordering::Relaxed)
     }
 }
 
-fn handle_client(server: Arc<MqttServer>, client_id: u64, mut stream: TcpStream) -> Result<()> {
+fn handle_client<H>(server: Arc<MqttServer<H>>, client_id: u64, mut stream: TcpStream) -> Result<()>
+where
+    H: MqttHandler + Send + Sync + 'static,
+{
+    let ctx = HandlerCtx {
+        server: server.clone(),
+        client_id,
+        next_packet_id: AtomicU16::new(0),
+    };
+
     loop {
         let packet = Packet::read(&mut stream)?;
 
         match packet.packet_type {
             ConnectPacket::PACKET_TYPE => {
                 let packet = ConnectPacket::from_packet(&packet)?;
-                println!("Connect packet: {:?}", packet);
 
-                ConnectAckPacket {
-                    flags: ConnectAckFlags::empty(),
-                    return_code: ConnectReturnCode::Accepted,
-                }
-                .to_packet()
-                .write(&mut stream)?;
+                server
+                    .handler
+                    .on_connect(&ctx, packet)?
+                    .to_packet()
+                    .write(&mut stream)?;
             }
             SubscribePacket::PACKET_TYPE => {
                 let packet = SubscribePacket::from_packet(&packet)?;
-                println!("Subscribe packet: {:?}", packet);
-
-                let return_codes = packet
-                    .filters
-                    .iter()
-                    .map(|(_topic, qos)| SubscribeReturnCode::Success(*qos))
-                    .collect();
 
                 server
-                    .get_client_mut(client_id)
-                    .subscriptions
-                    .extend(packet.filters.into_iter().map(|x| x.0));
-                dbg!(&server.get_client_mut(client_id));
-
-                SubscribeAckPacket {
-                    packet_id: packet.packet_id,
-                    return_codes,
-                }
-                .to_packet()
-                .write(&mut stream)?;
+                    .handler
+                    .on_subscribe(&ctx, packet)?
+                    .to_packet()
+                    .write(&mut stream)?;
             }
             PublishPacket::PACKET_TYPE => {
                 let packet = PublishPacket::from_packet(&packet)?;
-                println!("Publish packet: {:?}", packet);
-                println!("{}", String::from_utf8_lossy(&packet.data));
+                let packet_id = packet
+                    .flags
+                    .contains(PublishFlags::QOS1)
+                    .then(|| packet.packet_id.unwrap());
 
-                if packet.flags.contains(PublishFlags::QOS1) {
-                    PublishAckPacket {
-                        packet_id: packet.packet_id.unwrap(),
-                    }
-                    .to_packet()
-                    .write(&mut stream)?;
+                server.handler.on_publish(&ctx, packet)?;
+
+                if let Some(packet_id) = packet_id {
+                    PublishAckPacket { packet_id }
+                        .to_packet()
+                        .write(&mut stream)?;
                 }
+            }
+            PublishAckPacket::PACKET_TYPE => {
+                let packet = PublishAckPacket::from_packet(&packet)?;
+                println!("Received publish ack {{ packet_id: {} }}", packet.packet_id);
             }
             0x0E => {
                 println!("Client disconnect: {client_id}");

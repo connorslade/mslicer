@@ -4,9 +4,18 @@ use crate::{parse_resolution, Resolution};
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "PascalCase")]
-pub struct StatusData {
+pub struct FullStatusData {
     pub attributes: Attributes,
     pub status: Status,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "PascalCase")]
+pub struct StatusData {
+    pub status: Status,
+    #[serde(rename = "MainboardID")]
+    pub mainboard_id: String,
+    pub time_stamp: u64,
 }
 
 #[derive(Debug, Deserialize)]
