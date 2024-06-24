@@ -3,7 +3,9 @@ use bitflags::bitflags;
 
 use common::serde::Deserializer;
 
-use crate::mqtt::MqttDeserialize;
+use crate::mqtt::misc::MqttDeserialize;
+
+use super::Packet;
 
 #[derive(Debug)]
 pub struct ConnectPacket {
@@ -35,8 +37,8 @@ bitflags! {
 impl ConnectPacket {
     pub const PACKET_TYPE: u8 = 0x01;
 
-    pub fn from_bytes(bytes: &[u8]) -> Result<Self> {
-        let mut des = Deserializer::new(bytes);
+    pub fn from_packet(packet: &Packet) -> Result<Self> {
+        let mut des = Deserializer::new(&packet.remaining_bytes);
 
         let protocol_name = des.read_string().into_owned();
         let protocol_level = des.read_u8();

@@ -2,7 +2,8 @@ use anyhow::Result;
 
 use common::serde::Deserializer;
 
-use crate::mqtt::MqttDeserialize;
+use super::{Packet, QoS};
+use crate::mqtt::misc::MqttDeserialize;
 
 #[derive(Debug)]
 pub struct SubscribePacket {
@@ -10,14 +11,11 @@ pub struct SubscribePacket {
     pub filters: Vec<(String, QoS)>,
 }
 
-#[derive(Debug)]
-pub struct QoS(pub u8);
-
 impl SubscribePacket {
     pub const PACKET_TYPE: u8 = 0x08;
 
-    pub fn from_bytes(bytes: &[u8]) -> Result<Self> {
-        let mut des = Deserializer::new(bytes);
+    pub fn from_packet(packet: &Packet) -> Result<Self> {
+        let mut des = Deserializer::new(&packet.remaining_bytes);
 
         let packet_id = des.read_u16();
         let mut filters = Vec::new();

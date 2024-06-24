@@ -14,6 +14,10 @@ impl<'a> Deserializer<'a> {
         }
     }
 
+    pub fn pos(&self) -> usize {
+        self.offset
+    }
+
     pub fn read_bool(&mut self) -> bool {
         self.read_u8() != 0
     }
