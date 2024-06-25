@@ -9,6 +9,7 @@ pub struct SubscribeAckPacket {
     pub return_codes: Vec<SubscribeReturnCode>,
 }
 
+#[derive(Clone, Copy)]
 pub enum SubscribeReturnCode {
     Success(QoS),
     Failure,

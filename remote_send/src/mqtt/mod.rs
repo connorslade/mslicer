@@ -1,10 +1,7 @@
 use std::{
     collections::HashMap,
     net::{TcpListener, TcpStream},
-    sync::{
-        atomic::{AtomicU16, Ordering},
-        Arc,
-    },
+    sync::Arc,
     thread,
 };
 
@@ -20,6 +17,7 @@ use packets::{
     Packet,
 };
 use parking_lot::{lock_api::MutexGuard, MappedMutexGuard, Mutex};
+use soon::Soon;
 
 mod misc;
 pub mod packets;
@@ -27,38 +25,33 @@ pub mod packets;
 pub struct MqttServer<H: MqttHandler> {
     listeners: Mutex<Option<TcpListener>>,
     clients: Mutex<HashMap<u64, TcpStream>>,
-    handler: H,
-}
-
-pub struct HandlerCtx<Handler: MqttHandler> {
-    pub server: Arc<MqttServer<Handler>>,
-    pub client_id: u64,
-    next_packet_id: AtomicU16,
+    handler: Soon<H>,
 }
 
 pub trait MqttHandler
 where
     Self: Sized,
 {
-    fn on_connect(&self, ctx: &HandlerCtx<Self>, packet: ConnectPacket)
-        -> Result<ConnectAckPacket>;
-    fn on_subscribe(
-        &self,
-        ctx: &HandlerCtx<Self>,
-        packet: SubscribePacket,
-    ) -> Result<SubscribeAckPacket>;
-    fn on_publish(&self, ctx: &HandlerCtx<Self>, packet: PublishPacket) -> Result<()>;
-    fn on_publish_ack(&self, ctx: &HandlerCtx<Self>, packet: PublishAckPacket) -> Result<()>;
-    fn on_disconnect(&self, ctx: &HandlerCtx<Self>) -> Result<()>;
+    fn init(&self, server: Arc<MqttServer<Self>>);
+    fn on_connect(&self, client_id: u64, packet: ConnectPacket) -> Result<ConnectAckPacket>;
+    fn on_subscribe(&self, client_id: u64, packet: SubscribePacket) -> Result<SubscribeAckPacket>;
+    fn on_publish(&self, client_id: u64, packet: PublishPacket) -> Result<()>;
+    fn on_publish_ack(&self, client_id: u64, packet: PublishAckPacket) -> Result<()>;
+    fn on_disconnect(&self, client_id: u64) -> Result<()>;
 }
 
 impl<H: MqttHandler + Send + Sync + 'static> MqttServer<H> {
     pub fn new(handler: H) -> Arc<Self> {
-        Arc::new(Self {
+        let this = Arc::new(Self {
             listeners: Mutex::new(None),
             clients: Mutex::new(HashMap::new()),
-            handler,
-        })
+            handler: Soon::empty(),
+        });
+
+        handler.init(this.clone());
+        this.handler.replace(handler);
+
+        this
     }
 
     pub fn start_async(self: Arc<Self>) -> Result<()> {
@@ -102,22 +95,10 @@ impl<H: MqttHandler + Send + Sync + 'static> MqttServer<H> {
     }
 }
 
-impl<H: MqttHandler> HandlerCtx<H> {
-    pub fn next_packet_id(&self) -> u16 {
-        self.next_packet_id.fetch_add(1, Ordering::Relaxed)
-    }
-}
-
 fn handle_client<H>(server: Arc<MqttServer<H>>, client_id: u64, mut stream: TcpStream) -> Result<()>
 where
     H: MqttHandler + Send + Sync + 'static,
 {
-    let ctx = HandlerCtx {
-        server: server.clone(),
-        client_id,
-        next_packet_id: AtomicU16::new(0),
-    };
-
     loop {
         let packet = Packet::read(&mut stream)?;
 
@@ -127,7 +108,7 @@ where
 
                 server
                     .handler
-                    .on_connect(&ctx, packet)?
+                    .on_connect(client_id, packet)?
                     .to_packet()
                     .write(&mut stream)?;
             }
@@ -136,7 +117,7 @@ where
 
                 server
                     .handler
-                    .on_subscribe(&ctx, packet)?
+                    .on_subscribe(client_id, packet)?
                     .to_packet()
                     .write(&mut stream)?;
             }
@@ -147,7 +128,7 @@ where
                     .contains(PublishFlags::QOS1)
                     .then(|| packet.packet_id.unwrap());
 
-                server.handler.on_publish(&ctx, packet)?;
+                server.handler.on_publish(client_id, packet)?;
 
                 if let Some(packet_id) = packet_id {
                     PublishAckPacket { packet_id }
@@ -157,10 +138,10 @@ where
             }
             PublishAckPacket::PACKET_TYPE => {
                 let packet = PublishAckPacket::from_packet(&packet)?;
-                server.handler.on_publish_ack(&ctx, packet)?;
+                server.handler.on_publish_ack(client_id, packet)?;
             }
             0x0E => {
-                server.handler.on_disconnect(&ctx)?;
+                server.handler.on_disconnect(client_id)?;
                 server.remove_client(client_id);
                 break;
             }
