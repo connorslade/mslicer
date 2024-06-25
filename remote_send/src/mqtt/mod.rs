@@ -48,6 +48,8 @@ where
         packet: SubscribePacket,
     ) -> Result<SubscribeAckPacket>;
     fn on_publish(&self, ctx: &HandlerCtx<Self>, packet: PublishPacket) -> Result<()>;
+    fn on_publish_ack(&self, ctx: &HandlerCtx<Self>, packet: PublishAckPacket) -> Result<()>;
+    fn on_disconnect(&self, ctx: &HandlerCtx<Self>) -> Result<()>;
 }
 
 impl<H: MqttHandler + Send + Sync + 'static> MqttServer<H> {
@@ -155,10 +157,10 @@ where
             }
             PublishAckPacket::PACKET_TYPE => {
                 let packet = PublishAckPacket::from_packet(&packet)?;
-                println!("Received publish ack {{ packet_id: {} }}", packet.packet_id);
+                server.handler.on_publish_ack(&ctx, packet)?;
             }
             0x0E => {
-                println!("Client disconnect: {client_id}");
+                server.handler.on_disconnect(&ctx)?;
                 server.remove_client(client_id);
                 break;
             }

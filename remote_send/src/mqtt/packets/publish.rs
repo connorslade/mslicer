@@ -52,6 +52,9 @@ impl PublishPacket {
     pub fn to_packet(&self) -> Packet {
         let mut ser = DynamicSerializer::new();
         ser.write_string(&self.topic);
+        if self.flags.contains(PublishFlags::QOS1) || self.flags.contains(PublishFlags::QOS2) {
+            ser.write_u16(self.packet_id.unwrap());
+        }
         ser.write_bytes(&self.data);
 
         let data = ser.into_inner();

@@ -1,5 +1,6 @@
 use anyhow::Result;
-use std::{net::UdpSocket, thread};
+use serde::Serialize;
+use std::net::UdpSocket;
 
 use remote_send::{
     mqtt::{
@@ -7,16 +8,21 @@ use remote_send::{
             connect::ConnectPacket,
             connect_ack::{ConnectAckFlags, ConnectAckPacket, ConnectReturnCode},
             publish::{PublishFlags, PublishPacket},
+            publish_ack::PublishAckPacket,
             subscribe::SubscribePacket,
             subscribe_ack::{SubscribeAckPacket, SubscribeReturnCode},
         },
         HandlerCtx, MqttHandler, MqttServer,
     },
-    status::{FullStatusData, StatusData},
-    Response,
+    status::{Attributes, FullStatusData, StatusData},
+    Command, Response,
 };
 
-struct Mqtt;
+struct Mqtt {
+    // todo: must support multiple clients
+    status: Attributes,
+    id: String,
+}
 
 impl MqttHandler for Mqtt {
     fn on_connect(
@@ -25,40 +31,6 @@ impl MqttHandler for Mqtt {
         _packet: ConnectPacket,
     ) -> Result<ConnectAckPacket> {
         println!("Client `{}` connected", ctx.client_id);
-
-        let id = ctx.next_packet_id();
-        let (client_id, server) = (ctx.client_id, ctx.server.clone());
-        thread::spawn(move || {
-            thread::sleep(std::time::Duration::from_secs(5));
-            println!("Sending command to client `{}` (id: {id})", client_id);
-
-            server
-                .send_packet(
-                    client_id,
-                    PublishPacket {
-                        flags: PublishFlags::QOS1,
-                        topic: "/sdcp/request/0001D2635E0347DA".to_owned(),
-                        packet_id: Some(id),
-                        data: br#"{
-    "Data": {
-        "Cmd": 128,
-        "Data": {
-            "Filename": "out.goo",
-            "StartLayer": 0
-        },
-        "From": 0,
-        "MainboardID": "0001D2635E0347DA",
-        "RequestID": "b353f511680d40278c48602821a9e6ec",
-        "TimeStamp": 1719258574000
-    },
-    "Id": "0a69ee780fbd40d7bfb95b312250bf46"
-}"#
-                        .to_vec(),
-                    }
-                    .to_packet(),
-                )
-                .unwrap();
-        });
 
         Ok(ConnectAckPacket {
             flags: ConnectAckFlags::empty(),
@@ -103,15 +75,49 @@ impl MqttHandler for Mqtt {
 
         Ok(())
     }
+
+    fn on_publish_ack(&self, _ctx: &HandlerCtx<Self>, _packet: PublishAckPacket) -> Result<()> {
+        Ok(())
+    }
+
+    fn on_disconnect(&self, _ctx: &HandlerCtx<Self>) -> Result<()> {
+        Ok(())
+    }
+}
+
+impl Mqtt {
+    fn send_command<Data: Serialize>(
+        &self,
+        ctx: &HandlerCtx<Self>,
+        cmd: u16,
+        command: Data,
+    ) -> Result<()> {
+        let id = ctx.next_packet_id();
+
+        let data = Command::new(cmd, command, self.id.to_owned());
+        let data = serde_json::to_vec(&data).unwrap();
+
+        ctx.server
+            .send_packet(
+                ctx.client_id,
+                PublishPacket {
+                    flags: PublishFlags::QOS1,
+                    topic: format!("/sdcp/request/{}", self.status.mainboard_id),
+                    packet_id: Some(id),
+                    data,
+                }
+                .to_packet(),
+            )
+            .unwrap();
+
+        Ok(())
+    }
 }
 
 fn main() -> Result<()> {
-    MqttServer::new(Mqtt).start_async()?;
-
     let socket = UdpSocket::bind("0.0.0.0:3000")?;
 
-    // let msg = b"M99999";
-    let msg = b"M66666 1883";
+    let msg = b"M99999";
     socket.send_to(msg, "192.168.1.233:3000")?;
 
     let mut buffer = [0; 1024];
@@ -123,6 +129,15 @@ fn main() -> Result<()> {
         "Got status from `{}`",
         response.data.attributes.machine_name
     );
+
+    MqttServer::new(Mqtt {
+        status: response.data.attributes,
+        id: response.id,
+    })
+    .start_async()?;
+
+    let msg = b"M66666 1883";
+    socket.send_to(msg, "192.168.1.233:3000")?;
 
     Ok(())
 }
