@@ -42,6 +42,26 @@ pub struct StartPrinting {
     pub start_layer: u32,
 }
 
+impl CommandTrait for StartPrinting {
+    const CMD: u16 = 128;
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "PascalCase")]
+pub struct UploadFile {
+    pub check: u8,
+    pub clean_cache: u8,
+    pub compress: u8,
+    pub file_size: u32,
+    pub filename: String,
+    pub md5: String,
+    pub url: String,
+}
+
+impl CommandTrait for UploadFile {
+    const CMD: u16 = 256;
+}
+
 #[derive(Serialize)]
 pub struct DisconnectCommand;
 

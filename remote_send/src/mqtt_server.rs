@@ -8,7 +8,7 @@ use std::{
 };
 
 use anyhow::Result;
-use parking_lot::RwLock;
+use parking_lot::{Mutex, RwLock};
 use soon::Soon;
 
 use crate::{
@@ -24,7 +24,7 @@ use crate::{
         },
         MqttHandler, MqttServer,
     },
-    status::{Attributes, StatusData},
+    status::{Attributes, FullStatusData, Status, StatusData},
     Response,
 };
 
@@ -36,12 +36,14 @@ pub struct MqttInner {
     client_ids: RwLock<HashMap<u64, String>>,
 }
 
+#[derive(Clone)]
 pub struct Mqtt {
     inner: Arc<MqttInner>,
 }
 
 struct MqttClient {
-    status: Attributes,
+    attributes: Attributes,
+    status: Mutex<Status>,
     machine_id: String,
     client_id: Option<u64>,
     next_packet_id: AtomicU16,
@@ -102,8 +104,7 @@ impl MqttHandler for Mqtt {
 
         if let Some(board_id) = packet.topic.strip_prefix("/sdcp/status/") {
             let status = serde_json::from_slice::<Response<StatusData>>(&packet.data)?;
-            println!("Got status from `{}`", board_id);
-            println!("{:?}", status);
+            *self.clients.write().get(board_id).unwrap().status.lock() = status.data.status;
         } else if let Some(board_id) = packet.topic.strip_prefix("/sdcp/response/") {
             println!("Got command response from `{}`", board_id);
             println!("{:?}", String::from_utf8_lossy(&packet.data));
@@ -137,12 +138,6 @@ impl Mqtt {
         }
     }
 
-    pub fn clone(&self) -> Self {
-        Self {
-            inner: self.inner.clone(),
-        }
-    }
-
     pub fn send_command<Data: CommandTrait>(
         &self,
         mainboard_id: &str,
@@ -168,7 +163,7 @@ impl Mqtt {
                 client_id,
                 PublishPacket {
                     flags: PublishFlags::QOS1,
-                    topic: format!("/sdcp/request/{}", client.status.mainboard_id),
+                    topic: format!("/sdcp/request/{}", client.attributes.mainboard_id),
                     packet_id: Some(packet_id),
                     data,
                 }
@@ -179,16 +174,18 @@ impl Mqtt {
         Ok(())
     }
 
-    pub fn add_future_client(&self, attributes: Attributes, machine_id: String) {
-        if self.clients.read().contains_key(&attributes.mainboard_id) {
-            println!("Client `{}` already exists.", attributes.mainboard_id);
+    pub fn add_future_client(&self, response: Response<FullStatusData>) {
+        let mainboard_id = &response.data.attributes.mainboard_id;
+        if self.clients.read().contains_key(mainboard_id) {
+            println!("Client `{mainboard_id}` already exists.");
             return;
         }
 
-        let mainboard_id = attributes.mainboard_id.clone();
+        let mainboard_id = mainboard_id.clone();
         let client = MqttClient {
-            status: attributes,
-            machine_id: machine_id.clone(),
+            attributes: response.data.attributes,
+            status: Mutex::new(response.data.status),
+            machine_id: response.id,
             client_id: None,
             next_packet_id: AtomicU16::new(0),
         };
@@ -201,6 +198,12 @@ impl Mqtt {
 impl MqttClient {
     fn next_id(&self) -> u16 {
         self.next_packet_id.fetch_add(1, Ordering::Relaxed)
+    }
+}
+
+impl Default for Mqtt {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
