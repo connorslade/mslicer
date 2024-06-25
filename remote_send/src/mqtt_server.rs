@@ -30,9 +30,9 @@ use crate::{
 
 pub struct MqttInner {
     server: Soon<Arc<MqttServer<Mqtt>>>,
-    // mainboard_id -> MqttClient
+    /// mainboard_id -> MqttClient
     clients: RwLock<HashMap<String, MqttClient>>,
-    // client_id -> mainboard_id
+    /// client_id -> mainboard_id
     client_ids: RwLock<HashMap<u64, String>>,
 }
 
@@ -91,6 +91,11 @@ impl MqttHandler for Mqtt {
             self.client_ids
                 .write()
                 .insert(client_id, mainboard_id.to_owned());
+            self.clients
+                .write()
+                .get_mut(mainboard_id)
+                .unwrap()
+                .client_id = Some(client_id);
         }
 
         Ok(SubscribeAckPacket {
@@ -113,7 +118,11 @@ impl MqttHandler for Mqtt {
         Ok(())
     }
 
-    fn on_publish_ack(&self, _client_id: u64, _packet: PublishAckPacket) -> Result<()> {
+    fn on_publish_ack(&self, client_id: u64, packet: PublishAckPacket) -> Result<()> {
+        println!(
+            "Client `{client_id}` acknowledged packet `{}`",
+            packet.packet_id
+        );
         Ok(())
     }
 
@@ -153,8 +162,12 @@ impl Mqtt {
         };
 
         let data = Response {
-            data: Command::new(Data::CMD, command, client.machine_id.to_owned()),
-            id: String::new(),
+            data: Command::new(
+                Data::CMD,
+                command,
+                client.attributes.mainboard_id.to_owned(),
+            ),
+            id: client.machine_id.to_owned(),
         };
         let data = serde_json::to_vec(&data).unwrap();
 
