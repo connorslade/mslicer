@@ -1,11 +1,15 @@
 use std::{
-    sync::{atomic::AtomicU32, Arc, Mutex, RwLock},
+    sync::{Arc, Mutex, RwLock},
     time::Instant,
 };
 
 use egui::{CentralPanel, Frame, Sense};
 use egui_wgpu::Callback;
 use nalgebra::{Vector2, Vector3};
+use slicer::{
+    config::{ExposureConfig, SliceConfig},
+    slicer::Progress as SliceProgress,
+};
 
 use crate::{
     render::{
@@ -15,25 +19,18 @@ use crate::{
     windows::{self, Windows},
 };
 use goo_format::File as GooFile;
-use slicer::slicer::{ExposureConfig, SliceConfig};
 
 pub struct App {
     pub camera: Camera,
     pub slice_config: SliceConfig,
     pub meshes: Arc<RwLock<Vec<RenderedMesh>>>,
 
-    pub slice_progress: Option<Arc<SliceProgress>>,
+    pub slice_progress: Option<SliceProgress>,
+    pub slice_result: Arc<Mutex<Option<SliceResult>>>,
 
     pub render_style: RenderStyle,
     pub fps: FpsTracker,
     pub windows: Windows,
-}
-
-pub struct SliceProgress {
-    pub current: AtomicU32,
-    pub total: AtomicU32,
-
-    pub result: Mutex<Option<SliceResult>>,
 }
 
 pub struct SliceResult {
@@ -120,6 +117,7 @@ impl Default for App {
             },
             fps: FpsTracker::new(),
             slice_progress: None,
+            slice_result: Arc::new(Mutex::new(None)),
             meshes: Arc::new(RwLock::new(Vec::new())),
             windows: Windows::default(),
             render_style: RenderStyle::Normals,

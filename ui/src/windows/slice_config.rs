@@ -1,6 +1,6 @@
 use eframe::Frame;
 use egui::{Context, DragValue, Grid, Ui, Window};
-use slicer::slicer::ExposureConfig;
+use slicer::config::ExposureConfig;
 
 use crate::{
     app::App,

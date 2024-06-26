@@ -1,5 +1,7 @@
 use std::{
     fs::{self, File},
+    io::{stdout, Write},
+    thread,
     time::Instant,
 };
 
@@ -8,8 +10,9 @@ use common::serde::DynamicSerializer;
 use nalgebra::{Vector2, Vector3};
 
 use slicer::{
+    config::{ExposureConfig, SliceConfig},
     mesh::load_mesh,
-    slicer::{slice_goo, ExposureConfig, SliceConfig},
+    slicer::Slicer,
     Pos,
 };
 
@@ -60,16 +63,25 @@ fn main() -> Result<()> {
 
     let now = Instant::now();
 
-    let goo = slice_goo(&slice_config, &mesh, |layer, layers| {
+    let slicer = Slicer::new(slice_config.clone(), mesh);
+    let progress = slicer.progress();
+
+    let goo = thread::spawn(move || slicer.slice());
+
+    let mut completed = 0;
+    while completed < progress.total() {
+        completed = progress.wait();
         print!(
-            "\rLayer: {}/{layers} ({:.1}%)",
-            layer + 1,
-            (layer as f32 + 1.0) / layers as f32 * 100.0
+            "\rLayer: {}/{}, {:.1}%",
+            completed,
+            progress.total(),
+            completed as f32 / progress.total() as f32 * 100.0
         );
-    });
+        stdout().flush()?;
+    }
 
     let mut serializer = DynamicSerializer::new();
-    goo.serialize(&mut serializer);
+    goo.join().unwrap().serialize(&mut serializer);
     fs::write(OUTPUT_PATH, serializer.into_inner())?;
 
     println!("\nDone. Elapsed: {:.1}s", now.elapsed().as_secs_f32());

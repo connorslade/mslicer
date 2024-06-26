@@ -1,4 +1,4 @@
-use std::{fs::File, io::Write, sync::atomic::Ordering};
+use std::{fs::File, io::Write};
 
 use common::serde::DynamicSerializer;
 use eframe::Frame;
@@ -12,8 +12,7 @@ pub fn ui(app: &mut App, ctx: &Context, _frame: &mut Frame) {
     let mut save_complete = false;
 
     if let Some(progress) = app.slice_progress.as_ref() {
-        let current = progress.current.load(Ordering::Relaxed) + 1;
-        let total = progress.total.load(Ordering::Relaxed);
+        let (current, total) = (progress.completed(), progress.total());
 
         let mut window = Window::new("Slice Progress");
 
@@ -33,7 +32,7 @@ pub fn ui(app: &mut App, ctx: &Context, _frame: &mut Frame) {
             } else {
                 ui.label("Slicing complete!");
                 if ui.button("Save").clicked() {
-                    let result = progress.result.lock().unwrap().take().unwrap();
+                    let result = app.slice_result.lock().unwrap().take().unwrap();
                     if let Some(path) = FileDialog::new().save_file() {
                         let mut file = File::create(path).unwrap();
                         let mut serializer = DynamicSerializer::new();

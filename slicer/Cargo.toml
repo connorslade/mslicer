@@ -14,3 +14,4 @@ stl_io = "0.7.0"
 
 common = { path = "../common" }
 goo_format = { path = "../goo_format" }
+rayon = "1.10.0"

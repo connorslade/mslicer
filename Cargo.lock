@@ -932,6 +932,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "clone-macro"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "11b52aa11e0a83701c2f8a2b683c254889d8a957e7f58a5a06c5f98ebb4fc3c1"
+
+[[package]]
 name = "cocoa"
 version = "0.25.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3487,6 +3493,7 @@ dependencies = [
  "imageproc",
  "nalgebra",
  "ordered-float",
+ "rayon",
  "stl_io",
 ]
 
@@ -3869,6 +3876,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "bytemuck",
+ "clone-macro",
  "common",
  "eframe",
  "egui",

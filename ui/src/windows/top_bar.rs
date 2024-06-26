@@ -1,19 +1,14 @@
-use std::{
-    sync::{
-        atomic::{AtomicU32, Ordering},
-        Arc, Mutex,
-    },
-    thread,
-};
+use std::thread;
 
+use clone_macro::clone;
 use eframe::Frame;
 use egui::{Context, TopBottomPanel, Ui};
 use nalgebra::Vector2;
 use rfd::FileDialog;
-use slicer::{slicer::slice_goo, Pos};
+use slicer::{slicer::Slicer, Pos};
 
 use crate::{
-    app::{App, SliceProgress, SliceResult},
+    app::{App, SliceResult},
     render::rendered_mesh::RenderedMesh,
 };
 
@@ -83,26 +78,26 @@ pub fn ui(app: &mut App, ctx: &Context, _frame: &mut Frame) {
                     mesh.position.z - app.slice_config.slice_height,
                 );
 
-                let progress = Arc::new(SliceProgress {
-                    current: AtomicU32::new(0),
-                    total: AtomicU32::new(0),
-                    result: Mutex::new(None),
-                });
-                app.slice_progress = Some(progress.clone());
+                // let progress = Arc::new(SliceProgress {
+                //     current: AtomicU32::new(0),
+                //     total: AtomicU32::new(0),
+                //     result: Mutex::new(None),
+                // });
+                // app.slice_progress = Some(progress.clone());
 
-                thread::spawn(move || {
-                    let goo = slice_goo(&slice_config, &mesh, |current, total| {
-                        progress.current.store(current, Ordering::Relaxed);
-                        progress.total.store(total, Ordering::Relaxed);
-                    });
-                    progress.result.lock().unwrap().replace(SliceResult {
+                let slicer = Slicer::new(slice_config, mesh);
+                app.slice_progress = Some(slicer.progress());
+
+                thread::spawn(clone!([{ app.slice_result } as slice_result], move || {
+                    let goo = slicer.slice();
+                    slice_result.lock().unwrap().replace(SliceResult {
                         goo,
                         slice_preview_layer: 0,
                         last_preview_layer: 0,
                         preview_offset: Vector2::new(0.0, 0.0),
                         preview_scale,
                     });
-                });
+                }));
             }
         });
     });

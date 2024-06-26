@@ -6,10 +6,14 @@
 - [ ] Allow slicing multiple modals at once
 - [ ] Fix translation in slicer (its currently moved by pixels not mm)
 - [ ] Allow rotating modals
-- [ ] Optimize slicer (BVH?)
+- [x] Optimize slicer (BVH?)
+  - [x] ehh just throw rayon on it
 - [ ] Allow saving / loading projects
 - [ ] Allow deleting objects
 - [ ] Use instancing both for object mesh storage and rendering
 - [ ] Less internal dependence on GOO format
 - [ ] Anti-aliasing
 - [ ] Cache transformed points
+- [ ] Rename `ui` module to `mslicer`
+- [ ] Proper slice preview scaling
+- [ ] Preview image generation
