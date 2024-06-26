@@ -93,6 +93,8 @@ impl Slicer {
                         .collect::<Vec<_>>();
 
                     intersections.sort_by_key(|&x| OrderedFloat(x));
+                    intersections.dedup();
+
                     for span in intersections.chunks_exact(2) {
                         let y_offset = (slice_config.platform_resolution.x * y) as u64;
                         out.push((y_offset + span[0] as u64, y_offset + span[1] as u64));
