@@ -1,5 +1,6 @@
 use std::{
     collections::HashMap,
+    io::ErrorKind,
     net::{TcpListener, TcpStream},
     sync::Arc,
     thread,
@@ -23,7 +24,7 @@ mod misc;
 pub mod packets;
 
 pub struct MqttServer<H: MqttHandler> {
-    listeners: Mutex<Option<TcpListener>>,
+    listener: Mutex<Option<TcpListener>>,
     clients: Mutex<HashMap<u64, TcpStream>>,
     handler: Soon<H>,
 }
@@ -43,7 +44,7 @@ where
 impl<H: MqttHandler + Send + Sync + 'static> MqttServer<H> {
     pub fn new(handler: H) -> Arc<Self> {
         let this = Arc::new(Self {
-            listeners: Mutex::new(None),
+            listener: Mutex::new(None),
             clients: Mutex::new(HashMap::new()),
             handler: Soon::empty(),
         });
@@ -54,13 +55,20 @@ impl<H: MqttHandler + Send + Sync + 'static> MqttServer<H> {
         this
     }
 
-    pub fn start_async(self: Arc<Self>) -> Result<()> {
-        let socket = TcpListener::bind("0.0.0.0:1883")?;
-        *self.listeners.lock() = Some(socket.try_clone()?);
+    pub fn start_async(self: Arc<Self>, socket: TcpListener) -> Result<()> {
+        *self.listener.lock() = Some(socket.try_clone()?);
 
         thread::spawn(move || {
             for stream in socket.incoming() {
-                let Ok(stream) = stream else { continue };
+                let stream = match stream {
+                    Ok(stream) => stream,
+                    Err(e) if e.kind() == ErrorKind::WouldBlock => break,
+                    Err(e) => {
+                        eprintln!("Error accepting connection: {:?}", e);
+                        continue;
+                    }
+                };
+
                 let client_id = next_id();
                 self.clients
                     .lock()
@@ -78,6 +86,12 @@ impl<H: MqttHandler + Send + Sync + 'static> MqttServer<H> {
         });
 
         Ok(())
+    }
+
+    pub fn shutdown(self: Arc<Self>) {
+        if let Some(listener) = self.listener.lock().take() {
+            listener.set_nonblocking(true).unwrap();
+        }
     }
 
     pub fn send_packet(&self, client_id: u64, packet: Packet) -> Result<()> {
