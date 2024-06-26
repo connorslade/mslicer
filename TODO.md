@@ -14,6 +14,6 @@
 - [ ] Less internal dependence on GOO format
 - [ ] Anti-aliasing
 - [ ] Cache transformed points
-- [ ] Rename `ui` module to `mslicer`
+- [x] Rename `ui` module to `mslicer`
 - [ ] Proper slice preview scaling
 - [ ] Preview image generation

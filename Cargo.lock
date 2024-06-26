@@ -2377,6 +2377,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "mslicer"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bytemuck",
+ "clone-macro",
+ "common",
+ "eframe",
+ "egui",
+ "egui-wgpu",
+ "encase",
+ "goo_format",
+ "image 0.25.1",
+ "nalgebra",
+ "rfd",
+ "slicer",
+ "wgpu",
+]
+
+[[package]]
 name = "naga"
 version = "0.19.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3868,26 +3888,6 @@ dependencies = [
  "memoffset 0.9.1",
  "tempfile",
  "winapi",
-]
-
-[[package]]
-name = "ui"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "bytemuck",
- "clone-macro",
- "common",
- "eframe",
- "egui",
- "egui-wgpu",
- "encase",
- "goo_format",
- "image 0.25.1",
- "nalgebra",
- "rfd",
- "slicer",
- "wgpu",
 ]
 
 [[package]]
