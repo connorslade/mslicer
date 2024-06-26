@@ -54,19 +54,22 @@ fn main() -> Result<()> {
     let mut buf = String::new();
     stdin().read_line(&mut buf).unwrap();
 
-    let teapot = Arc::new(fs::read("out.goo")?);
-    http.add_file("teapot4.goo", teapot.clone());
+    let teapot = Arc::new(fs::read("fox.goo")?);
+    http.add_file("fox.goo", teapot.clone());
 
     mqtt.send_command(
         &mainboard_id,
-        UploadFile::new("teapot4.goo".to_owned(), http_port, &teapot),
+        UploadFile::new("fox.goo".to_owned(), http_port, &teapot),
     )
     .unwrap();
+
+    let mut buf = String::new();
+    stdin().read_line(&mut buf).unwrap();
 
     mqtt.send_command(
         &mainboard_id,
         StartPrinting {
-            filename: "out.goo".to_owned(),
+            filename: "fox.goo".to_owned(),
             start_layer: 0,
         },
     )

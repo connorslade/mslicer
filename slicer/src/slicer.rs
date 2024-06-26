@@ -79,8 +79,12 @@ pub fn slice_goo(slice_config: &SliceConfig, model: &Mesh, progress: impl Fn(u32
                     encoder.add_run(start - last, 0);
                 }
 
-                encoder.add_run(end - start, 255);
-                last = end;
+                if start > end {
+                    eprintln!("Invalid run {}-{}", start, end);
+                } else {
+                    encoder.add_run(end - start, 255);
+                    last = end;
+                }
             }
 
             let image_size = slice_config.platform_resolution.x as u64

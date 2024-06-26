@@ -50,28 +50,37 @@ impl Mesh {
                 let v1 = self.transform(&self.vertices[face[1] as usize]);
                 let v2 = self.transform(&self.vertices[face[2] as usize]);
 
-                let dot0 = v0.z - height;
-                let dot1 = v1.z - height;
-                let dot2 = v2.z - height;
+                let mut dot0 = v0.z - height;
+                let mut dot1 = v1.z - height;
+                let mut dot2 = v2.z - height;
 
-                let mut result = Vec::new();
+                if dot0 == 0.0 || dot1 == 0.0 || dot2 == 0.0 {
+                    dot0 -= 0.0001;
+                    dot1 -= 0.0001;
+                    dot2 -= 0.0001;
+                }
+
+                let mut result = [Pos::zeros(); 2];
+                let mut index = 0;
 
                 if dot0 * dot1 < 0.0 {
                     let t = dot0 / (dot0 - dot1);
                     let intersection = v0 + t * (v1 - v0);
-                    result.push(intersection);
+                    result[index] = intersection;
+                    index += 1;
                 }
 
                 if dot1 * dot2 < 0.0 {
                     let t = dot1 / (dot1 - dot2);
                     let intersection = v1 + t * (v2 - v1);
-                    result.push(intersection);
+                    result[index] = intersection;
+                    index += 1;
                 }
 
                 if dot2 * dot0 < 0.0 {
                     let t = dot2 / (dot2 - dot0);
                     let intersection = v2 + t * (v0 - v2);
-                    result.push(intersection);
+                    result[index] = intersection;
                 }
 
                 result
