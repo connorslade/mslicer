@@ -2,6 +2,7 @@ use anyhow::Result;
 use serde::{Deserialize, Deserializer, Serialize};
 
 pub mod commands;
+pub mod http_server;
 pub mod mqtt;
 pub mod mqtt_server;
 pub mod status;

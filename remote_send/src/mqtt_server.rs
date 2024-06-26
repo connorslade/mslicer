@@ -109,6 +109,7 @@ impl MqttHandler for Mqtt {
 
         if let Some(board_id) = packet.topic.strip_prefix("/sdcp/status/") {
             let status = serde_json::from_slice::<Response<StatusData>>(&packet.data)?;
+            println!("{:?}", status.data.status);
             *self.clients.write().get(board_id).unwrap().status.lock() = status.data.status;
         } else if let Some(board_id) = packet.topic.strip_prefix("/sdcp/response/") {
             println!("Got command response from `{}`", board_id);
