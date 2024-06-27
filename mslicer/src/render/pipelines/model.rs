@@ -32,6 +32,7 @@ pub struct ModelPipeline {
 #[derive(ShaderType)]
 struct ModelUniforms {
     transform: Matrix4<f32>,
+    model_transform: Matrix4<f32>,
     render_style: u32,
 }
 
@@ -126,8 +127,10 @@ impl Pipeline<WorkspaceRenderCallback> for ModelPipeline {
                 to_generate.push(idx);
             }
 
+            let model_transform = *model.mesh.transformation_matrix();
             let uniforms = ModelUniforms {
-                transform: resources.transform * model.mesh.transformation_matrix(),
+                transform: resources.transform * model_transform,
+                model_transform,
                 render_style: resources.render_style as u32,
             };
 

@@ -1,4 +1,4 @@
-# TODO
+# Todo
 
 - [ ] Verify slicer on more models
 - [ ] Preprocess mesh to remove self-intersections?
@@ -21,3 +21,6 @@
 - [ ] Close details dropdown in models window when deleting mesh
 - [x] Rotations in degrees
 - [x] Fix slice preview layer and scale controls
+- [x] Clamp camera rotations
+- [ ] Fix slicing rotated objects
+- [ ] 0-pad slice preview layer display

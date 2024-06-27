@@ -9,7 +9,7 @@ use std::{
 use ordered_float::OrderedFloat;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
-use crate::{config::SliceConfig, mesh::Mesh};
+use crate::{config::SliceConfig, mesh::Mesh, Pos};
 use goo_format::{File as GooFile, HeaderInfo, LayerContent, LayerEncoder};
 
 pub struct Slicer {
@@ -33,7 +33,10 @@ pub struct ProgressInner {
 
 impl Slicer {
     pub fn new(slice_config: SliceConfig, model: Mesh) -> Self {
-        let max = model.transform(&model.minmax_point().1);
+        let max = model.vertices.iter().fold(Pos::zeros(), |max, &f| {
+            let f = model.transform(&f);
+            Pos::new(max.x.max(f.x), max.y.max(f.y), max.z.max(f.z))
+        });
         let layers = (max.z / slice_config.slice_height).ceil() as u32;
 
         Self {

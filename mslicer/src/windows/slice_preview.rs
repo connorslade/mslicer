@@ -77,7 +77,7 @@ pub fn ui(app: &mut App, ctx: &Context, _frame: &mut Frame) {
                     ui.add(
                         DragValue::new(&mut result.slice_preview_layer)
                             .clamp_range(1..=result.goo.layers.len())
-                            .suffix(format!("/{}", result.goo.layers.len())),
+                            .custom_formatter(|n, _| format!("{}/{}", n, result.goo.layers.len())),
                     );
                     result.slice_preview_layer +=
                         ui.button(RichText::new("+").monospace()).clicked() as usize;

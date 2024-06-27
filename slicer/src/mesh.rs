@@ -1,7 +1,7 @@
 use std::io::{Read, Seek};
 
 use anyhow::Result;
-use nalgebra::{Matrix4, Vector4};
+use nalgebra::Matrix4;
 
 use crate::Pos;
 
@@ -19,42 +19,13 @@ pub struct Mesh {
 }
 
 impl Mesh {
-    fn center_vertices(mut self) -> Self {
-        let (min, max) = self.minmax_point();
-
-        let center = (min + max) / 2.0;
-        let center = Pos::new(center.x, center.y, min.z);
-
-        for v in self.vertices.iter_mut() {
-            *v -= center;
-        }
-
-        self
-    }
-
-    pub fn minmax_point(&self) -> (Pos, Pos) {
-        self.vertices.iter().fold(
-            (
-                Pos::new(f32::MAX, f32::MAX, f32::MAX),
-                Pos::new(f32::MIN, f32::MIN, f32::MIN),
-            ),
-            |(min, max), v| {
-                (
-                    Pos::new(min.x.min(v.x), min.y.min(v.y), min.z.min(v.z)),
-                    Pos::new(max.x.max(v.x), max.y.max(v.y), max.z.max(v.z)),
-                )
-            },
-        )
-    }
-
     pub fn intersect_plane(&self, height: f32) -> Vec<Pos> {
-        let height = self.inv_transform(&Pos::new(0.0, 0.0, height)).z;
         let mut out = Vec::new();
 
         for face in &self.faces {
-            let v0 = self.vertices[face[0] as usize];
-            let v1 = self.vertices[face[1] as usize];
-            let v2 = self.vertices[face[2] as usize];
+            let v0 = self.transform(&self.vertices[face[0] as usize]);
+            let v1 = self.transform(&self.vertices[face[1] as usize]);
+            let v2 = self.transform(&self.vertices[face[2] as usize]);
 
             let (a, b, c) = (v0.z - height, v1.z - height, v2.z - height);
             let (a_pos, b_pos, c_pos) = (a > 0.0, b > 0.0, c > 0.0);
@@ -62,7 +33,7 @@ impl Mesh {
             let mut push_intersection = |a: f32, b: f32, v0: Pos, v1: Pos| {
                 let t = a / (a - b);
                 let intersection = v0 + t * (v1 - v0);
-                out.push(self.transform(&intersection));
+                out.push(intersection);
             };
 
             (a_pos ^ b_pos).then(|| push_intersection(a, b, v0, v1));
@@ -84,11 +55,40 @@ impl Mesh {
     }
 
     pub fn transform(&self, pos: &Pos) -> Pos {
-        (self.transformation_matrix * Vector4::from([pos.x, pos.y, pos.z, 1.0])).xyz()
+        (self.transformation_matrix * pos.push(1.0)).xyz()
     }
 
     pub fn inv_transform(&self, pos: &Pos) -> Pos {
-        (self.inv_transformation_matrix * Vector4::from([pos.x, pos.y, pos.z, 1.0])).xyz()
+        (self.inv_transformation_matrix * pos.push(1.0)).xyz()
+    }
+
+    pub fn minmax_point(&self) -> (Pos, Pos) {
+        self.vertices.iter().fold(
+            (
+                Pos::new(f32::MAX, f32::MAX, f32::MAX),
+                Pos::new(f32::MIN, f32::MIN, f32::MIN),
+            ),
+            |(min, max), v| {
+                let v = self.transform(v);
+                (
+                    Pos::new(min.x.min(v.x), min.y.min(v.y), min.z.min(v.z)),
+                    Pos::new(max.x.max(v.x), max.y.max(v.y), max.z.max(v.z)),
+                )
+            },
+        )
+    }
+
+    fn center_vertices(mut self) -> Self {
+        let (min, max) = self.minmax_point();
+
+        let center = (min + max) / 2.0;
+        let center = Pos::new(center.x, center.y, min.z);
+
+        for v in self.vertices.iter_mut() {
+            *v -= center;
+        }
+
+        self
     }
 }
 

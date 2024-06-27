@@ -55,7 +55,7 @@ pub fn ui(app: &mut App, ctx: &Context, _frame: &mut Frame) {
                                     .show(ui, |ui| {
                                         ui.label("Position");
                                         let mut position = mesh.mesh.position();
-                                        vec3_dragger(ui, position.as_mut(), |x| x.speed(0.01));
+                                        vec3_dragger(ui, position.as_mut(), |x| x);
                                         (mesh.mesh.position() != position)
                                             .then(|| mesh.mesh.set_position(position));
                                         ui.end_row();
@@ -68,10 +68,12 @@ pub fn ui(app: &mut App, ctx: &Context, _frame: &mut Frame) {
                                                 vec3_dragger_proportional(
                                                     ui,
                                                     scale.as_mut(),
-                                                    |x| x.speed(0.01),
+                                                    |x| x.speed(0.01).clamp_range(0.001..=f32::MAX),
                                                 );
                                             } else {
-                                                vec3_dragger(ui, scale.as_mut(), |x| x.speed(0.01));
+                                                vec3_dragger(ui, scale.as_mut(), |x| {
+                                                    x.speed(0.01).clamp_range(0.001..=f32::MAX)
+                                                });
                                             }
                                             (mesh.mesh.scale() != scale)
                                                 .then(|| mesh.mesh.set_scale(scale));

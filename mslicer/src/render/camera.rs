@@ -1,3 +1,5 @@
+use std::f32::consts::FRAC_PI_2;
+
 use egui::{Key, PointerButton, Response, Ui};
 use nalgebra::{Matrix4, Vector3};
 
@@ -36,6 +38,9 @@ impl Camera {
         if response.dragged_by(PointerButton::Primary) {
             self.pitch -= drag_delta.y * 0.01;
             self.yaw -= drag_delta.x * 0.01;
+            
+            const EPSILON: f32 = 0.0001;
+            self.pitch = self.pitch.clamp(-FRAC_PI_2 + EPSILON, FRAC_PI_2 - EPSILON);
         }
 
         let direction = self.direction();

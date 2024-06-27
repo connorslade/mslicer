@@ -2,6 +2,7 @@
 
 struct Context {
     transform: mat4x4<f32>,
+    model_transform: mat4x4<f32>,
     render_style: u32,
 }
 
@@ -26,7 +27,7 @@ fn vert(
     out.camera_position = context.transform * position;
     out.position = context.transform * position;
     out.tex_coord = tex_coord;
-    out.normal = normal;
+    out.normal = normalize((context.model_transform * vec4(normal, 0.0)).xyz);
     return out;
 }
 
