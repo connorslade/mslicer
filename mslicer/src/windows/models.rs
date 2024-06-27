@@ -1,5 +1,6 @@
 use eframe::Frame;
 use egui::{CollapsingHeader, Context, Grid, Window};
+use slicer::Pos;
 
 use crate::{app::App, components::vec3_dragger};
 
@@ -49,9 +50,9 @@ pub fn ui(app: &mut App, ctx: &Context, _frame: &mut Frame) {
                                     .num_columns(2)
                                     .striped(true)
                                     .show(ui, |ui| {
-                                        ui.label("Position");
+                                        ui.label("Position (mm)");
                                         let mut position = mesh.mesh.position();
-                                        vec3_dragger(ui, position.as_mut(), |x| x);
+                                        vec3_dragger(ui, position.as_mut(), |x| x.speed(0.01));
                                         (mesh.mesh.position() != position)
                                             .then(|| mesh.mesh.set_position(position));
                                         ui.end_row();
@@ -63,11 +64,12 @@ pub fn ui(app: &mut App, ctx: &Context, _frame: &mut Frame) {
                                             .then(|| mesh.mesh.set_scale(scale));
                                         ui.end_row();
 
-                                        ui.label("Rotation");
-                                        let mut rotation = mesh.mesh.rotation();
-                                        vec3_dragger(ui, rotation.as_mut(), |x| x.speed(0.01));
-                                        (mesh.mesh.scale() != rotation)
-                                            .then(|| mesh.mesh.set_rotation(rotation));
+                                        ui.label("Rotation (deg)");
+                                        let mut rotation = rad_to_deg(mesh.mesh.rotation());
+                                        let original_rotation = rotation;
+                                        vec3_dragger(ui, rotation.as_mut(), |x| x);
+                                        (original_rotation != rotation)
+                                            .then(|| mesh.mesh.set_rotation(deg_to_rad(rotation)));
                                         ui.end_row();
 
                                         ui.label("Name");
@@ -98,4 +100,12 @@ pub fn ui(app: &mut App, ctx: &Context, _frame: &mut Frame) {
                 Action::None => {}
             }
         });
+}
+
+fn rad_to_deg(pos: Pos) -> Pos {
+    Pos::new(pos.x.to_degrees(), pos.y.to_degrees(), pos.z.to_degrees())
+}
+
+fn deg_to_rad(pos: Pos) -> Pos {
+    Pos::new(pos.x.to_radians(), pos.y.to_radians(), pos.z.to_radians())
 }

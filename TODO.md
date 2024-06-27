@@ -17,6 +17,7 @@
 - [x] Rename `ui` module to `mslicer`
 - [ ] Proper slice preview scaling
 - [ ] Preview image generation
-- [ ] Don't clone meshes when sending them to slicing thread
+- [ ] Don't clone mesh data when sending mesh to slicing thread
 - [ ] Close details dropdown in models window when deleting mesh
-- [ ] Rotations in degrees
+- [x] Rotations in degrees
+- [x] Fix slice preview scale controls

@@ -20,6 +20,8 @@ pub fn ui(app: &mut App, ctx: &Context, _frame: &mut Frame) {
                             .show_value(false),
                     );
 
+                    result.slice_preview_layer =
+                        result.slice_preview_layer.clamp(1, result.goo.layers.len());
                     let new_preview = if result.last_preview_layer != result.slice_preview_layer {
                         result.last_preview_layer = result.slice_preview_layer;
                         let (width, height) = (
