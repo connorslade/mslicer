@@ -3,11 +3,18 @@ use egui::{CollapsingHeader, Context, Grid, Window};
 
 use crate::{app::App, components::vec3_dragger};
 
+enum Action {
+    None,
+    Remove(usize),
+    Duplicate(usize),
+}
+
 pub fn ui(app: &mut App, ctx: &Context, _frame: &mut Frame) {
     Window::new("Models")
         .open(&mut app.windows.show_models)
         .show(ctx, |ui| {
             let mut meshes = app.meshes.write().unwrap();
+            let mut action = Action::None;
 
             if meshes.is_empty() {
                 ui.label("No models loaded yet.");
@@ -19,7 +26,20 @@ pub fn ui(app: &mut App, ctx: &Context, _frame: &mut Frame) {
                 .striped(true)
                 .show(ui, |ui| {
                     for (i, mesh) in meshes.iter_mut().enumerate() {
-                        mesh.hidden ^= ui.button(if mesh.hidden { "🗙" } else { "👁" }).clicked();
+                        ui.horizontal(|ui| {
+                            mesh.hidden ^= ui
+                                .button(if mesh.hidden { "🗙" } else { "👁" })
+                                .on_hover_text(if mesh.hidden { "Show" } else { "Hide" })
+                                .clicked();
+                            ui.button("🗑")
+                                .on_hover_text("Delete")
+                                .clicked()
+                                .then(|| action = Action::Remove(i));
+                            ui.button("🗋")
+                                .on_hover_text("Duplicate")
+                                .clicked()
+                                .then(|| action = Action::Duplicate(i));
+                        });
                         ui.label(&mesh.name);
 
                         CollapsingHeader::new("Details")
@@ -39,6 +59,10 @@ pub fn ui(app: &mut App, ctx: &Context, _frame: &mut Frame) {
                                         });
                                         ui.end_row();
 
+                                        ui.label("Name");
+                                        ui.text_edit_singleline(&mut mesh.name);
+                                        ui.end_row();
+
                                         ui.label("Vertices");
                                         ui.monospace(mesh.mesh.vertices.len().to_string());
                                         ui.end_row();
@@ -51,5 +75,16 @@ pub fn ui(app: &mut App, ctx: &Context, _frame: &mut Frame) {
                         ui.end_row()
                     }
                 });
+
+            match action {
+                Action::Remove(i) => {
+                    meshes.remove(i);
+                }
+                Action::Duplicate(i) => {
+                    let mesh = meshes[i].clone();
+                    meshes.push(mesh);
+                }
+                Action::None => {}
+            }
         });
 }

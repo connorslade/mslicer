@@ -9,7 +9,7 @@
 - [x] Optimize slicer (BVH?)
   - [x] ehh just throw rayon on it
 - [ ] Allow saving / loading projects
-- [ ] Allow deleting objects
+- [x] Allow deleting objects
 - [ ] Use instancing both for object mesh storage and rendering
 - [ ] Less internal dependence on GOO format
 - [ ] Anti-aliasing
@@ -17,3 +17,5 @@
 - [x] Rename `ui` module to `mslicer`
 - [ ] Proper slice preview scaling
 - [ ] Preview image generation
+- [ ] Don't clone meshes when sending them to slicing thread
+- [ ] Close details dropdown in models window when deleting mesh
