@@ -46,6 +46,7 @@ pub fn ui(app: &mut App, ctx: &Context, _frame: &mut Frame) {
                         None
                     };
 
+                    result.preview_scale = result.preview_scale.max(0.1);
                     egui::Frame::canvas(ui.style()).show(ui, |ui| {
                         let available_size = ui.available_size();
                         let (rect, _response) = ui.allocate_exact_size(

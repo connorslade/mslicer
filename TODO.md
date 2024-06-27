@@ -20,4 +20,4 @@
 - [ ] Don't clone mesh data when sending mesh to slicing thread
 - [ ] Close details dropdown in models window when deleting mesh
 - [x] Rotations in degrees
-- [x] Fix slice preview scale controls
+- [x] Fix slice preview layer and scale controls

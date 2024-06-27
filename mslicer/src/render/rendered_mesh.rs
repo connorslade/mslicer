@@ -11,7 +11,7 @@ pub struct RenderedMesh {
     pub name: String,
     pub mesh: Mesh,
     pub hidden: bool,
-    pub face_count: u32,
+    pub locked_scale: bool,
 
     vertices: Vec<ModelVertex>,
     buffers: Option<RenderedMeshBuffers>,
@@ -54,10 +54,10 @@ impl RenderedMesh {
         }
 
         Self {
-            face_count: mesh.faces.len() as u32,
             mesh,
             name: String::new(),
             hidden: false,
+            locked_scale: true,
             vertices,
             buffers: None,
         }
@@ -83,7 +83,7 @@ impl RenderedMesh {
             let index_buffer = device.create_buffer_init(&BufferInitDescriptor {
                 label: None,
                 contents: bytemuck::cast_slice(
-                    &(0..self.mesh.faces.len() as u32 * 3).collect::<Vec<_>>(),
+                    &(0..self.mesh.faces.len() as u32 * 3).collect::<Vec<u32>>(),
                 ),
                 usage: BufferUsages::INDEX | BufferUsages::COPY_DST,
             });
@@ -101,10 +101,10 @@ impl RenderedMesh {
 impl Clone for RenderedMesh {
     fn clone(&self) -> Self {
         Self {
-            face_count: self.face_count,
             name: self.name.clone(),
             mesh: self.mesh.clone(),
             hidden: self.hidden,
+            locked_scale: self.locked_scale,
             vertices: self.vertices.clone(),
             buffers: None,
         }

@@ -2,7 +2,10 @@ use eframe::Frame;
 use egui::{CollapsingHeader, Context, Grid, Window};
 use slicer::Pos;
 
-use crate::{app::App, components::vec3_dragger};
+use crate::{
+    app::App,
+    components::{vec3_dragger, vec3_dragger_proportional},
+};
 
 enum Action {
     None,
@@ -50,7 +53,7 @@ pub fn ui(app: &mut App, ctx: &Context, _frame: &mut Frame) {
                                     .num_columns(2)
                                     .striped(true)
                                     .show(ui, |ui| {
-                                        ui.label("Position (mm)");
+                                        ui.label("Position");
                                         let mut position = mesh.mesh.position();
                                         vec3_dragger(ui, position.as_mut(), |x| x.speed(0.01));
                                         (mesh.mesh.position() != position)
@@ -58,13 +61,32 @@ pub fn ui(app: &mut App, ctx: &Context, _frame: &mut Frame) {
                                         ui.end_row();
 
                                         ui.label("Scale");
-                                        let mut scale = mesh.mesh.scale();
-                                        vec3_dragger(ui, scale.as_mut(), |x| x.speed(0.01));
-                                        (mesh.mesh.scale() != scale)
-                                            .then(|| mesh.mesh.set_scale(scale));
+
+                                        ui.horizontal(|ui| {
+                                            let mut scale = mesh.mesh.scale();
+                                            if mesh.locked_scale {
+                                                vec3_dragger_proportional(
+                                                    ui,
+                                                    scale.as_mut(),
+                                                    |x| x.speed(0.01),
+                                                );
+                                            } else {
+                                                vec3_dragger(ui, scale.as_mut(), |x| x.speed(0.01));
+                                            }
+                                            (mesh.mesh.scale() != scale)
+                                                .then(|| mesh.mesh.set_scale(scale));
+
+                                            mesh.locked_scale ^= ui
+                                                .button(if mesh.locked_scale {
+                                                    "🔒"
+                                                } else {
+                                                    "🔓"
+                                                })
+                                                .clicked();
+                                        });
                                         ui.end_row();
 
-                                        ui.label("Rotation (deg)");
+                                        ui.label("Rotation");
                                         let mut rotation = rad_to_deg(mesh.mesh.rotation());
                                         let original_rotation = rotation;
                                         vec3_dragger(ui, rotation.as_mut(), |x| x);
