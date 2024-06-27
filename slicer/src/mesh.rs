@@ -1,6 +1,7 @@
 use std::io::{Read, Seek};
 
 use anyhow::Result;
+use nalgebra::{Matrix4, Vector4};
 
 use crate::Pos;
 
@@ -9,8 +10,12 @@ pub struct Mesh {
     pub vertices: Vec<Pos>,
     pub faces: Vec<[u32; 3]>,
 
-    pub position: Pos,
-    pub scale: Pos,
+    transformation_matrix: Matrix4<f32>,
+    inv_transformation_matrix: Matrix4<f32>,
+
+    position: Pos,
+    scale: Pos,
+    rotation: Pos,
 }
 
 impl Mesh {
@@ -68,20 +73,67 @@ impl Mesh {
         out
     }
 
+    pub fn update_transformation_matrix(&mut self) {
+        let scale = Matrix4::new_nonuniform_scaling(&self.scale);
+        let rotation =
+            Matrix4::from_euler_angles(self.rotation.x, self.rotation.y, self.rotation.z);
+        let translation = Matrix4::new_translation(&self.position);
+
+        self.transformation_matrix = translation * rotation * scale;
+        self.inv_transformation_matrix = self.transformation_matrix.try_inverse().unwrap();
+    }
+
     pub fn transform(&self, pos: &Pos) -> Pos {
-        Pos::new(
-            pos.x * self.scale.x,
-            pos.y * self.scale.y,
-            pos.z * self.scale.z,
-        ) + self.position
+        (self.transformation_matrix * Vector4::from([pos.x, pos.y, pos.z, 1.0])).xyz()
     }
 
     pub fn inv_transform(&self, pos: &Pos) -> Pos {
-        Pos::new(
-            (pos.x - self.position.x) / self.scale.x,
-            (pos.y - self.position.y) / self.scale.y,
-            (pos.z - self.position.z) / self.scale.z,
-        )
+        (self.inv_transformation_matrix * Vector4::from([pos.x, pos.y, pos.z, 1.0])).xyz()
+    }
+}
+
+impl Mesh {
+    pub fn transformation_matrix(&self) -> &Matrix4<f32> {
+        &self.transformation_matrix
+    }
+
+    pub fn set_position(&mut self, pos: Pos) {
+        self.position = pos;
+        self.update_transformation_matrix();
+    }
+
+    pub fn set_position_unchecked(&mut self, pos: Pos) {
+        self.position = pos;
+    }
+
+    pub fn position(&self) -> Pos {
+        self.position
+    }
+
+    pub fn set_scale(&mut self, scale: Pos) {
+        self.scale = scale;
+        self.update_transformation_matrix();
+    }
+
+    pub fn set_scale_unchecked(&mut self, scale: Pos) {
+        self.scale = scale;
+    }
+
+    pub fn scale(&self) -> Pos {
+        self.scale
+    }
+
+    pub fn set_rotation(&mut self, rotation: Pos) {
+        self.rotation = rotation;
+        self.update_transformation_matrix();
+    }
+
+    pub fn set_rotation_unchecked(&mut self, rotation: Pos) {
+        self.rotation = rotation;
+    }
+
+    pub fn rotation(&self) -> Pos {
+        self.rotation
     }
 }
 
@@ -106,12 +158,26 @@ pub fn load_mesh<T: Read + Seek>(reader: &mut T, format: &str) -> Result<Mesh> {
                         ]
                     })
                     .collect(),
-
-                position: Pos::new(0.0, 0.0, 0.0),
-                scale: Pos::new(1.0, 1.0, 1.0),
+                ..Default::default()
             }
             .center_vertices())
         }
         _ => Err(anyhow::anyhow!("Unsupported format: {}", format)),
+    }
+}
+
+impl Default for Mesh {
+    fn default() -> Self {
+        Self {
+            vertices: Default::default(),
+            faces: Default::default(),
+
+            transformation_matrix: Matrix4::identity(),
+            inv_transformation_matrix: Matrix4::identity(),
+
+            position: Pos::new(0.0, 0.0, 0.0),
+            scale: Pos::new(1.0, 1.0, 1.0),
+            rotation: Pos::new(0.0, 0.0, 0.0),
+        }
     }
 }

@@ -41,19 +41,19 @@ fn main() -> Result<()> {
     let (min, max) = mesh.minmax_point();
 
     let real_scale = 1.0;
-    mesh.scale = Pos::new(
+    mesh.set_scale(Pos::new(
         real_scale / slice_config.platform_size.x * slice_config.platform_resolution.x as f32,
         real_scale / slice_config.platform_size.y * slice_config.platform_resolution.y as f32,
         real_scale,
-    );
+    ));
 
     let center = slice_config.platform_resolution / 2;
     let mesh_center = (min + max) / 2.0;
-    mesh.position = Vector3::new(
+    mesh.set_position(Vector3::new(
         center.x as f32 - mesh_center.x,
         center.y as f32 - mesh_center.y,
-        mesh.position.z - 0.05,
-    );
+        mesh.position().z - 0.05,
+    ));
 
     println!(
         "Loaded mesh. {{ vert: {}, face: {} }}",

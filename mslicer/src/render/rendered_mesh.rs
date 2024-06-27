@@ -1,4 +1,3 @@
-use nalgebra::Matrix4;
 use wgpu::{
     util::{BufferInitDescriptor, DeviceExt},
     Buffer, BufferUsages, Device,
@@ -12,6 +11,7 @@ pub struct RenderedMesh {
     pub name: String,
     pub mesh: Mesh,
     pub hidden: bool,
+    pub face_count: u32,
 
     vertices: Vec<ModelVertex>,
     buffers: Option<RenderedMeshBuffers>,
@@ -54,6 +54,7 @@ impl RenderedMesh {
         }
 
         Self {
+            face_count: mesh.faces.len() as u32,
             mesh,
             name: String::new(),
             hidden: false,
@@ -81,7 +82,9 @@ impl RenderedMesh {
 
             let index_buffer = device.create_buffer_init(&BufferInitDescriptor {
                 label: None,
-                contents: bytemuck::cast_slice(&(0..self.mesh.faces.len() * 3).collect::<Vec<_>>()),
+                contents: bytemuck::cast_slice(
+                    &(0..self.mesh.faces.len() as u32 * 3).collect::<Vec<_>>(),
+                ),
                 usage: BufferUsages::INDEX | BufferUsages::COPY_DST,
             });
 
@@ -93,18 +96,12 @@ impl RenderedMesh {
 
         self.buffers.as_ref().unwrap()
     }
-
-    pub fn transformation_matrix(&self) -> Matrix4<f32> {
-        let translation = Matrix4::new_translation(&self.mesh.position);
-        let scale = Matrix4::new_nonuniform_scaling(&self.mesh.scale);
-
-        translation * scale
-    }
 }
 
 impl Clone for RenderedMesh {
     fn clone(&self) -> Self {
         Self {
+            face_count: self.face_count,
             name: self.name.clone(),
             mesh: self.mesh.clone(),
             hidden: self.hidden,

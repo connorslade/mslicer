@@ -50,13 +50,24 @@ pub fn ui(app: &mut App, ctx: &Context, _frame: &mut Frame) {
                                     .striped(true)
                                     .show(ui, |ui| {
                                         ui.label("Position");
-                                        vec3_dragger(ui, mesh.mesh.position.as_mut(), |x| x);
+                                        let mut position = mesh.mesh.position();
+                                        vec3_dragger(ui, position.as_mut(), |x| x);
+                                        (mesh.mesh.position() != position)
+                                            .then(|| mesh.mesh.set_position(position));
                                         ui.end_row();
 
                                         ui.label("Scale");
-                                        vec3_dragger(ui, mesh.mesh.scale.as_mut(), |x| {
-                                            x.speed(0.01)
-                                        });
+                                        let mut scale = mesh.mesh.scale();
+                                        vec3_dragger(ui, scale.as_mut(), |x| x.speed(0.01));
+                                        (mesh.mesh.scale() != scale)
+                                            .then(|| mesh.mesh.set_scale(scale));
+                                        ui.end_row();
+
+                                        ui.label("Rotation");
+                                        let mut rotation = mesh.mesh.rotation();
+                                        vec3_dragger(ui, rotation.as_mut(), |x| x.speed(0.01));
+                                        (mesh.mesh.scale() != rotation)
+                                            .then(|| mesh.mesh.set_rotation(rotation));
                                         ui.end_row();
 
                                         ui.label("Name");

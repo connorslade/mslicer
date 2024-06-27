@@ -127,7 +127,7 @@ impl Pipeline<WorkspaceRenderCallback> for ModelPipeline {
             }
 
             let uniforms = ModelUniforms {
-                transform: resources.transform * model.transformation_matrix(),
+                transform: resources.transform * model.mesh.transformation_matrix(),
                 render_style: resources.render_style as u32,
             };
 

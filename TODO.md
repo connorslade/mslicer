@@ -5,7 +5,7 @@
 - [ ] Integrate remote send into ui
 - [ ] Allow slicing multiple modals at once
 - [ ] Fix translation in slicer (its currently moved by pixels not mm)
-- [ ] Allow rotating modals
+- [x] Allow rotating modals
 - [x] Optimize slicer (BVH?)
   - [x] ehh just throw rayon on it
 - [ ] Allow saving / loading projects
@@ -19,3 +19,4 @@
 - [ ] Preview image generation
 - [ ] Don't clone meshes when sending them to slicing thread
 - [ ] Close details dropdown in models window when deleting mesh
+- [ ] Rotations in degrees
