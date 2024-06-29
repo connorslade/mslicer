@@ -1,7 +1,10 @@
+use std::sync::Arc;
+
 use anyhow::Result;
 use eframe::NativeOptions;
 use egui::{IconData, Vec2, ViewportBuilder};
-use wgpu::TextureFormat;
+use egui_wgpu::WgpuConfiguration;
+use wgpu::{DeviceDescriptor, Features, TextureFormat};
 
 const TEXTURE_FORMAT: TextureFormat = TextureFormat::Bgra8Unorm;
 
@@ -28,6 +31,13 @@ fn main() -> Result<()> {
             depth_buffer: 24,
             stencil_buffer: 8,
             multisampling: 4,
+            wgpu_options: WgpuConfiguration {
+                device_descriptor: Arc::new(|_adapter| DeviceDescriptor {
+                    required_features: Features::POLYGON_MODE_LINE,
+                    ..Default::default()
+                }),
+                ..Default::default()
+            },
             ..Default::default()
         },
         Box::new(|cc| {

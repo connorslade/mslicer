@@ -7,7 +7,7 @@ use wgpu::{
     BindGroupLayoutEntry, BindingResource, BindingType, Buffer, BufferBinding, BufferBindingType,
     BufferDescriptor, BufferUsages, ColorTargetState, ColorWrites, CommandEncoder, CompareFunction,
     DepthStencilState, Device, FragmentState, IndexFormat, MultisampleState,
-    PipelineLayoutDescriptor, PrimitiveState, Queue, RenderPass, RenderPipeline,
+    PipelineLayoutDescriptor, PolygonMode, PrimitiveState, Queue, RenderPass, RenderPipeline,
     RenderPipelineDescriptor, ShaderModuleDescriptor, ShaderSource, ShaderStages, TextureFormat,
     VertexState,
 };
@@ -24,21 +24,27 @@ pub struct BuildPlatePipeline {
     render_pipeline: RenderPipeline,
     bind_group: BindGroup,
 
-    vertex_buffer: Buffer,
-    index_buffer: Buffer,
+    vertex_buffer: Option<Buffer>,
+    index_buffer: Option<Buffer>,
     uniform_buffer: Buffer,
 
     last_bed_size: Vector3<f32>,
+    last_grid_size: f32,
+    vertex_count: u32,
 }
 
 #[derive(ShaderType)]
 struct BuildPlateUniforms {
-    bed_size: Vector3<f32>,
     transform: Matrix4<f32>,
 }
 
+struct Line {
+    start: Vector3<f32>,
+    end: Vector3<f32>,
+}
+
 impl BuildPlatePipeline {
-    pub fn new(device: &Device, bed_size: Vector3<f32>) -> Self {
+    pub fn new(device: &Device) -> Self {
         let shader = device.create_shader_module(ShaderModuleDescriptor {
             label: None,
             source: ShaderSource::Wgsl(include_shader!("build_plate.wgsl").into()),
@@ -101,7 +107,10 @@ impl BuildPlatePipeline {
                     write_mask: ColorWrites::all(),
                 })],
             }),
-            primitive: PrimitiveState::default(),
+            primitive: PrimitiveState {
+                polygon_mode: PolygonMode::Line,
+                ..Default::default()
+            },
             depth_stencil: Some(DepthStencilState {
                 format: TextureFormat::Depth24PlusStencil8,
                 depth_write_enabled: true,
@@ -116,28 +125,17 @@ impl BuildPlatePipeline {
             multiview: None,
         });
 
-        let vert = generate_mesh(bed_size);
-        let vertex_buffer = device.create_buffer_init(&BufferInitDescriptor {
-            label: Some("Platform Vertex Buffer"),
-            contents: bytemuck::cast_slice(&vert),
-            usage: BufferUsages::VERTEX | BufferUsages::COPY_DST,
-        });
-
-        let index_buffer = device.create_buffer_init(&BufferInitDescriptor {
-            label: Some("Platform Index Buffer"),
-            contents: bytemuck::cast_slice(&[0, 1, 2, 3, 4, 5]),
-            usage: BufferUsages::INDEX | BufferUsages::COPY_DST,
-        });
-
         Self {
             render_pipeline,
             bind_group,
 
-            vertex_buffer,
-            index_buffer,
+            vertex_buffer: None,
+            index_buffer: None,
             uniform_buffer,
 
-            last_bed_size: bed_size,
+            last_bed_size: Vector3::zeros(),
+            last_grid_size: 0.0,
+            vertex_count: 0,
         }
     }
 }
@@ -145,22 +143,33 @@ impl BuildPlatePipeline {
 impl Pipeline<WorkspaceRenderCallback> for BuildPlatePipeline {
     fn prepare(
         &mut self,
-        _device: &Device,
+        device: &Device,
         queue: &Queue,
         _screen_descriptor: &ScreenDescriptor,
         _encoder: &mut CommandEncoder,
         resources: &WorkspaceRenderCallback,
     ) {
-        if self.last_bed_size != resources.bed_size {
-            let vertex = generate_mesh(resources.bed_size);
-            queue.write_buffer(&self.vertex_buffer, 0, bytemuck::cast_slice(&vertex));
+        if self.last_bed_size != resources.bed_size || self.last_grid_size != resources.grid_size {
+            let vertex = generate_mesh(resources.bed_size, resources.grid_size);
+            self.vertex_count = vertex.len() as u32;
             self.last_bed_size = resources.bed_size;
+
+            self.vertex_buffer = Some(device.create_buffer_init(&BufferInitDescriptor {
+                label: None,
+                contents: bytemuck::cast_slice(&vertex),
+                usage: BufferUsages::VERTEX | BufferUsages::COPY_DST,
+            }));
+
+            self.index_buffer = Some(device.create_buffer_init(&BufferInitDescriptor {
+                label: None,
+                contents: bytemuck::cast_slice(&(0..vertex.len() as u32).collect::<Vec<_>>()),
+                usage: BufferUsages::INDEX | BufferUsages::COPY_DST,
+            }));
         }
 
         let mut buffer = UniformBuffer::new(Vec::new());
         buffer
             .write(&BuildPlateUniforms {
-                bed_size: resources.bed_size,
                 transform: resources.transform,
             })
             .unwrap();
@@ -171,28 +180,79 @@ impl Pipeline<WorkspaceRenderCallback> for BuildPlatePipeline {
         render_pass.set_pipeline(&self.render_pipeline);
         render_pass.set_bind_group(0, &self.bind_group, &[]);
 
-        render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
-        render_pass.set_index_buffer(self.index_buffer.slice(..), IndexFormat::Uint32);
-        render_pass.draw_indexed(0..6, 0, 0..1);
+        render_pass.set_vertex_buffer(0, self.vertex_buffer.as_ref().unwrap().slice(..));
+        render_pass.set_index_buffer(
+            self.index_buffer.as_ref().unwrap().slice(..),
+            IndexFormat::Uint32,
+        );
+        render_pass.draw_indexed(0..self.vertex_count, 0, 0..1);
     }
 }
 
-fn generate_mesh(bed_size: Vector3<f32>) -> Vec<ModelVertex> {
-    let (a, b) = (bed_size / 2.0, -bed_size / 2.0);
+impl Line {
+    fn new(start: Vector3<f32>, end: Vector3<f32>) -> Self {
+        Self { start, end }
+    }
 
-    [
-        [a.x, a.y, 0.0],
-        [b.x, a.y, 0.0],
-        [b.x, b.y, 0.0],
-        [b.x, b.y, 0.0],
-        [a.x, b.y, 0.0],
-        [a.x, a.y, 0.0],
-    ]
-    .into_iter()
-    .map(|x| ModelVertex {
-        position: [x[0], x[1], x[2], 1.0],
-        tex_coords: [0.0, 0.0],
-        normal: [0.0, 0.0, 0.0],
-    })
-    .collect::<Vec<_>>()
+    fn to_vertex(&self) -> [ModelVertex; 3] {
+        [
+            ModelVertex {
+                position: [self.start.x, self.start.y, self.start.z, 1.0],
+                tex_coords: [0.0, 0.0],
+                normal: [0.0, 0.0, 0.0],
+            },
+            ModelVertex {
+                position: [self.end.x, self.end.y, self.end.z, 1.0],
+                tex_coords: [0.0, 0.0],
+                normal: [0.0, 0.0, 0.0],
+            },
+            ModelVertex {
+                position: [self.start.x, self.start.y, self.start.z, 1.0],
+                tex_coords: [0.0, 0.0],
+                normal: [0.0, 0.0, 0.0],
+            },
+        ]
+    }
+}
+
+fn generate_mesh(bed_size: Vector3<f32>, grid_size: f32) -> Vec<ModelVertex> {
+    let (a, b) = (bed_size / 2.0, -bed_size / 2.0);
+    let z = bed_size.z;
+
+    let mut lines = vec![
+        // Bottom plane
+        Line::new(Vector3::new(a.x, a.y, 0.0), Vector3::new(b.x, a.y, 0.0)),
+        Line::new(Vector3::new(a.x, b.y, 0.0), Vector3::new(b.x, b.y, 0.0)),
+        Line::new(Vector3::new(a.x, a.y, 0.0), Vector3::new(a.x, b.y, 0.0)),
+        Line::new(Vector3::new(b.x, a.y, 0.0), Vector3::new(b.x, b.y, 0.0)),
+        // Top plane
+        Line::new(Vector3::new(a.x, a.y, z), Vector3::new(b.x, a.y, z)),
+        Line::new(Vector3::new(a.x, b.y, z), Vector3::new(b.x, b.y, z)),
+        Line::new(Vector3::new(a.x, a.y, z), Vector3::new(a.x, b.y, z)),
+        Line::new(Vector3::new(b.x, a.y, z), Vector3::new(b.x, b.y, z)),
+        // Vertical lines
+        Line::new(Vector3::new(a.x, a.y, 0.0), Vector3::new(a.x, a.y, z)),
+        Line::new(Vector3::new(b.x, a.y, 0.0), Vector3::new(b.x, a.y, z)),
+        Line::new(Vector3::new(a.x, b.y, 0.0), Vector3::new(a.x, b.y, z)),
+        Line::new(Vector3::new(b.x, b.y, 0.0), Vector3::new(b.x, b.y, z)),
+    ];
+
+    // Grid on bottom plane
+    for x in 0..(bed_size.x / grid_size) as i32 {
+        let x = x as f32 * grid_size + b.x;
+        lines.push(Line::new(
+            Vector3::new(x, a.y, 0.0),
+            Vector3::new(x, b.y, 0.0),
+        ));
+    }
+
+    for y in 0..(bed_size.y / grid_size) as i32 {
+        let y = y as f32 * grid_size + b.y;
+        lines.push(Line::new(
+            Vector3::new(a.x, y, 0.0),
+            Vector3::new(b.x, y, 0.0),
+        ));
+    }
+
+    lines.iter().flat_map(Line::to_vertex).collect::<Vec<_>>()
 }

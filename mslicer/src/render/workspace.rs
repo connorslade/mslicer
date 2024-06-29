@@ -20,6 +20,7 @@ pub struct WorkspaceRenderResources {
 
 pub struct WorkspaceRenderCallback {
     pub bed_size: Vector3<f32>,
+    pub grid_size: f32,
     pub transform: Matrix4<f32>,
     pub models: Arc<RwLock<Vec<RenderedMesh>>>,
     pub render_style: RenderStyle,

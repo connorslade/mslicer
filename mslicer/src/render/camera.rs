@@ -38,7 +38,7 @@ impl Camera {
         if response.dragged_by(PointerButton::Primary) {
             self.pitch -= drag_delta.y * 0.01;
             self.yaw -= drag_delta.x * 0.01;
-            
+
             const EPSILON: f32 = 0.0001;
             self.pitch = self.pitch.clamp(-FRAC_PI_2 + EPSILON, FRAC_PI_2 - EPSILON);
         }
@@ -90,9 +90,9 @@ impl Camera {
 impl Default for Camera {
     fn default() -> Self {
         Self {
-            pos: Vector3::zeros(),
-            pitch: 0.0,
-            yaw: 0.0,
+            pos: Vector3::new(-128.61, -184.83, 195.22),
+            pitch: -0.27,
+            yaw: 1.1,
 
             fov: std::f32::consts::PI / 2.0,
             near: 0.1,

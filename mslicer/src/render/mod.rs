@@ -1,7 +1,6 @@
 use std::mem;
 
 use eframe::CreationContext;
-use nalgebra::Vector3;
 use pipelines::{
     build_plate::BuildPlatePipeline, model::ModelPipeline, slice_preview::SlicePreviewPipeline,
 };
@@ -51,7 +50,7 @@ pub fn init_wgpu(cc: &CreationContext) {
 
     let resources = &mut render_state.renderer.write().callback_resources;
     resources.insert(WorkspaceRenderResources {
-        build_plate_pipeline: BuildPlatePipeline::new(device, Vector3::new(218.88, 122.904, 260.0)),
+        build_plate_pipeline: BuildPlatePipeline::new(device),
         model_pipeline: ModelPipeline::new(device),
     });
     resources.insert(SlicePreviewRenderResources {

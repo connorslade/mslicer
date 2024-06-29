@@ -18,6 +18,9 @@ pub fn ui(app: &mut App, ctx: &Context, _frame: &mut Frame) {
                     ui.selectable_value(&mut app.render_style, RenderStyle::Normals, "Normals");
                     ui.selectable_value(&mut app.render_style, RenderStyle::Rended, "Rended");
                 });
+
+            dragger(ui, "Grid Size", &mut app.grid_size, |x| x.speed(0.1));
+
             ui.collapsing("Camera", |ui| {
                 ui.label("Position");
 

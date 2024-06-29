@@ -29,6 +29,7 @@ pub struct App {
     pub slice_result: Arc<Mutex<Option<SliceResult>>>,
 
     pub render_style: RenderStyle,
+    pub grid_size: f32,
     pub fps: FpsTracker,
     pub windows: Windows,
 }
@@ -64,6 +65,7 @@ impl eframe::App for App {
                     rect,
                     WorkspaceRenderCallback {
                         bed_size: self.slice_config.platform_size,
+                        grid_size: self.grid_size,
                         transform: self
                             .camera
                             .view_projection_matrix(rect.width() / rect.height()),
@@ -121,6 +123,7 @@ impl Default for App {
             meshes: Arc::new(RwLock::new(Vec::new())),
             windows: Windows::default(),
             render_style: RenderStyle::Normals,
+            grid_size: 12.16,
         }
     }
 }
