@@ -77,30 +77,25 @@ impl Slicer {
 
                 let mut out = Vec::new();
                 for y in 0..slice_config.platform_resolution.y {
+                    let yf = y as f32;
                     let mut intersections = segments
                         .iter()
                         .filter_map(|(a, b)| {
-                            let y = y as f32;
-                            if a.y <= y && b.y >= y {
-                                let t = (y - a.y) / (b.y - a.y);
-                                let x = a.x + t * (b.x - a.x);
-                                Some(x)
-                            } else if b.y <= y && a.y >= y {
-                                let t = (y - b.y) / (a.y - b.y);
-                                let x = b.x + t * (a.x - b.x);
-                                Some(x)
-                            } else {
-                                None
-                            }
+                            ((a.y > yf) ^ (b.y > yf)).then(|| {
+                                let t = (yf - a.y) / (b.y - a.y);
+                                a.x + t * (b.x - a.x)
+                            })
                         })
                         .collect::<Vec<_>>();
 
                     intersections.sort_by_key(|&x| OrderedFloat(x));
-                    intersections.dedup();
 
                     for span in intersections.chunks_exact(2) {
                         let y_offset = (slice_config.platform_resolution.x * y) as u64;
-                        out.push((y_offset + span[0] as u64, y_offset + span[1] as u64));
+                        out.push((
+                            y_offset + span[0].round() as u64,
+                            y_offset + span[1].round() as u64,
+                        ));
                     }
                 }
 
@@ -112,7 +107,7 @@ impl Slicer {
                         encoder.add_run(start - last, 0);
                     }
 
-                    assert!(end >= start);
+                    assert!(end >= start, "End precedes start in layer {layer}");
                     encoder.add_run(end - start, 255);
                     last = end;
                 }
