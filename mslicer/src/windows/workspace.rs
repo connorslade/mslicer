@@ -22,17 +22,19 @@ pub fn ui(app: &mut App, ctx: &Context, _frame: &mut Frame) {
             dragger(ui, "Grid Size", &mut app.grid_size, |x| x.speed(0.1));
 
             ui.collapsing("Camera", |ui| {
-                ui.label("Position");
-
-                vec3_dragger(ui, app.camera.pos.as_mut(), |x| x);
-
-                ui.add_space(12.0);
                 ui.label("Target");
 
-                let mut looking = [app.camera.pitch, app.camera.yaw];
-                vec2_dragger(ui, &mut looking, |x| x);
-                app.camera.pitch = looking[0];
-                app.camera.yaw = looking[1];
+                vec3_dragger(ui, app.camera.target.as_mut(), |x| x);
+
+                ui.add_space(12.0);
+                ui.label("Angle");
+
+                vec2_dragger(ui, app.camera.angle.as_mut(), |x| x);
+
+                ui.add_space(12.0);
+                ui.label("Distance");
+
+                dragger(ui, "", &mut app.camera.distance, |x| x.speed(5));
 
                 ui.add_space(12.0);
                 ui.label("Misc");

@@ -1,7 +1,8 @@
 # Todo
 
 - [ ] Verify slicer on more models
-- [ ] Preprocess mesh to remove self-intersections?
+- [ ] ~~Preprocess mesh to remove self-intersections?~~
+- [ ] Separate each surface from a mesh before slicing to fix the self intersection problem
 - [ ] Integrate remote send into ui
 - [ ] Allow slicing multiple modals at once
 - [ ] Fix translation in slicer (its currently moved by pixels not mm)
@@ -13,7 +14,7 @@
 - [ ] Use instancing both for object mesh storage and rendering
 - [ ] Less internal dependence on GOO format
 - [ ] Anti-aliasing
-- [ ] Cache transformed points
+- [ ] Cache transformed points?
 - [x] Rename `ui` module to `mslicer`
 - [ ] Proper slice preview scaling
 - [ ] Preview image generation
@@ -23,4 +24,6 @@
 - [x] Fix slice preview layer and scale controls
 - [x] Clamp camera rotations
 - [ ] Fix slicing rotated objects
-- [ ] 0-pad slice preview layer display
+- [ ] 0-pad slice preview layer display so its width doesn't change as you move the slider
+- [ ] Preload layer 1 in slice preview
+- [ ] Better camera movement (left click to orbit, right click to change orbit point)

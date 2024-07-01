@@ -80,11 +80,10 @@ impl Slicer {
                     let yf = y as f32;
                     let mut intersections = segments
                         .iter()
-                        .filter_map(|(a, b)| {
-                            ((a.y > yf) ^ (b.y > yf)).then(|| {
-                                let t = (yf - a.y) / (b.y - a.y);
-                                a.x + t * (b.x - a.x)
-                            })
+                        .filter(|&(a, b)| ((a.y > yf) ^ (b.y > yf)))
+                        .map(|(a, b)| {
+                            let t = (yf - a.y) / (b.y - a.y);
+                            a.x + t * (b.x - a.x)
                         })
                         .collect::<Vec<_>>();
 
