@@ -1,11 +1,11 @@
 # Todo
 
 - [ ] Verify slicer on more models
-- [ ] ~~Preprocess mesh to remove self-intersections?~~
-- [ ] Separate each surface from a mesh before slicing to fix the self intersection problem
+- [ ] Preprocess mesh to remove self-intersections?
+- [ ] Separate each surface from a mesh before slicing to fix the self intersection problem?
 - [ ] Integrate remote send into ui
 - [ ] Allow slicing multiple modals at once
-- [ ] Fix translation in slicer (its currently moved by pixels not mm)
+- [x] Fix translation in slicer (its currently moved by pixels not mm)
 - [x] Allow rotating modals
 - [x] Optimize slicer (BVH?)
   - [x] ehh just throw rayon on it
@@ -29,3 +29,6 @@
 - [x] Better camera movement (left click to orbit, right click to change orbit point)
 - [ ] Don't crash when object is outside bounds
 - [ ] Change centerpoint of model to be at z=0
+- [x] Add support for loading .obj files
+- [x] Move call to slicer into app from top_bar
+- [ ] Determine which side is the front of the printer

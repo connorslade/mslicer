@@ -1,14 +1,14 @@
 use std::{
-    sync::{Arc, Mutex, RwLock},
-    time::Instant,
+    sync::{Arc, Mutex, RwLock}, thread, time::Instant
 };
 
+use clone_macro::clone;
 use egui::{CentralPanel, Frame, Sense};
 use egui_wgpu::Callback;
 use nalgebra::{Vector2, Vector3};
 use slicer::{
     config::{ExposureConfig, SliceConfig},
-    slicer::Progress as SliceProgress,
+    slicer::{Progress as SliceProgress, Slicer}, Pos,
 };
 
 use crate::{
@@ -46,6 +46,51 @@ pub struct SliceResult {
 pub struct FpsTracker {
     last_frame: Instant,
     last_frame_time: f32,
+}
+
+impl App {
+    pub fn slice(&mut self) {
+        let slice_config = self.slice_config.clone();
+        let mut mesh = self.meshes.read().unwrap().first().unwrap().mesh.clone();
+
+        let mm_to_px = Pos::new(
+            self.slice_config.platform_resolution.x as f32 / self.slice_config.platform_size.x,
+            self.slice_config.platform_resolution.y as f32 / self.slice_config.platform_size.y,
+            1.0,
+        );
+
+        mesh.set_scale_unchecked(mesh.scale().component_mul(&mm_to_px));
+
+        let (min, max) = mesh.minmax_point();
+        let preview_scale = (self.slice_config.platform_size.x / (max.x - min.x))
+            .min(self.slice_config.platform_size.y / (max.y - min.y));
+
+        let pos = mesh.position();
+        mesh.set_position_unchecked(
+            pos.component_mul(&mm_to_px)
+                + Pos::new(
+                    self.slice_config.platform_resolution.x as f32 / 2.0,
+                    self.slice_config.platform_resolution.y as f32 / 2.0,
+                    pos.z - self.slice_config.slice_height,
+                ),
+        );
+
+        mesh.update_transformation_matrix();
+
+        let slicer = Slicer::new(slice_config, mesh);
+        self.slice_progress = Some(slicer.progress());
+
+        thread::spawn(clone!([{ self.slice_result } as slice_result], move || {
+            let goo = slicer.slice();
+            slice_result.lock().unwrap().replace(SliceResult {
+                goo,
+                slice_preview_layer: 0,
+                last_preview_layer: 0,
+                preview_offset: Vector2::new(0.0, 0.0),
+                preview_scale,
+            });
+        }));
+    }
 }
 
 impl eframe::App for App {
