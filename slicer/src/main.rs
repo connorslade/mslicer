@@ -1,6 +1,6 @@
 use std::{
     fs::{self, File},
-    io::{stdout, Write},
+    io::{stdout, BufReader, Write},
     thread,
     time::Instant,
 };
@@ -36,8 +36,9 @@ fn main() -> Result<()> {
         first_layers: 10,
     };
 
-    let mut file = File::open(FILE_PATH)?;
-    let mut mesh = load_mesh(&mut file, "stl")?;
+    let file = File::open(FILE_PATH)?;
+    let mut buf = BufReader::new(file);
+    let mut mesh = load_mesh(&mut buf, "stl")?;
     let (min, max) = mesh.minmax_point();
 
     let real_scale = 1.0;

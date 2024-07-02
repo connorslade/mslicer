@@ -1,4 +1,4 @@
-use std::thread;
+use std::{fs::File, io::BufReader, thread};
 
 use clone_macro::clone;
 use eframe::Frame;
@@ -21,11 +21,19 @@ pub fn ui(app: &mut App, ctx: &Context, _frame: &mut Frame) {
             ui.menu_button("🖹 File", |ui| {
                 if ui.button("Import Model").clicked() {
                     // TODO: async
-                    if let Some(path) = FileDialog::new().add_filter("STL", &["stl"]).pick_file() {
+                    if let Some(path) = FileDialog::new()
+                        .add_filter("Mesh", &["stl", "obj"])
+                        .pick_file()
+                    {
                         let name = path.file_name().unwrap().to_str().unwrap().to_string();
+                        let ext = path.extension();
+                        let format = ext
+                            .expect("Selected file has no extension")
+                            .to_string_lossy();
 
-                        let mut file = std::fs::File::open(path).unwrap();
-                        let model = slicer::mesh::load_mesh(&mut file, "stl").unwrap();
+                        let file = File::open(&path).unwrap();
+                        let mut buf = BufReader::new(file);
+                        let model = slicer::mesh::load_mesh(&mut buf, &format).unwrap();
 
                         app.meshes
                             .write()

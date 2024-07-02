@@ -1,7 +1,8 @@
-use std::io::{Read, Seek};
+use std::io::{BufRead, Seek};
 
 use anyhow::Result;
 use nalgebra::Matrix4;
+use obj::{Obj, Position};
 
 use crate::Pos;
 
@@ -137,11 +138,11 @@ impl Mesh {
     }
 }
 
-pub fn load_mesh<T: Read + Seek>(reader: &mut T, format: &str) -> Result<Mesh> {
-    match format {
+pub fn load_mesh<T: BufRead + Seek>(reader: &mut T, format: &str) -> Result<Mesh> {
+    Ok(match format {
         "stl" => {
             let model = stl_io::read_stl(reader)?;
-            Ok(Mesh {
+            Mesh {
                 vertices: model
                     .vertices
                     .iter()
@@ -160,10 +161,26 @@ pub fn load_mesh<T: Read + Seek>(reader: &mut T, format: &str) -> Result<Mesh> {
                     .collect(),
                 ..Default::default()
             }
-            .center_vertices())
         }
-        _ => Err(anyhow::anyhow!("Unsupported format: {}", format)),
+        "obj" | "mtl" => {
+            let model: Obj<Position> = obj::load_obj(reader)?;
+            Mesh {
+                vertices: model
+                    .vertices
+                    .iter()
+                    .map(|v| Pos::new(v.position[0], v.position[1], v.position[2]))
+                    .collect(),
+                faces: model
+                    .indices
+                    .chunks_exact(3)
+                    .map(|i| [i[0] as u32, i[1] as u32, i[2] as u32])
+                    .collect(),
+                ..Default::default()
+            }
+        }
+        _ => return Err(anyhow::anyhow!("Unsupported format: {}", format)),
     }
+    .center_vertices())
 }
 
 impl Default for Mesh {

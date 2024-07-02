@@ -26,4 +26,6 @@
 - [ ] Fix slicing rotated objects
 - [ ] 0-pad slice preview layer display so its width doesn't change as you move the slider
 - [ ] Preload layer 1 in slice preview
-- [ ] Better camera movement (left click to orbit, right click to change orbit point)
+- [x] Better camera movement (left click to orbit, right click to change orbit point)
+- [ ] Don't crash when object is outside bounds
+- [ ] Change centerpoint of model to be at z=0
