@@ -6,11 +6,11 @@ use std::{
     },
 };
 
+use common::{config::SliceConfig, image::Image, misc::SliceResult};
 use ordered_float::OrderedFloat;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
-use crate::{config::SliceConfig, mesh::Mesh, Pos};
-use goo_format::{File as GooFile, HeaderInfo, LayerContent, LayerEncoder};
+use crate::{mesh::Mesh, Pos};
 
 pub struct Slicer {
     slice_config: SliceConfig,
@@ -58,7 +58,7 @@ impl Slicer {
         self.progress.clone()
     }
 
-    pub fn slice(&self) -> GooFile {
+    pub fn slice(&self) -> SliceResult {
         let (slice_config, model) = (&self.slice_config, &self.model);
         let layers = (0..self.progress.total)
             .into_par_iter()
@@ -98,83 +98,30 @@ impl Slicer {
                     }
                 }
 
-                let mut encoder = LayerEncoder::new();
+                let mut image = Image::blank(
+                    self.slice_config.platform_resolution.x as usize,
+                    self.slice_config.platform_resolution.y as usize,
+                );
 
                 let mut last = 0;
                 for (start, end) in out {
                     if start > last {
-                        encoder.add_run(start - last, 0);
+                        image.add_run((start - last) as usize, 0);
                     }
 
                     assert!(end >= start, "End precedes start in layer {layer}");
-                    encoder.add_run(end - start, 255);
+                    image.add_run((end - start) as usize, 255);
                     last = end;
                 }
 
-                let image_size = slice_config.platform_resolution.x as u64
-                    * slice_config.platform_resolution.y as u64;
-                encoder.add_run(image_size - last, 0);
-
-                let (data, checksum) = encoder.finish();
-                let layer_exposure = if layer < slice_config.first_layers {
-                    &slice_config.first_exposure_config
-                } else {
-                    &slice_config.exposure_config
-                };
-
-                LayerContent {
-                    data,
-                    checksum,
-                    layer_position_z: slice_config.slice_height * (layer + 1) as f32,
-
-                    layer_exposure_time: layer_exposure.exposure_time,
-                    lift_distance: layer_exposure.lift_distance,
-                    lift_speed: layer_exposure.lift_speed,
-                    retract_distance: layer_exposure.retract_distance,
-                    retract_speed: layer_exposure.retract_speed,
-                    pause_position_z: slice_config.platform_size.z,
-                    ..Default::default()
-                }
+                image
             })
             .collect::<Vec<_>>();
 
-        let layer_time = slice_config.exposure_config.exposure_time
-            + slice_config.exposure_config.lift_distance / slice_config.exposure_config.lift_speed;
-        let bottom_layer_time = slice_config.first_exposure_config.exposure_time
-            + slice_config.first_exposure_config.lift_distance
-                / slice_config.first_exposure_config.lift_speed;
-        let total_time = (layers.len() as u32 - slice_config.first_layers) as f32 * layer_time
-            + slice_config.first_layers as f32 * bottom_layer_time;
-
-        GooFile::new(
-            HeaderInfo {
-                x_resolution: slice_config.platform_resolution.x as u16,
-                y_resolution: slice_config.platform_resolution.y as u16,
-                x_size: slice_config.platform_size.x,
-                y_size: slice_config.platform_size.y,
-
-                layer_count: layers.len() as u32,
-                printing_time: total_time as u32,
-                layer_thickness: slice_config.slice_height,
-                bottom_layers: slice_config.first_layers,
-                transition_layers: slice_config.first_layers as u16 + 1,
-
-                exposure_time: slice_config.exposure_config.exposure_time,
-                lift_distance: slice_config.exposure_config.lift_distance,
-                lift_speed: slice_config.exposure_config.lift_speed,
-                retract_distance: slice_config.exposure_config.retract_distance,
-                retract_speed: slice_config.exposure_config.retract_speed,
-
-                bottom_exposure_time: slice_config.first_exposure_config.exposure_time,
-                bottom_lift_distance: slice_config.first_exposure_config.lift_distance,
-                bottom_lift_speed: slice_config.first_exposure_config.lift_speed,
-                bottom_retract_distance: slice_config.first_exposure_config.retract_distance,
-                bottom_retract_speed: slice_config.first_exposure_config.retract_speed,
-
-                ..Default::default()
-            },
+        SliceResult {
             layers,
-        )
+            slice_config: &self.slice_config,
+        }
     }
 }
 

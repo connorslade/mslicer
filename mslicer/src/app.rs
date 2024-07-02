@@ -1,5 +1,7 @@
 use std::{
-    sync::{Arc, Mutex, RwLock}, thread, time::Instant
+    sync::{Arc, Mutex, RwLock},
+    thread,
+    time::Instant,
 };
 
 use clone_macro::clone;
@@ -7,8 +9,8 @@ use egui::{CentralPanel, Frame, Sense};
 use egui_wgpu::Callback;
 use nalgebra::{Vector2, Vector3};
 use slicer::{
-    config::{ExposureConfig, SliceConfig},
-    slicer::{Progress as SliceProgress, Slicer}, Pos,
+    slicer::{Progress as SliceProgress, Slicer},
+    Pos,
 };
 
 use crate::{
@@ -18,6 +20,7 @@ use crate::{
     },
     windows::{self, Windows},
 };
+use common::config::{ExposureConfig, SliceConfig};
 use goo_format::File as GooFile;
 
 pub struct App {
@@ -81,7 +84,7 @@ impl App {
         self.slice_progress = Some(slicer.progress());
 
         thread::spawn(clone!([{ self.slice_result } as slice_result], move || {
-            let goo = slicer.slice();
+            let goo = GooFile::from_slice_result(slicer.slice());
             slice_result.lock().unwrap().replace(SliceResult {
                 goo,
                 slice_preview_layer: 0,

@@ -6,6 +6,7 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.86"
 bytemuck = "1.16.1"
+clone-macro = "0.1.0"
 eframe = { version = "0.27.2", features = ["wgpu"] }
 egui = "0.27.2"
 egui-wgpu = "0.27.2"
@@ -18,4 +19,3 @@ wgpu = "0.19.4"
 common = { path = "../common" }
 goo_format = { path = "../goo_format" }
 slicer = { path = "../slicer" }
-clone-macro = "0.1.0"

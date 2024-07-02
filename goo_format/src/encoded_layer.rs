@@ -1,3 +1,5 @@
+use common::misc::Run;
+
 use crate::layer_content::calculate_checksum;
 
 pub struct LayerEncoder {
@@ -9,11 +11,6 @@ pub struct LayerDecoder<'a> {
     data: &'a [u8],
     color: u8,
     offset: usize,
-}
-
-pub struct Run {
-    pub length: u64,
-    pub value: u8,
 }
 
 impl LayerEncoder {

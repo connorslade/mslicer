@@ -24,6 +24,7 @@ impl Mesh {
         let mut out = Vec::new();
 
         for face in &self.faces {
+            // todo: just transform the plane with the inverse transformation matrix
             let v0 = self.transform(&self.vertices[face[0] as usize]);
             let v1 = self.transform(&self.vertices[face[1] as usize]);
             let v2 = self.transform(&self.vertices[face[2] as usize]);

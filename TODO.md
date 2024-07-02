@@ -27,8 +27,7 @@
 - [ ] 0-pad slice preview layer display so its width doesn't change as you move the slider
 - [ ] Preload layer 1 in slice preview
 - [x] Better camera movement (left click to orbit, right click to change orbit point)
-- [ ] Don't crash when object is outside bounds
-- [ ] Change centerpoint of model to be at z=0
+- [ ] Don't crash when slicing an object outside of bounds
 - [x] Add support for loading .obj files
 - [x] Move call to slicer into app from top_bar
 - [ ] Determine which side is the front of the printer

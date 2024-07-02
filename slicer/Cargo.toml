@@ -8,10 +8,10 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.86"
 nalgebra = "0.32.6"
+obj-rs = "0.7.1"
 ordered-float = "4.2.0"
 rayon = "1.10.0"
 stl_io = "0.7.0"
 
 common = { path = "../common" }
 goo_format = { path = "../goo_format" }
-obj-rs = "0.7.1"

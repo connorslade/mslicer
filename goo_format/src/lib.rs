@@ -5,7 +5,7 @@ mod header_info;
 mod layer_content;
 mod preview_image;
 
-pub use encoded_layer::{LayerDecoder, LayerEncoder, Run};
+pub use encoded_layer::{LayerDecoder, LayerEncoder};
 pub use file::File;
 pub use header_info::HeaderInfo;
 pub use layer_content::LayerContent;

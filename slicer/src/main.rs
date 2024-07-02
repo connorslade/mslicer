@@ -6,15 +6,14 @@ use std::{
 };
 
 use anyhow::Result;
-use common::serde::DynamicSerializer;
 use nalgebra::{Vector2, Vector3};
 
-use slicer::{
+use common::{
     config::{ExposureConfig, SliceConfig},
-    mesh::load_mesh,
-    slicer::Slicer,
-    Pos,
+    serde::DynamicSerializer,
 };
+use goo_format::File as GooFile;
+use slicer::{mesh::load_mesh, slicer::Slicer, Pos};
 
 fn main() -> Result<()> {
     const FILE_PATH: &str = "teapot.stl";
@@ -67,7 +66,7 @@ fn main() -> Result<()> {
     let slicer = Slicer::new(slice_config.clone(), mesh);
     let progress = slicer.progress();
 
-    let goo = thread::spawn(move || slicer.slice());
+    let goo = thread::spawn(move || GooFile::from_slice_result(slicer.slice()));
 
     let mut completed = 0;
     while completed < progress.total() {

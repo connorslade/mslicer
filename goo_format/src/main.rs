@@ -6,7 +6,8 @@ use std::{
 
 use anyhow::Result;
 use clap::Parser;
-use goo_format::{File, LayerDecoder, PreviewImage, Run};
+use common::misc::Run;
+use goo_format::{File, LayerDecoder, PreviewImage};
 use image::RgbImage;
 
 #[derive(Parser)]

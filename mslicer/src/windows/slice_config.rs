@@ -1,11 +1,11 @@
 use eframe::Frame;
 use egui::{Context, DragValue, Grid, Ui, Window};
-use slicer::config::ExposureConfig;
 
 use crate::{
     app::App,
     components::{vec2_dragger, vec3_dragger},
 };
+use common::config::ExposureConfig;
 
 pub fn ui(app: &mut App, ctx: &Context, _frame: &mut Frame) {
     Window::new("Slice Config")
