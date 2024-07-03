@@ -21,7 +21,7 @@ use crate::{
     windows::{self, Windows},
 };
 use common::config::{ExposureConfig, SliceConfig};
-use goo_format::File as GooFile;
+use goo_format::{File as GooFile, LayerEncoder};
 
 pub struct App {
     pub camera: Camera,
@@ -84,7 +84,7 @@ impl App {
         self.slice_progress = Some(slicer.progress());
 
         thread::spawn(clone!([{ self.slice_result } as slice_result], move || {
-            let goo = GooFile::from_slice_result(slicer.slice());
+            let goo = GooFile::from_slice_result(slicer.slice::<LayerEncoder>());
             slice_result.lock().unwrap().replace(SliceResult {
                 goo,
                 slice_preview_layer: 0,

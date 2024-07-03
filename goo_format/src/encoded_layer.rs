@@ -1,6 +1,9 @@
-use common::misc::Run;
+use common::{
+    config::SliceConfig,
+    misc::{EncodableLayer, Run},
+};
 
-use crate::layer_content::calculate_checksum;
+use crate::{layer_content::calculate_checksum, LayerContent};
 
 pub struct LayerEncoder {
     data: Vec<u8>,
@@ -99,6 +102,41 @@ impl LayerEncoder {
     pub fn finish(self) -> (Vec<u8>, u8) {
         let checksum = calculate_checksum(&self.data);
         (self.data, checksum)
+    }
+}
+
+impl EncodableLayer for LayerEncoder {
+    type Output = LayerContent;
+
+    fn new() -> Self {
+        Self::new()
+    }
+
+    fn add_run(&mut self, length: u64, value: u8) {
+        self.add_run(length, value);
+    }
+
+    fn finish(self, layer: usize, slice_config: &SliceConfig) -> Self::Output {
+        let (data, checksum) = self.finish();
+        let layer_exposure = if (layer as u32) < slice_config.first_layers {
+            &slice_config.first_exposure_config
+        } else {
+            &slice_config.exposure_config
+        };
+
+        LayerContent {
+            data,
+            checksum,
+            layer_position_z: slice_config.slice_height * (layer + 1) as f32,
+
+            layer_exposure_time: layer_exposure.exposure_time,
+            lift_distance: layer_exposure.lift_distance,
+            lift_speed: layer_exposure.lift_speed,
+            retract_distance: layer_exposure.retract_distance,
+            retract_speed: layer_exposure.retract_speed,
+            pause_position_z: slice_config.platform_size.z,
+            ..Default::default()
+        }
     }
 }
 

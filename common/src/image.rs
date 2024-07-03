@@ -39,8 +39,8 @@ impl Image {
         let half_kernel_size = kernel_size / 2;
 
         let mut kernel = vec![0.0; kernel_size];
-        for x in 0..kernel_size {
-            kernel[x] = gaussian((x - half_kernel_size) as f32, sigma);
+        for (i, e) in kernel.iter_mut().enumerate().take(kernel_size) {
+            *e = gaussian((i - half_kernel_size) as f32, sigma);
         }
 
         // Blur image horizontally
@@ -104,6 +104,6 @@ impl Image {
 }
 
 fn gaussian(x: f32, sigma: f32) -> f32 {
-    const ROOT_TWO_PI: f32 = 2.50662827463100050242;
+    const ROOT_TWO_PI: f32 = 2.506_628_3;
     (x.powi(2) / (2.0 * sigma.powi(2))).exp() / (sigma * ROOT_TWO_PI)
 }

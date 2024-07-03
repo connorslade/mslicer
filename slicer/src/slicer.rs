@@ -6,7 +6,10 @@ use std::{
     },
 };
 
-use common::{config::SliceConfig, image::Image, misc::SliceResult};
+use common::{
+    config::SliceConfig,
+    misc::{EncodableLayer, SliceResult},
+};
 use ordered_float::OrderedFloat;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
@@ -58,7 +61,7 @@ impl Slicer {
         self.progress.clone()
     }
 
-    pub fn slice(&self) -> SliceResult {
+    pub fn slice<Layer: EncodableLayer>(&self) -> SliceResult<Layer::Output> {
         let (slice_config, model) = (&self.slice_config, &self.model);
         let layers = (0..self.progress.total)
             .into_par_iter()
@@ -98,23 +101,25 @@ impl Slicer {
                     }
                 }
 
-                let mut image = Image::blank(
-                    self.slice_config.platform_resolution.x as usize,
-                    self.slice_config.platform_resolution.y as usize,
-                );
+                // let mut image = Image::blank(
+                //     self.slice_config.platform_resolution.x as usize,
+                //     self.slice_config.platform_resolution.y as usize,
+                // );
+
+                let mut encoder = Layer::new();
 
                 let mut last = 0;
                 for (start, end) in out {
                     if start > last {
-                        image.add_run((start - last) as usize, 0);
+                        encoder.add_run(start - last, 0);
                     }
 
                     assert!(end >= start, "End precedes start in layer {layer}");
-                    image.add_run((end - start) as usize, 255);
+                    encoder.add_run(end - start, 255);
                     last = end;
                 }
 
-                image
+                encoder.finish(layer as usize, slice_config)
             })
             .collect::<Vec<_>>();
 

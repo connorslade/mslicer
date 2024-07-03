@@ -12,7 +12,7 @@ use common::{
     config::{ExposureConfig, SliceConfig},
     serde::DynamicSerializer,
 };
-use goo_format::File as GooFile;
+use goo_format::{File as GooFile, LayerEncoder};
 use slicer::{mesh::load_mesh, slicer::Slicer, Pos};
 
 fn main() -> Result<()> {
@@ -66,7 +66,7 @@ fn main() -> Result<()> {
     let slicer = Slicer::new(slice_config.clone(), mesh);
     let progress = slicer.progress();
 
-    let goo = thread::spawn(move || GooFile::from_slice_result(slicer.slice()));
+    let goo = thread::spawn(move || GooFile::from_slice_result(slicer.slice::<LayerEncoder>()));
 
     let mut completed = 0;
     while completed < progress.total() {

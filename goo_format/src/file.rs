@@ -5,7 +5,7 @@ use common::{
     serde::{Deserializer, Serializer},
 };
 
-use crate::{HeaderInfo, LayerContent, LayerEncoder, ENDING_STRING};
+use crate::{HeaderInfo, LayerContent, ENDING_STRING};
 
 pub struct File {
     pub header: HeaderInfo,
@@ -17,41 +17,11 @@ impl File {
         Self { header, layers }
     }
 
-    pub fn from_slice_result(result: SliceResult) -> Self {
-        let slice_config = result.slice_config;
-        let layers = result
-            .layers
-            .into_iter()
-            .enumerate()
-            .map(|(idx, layer)| {
-                let mut encoder = LayerEncoder::new();
-
-                for run in layer.runs() {
-                    encoder.add_run(run.length, run.value);
-                }
-
-                let (data, checksum) = encoder.finish();
-                let layer_exposure = if (idx as u32) < slice_config.first_layers {
-                    &slice_config.first_exposure_config
-                } else {
-                    &slice_config.exposure_config
-                };
-
-                LayerContent {
-                    data,
-                    checksum,
-                    layer_position_z: slice_config.slice_height * (idx + 1) as f32,
-
-                    layer_exposure_time: layer_exposure.exposure_time,
-                    lift_distance: layer_exposure.lift_distance,
-                    lift_speed: layer_exposure.lift_speed,
-                    retract_distance: layer_exposure.retract_distance,
-                    retract_speed: layer_exposure.retract_speed,
-                    pause_position_z: slice_config.platform_size.z,
-                    ..Default::default()
-                }
-            })
-            .collect::<Vec<_>>();
+    pub fn from_slice_result(result: SliceResult<LayerContent>) -> Self {
+        let SliceResult {
+            layers,
+            slice_config,
+        } = result;
 
         let layer_time = slice_config.exposure_config.exposure_time
             + slice_config.exposure_config.lift_distance / slice_config.exposure_config.lift_speed;
