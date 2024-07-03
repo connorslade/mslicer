@@ -4,6 +4,7 @@ use wgpu::{CommandEncoder, Device, Queue, RenderPass};
 pub mod build_plate;
 pub mod model;
 pub mod slice_preview;
+pub mod target_point;
 
 pub trait Pipeline<T> {
     fn prepare(

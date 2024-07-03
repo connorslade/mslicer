@@ -47,7 +47,7 @@ impl BuildPlatePipeline {
     pub fn new(device: &Device) -> Self {
         let shader = device.create_shader_module(ShaderModuleDescriptor {
             label: None,
-            source: ShaderSource::Wgsl(include_shader!("build_plate.wgsl").into()),
+            source: ShaderSource::Wgsl(include_shader!("solid.wgsl").into()),
         });
 
         let uniform_buffer = device.create_buffer(&BufferDescriptor {

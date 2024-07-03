@@ -3,6 +3,7 @@ use std::mem;
 use eframe::CreationContext;
 use pipelines::{
     build_plate::BuildPlatePipeline, model::ModelPipeline, slice_preview::SlicePreviewPipeline,
+    target_point::TargetPointPipeline,
 };
 use slice_preview::SlicePreviewRenderResources;
 use wgpu::{BufferAddress, VertexAttribute, VertexBufferLayout, VertexFormat, VertexStepMode};
@@ -37,7 +38,7 @@ pub const VERTEX_BUFFER_LAYOUT: VertexBufferLayout = VertexBufferLayout {
 };
 
 #[repr(C)]
-#[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
+#[derive(Default, Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct ModelVertex {
     pub position: [f32; 4],
     pub tex_coords: [f32; 2],
@@ -52,6 +53,7 @@ pub fn init_wgpu(cc: &CreationContext) {
     resources.insert(WorkspaceRenderResources {
         build_plate_pipeline: BuildPlatePipeline::new(device),
         model_pipeline: ModelPipeline::new(device),
+        target_point_pipeline: TargetPointPipeline::new(device),
     });
     resources.insert(SlicePreviewRenderResources {
         slice_preview_pipeline: SlicePreviewPipeline::new(device),

@@ -8,6 +8,7 @@ use super::{
     pipelines::{
         build_plate::BuildPlatePipeline,
         model::{ModelPipeline, RenderStyle},
+        target_point::TargetPointPipeline,
         Pipeline,
     },
     rendered_mesh::RenderedMesh,
@@ -16,14 +17,19 @@ use super::{
 pub struct WorkspaceRenderResources {
     pub build_plate_pipeline: BuildPlatePipeline,
     pub model_pipeline: ModelPipeline,
+    pub target_point_pipeline: TargetPointPipeline,
 }
 
 pub struct WorkspaceRenderCallback {
+    pub transform: Matrix4<f32>,
+
     pub bed_size: Vector3<f32>,
     pub grid_size: f32,
-    pub transform: Matrix4<f32>,
+
     pub models: Arc<RwLock<Vec<RenderedMesh>>>,
     pub render_style: RenderStyle,
+
+    pub target_point: Vector3<f32>,
 }
 
 impl CallbackTrait for WorkspaceRenderCallback {
@@ -43,6 +49,9 @@ impl CallbackTrait for WorkspaceRenderCallback {
         resources
             .model_pipeline
             .prepare(device, queue, screen_descriptor, encoder, self);
+        resources
+            .target_point_pipeline
+            .prepare(device, queue, screen_descriptor, encoder, self);
 
         Vec::new()
     }
@@ -59,5 +68,6 @@ impl CallbackTrait for WorkspaceRenderCallback {
 
         resources.build_plate_pipeline.paint(render_pass, self);
         resources.model_pipeline.paint(render_pass, self);
+        resources.target_point_pipeline.paint(render_pass, self);
     }
 }

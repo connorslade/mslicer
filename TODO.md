@@ -31,3 +31,5 @@
 - [x] Add support for loading .obj files
 - [x] Move call to slicer into app from top_bar
 - [ ] Determine which side is the front of the printer
+- [ ] Render orbit target point
+- [ ] Factor out common descriptors from pipelines

@@ -112,11 +112,15 @@ impl eframe::App for App {
                 let callback = Callback::new_paint_callback(
                     rect,
                     WorkspaceRenderCallback {
-                        bed_size: self.slice_config.platform_size,
-                        grid_size: self.grid_size,
                         transform: self
                             .camera
                             .view_projection_matrix(rect.width() / rect.height()),
+
+                        bed_size: self.slice_config.platform_size,
+                        grid_size: self.grid_size,
+
+                        target_point: self.camera.target,
+
                         models: self.meshes.clone(),
                         render_style: self.render_style,
                     },
