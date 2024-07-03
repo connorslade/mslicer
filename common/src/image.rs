@@ -9,6 +9,14 @@ pub struct Image {
     idx: usize,
 }
 
+pub struct ImageRuns<'a> {
+    inner: &'a [u8],
+
+    size: u64,
+    last_value: u8,
+    last_idx: u64,
+}
+
 impl Image {
     pub fn blank(width: usize, height: usize) -> Self {
         Self {
@@ -34,64 +42,29 @@ impl Image {
     }
 
     pub fn blur(&mut self, sigma: f32) {
-        // Generate kernel
-        let kernel_size = (4.0 * sigma) as usize;
-        let half_kernel_size = kernel_size / 2;
-
-        let mut kernel = vec![0.0; kernel_size];
-        for (i, e) in kernel.iter_mut().enumerate().take(kernel_size) {
-            *e = gaussian((i - half_kernel_size) as f32, sigma);
-        }
-
-        // Blur image horizontally
-        for y in 0..self.size.y {
-            for x in 0..self.size.x {
-                let sum = (x.saturating_sub(half_kernel_size)
-                    ..(x + half_kernel_size).min(self.size.x))
-                    .map(|i| self.get_pixel(i, y) as f32 * kernel[i + half_kernel_size])
-                    .sum::<f32>();
-                self.set_pixel(x, y, (sum / kernel_size as f32) as u8);
-            }
-        }
-
-        // Blur image vertically
+        let sigma = sigma as usize;
         for x in 0..self.size.x {
             for y in 0..self.size.y {
-                let sum = (y.saturating_sub(half_kernel_size)
-                    ..(y + half_kernel_size).min(self.size.y))
-                    .map(|i| self.get_pixel(i, y) as f32 * kernel[i + half_kernel_size])
-                    .sum::<f32>();
-                self.set_pixel(x, y, (sum / kernel_size as f32) as u8);
+                let mut sum = 0;
+                for xp in x.saturating_sub(sigma)..(x + sigma).min(self.size.x) {
+                    for yp in y.saturating_sub(sigma)..(y + sigma).min(self.size.y) {
+                        sum += self.get_pixel(xp, yp);
+                    }
+                }
+
+                let avg = sum as f32 / (sigma * sigma) as f32;
+                self.set_pixel(x, y, avg as u8);
             }
         }
     }
 
-    // TODO: Turn into iterator
-    pub fn runs(&self) -> Vec<Run> {
-        let mut last = (self.data[0], 0);
-        let mut runs = Vec::new();
-
-        let size = (self.size.x * self.size.y) as u64;
-        for i in 0..size {
-            let val = self.data[i as usize];
-
-            if val != last.0 {
-                runs.push(Run {
-                    length: i - last.1,
-                    value: last.0,
-                });
-                last = (val, i);
-            }
+    pub fn runs(&self) -> ImageRuns {
+        ImageRuns {
+            inner: &self.data,
+            size: (self.size.x * self.size.y) as u64,
+            last_value: 0,
+            last_idx: 0,
         }
-
-        if last.1 + 1 != size {
-            runs.push(Run {
-                length: size - last.1,
-                value: 0,
-            });
-        }
-
-        runs
     }
 
     pub fn finish(&self) -> &[u8] {
@@ -103,7 +76,28 @@ impl Image {
     }
 }
 
-fn gaussian(x: f32, sigma: f32) -> f32 {
-    const ROOT_TWO_PI: f32 = 2.506_628_3;
-    (x.powi(2) / (2.0 * sigma.powi(2))).exp() / (sigma * ROOT_TWO_PI)
+impl<'a> Iterator for ImageRuns<'a> {
+    type Item = Run;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.last_idx >= self.size {
+            return None;
+        }
+
+        for i in 0.. {
+            let idx = self.last_idx + i;
+
+            if idx >= self.size as u64 || self.inner[idx as usize] != self.last_value {
+                let out = Run {
+                    length: i,
+                    value: self.last_value,
+                };
+                self.last_value = *self.inner.get(idx as usize).unwrap_or(&0);
+                self.last_idx += i;
+                return Some(out);
+            }
+        }
+
+        unreachable!()
+    }
 }

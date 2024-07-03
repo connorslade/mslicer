@@ -8,7 +8,8 @@ use std::{
 
 use common::{
     config::SliceConfig,
-    misc::{EncodableLayer, SliceResult},
+    image::Image,
+    misc::{EncodableLayer, Run, SliceResult},
 };
 use ordered_float::OrderedFloat;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
@@ -101,22 +102,26 @@ impl Slicer {
                     }
                 }
 
-                // let mut image = Image::blank(
-                //     self.slice_config.platform_resolution.x as usize,
-                //     self.slice_config.platform_resolution.y as usize,
-                // );
-
-                let mut encoder = Layer::new();
+                let mut image = Image::blank(
+                    self.slice_config.platform_resolution.x as usize,
+                    self.slice_config.platform_resolution.y as usize,
+                );
 
                 let mut last = 0;
                 for (start, end) in out {
                     if start > last {
-                        encoder.add_run(start - last, 0);
+                        image.add_run((start - last) as usize, 0);
                     }
 
                     assert!(end >= start, "End precedes start in layer {layer}");
-                    encoder.add_run(end - start, 255);
+                    image.add_run((end - start) as usize, 255);
                     last = end;
+                }
+
+                let mut encoder = Layer::new();
+
+                for Run { length, value } in image.runs() {
+                    encoder.add_run(length, value);
                 }
 
                 encoder.finish(layer as usize, slice_config)

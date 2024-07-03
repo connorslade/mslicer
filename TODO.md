@@ -12,7 +12,7 @@
 - [ ] Allow saving / loading projects
 - [x] Allow deleting objects
 - [ ] Use instancing both for object mesh storage and rendering
-- [ ] Less internal dependence on GOO format
+- [x] Less internal dependence on GOO format
 - [ ] Anti-aliasing
 - [ ] Cache transformed points?
 - [x] Rename `ui` module to `mslicer`
