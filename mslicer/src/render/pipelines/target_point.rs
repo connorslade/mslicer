@@ -1,13 +1,18 @@
 use egui_wgpu::ScreenDescriptor;
 use encase::{ShaderSize, ShaderType, UniformBuffer};
-use nalgebra::{Matrix4, Vector3};
+use nalgebra::Matrix4;
+use plexus::primitive::{
+    decompose::{Triangulate, Vertices},
+    generate::{IndicesForPosition, VerticesWithPosition},
+    sphere::UvSphere,
+};
 use wgpu::{
     util::{BufferInitDescriptor, DeviceExt},
-    BindGroup, BindGroupDescriptor, Buffer, BufferDescriptor, BufferUsages, ColorTargetState,
-    ColorWrites, CommandEncoder, CompareFunction, DepthStencilState, Device, FragmentState,
-    IndexFormat, MultisampleState, PipelineLayoutDescriptor, PrimitiveState, Queue, RenderPass,
-    RenderPipeline, RenderPipelineDescriptor, ShaderModuleDescriptor, ShaderSource, TextureFormat,
-    VertexState,
+    BindGroup, BindGroupDescriptor, BindGroupEntry, BindingResource, Buffer, BufferBinding,
+    BufferDescriptor, BufferUsages, ColorTargetState, ColorWrites, CommandEncoder, CompareFunction,
+    DepthStencilState, Device, FragmentState, IndexFormat, MultisampleState,
+    PipelineLayoutDescriptor, PrimitiveState, Queue, RenderPass, RenderPipeline,
+    RenderPipelineDescriptor, ShaderModuleDescriptor, ShaderSource, TextureFormat, VertexState,
 };
 
 use crate::{
@@ -29,7 +34,7 @@ pub struct TargetPointPipeline {
     index_buffer: Buffer,
     uniform_buffer: Buffer,
 
-    vertex_counts: u32,
+    index_count: u32,
 }
 
 #[derive(ShaderType)]
@@ -57,7 +62,14 @@ impl TargetPointPipeline {
         let bind_group = device.create_bind_group(&BindGroupDescriptor {
             label: None,
             layout: &bind_group_layout,
-            entries: &[],
+            entries: &[BindGroupEntry {
+                binding: 0,
+                resource: BindingResource::Buffer(BufferBinding {
+                    buffer: &uniform_buffer,
+                    offset: 0,
+                    size: None,
+                }),
+            }],
         });
 
         let render_pipeline = device.create_render_pipeline(&RenderPipelineDescriptor {
@@ -92,33 +104,8 @@ impl TargetPointPipeline {
             multiview: None,
         });
 
-        let tip = Vector3::new(0.0, 0.0, 1.0);
-        let points = [
-            Vector3::new(0.0, 1.0, 0.0),
-            Vector3::new(1.0, 0.0, 0.0),
-            Vector3::new(0.0, -1.0, 0.0),
-            Vector3::new(-1.0, 0.0, 0.0),
-        ];
-
-        let mut vertices = Vec::new();
-        for i in 1..=4 {
-            vertices.push(tip);
-            vertices.push(points[i - 1]);
-            vertices.push(points[i % 4]);
-
-            vertices.push(-tip);
-            vertices.push(-points[i - 1]);
-            vertices.push(-points[i % 4]);
-        }
-
-        let vertices = vertices
-            .into_iter()
-            .map(|x| ModelVertex {
-                position: [x.x, x.y, x.z, 1.0],
-                ..Default::default()
-            })
-            .collect::<Vec<_>>();
-        let vertex_counts = vertices.len() as u32;
+        let (vertices, indices) = generate_sphere(20);
+        let index_count = indices.len() as u32;
 
         let vertex_buffer = device.create_buffer_init(&BufferInitDescriptor {
             label: None,
@@ -128,7 +115,7 @@ impl TargetPointPipeline {
 
         let index_buffer = device.create_buffer_init(&BufferInitDescriptor {
             label: None,
-            contents: bytemuck::cast_slice(&(0..vertex_counts).collect::<Vec<_>>()),
+            contents: bytemuck::cast_slice(&indices),
             usage: BufferUsages::INDEX,
         });
 
@@ -140,7 +127,7 @@ impl TargetPointPipeline {
             index_buffer,
             uniform_buffer,
 
-            vertex_counts,
+            index_count,
         }
     }
 }
@@ -170,6 +157,33 @@ impl Pipeline<WorkspaceRenderCallback> for TargetPointPipeline {
 
         render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
         render_pass.set_index_buffer(self.index_buffer.slice(..), IndexFormat::Uint32);
-        render_pass.draw_indexed(0..self.vertex_counts, 0, 0..1);
+        render_pass.draw_indexed(0..self.index_count, 0, 0..1);
     }
+}
+
+fn generate_sphere(precision: usize) -> (Vec<ModelVertex>, Vec<u32>) {
+    let sphere = UvSphere::new(precision, precision);
+
+    let vertices = sphere
+        .vertices_with_position()
+        .map(|x| ModelVertex {
+            position: [
+                x.0.into_inner() as f32,
+                x.1.into_inner() as f32,
+                x.2.into_inner() as f32,
+                1.0,
+            ],
+            tex_coords: [0.0, 0.0],
+            normal: [0.0, 0.0, 0.0],
+        })
+        .collect();
+
+    let indices = sphere
+        .indices_for_position()
+        .triangulate()
+        .vertices()
+        .map(|x| x as u32)
+        .collect();
+
+    (vertices, indices)
 }
