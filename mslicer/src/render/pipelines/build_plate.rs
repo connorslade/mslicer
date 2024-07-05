@@ -1,6 +1,6 @@
 use egui_wgpu::ScreenDescriptor;
 use encase::{ShaderSize, ShaderType, UniformBuffer};
-use nalgebra::{Matrix4, Vector3};
+use nalgebra::{Matrix4, Vector3, Vector4};
 use wgpu::{
     util::{BufferInitDescriptor, DeviceExt},
     BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayoutDescriptor,
@@ -36,6 +36,7 @@ pub struct BuildPlatePipeline {
 #[derive(ShaderType)]
 struct BuildPlateUniforms {
     transform: Matrix4<f32>,
+    color: Vector4<f32>,
 }
 
 struct Line {
@@ -168,6 +169,7 @@ impl Pipeline<WorkspaceRenderCallback> for BuildPlatePipeline {
         buffer
             .write(&BuildPlateUniforms {
                 transform: resources.transform,
+                color: Vector4::new(1.0, 1.0, 1.0, 1.0),
             })
             .unwrap();
         queue.write_buffer(&self.uniform_buffer, 0, &buffer.into_inner());

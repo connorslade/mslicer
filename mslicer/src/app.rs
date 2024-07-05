@@ -120,6 +120,7 @@ impl eframe::App for App {
                         grid_size: self.grid_size,
 
                         target_point: self.camera.target,
+                        is_moving: response.dragged(),
 
                         models: self.meshes.clone(),
                         render_style: self.render_style,

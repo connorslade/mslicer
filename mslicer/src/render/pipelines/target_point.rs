@@ -1,6 +1,6 @@
 use egui_wgpu::ScreenDescriptor;
 use encase::{ShaderSize, ShaderType, UniformBuffer};
-use nalgebra::Matrix4;
+use nalgebra::{Matrix4, Vector4};
 use plexus::primitive::{
     decompose::{Triangulate, Vertices},
     generate::{IndicesForPosition, VerticesWithPosition},
@@ -8,9 +8,9 @@ use plexus::primitive::{
 };
 use wgpu::{
     util::{BufferInitDescriptor, DeviceExt},
-    BindGroup, BindGroupDescriptor, BindGroupEntry, BindingResource, Buffer, BufferBinding,
-    BufferDescriptor, BufferUsages, ColorTargetState, ColorWrites, CommandEncoder, CompareFunction,
-    DepthStencilState, Device, FragmentState, IndexFormat, MultisampleState,
+    BindGroup, BindGroupDescriptor, BindGroupEntry, BindingResource, BlendState, Buffer,
+    BufferBinding, BufferDescriptor, BufferUsages, ColorTargetState, ColorWrites, CommandEncoder,
+    CompareFunction, DepthStencilState, Device, FragmentState, IndexFormat, MultisampleState,
     PipelineLayoutDescriptor, PrimitiveState, Queue, RenderPass, RenderPipeline,
     RenderPipelineDescriptor, ShaderModuleDescriptor, ShaderSource, TextureFormat, VertexState,
 };
@@ -40,6 +40,7 @@ pub struct TargetPointPipeline {
 #[derive(ShaderType)]
 struct TargetPointUniforms {
     transform: Matrix4<f32>,
+    color: Vector4<f32>,
 }
 
 impl TargetPointPipeline {
@@ -85,15 +86,15 @@ impl TargetPointPipeline {
                 entry_point: "frag",
                 targets: &[Some(ColorTargetState {
                     format: TEXTURE_FORMAT,
-                    blend: None,
+                    blend: Some(BlendState::ALPHA_BLENDING),
                     write_mask: ColorWrites::all(),
                 })],
             }),
             primitive: PrimitiveState::default(),
             depth_stencil: Some(DepthStencilState {
                 format: TextureFormat::Depth24PlusStencil8,
-                depth_write_enabled: true,
-                depth_compare: CompareFunction::Less,
+                depth_write_enabled: false,
+                depth_compare: CompareFunction::Always,
                 stencil: Default::default(),
                 bias: Default::default(),
             }),
@@ -141,17 +142,26 @@ impl Pipeline<WorkspaceRenderCallback> for TargetPointPipeline {
         _encoder: &mut CommandEncoder,
         resources: &WorkspaceRenderCallback,
     ) {
+        if !resources.is_moving {
+            return;
+        };
+
         let mut buffer = UniformBuffer::new(Vec::new());
 
         buffer
             .write(&TargetPointUniforms {
                 transform: resources.transform * Matrix4::new_translation(&resources.target_point),
+                color: Vector4::new(1.0, 0.0, 0.0, 0.25),
             })
             .unwrap();
         queue.write_buffer(&self.uniform_buffer, 0, &buffer.into_inner());
     }
 
-    fn paint<'a>(&'a self, render_pass: &mut RenderPass<'a>, _resources: &WorkspaceRenderCallback) {
+    fn paint<'a>(&'a self, render_pass: &mut RenderPass<'a>, resources: &WorkspaceRenderCallback) {
+        if !resources.is_moving {
+            return;
+        };
+
         render_pass.set_pipeline(&self.render_pipeline);
         render_pass.set_bind_group(0, &self.bind_group, &[]);
 

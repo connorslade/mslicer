@@ -30,6 +30,7 @@ pub struct WorkspaceRenderCallback {
     pub render_style: RenderStyle,
 
     pub target_point: Vector3<f32>,
+    pub is_moving: bool,
 }
 
 impl CallbackTrait for WorkspaceRenderCallback {
