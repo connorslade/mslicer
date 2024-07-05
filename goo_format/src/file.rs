@@ -24,10 +24,14 @@ impl File {
         } = result;
 
         let layer_time = slice_config.exposure_config.exposure_time
-            + slice_config.exposure_config.lift_distance / slice_config.exposure_config.lift_speed;
+            + slice_config.exposure_config.lift_distance / slice_config.exposure_config.lift_speed
+            + slice_config.exposure_config.retract_distance
+                / slice_config.exposure_config.retract_speed;
         let bottom_layer_time = slice_config.first_exposure_config.exposure_time
             + slice_config.first_exposure_config.lift_distance
-                / slice_config.first_exposure_config.lift_speed;
+                / slice_config.first_exposure_config.lift_speed
+            + slice_config.first_exposure_config.retract_distance
+                / slice_config.first_exposure_config.retract_speed;
         let total_time = (layers.len() as u32 - slice_config.first_layers) as f32 * layer_time
             + slice_config.first_layers as f32 * bottom_layer_time;
 

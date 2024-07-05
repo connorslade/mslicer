@@ -87,7 +87,7 @@ impl<'a> Iterator for ImageRuns<'a> {
         for i in 0.. {
             let idx = self.last_idx + i;
 
-            if idx >= self.size as u64 || self.inner[idx as usize] != self.last_value {
+            if idx >= self.size || self.inner[idx as usize] != self.last_value {
                 let out = Run {
                     length: i,
                     value: self.last_value,

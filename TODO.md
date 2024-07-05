@@ -32,4 +32,5 @@
 - [x] Move call to slicer into app from top_bar
 - [ ] Determine which side is the front of the printer
 - [ ] Render orbit target point
-- [ ] Factor out common descriptors from pipelines
+- [x] Factor out common descriptors from pipelines
+- [ ] Precompile shaders with include_shader macro

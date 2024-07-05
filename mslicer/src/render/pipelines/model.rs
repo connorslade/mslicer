@@ -3,12 +3,10 @@ use encase::{ShaderType, UniformBuffer};
 use nalgebra::Matrix4;
 use wgpu::{
     util::{BufferInitDescriptor, DeviceExt},
-    BindGroup, BindGroupEntry, BindGroupLayout, BindGroupLayoutDescriptor, BindingType,
-    BufferBindingType, BufferUsages, ColorTargetState, ColorWrites, CommandEncoder,
-    CompareFunction, DepthStencilState, Device, FragmentState, IndexFormat, MultisampleState,
-    PipelineLayoutDescriptor, PrimitiveState, Queue, RenderPass, RenderPipeline,
-    RenderPipelineDescriptor, ShaderModuleDescriptor, ShaderSource, ShaderStages, TextureFormat,
-    VertexState,
+    BindGroup, BindGroupEntry, BindGroupLayout, BufferUsages, ColorTargetState, ColorWrites,
+    CommandEncoder, CompareFunction, DepthStencilState, Device, FragmentState, IndexFormat,
+    MultisampleState, PipelineLayoutDescriptor, PrimitiveState, Queue, RenderPass, RenderPipeline,
+    RenderPipelineDescriptor, ShaderModuleDescriptor, ShaderSource, TextureFormat, VertexState,
 };
 
 use crate::{
@@ -20,7 +18,7 @@ use crate::{
     TEXTURE_FORMAT,
 };
 
-use super::Pipeline;
+use super::{consts::BASE_BIND_GROUP_LAYOUT_DESCRIPTOR, Pipeline};
 
 pub struct ModelPipeline {
     render_pipeline: RenderPipeline,
@@ -50,19 +48,7 @@ impl ModelPipeline {
             source: ShaderSource::Wgsl(include_shader!("model.wgsl").into()),
         });
 
-        let bind_group_layout = device.create_bind_group_layout(&BindGroupLayoutDescriptor {
-            label: None,
-            entries: &[wgpu::BindGroupLayoutEntry {
-                binding: 0,
-                visibility: ShaderStages::VERTEX | ShaderStages::FRAGMENT,
-                ty: BindingType::Buffer {
-                    ty: BufferBindingType::Uniform,
-                    has_dynamic_offset: false,
-                    min_binding_size: None,
-                },
-                count: None,
-            }],
-        });
+        let bind_group_layout = device.create_bind_group_layout(&BASE_BIND_GROUP_LAYOUT_DESCRIPTOR);
 
         let pipeline_layout = device.create_pipeline_layout(&PipelineLayoutDescriptor {
             label: None,

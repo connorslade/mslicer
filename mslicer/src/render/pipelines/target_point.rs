@@ -3,12 +3,10 @@ use encase::{ShaderSize, ShaderType, UniformBuffer};
 use nalgebra::{Matrix4, Vector3};
 use wgpu::{
     util::{BufferInitDescriptor, DeviceExt},
-    BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayoutDescriptor,
-    BindGroupLayoutEntry, BindingResource, BindingType, Buffer, BufferBinding, BufferBindingType,
-    BufferDescriptor, BufferUsages, ColorTargetState, ColorWrites, CommandEncoder, CompareFunction,
-    DepthStencilState, Device, FragmentState, IndexFormat, MultisampleState,
-    PipelineLayoutDescriptor, PrimitiveState, Queue, RenderPass, RenderPipeline,
-    RenderPipelineDescriptor, ShaderModuleDescriptor, ShaderSource, ShaderStages, TextureFormat,
+    BindGroup, BindGroupDescriptor, Buffer, BufferDescriptor, BufferUsages, ColorTargetState,
+    ColorWrites, CommandEncoder, CompareFunction, DepthStencilState, Device, FragmentState,
+    IndexFormat, MultisampleState, PipelineLayoutDescriptor, PrimitiveState, Queue, RenderPass,
+    RenderPipeline, RenderPipelineDescriptor, ShaderModuleDescriptor, ShaderSource, TextureFormat,
     VertexState,
 };
 
@@ -18,7 +16,10 @@ use crate::{
     TEXTURE_FORMAT,
 };
 
-use super::Pipeline;
+use super::{
+    consts::{BASE_BIND_GROUP_LAYOUT_DESCRIPTOR, BASE_UNIFORM_DESCRIPTOR},
+    Pipeline,
+};
 
 pub struct TargetPointPipeline {
     render_pipeline: RenderPipeline,
@@ -44,25 +45,11 @@ impl TargetPointPipeline {
         });
 
         let uniform_buffer = device.create_buffer(&BufferDescriptor {
-            label: None,
             size: TargetPointUniforms::SHADER_SIZE.get(),
-            usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
-            mapped_at_creation: false,
+            ..BASE_UNIFORM_DESCRIPTOR
         });
 
-        let bind_group_layout = device.create_bind_group_layout(&BindGroupLayoutDescriptor {
-            label: None,
-            entries: &[BindGroupLayoutEntry {
-                binding: 0,
-                visibility: ShaderStages::VERTEX | ShaderStages::FRAGMENT,
-                ty: BindingType::Buffer {
-                    ty: BufferBindingType::Uniform,
-                    has_dynamic_offset: false,
-                    min_binding_size: None,
-                },
-                count: None,
-            }],
-        });
+        let bind_group_layout = device.create_bind_group_layout(&BASE_BIND_GROUP_LAYOUT_DESCRIPTOR);
 
         let pipeline_layout = device.create_pipeline_layout(&PipelineLayoutDescriptor {
             label: None,
@@ -73,14 +60,7 @@ impl TargetPointPipeline {
         let bind_group = device.create_bind_group(&BindGroupDescriptor {
             label: None,
             layout: &bind_group_layout,
-            entries: &[BindGroupEntry {
-                binding: 0,
-                resource: BindingResource::Buffer(BufferBinding {
-                    buffer: &uniform_buffer,
-                    offset: 0,
-                    size: None,
-                }),
-            }],
+            entries: &[],
         });
 
         let render_pipeline = device.create_render_pipeline(&RenderPipelineDescriptor {
@@ -128,6 +108,10 @@ impl TargetPointPipeline {
             vertices.push(tip);
             vertices.push(points[i - 1]);
             vertices.push(points[i % 4]);
+
+            vertices.push(-tip);
+            vertices.push(-points[i - 1]);
+            vertices.push(-points[i % 4]);
         }
 
         let vertices = vertices

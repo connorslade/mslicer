@@ -18,7 +18,10 @@ use crate::{
     TEXTURE_FORMAT,
 };
 
-use super::Pipeline;
+use super::{
+    consts::{BASE_UNIFORM_DESCRIPTOR, UNIFORM_BIND_GROUP_LAYOUT_ENTRY},
+    Pipeline,
+};
 
 pub struct SlicePreviewPipeline {
     render_pipeline: RenderPipeline,
@@ -46,25 +49,14 @@ impl SlicePreviewPipeline {
         });
 
         let uniform_buffer = device.create_buffer(&BufferDescriptor {
-            label: None,
             size: SlicePreviewUniforms::SHADER_SIZE.get(),
-            usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
-            mapped_at_creation: false,
+            ..BASE_UNIFORM_DESCRIPTOR
         });
 
         let bind_group_layout = device.create_bind_group_layout(&BindGroupLayoutDescriptor {
             label: None,
             entries: &[
-                BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: ShaderStages::VERTEX | ShaderStages::FRAGMENT,
-                    ty: BindingType::Buffer {
-                        ty: BufferBindingType::Uniform,
-                        has_dynamic_offset: false,
-                        min_binding_size: None,
-                    },
-                    count: None,
-                },
+                UNIFORM_BIND_GROUP_LAYOUT_ENTRY,
                 BindGroupLayoutEntry {
                     binding: 1,
                     visibility: ShaderStages::VERTEX | ShaderStages::FRAGMENT,

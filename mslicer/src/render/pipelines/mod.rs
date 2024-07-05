@@ -2,6 +2,7 @@ use egui_wgpu::ScreenDescriptor;
 use wgpu::{CommandEncoder, Device, Queue, RenderPass};
 
 pub mod build_plate;
+mod consts;
 pub mod model;
 pub mod slice_preview;
 pub mod target_point;
