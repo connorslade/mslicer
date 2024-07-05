@@ -33,4 +33,4 @@
 - [ ] Determine which side is the front of the printer
 - [ ] Render orbit target point
 - [x] Factor out common descriptors from pipelines
-- [ ] Precompile shaders with include_shader macro
+- [x] Improve include_shader macro

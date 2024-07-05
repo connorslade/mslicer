@@ -43,10 +43,7 @@ pub enum RenderStyle {
 
 impl ModelPipeline {
     pub fn new(device: &Device) -> Self {
-        let shader = device.create_shader_module(ShaderModuleDescriptor {
-            label: None,
-            source: ShaderSource::Wgsl(include_shader!("model.wgsl").into()),
-        });
+        let shader = device.create_shader_module(include_shader!("model.wgsl"));
 
         let bind_group_layout = device.create_bind_group_layout(&BASE_BIND_GROUP_LAYOUT_DESCRIPTOR);
 

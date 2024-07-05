@@ -45,10 +45,7 @@ struct Line {
 
 impl BuildPlatePipeline {
     pub fn new(device: &Device) -> Self {
-        let shader = device.create_shader_module(ShaderModuleDescriptor {
-            label: None,
-            source: ShaderSource::Wgsl(include_shader!("solid.wgsl").into()),
-        });
+        let shader = device.create_shader_module(include_shader!("solid.wgsl"));
 
         let uniform_buffer = device.create_buffer(&BufferDescriptor {
             label: None,

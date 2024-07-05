@@ -22,6 +22,9 @@ pub trait Pipeline<T> {
 #[macro_export]
 macro_rules! include_shader {
     ($shader:literal) => {
-        include_str!(concat!("../../shaders/", $shader))
+        ShaderModuleDescriptor {
+            label: None,
+            source: ShaderSource::Wgsl(include_str!(concat!("../../shaders/", $shader)).into()),
+        }
     };
 }
