@@ -10,6 +10,7 @@ use common::{
     config::SliceConfig,
     misc::{EncodableLayer, SliceResult},
 };
+use itertools::Itertools;
 use ordered_float::OrderedFloat;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
@@ -73,18 +74,16 @@ impl Slicer {
             })
             .map(|layer| {
                 let height = layer as f32 * self.slice_config.slice_height;
-                let intersections = self
-                    .models
-                    .iter()
-                    .flat_map(|x| x.intersect_plane(height))
-                    .collect::<Vec<_>>();
-
+                let intersections = self.models.iter().flat_map(|x| x.intersect_plane(height));
                 let segments = intersections
                     .chunks(2)
-                    .map(|x| (x[0], x[1]))
+                    .into_iter()
+                    .map(|mut x| (x.next().unwrap(), x.next().unwrap()))
                     .collect::<Vec<_>>();
 
-                let mut out = Vec::new();
+                let mut encoder = Layer::new();
+                let mut last = 0;
+
                 for y in 0..self.slice_config.platform_resolution.y {
                     let yf = y as f32;
                     let mut intersections = segments
@@ -100,34 +99,22 @@ impl Slicer {
 
                     for span in intersections.chunks_exact(2) {
                         let y_offset = (self.slice_config.platform_resolution.x * y) as u64;
-                        out.push((
-                            y_offset + span[0].round() as u64,
-                            y_offset + span[1].round() as u64,
-                        ));
+
+                        let a = span[0].round() as u64;
+                        let b = span[1].round() as u64;
+
+                        let start = a + y_offset;
+                        let end = b + y_offset;
+                        let length = b - a;
+
+                        if start > last {
+                            encoder.add_run(start - last, 0);
+                        }
+
+                        encoder.add_run(length, 255);
+                        last = end;
                     }
                 }
-
-                // let mut image = Image::blank(
-                //     self.slice_config.platform_resolution.x as usize,
-                //     self.slice_config.platform_resolution.y as usize,
-                // );
-
-                let mut encoder = Layer::new();
-
-                let mut last = 0;
-                for (start, end) in out {
-                    if start > last {
-                        encoder.add_run(start - last, 0);
-                    }
-
-                    assert!(end >= start, "End precedes start in layer {layer}");
-                    encoder.add_run(end - start, 255);
-                    last = end;
-                }
-
-                // for Run { length, value } in image.runs() {
-                //     encoder.add_run(length, value);
-                // }
 
                 encoder.finish(layer as usize, &self.slice_config)
             })

@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.86"
+itertools = "0.13.0"
 nalgebra = "0.32.6"
 obj-rs = "0.7.1"
 ordered-float = "4.2.0"
