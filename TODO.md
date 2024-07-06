@@ -18,7 +18,7 @@
 - [x] Rename `ui` module to `mslicer`
 - [ ] Proper slice preview scaling
 - [ ] Preview image generation
-- [ ] Don't clone mesh data when sending mesh to slicing thread
+- [x] Don't clone mesh data when sending mesh to slicing thread
 - [ ] Close details dropdown in models window when deleting mesh
 - [x] Rotations in degrees
 - [x] Fix slice preview layer and scale controls
@@ -34,3 +34,4 @@
 - [x] Render orbit target point
 - [x] Factor out common descriptors from pipelines
 - [x] Improve include_shader macro
+- [ ] Don't store rended mesh after sending to GPU

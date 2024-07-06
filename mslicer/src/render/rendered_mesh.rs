@@ -26,7 +26,7 @@ impl RenderedMesh {
     pub fn from_mesh(mesh: Mesh) -> Self {
         let mut vertices = Vec::new();
 
-        for face in &mesh.faces {
+        for face in mesh.faces.iter() {
             let (a, b, c) = (
                 mesh.vertices[face[0] as usize],
                 mesh.vertices[face[1] as usize],
