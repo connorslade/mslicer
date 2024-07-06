@@ -63,7 +63,7 @@ fn main() -> Result<()> {
 
     let now = Instant::now();
 
-    let slicer = Slicer::new(slice_config.clone(), mesh);
+    let slicer = Slicer::new(slice_config.clone(), vec![mesh]);
     let progress = slicer.progress();
 
     let goo = thread::spawn(move || GooFile::from_slice_result(slicer.slice::<LayerEncoder>()));

@@ -8,8 +8,7 @@ use std::{
 
 use common::{
     config::SliceConfig,
-    image::Image,
-    misc::{EncodableLayer, Run, SliceResult},
+    misc::{EncodableLayer, SliceResult},
 };
 use ordered_float::OrderedFloat;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
@@ -18,7 +17,7 @@ use crate::{mesh::Mesh, Pos};
 
 pub struct Slicer {
     slice_config: SliceConfig,
-    model: Mesh,
+    models: Vec<Mesh>,
     progress: Progress,
 }
 
@@ -36,16 +35,19 @@ pub struct ProgressInner {
 }
 
 impl Slicer {
-    pub fn new(slice_config: SliceConfig, model: Mesh) -> Self {
-        let max = model.vertices.iter().fold(Pos::zeros(), |max, &f| {
-            let f = model.transform(&f);
+    pub fn new(slice_config: SliceConfig, models: Vec<Mesh>) -> Self {
+        let max = models.iter().fold(Pos::zeros(), |max, model| {
+            let f = model.vertices.iter().fold(Pos::zeros(), |max, &f| {
+                let f = model.transform(&f);
+                Pos::new(max.x.max(f.x), max.y.max(f.y), max.z.max(f.z))
+            });
             Pos::new(max.x.max(f.x), max.y.max(f.y), max.z.max(f.z))
         });
         let layers = (max.z / slice_config.slice_height).ceil() as u32;
 
         Self {
             slice_config,
-            model,
+            models,
             progress: Progress {
                 inner: Arc::new(ProgressInner {
                     completed: AtomicU32::new(0),
@@ -63,7 +65,6 @@ impl Slicer {
     }
 
     pub fn slice<Layer: EncodableLayer>(&self) -> SliceResult<Layer::Output> {
-        let (slice_config, model) = (&self.slice_config, &self.model);
         let layers = (0..self.progress.total)
             .into_par_iter()
             .inspect(|_| {
@@ -71,8 +72,12 @@ impl Slicer {
                 self.progress.notify.notify_all();
             })
             .map(|layer| {
-                let height = layer as f32 * slice_config.slice_height;
-                let intersections = model.intersect_plane(height);
+                let height = layer as f32 * self.slice_config.slice_height;
+                let intersections = self
+                    .models
+                    .iter()
+                    .flat_map(|x| x.intersect_plane(height))
+                    .collect::<Vec<_>>();
 
                 let segments = intersections
                     .chunks(2)
@@ -80,7 +85,7 @@ impl Slicer {
                     .collect::<Vec<_>>();
 
                 let mut out = Vec::new();
-                for y in 0..slice_config.platform_resolution.y {
+                for y in 0..self.slice_config.platform_resolution.y {
                     let yf = y as f32;
                     let mut intersections = segments
                         .iter()
@@ -94,7 +99,7 @@ impl Slicer {
                     intersections.sort_by_key(|&x| OrderedFloat(x));
 
                     for span in intersections.chunks_exact(2) {
-                        let y_offset = (slice_config.platform_resolution.x * y) as u64;
+                        let y_offset = (self.slice_config.platform_resolution.x * y) as u64;
                         out.push((
                             y_offset + span[0].round() as u64,
                             y_offset + span[1].round() as u64,
@@ -124,7 +129,7 @@ impl Slicer {
                 //     encoder.add_run(length, value);
                 // }
 
-                encoder.finish(layer as usize, slice_config)
+                encoder.finish(layer as usize, &self.slice_config)
             })
             .collect::<Vec<_>>();
 

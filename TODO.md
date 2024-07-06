@@ -4,7 +4,7 @@
 - [ ] Preprocess mesh to remove self-intersections?
 - [ ] Separate each surface from a mesh before slicing to fix the self intersection problem?
 - [ ] Integrate remote send into ui
-- [ ] Allow slicing multiple modals at once
+- [x] Allow slicing multiple modals at once
 - [x] Fix translation in slicer (its currently moved by pixels not mm)
 - [x] Allow rotating modals
 - [x] Optimize slicer (BVH?)
