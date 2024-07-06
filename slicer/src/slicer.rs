@@ -102,31 +102,33 @@ impl Slicer {
                     }
                 }
 
-                let mut image = Image::blank(
-                    self.slice_config.platform_resolution.x as usize,
-                    self.slice_config.platform_resolution.y as usize,
-                );
+                // let mut image = Image::blank(
+                //     self.slice_config.platform_resolution.x as usize,
+                //     self.slice_config.platform_resolution.y as usize,
+                // );
+
+                let mut encoder = Layer::new();
 
                 let mut last = 0;
                 for (start, end) in out {
                     if start > last {
-                        image.add_run((start - last) as usize, 0);
+                        encoder.add_run(start - last, 0);
                     }
 
                     assert!(end >= start, "End precedes start in layer {layer}");
-                    image.add_run((end - start) as usize, 255);
+                    encoder.add_run(end - start, 255);
                     last = end;
                 }
 
-                let mut encoder = Layer::new();
-
-                for Run { length, value } in image.runs() {
-                    encoder.add_run(length, value);
-                }
+                // for Run { length, value } in image.runs() {
+                //     encoder.add_run(length, value);
+                // }
 
                 encoder.finish(layer as usize, slice_config)
             })
             .collect::<Vec<_>>();
+
+        self.progress.notify.notify_all();
 
         SliceResult {
             layers,
