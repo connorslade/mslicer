@@ -4,7 +4,7 @@ use std::{
 };
 
 use anyhow::Result;
-use nalgebra::Matrix4;
+use nalgebra::{Matrix4, Vector3};
 use obj::{Obj, Position};
 
 use crate::Pos;
@@ -34,18 +34,25 @@ impl Mesh {
     }
 
     pub fn intersect_plane(&self, height: f32) -> Vec<Pos> {
+        let point = self.inv_transform(&Vector3::new(0.0, 0.0, height));
+        let normal = (self.inv_transformation_matrix * Vector3::z_axis().to_homogeneous()).xyz();
+
         let mut out = Vec::new();
 
         for face in self.faces.iter() {
-            // todo: just transform the plane with the inverse transformation matrix
-            let v0 = self.transform(&self.vertices[face[0] as usize]);
-            let v1 = self.transform(&self.vertices[face[1] as usize]);
-            let v2 = self.transform(&self.vertices[face[2] as usize]);
+            let v0 = self.vertices[face[0] as usize];
+            let v1 = self.vertices[face[1] as usize];
+            let v2 = self.vertices[face[2] as usize];
 
-            let (a, b, c) = (v0.z - height, v1.z - height, v2.z - height);
+            let (a, b, c) = (
+                (v0 - point).dot(&normal),
+                (v1 - point).dot(&normal),
+                (v2 - point).dot(&normal),
+            );
             let (a_pos, b_pos, c_pos) = (a > 0.0, b > 0.0, c > 0.0);
 
             let mut push_intersection = |a: f32, b: f32, v0: Pos, v1: Pos| {
+                let (v0, v1) = (self.transform(&v0), self.transform(&v1));
                 let t = a / (a - b);
                 let intersection = v0 + t * (v1 - v0);
                 out.push(intersection);
@@ -65,7 +72,7 @@ impl Mesh {
             Matrix4::from_euler_angles(self.rotation.x, self.rotation.y, self.rotation.z);
         let translation = Matrix4::new_translation(&self.position);
 
-        self.transformation_matrix = translation * rotation * scale;
+        self.transformation_matrix = translation * scale * rotation;
         self.inv_transformation_matrix = self.transformation_matrix.try_inverse().unwrap();
     }
 

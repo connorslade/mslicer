@@ -23,7 +23,7 @@
 - [x] Rotations in degrees
 - [x] Fix slice preview layer and scale controls
 - [x] Clamp camera rotations
-- [ ] Fix slicing rotated objects
+- [x] Fix slicing rotated objects
 - [ ] 0-pad slice preview layer display so its width doesn't change as you move the slider
 - [ ] Preload layer 1 in slice preview
 - [x] Better camera movement (left click to orbit, right click to change orbit point)
