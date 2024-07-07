@@ -35,3 +35,4 @@
 - [x] Factor out common descriptors from pipelines
 - [x] Improve include_shader macro
 - [ ] Don't store rended mesh after sending to GPU
+- [x] Fix orbit speed slowing with increasing height

@@ -1,4 +1,4 @@
-use std::ops::Neg;
+use std::{f32::consts::FRAC_PI_2, ops::Neg};
 
 use egui::{PointerButton, Response, Ui};
 use nalgebra::{Matrix4, Vector2, Vector3};
@@ -27,7 +27,8 @@ impl Camera {
         let drag_delta = response.drag_delta();
         if response.dragged_by(PointerButton::Primary) {
             self.angle.x += drag_delta.x * 0.01;
-            self.angle.y += drag_delta.y * 0.01;
+            self.angle.y = (self.angle.y + drag_delta.y * 0.01)
+                .clamp(-FRAC_PI_2 + f32::EPSILON, FRAC_PI_2 - f32::EPSILON);
         }
 
         if response.dragged_by(PointerButton::Secondary) {
@@ -41,7 +42,7 @@ impl Camera {
     }
 
     fn position(&self) -> Vector3<f32> {
-        Vector3::new(self.angle.x.sin(), self.angle.x.cos(), self.angle.y).normalize()
+        Vector3::new(self.angle.x.sin(), self.angle.x.cos(), self.angle.y.tan()).normalize()
             * self.distance
     }
 }
