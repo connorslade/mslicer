@@ -7,7 +7,7 @@ use anyhow::Result;
 use nalgebra::{Matrix4, Vector3};
 use obj::{Obj, Position};
 
-use crate::Pos;
+use crate::{bvh::Bvh, Pos};
 
 #[derive(Debug, Clone)]
 pub struct Mesh {
@@ -33,38 +33,38 @@ impl Mesh {
         }
     }
 
-    pub fn intersect_plane(&self, height: f32) -> Vec<Pos> {
-        let point = self.inv_transform(&Vector3::new(0.0, 0.0, height));
-        let normal = (self.inv_transformation_matrix * Vector3::z_axis().to_homogeneous()).xyz();
+    // pub fn intersect_plane(&self, height: f32) -> Vec<Pos> {
+    // let point = self.inv_transform(&Vector3::new(0.0, 0.0, height));
+    // let normal = (self.inv_transformation_matrix * Vector3::z_axis().to_homogeneous()).xyz();
 
-        let mut out = Vec::new();
+    //     let mut out = Vec::new();
 
-        for face in self.faces.iter() {
-            let v0 = self.vertices[face[0] as usize];
-            let v1 = self.vertices[face[1] as usize];
-            let v2 = self.vertices[face[2] as usize];
+    //     for face in self.faces.iter() {
+    //         let v0 = self.vertices[face[0] as usize];
+    //         let v1 = self.vertices[face[1] as usize];
+    //         let v2 = self.vertices[face[2] as usize];
 
-            let (a, b, c) = (
-                (v0 - point).dot(&normal),
-                (v1 - point).dot(&normal),
-                (v2 - point).dot(&normal),
-            );
-            let (a_pos, b_pos, c_pos) = (a > 0.0, b > 0.0, c > 0.0);
+    //         let (a, b, c) = (
+    //             (v0 - point).dot(&normal),
+    //             (v1 - point).dot(&normal),
+    //             (v2 - point).dot(&normal),
+    //         );
+    //         let (a_pos, b_pos, c_pos) = (a > 0.0, b > 0.0, c > 0.0);
 
-            let mut push_intersection = |a: f32, b: f32, v0: Pos, v1: Pos| {
-                let (v0, v1) = (self.transform(&v0), self.transform(&v1));
-                let t = a / (a - b);
-                let intersection = v0 + t * (v1 - v0);
-                out.push(intersection);
-            };
+    //         let mut push_intersection = |a: f32, b: f32, v0: Pos, v1: Pos| {
+    //             let (v0, v1) = (self.transform(&v0), self.transform(&v1));
+    //             let t = a / (a - b);
+    //             let intersection = v0 + t * (v1 - v0);
+    //             out.push(intersection);
+    //         };
 
-            (a_pos ^ b_pos).then(|| push_intersection(a, b, v0, v1));
-            (b_pos ^ c_pos).then(|| push_intersection(b, c, v1, v2));
-            (c_pos ^ a_pos).then(|| push_intersection(c, a, v2, v0));
-        }
+    //         (a_pos ^ b_pos).then(|| push_intersection(a, b, v0, v1));
+    //         (b_pos ^ c_pos).then(|| push_intersection(b, c, v1, v2));
+    //         (c_pos ^ a_pos).then(|| push_intersection(c, a, v2, v0));
+    //     }
 
-        out
-    }
+    //     out
+    // }
 
     pub fn update_transformation_matrix(&mut self) {
         let scale = Matrix4::new_nonuniform_scaling(&self.scale);
@@ -92,6 +92,10 @@ impl Mesh {
 impl Mesh {
     pub fn transformation_matrix(&self) -> &Matrix4<f32> {
         &self.transformation_matrix
+    }
+
+    pub fn inv_transformation_matrix(&self) -> &Matrix4<f32> {
+        &self.inv_transformation_matrix
     }
 
     pub fn set_position(&mut self, pos: Pos) {
