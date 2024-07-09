@@ -3,6 +3,8 @@ use std::{f32::consts::FRAC_PI_2, ops::Neg};
 use egui::{PointerButton, Response, Ui};
 use nalgebra::{Matrix4, Vector2, Vector3};
 
+const EPSILON: f32 = 1e-5;
+
 pub struct Camera {
     pub target: Vector3<f32>,
     pub angle: Vector2<f32>,
@@ -28,7 +30,7 @@ impl Camera {
         if response.dragged_by(PointerButton::Primary) {
             self.angle.x += drag_delta.x * 0.01;
             self.angle.y = (self.angle.y + drag_delta.y * 0.01)
-                .clamp(-FRAC_PI_2 + f32::EPSILON, FRAC_PI_2 - f32::EPSILON);
+                .clamp(-FRAC_PI_2 + EPSILON, FRAC_PI_2 - EPSILON);
         }
 
         if response.dragged_by(PointerButton::Secondary) {
@@ -37,8 +39,10 @@ impl Camera {
             self.target += Vector3::new(0.0, 0.0, drag_delta.y * 0.5);
         }
 
-        let scroll = ui.input(|x| x.smooth_scroll_delta);
-        self.distance = (self.distance + scroll.y * 0.1).max(0.0);
+        if response.hovered() {
+            let scroll = ui.input(|x| x.smooth_scroll_delta);
+            self.distance = (self.distance + scroll.y * 0.1).max(EPSILON);
+        }
     }
 
     fn position(&self) -> Vector3<f32> {

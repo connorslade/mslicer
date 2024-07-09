@@ -98,7 +98,7 @@ impl App {
                 slice_preview_layer: 0,
                 last_preview_layer: 0,
                 preview_offset: Vector2::new(0.0, 0.0),
-                preview_scale,
+                preview_scale: preview_scale.max(1.0),
             });
         }));
     }
