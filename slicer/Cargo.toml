@@ -14,3 +14,10 @@ stl_io = "0.7.0"
 
 common = { path = "../common" }
 goo_format = { path = "../goo_format" }
+
+[dev-dependencies]
+criterion = "0.5.1"
+
+[[bench]]
+name = "benchmark"
+harness = false

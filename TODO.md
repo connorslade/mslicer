@@ -37,5 +37,6 @@
 - [x] Improve include_shader macro
 - [ ] Don't store rended mesh after sending to GPU
 - [x] Fix orbit speed slowing with increasing height
-- [ ] Use bumpalo or something for allocation of bvhs
+- [x] Use bumpalo or something for allocation of bvhs
+- [ ] Optimize bvh more (benchmarking with criterion)
 - [ ] Add documentation

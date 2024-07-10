@@ -58,22 +58,27 @@ impl BoundingBox {
         let (min, max) = (self.min, self.max);
         let cube_vertices = [
             // Bottom vertices
-            (Vector3::new(min.x, min.y, min.z) - pos).dot(&normal),
-            (Vector3::new(max.x, min.y, min.z) - pos).dot(&normal),
-            (Vector3::new(min.x, max.y, min.z) - pos).dot(&normal),
-            (Vector3::new(max.x, max.y, min.z) - pos).dot(&normal),
+            Vector3::new(min.x, min.y, min.z),
+            Vector3::new(max.x, min.y, min.z),
+            Vector3::new(min.x, max.y, min.z),
+            Vector3::new(max.x, max.y, min.z),
             // Top vertices
-            (Vector3::new(min.x, min.y, max.z) - pos).dot(&normal),
-            (Vector3::new(max.x, min.y, max.z) - pos).dot(&normal),
-            (Vector3::new(min.x, max.y, max.z) - pos).dot(&normal),
-            (Vector3::new(max.x, max.y, max.z) - pos).dot(&normal),
+            Vector3::new(min.x, min.y, max.z),
+            Vector3::new(max.x, min.y, max.z),
+            Vector3::new(min.x, max.y, max.z),
+            Vector3::new(max.x, max.y, max.z),
         ];
 
-        let intersection_test =
-            |a: usize, b: usize| (cube_vertices[a] > 0.0) ^ (cube_vertices[b] > 0.0);
+        let intersection_test = |a: usize, b: usize| {
+            let a = (cube_vertices[a] - pos).dot(&normal);
+            let b = (cube_vertices[b] - pos).dot(&normal);
+            (a > 0.0) ^ (b > 0.0)
+        };
 
-        (0..4).any(|x| intersection_test(x, (x + 1) % 4))
-            || (0..4).any(|x| intersection_test(x + 4, (x + 1) % 4 + 4))
-            || (0..4).any(|x| intersection_test(x, x + 4))
+        // (0..4).any(|x| intersection_test(x, (x + 1) % 4))
+        //     || (0..4).any(|x| intersection_test(x + 4, (x + 1) % 4 + 4))
+        //     || (0..4).any(|x| intersection_test(x, x + 4))
+
+        (0..4).any(|x| intersection_test(x, x + 4))
     }
 }

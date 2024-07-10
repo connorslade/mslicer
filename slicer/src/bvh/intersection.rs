@@ -14,9 +14,10 @@ impl BvhNode {
         out: &mut Vec<Vector3<f32>>,
     ) {
         match self {
-            BvhNode::Leaf { face_idx, bounds } if bounds.intersect_plane(pos, normal) => {
-                intersect_triangle(mesh, *face_idx, pos, normal, out)
-            }
+            BvhNode::Leaf {
+                face_idx,
+                bounds: _,
+            } => intersect_triangle(mesh, *face_idx, pos, normal, out),
             BvhNode::Node {
                 left,
                 right,
