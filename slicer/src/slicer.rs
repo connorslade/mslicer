@@ -67,11 +67,7 @@ impl Slicer {
     }
 
     pub fn slice<Layer: EncodableLayer>(&self) -> SliceResult<Layer::Output> {
-        let bvh = self
-            .models
-            .iter()
-            .map(|model| Bvh::from_mesh(model))
-            .collect::<Vec<_>>();
+        let bvh = self.models.iter().map(Bvh::from_mesh).collect::<Vec<_>>();
 
         let layers = (0..self.progress.total)
             .into_par_iter()

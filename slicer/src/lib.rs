@@ -1,7 +1,7 @@
 use nalgebra::Vector3;
 
+mod bvh;
 pub mod mesh;
 pub mod slicer;
-mod bvh;
 
 pub type Pos = Vector3<f32>;

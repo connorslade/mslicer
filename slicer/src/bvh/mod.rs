@@ -28,7 +28,7 @@ impl Bvh {
         }
 
         let face_indices = (0..mesh.faces.len()).collect::<Vec<_>>();
-        let root = build_bvh_node(&mesh, face_indices);
+        let root = build_bvh_node(mesh, face_indices);
 
         println!("Built BVH {{ node_count: {} }}", root.count_nodes());
 
@@ -74,8 +74,8 @@ impl BvhNode {
             BvhNode::Node {
                 left,
                 right,
-                bounds: _,
-            } => {
+                bounds,
+            } if bounds.intersect_plane(pos, normal) => {
                 left.intersect_plane(mesh, pos, normal, out);
                 right.intersect_plane(mesh, pos, normal, out);
             }
@@ -87,7 +87,7 @@ impl BvhNode {
 fn build_bvh_node(mesh: &Mesh, mut face_indices: Vec<usize>) -> BvhNode {
     let mut bounds = BoundingBox::new();
     for &face in face_indices.iter() {
-        bounds.expand_face(&mesh, face);
+        bounds.expand_face(mesh, face);
     }
 
     if face_indices.len() == 1 {
@@ -98,16 +98,16 @@ fn build_bvh_node(mesh: &Mesh, mut face_indices: Vec<usize>) -> BvhNode {
     }
 
     let longest_axis = bounds.longest_axis();
-    face_indices.sort_unstable_by_key(|&x| {
+    face_indices.sort_by_cached_key(|&x| {
         let mut bounds = BoundingBox::new();
-        bounds.expand_face(&mesh, x);
+        bounds.expand_face(mesh, x);
         OrderedFloat(bounds.center()[longest_axis])
     });
 
     let (left_indices, right_indices) = face_indices.split_at(face_indices.len() / 2);
 
-    let left = build_bvh_node(&mesh, left_indices.to_vec());
-    let right = build_bvh_node(&mesh, right_indices.to_vec());
+    let left = build_bvh_node(mesh, left_indices.to_vec());
+    let right = build_bvh_node(mesh, right_indices.to_vec());
 
     BvhNode::Node {
         left: Box::new(left),

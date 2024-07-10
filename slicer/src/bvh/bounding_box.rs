@@ -37,45 +37,40 @@ impl BoundingBox {
         self.min = Vector3::new(
             self.min.x.min(point.x),
             self.min.y.min(point.y),
-            self.min.x.min(point.z),
+            self.min.z.min(point.z),
         );
         self.max = Vector3::new(
             self.max.x.max(point.x),
             self.max.y.max(point.y),
-            self.max.x.max(point.z),
+            self.max.z.max(point.z),
         );
     }
 
     pub fn expand_face(&mut self, mesh: &Mesh, face_idx: usize) {
         let face = mesh.faces[face_idx];
-        let (a, b, c) = (
-            mesh.vertices[face[0] as usize],
-            mesh.vertices[face[1] as usize],
-            mesh.vertices[face[2] as usize],
-        );
-
-        self.expand_point(a);
-        self.expand_point(b);
-        self.expand_point(c);
+        self.expand_point(mesh.vertices[face[0] as usize]);
+        self.expand_point(mesh.vertices[face[1] as usize]);
+        self.expand_point(mesh.vertices[face[2] as usize]);
     }
 
+    // todo: is is more effecent to precalculate pos - normal <dot> or not
     pub fn intersect_plane(&self, pos: Vector3<f32>, normal: Vector3<f32>) -> bool {
+        let (min, max) = (self.min, self.max);
         let cube_vertices = [
-            Vector3::new(self.min.x, self.min.y, self.min.z),
-            Vector3::new(self.max.x, self.min.y, self.min.z),
-            Vector3::new(self.min.x, self.max.y, self.min.z),
-            Vector3::new(self.max.x, self.max.y, self.min.z),
-            Vector3::new(self.min.x, self.min.y, self.max.z),
-            Vector3::new(self.max.x, self.min.y, self.max.z),
-            Vector3::new(self.min.x, self.max.y, self.max.z),
-            Vector3::new(self.max.x, self.max.y, self.max.z),
+            // Bottom vertices
+            (Vector3::new(min.x, min.y, min.z) - pos).dot(&normal),
+            (Vector3::new(max.x, min.y, min.z) - pos).dot(&normal),
+            (Vector3::new(min.x, max.y, min.z) - pos).dot(&normal),
+            (Vector3::new(max.x, max.y, min.z) - pos).dot(&normal),
+            // Top vertices
+            (Vector3::new(min.x, min.y, max.z) - pos).dot(&normal),
+            (Vector3::new(max.x, min.y, max.z) - pos).dot(&normal),
+            (Vector3::new(min.x, max.y, max.z) - pos).dot(&normal),
+            (Vector3::new(max.x, max.y, max.z) - pos).dot(&normal),
         ];
 
-        let intersection_test = |a: usize, b: usize| {
-            let a = (cube_vertices[a] - pos).dot(&normal);
-            let b = (cube_vertices[b] - pos).dot(&normal);
-            (a > 0.0) ^ (b > 0.0)
-        };
+        let intersection_test =
+            |a: usize, b: usize| (cube_vertices[a] > 0.0) ^ (cube_vertices[b] > 0.0);
 
         (0..4).any(|x| intersection_test(x, (x + 1) % 4))
             || (0..4).any(|x| intersection_test(x + 4, (x + 1) % 4 + 4))

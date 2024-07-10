@@ -4,10 +4,10 @@ use std::{
 };
 
 use anyhow::Result;
-use nalgebra::{Matrix4, Vector3};
+use nalgebra::Matrix4;
 use obj::{Obj, Position};
 
-use crate::{bvh::Bvh, Pos};
+use crate::Pos;
 
 #[derive(Debug, Clone)]
 pub struct Mesh {
@@ -196,6 +196,7 @@ impl Default for Mesh {
     }
 }
 
+// todo: maybe only transform min and max at end
 fn minmax_vertices(vertices: &[Pos], transform: &Matrix4<f32>) -> (Pos, Pos) {
     vertices.iter().fold(
         (
