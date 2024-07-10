@@ -8,19 +8,23 @@ mod bvh_node;
 mod intersection;
 
 pub struct Bvh {
-    root: Option<BvhNode>,
+    /// The root node is the last one
+    nodes: Vec<BvhNode>,
 }
 
 impl Bvh {
     pub fn from_mesh(mesh: &Mesh) -> Self {
         if mesh.faces.is_empty() {
-            return Self { root: None };
+            return Self { nodes: Vec::new() };
         }
 
+        let mut arena = Vec::with_capacity(mesh.faces.len() * 2 - 1);
         let face_indices = (0..mesh.faces.len()).collect::<Vec<_>>();
-        let root = build_bvh_node(mesh, face_indices);
 
-        Self { root: Some(root) }
+        let root = build_bvh_node(&mut arena, mesh, face_indices);
+        arena.push(root);
+
+        Self { nodes: arena }
     }
 
     pub fn intersect_plane(
@@ -29,13 +33,12 @@ impl Bvh {
         pos: Vector3<f32>,
         normal: Vector3<f32>,
     ) -> Vec<Vector3<f32>> {
-        match &self.root {
-            Some(root) => {
-                let mut out = Vec::new();
-                root.intersect_plane(mesh, pos, normal, &mut out);
-                out
-            }
-            None => Vec::new(),
+        if let Some(root) = self.nodes.last() {
+            let mut out = Vec::new();
+            root.intersect_plane(&self.nodes, mesh, pos, normal, &mut out);
+            out
+        } else {
+            Vec::new()
         }
     }
 }

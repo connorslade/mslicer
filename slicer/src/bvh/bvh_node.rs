@@ -10,15 +10,19 @@ pub enum BvhNode {
         bounds: BoundingBox,
     },
     Node {
-        left: Box<BvhNode>,
-        right: Box<BvhNode>,
+        left: usize,
+        right: usize,
         bounds: BoundingBox,
     },
 }
 
 // We can expect there to be a total of 2n - 1 nodes in the final bvh.
 // One leaf node for each triangle and n - 1 non-leaf nodes.
-pub fn build_bvh_node(mesh: &Mesh, mut face_indices: Vec<usize>) -> BvhNode {
+pub fn build_bvh_node(
+    arena: &mut Vec<BvhNode>,
+    mesh: &Mesh,
+    mut face_indices: Vec<usize>,
+) -> BvhNode {
     let mut bounds = BoundingBox::new();
     for &face in face_indices.iter() {
         bounds.expand_face(mesh, face);
@@ -40,12 +44,20 @@ pub fn build_bvh_node(mesh: &Mesh, mut face_indices: Vec<usize>) -> BvhNode {
 
     let (left_indices, right_indices) = face_indices.split_at(face_indices.len() / 2);
 
-    let left = build_bvh_node(mesh, left_indices.to_vec());
-    let right = build_bvh_node(mesh, right_indices.to_vec());
+    let push_idx = |arena: &mut Vec<BvhNode>, val| {
+        arena.push(val);
+        arena.len() - 1
+    };
+
+    let left = build_bvh_node(arena, mesh, left_indices.to_vec());
+    let left = push_idx(arena, left);
+
+    let right = build_bvh_node(arena, mesh, right_indices.to_vec());
+    let right = push_idx(arena, right);
 
     BvhNode::Node {
-        left: Box::new(left),
-        right: Box::new(right),
+        left,
+        right,
         bounds,
     }
 }

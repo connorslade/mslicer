@@ -7,6 +7,7 @@ use super::bvh_node::BvhNode;
 impl BvhNode {
     pub fn intersect_plane(
         &self,
+        arena: &Vec<BvhNode>,
         mesh: &Mesh,
         pos: Vector3<f32>,
         normal: Vector3<f32>,
@@ -21,8 +22,8 @@ impl BvhNode {
                 right,
                 bounds,
             } if bounds.intersect_plane(pos, normal) => {
-                left.intersect_plane(mesh, pos, normal, out);
-                right.intersect_plane(mesh, pos, normal, out);
+                arena[*left].intersect_plane(arena, mesh, pos, normal, out);
+                arena[*right].intersect_plane(arena, mesh, pos, normal, out);
             }
             _ => {}
         }
