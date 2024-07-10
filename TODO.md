@@ -9,6 +9,7 @@
 - [x] Allow rotating modals
 - [x] Optimize slicer (BVH?)
   - [x] ehh just throw rayon on it
+  - [x] Actually do the BVH
 - [ ] Allow saving / loading projects
 - [x] Allow deleting objects
 - [ ] Use instancing both for object mesh storage and rendering
@@ -36,3 +37,5 @@
 - [x] Improve include_shader macro
 - [ ] Don't store rended mesh after sending to GPU
 - [x] Fix orbit speed slowing with increasing height
+- [ ] Use bumpalo or something for allocation of bvhs
+- [ ] Add documentation
