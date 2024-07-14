@@ -16,12 +16,14 @@ use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
 use crate::{mesh::Mesh, segments::Segments, Pos};
 
+/// Used to slice a mesh.
 pub struct Slicer {
     slice_config: SliceConfig,
     models: Vec<Mesh>,
     progress: Progress,
 }
 
+/// Allows checking the progress of a slicing operation.
 #[derive(Clone)]
 pub struct Progress {
     inner: Arc<ProgressInner>,
@@ -36,6 +38,7 @@ pub struct ProgressInner {
 }
 
 impl Slicer {
+    /// Creates a new slicer given a slice config and list of models.
     pub fn new(slice_config: SliceConfig, models: Vec<Mesh>) -> Self {
         let max = models.iter().fold(Pos::zeros(), |max, model| {
             let f = model.vertices.iter().fold(Pos::zeros(), |max, &f| {
@@ -61,11 +64,17 @@ impl Slicer {
         }
     }
 
+    /// Gets an instance of the slicing [`Progress`] struct.
     pub fn progress(&self) -> Progress {
         self.progress.clone()
     }
 
+    /// Actually runs the slicing operation, it is multithreaded.
     pub fn slice<Layer: EncodableLayer>(&self) -> SliceResult<Layer::Output> {
+        // A segment contains a reference to all of the triangles it contains. By
+        // splitting the mesh into segments, not all triangles need to be tested
+        // to find all intersections. This massively speeds up the slicing
+        // operation and actually makes it faster than most other slicers. :p
         let segments = self
             .models
             .iter()
@@ -75,12 +84,17 @@ impl Slicer {
         let layers = (0..self.progress.total)
             .into_par_iter()
             .inspect(|_| {
+                // Updates the slice progress
                 self.progress.completed.fetch_add(1, Ordering::Relaxed);
                 self.progress.notify.notify_all();
             })
             .map(|layer| {
                 let height = layer as f32 * self.slice_config.slice_height;
 
+                // Gets all the intersections between the slice plane and the
+                // model. Because all the faces are triangles, every triangle
+                // intersection will return two points. These can then be
+                // interpreted as line segments making up a polygon.
                 let intersections = self
                     .models
                     .iter()
@@ -92,22 +106,38 @@ impl Slicer {
                     .map(|mut x| (x.next().unwrap(), x.next().unwrap()))
                     .collect::<Vec<_>>();
 
+                // Creates a new encoded for this layer. Because printers can
+                // have very high resolution displays, the uncompressed data for
+                // a sliced model can easily be over 30 Gigabytes. Most formats
+                // use some sort of compression scheme to resolve this issue, so
+                // to use a little memory as needed, the layers are compressed
+                // as they are made.
                 let mut encoder = Layer::new();
                 let mut last = 0;
 
+                // For each row of pixels, we find all line segments that go
+                // across and mark that as an intersection to then be run-length
+                // encoded. There is probably a better polygon filling algo, but
+                // this one works surprisingly fast.
                 for y in 0..self.slice_config.platform_resolution.y {
                     let yf = y as f32;
                     let mut intersections = segments
                         .iter()
+                        // Filtering to only consider segments with one point
+                        // above the current row and one point below.
                         .filter(|&(a, b)| ((a.y > yf) ^ (b.y > yf)))
                         .map(|(a, b)| {
+                            // Get the x position of the line segment at this y
                             let t = (yf - a.y) / (b.y - a.y);
                             a.x + t * (b.x - a.x)
                         })
                         .collect::<Vec<_>>();
 
+                    // Sort all these intersections for run-length encoding
                     intersections.sort_by_key(|&x| OrderedFloat(x));
 
+                    // Convert the intersections into runs of white pixels to be
+                    // encoded into the layer
                     for span in intersections.chunks_exact(2) {
                         let y_offset = (self.slice_config.platform_resolution.x * y) as u64;
 
@@ -127,6 +157,7 @@ impl Slicer {
                     }
                 }
 
+                // Finished encoding the layer
                 encoder.finish(layer as usize, &self.slice_config)
             })
             .collect::<Vec<_>>();
@@ -149,6 +180,8 @@ impl Deref for Progress {
 }
 
 impl Progress {
+    /// Waits until the next layer is complete, returning the current count of
+    /// sliced layers.
     pub fn wait(&self) -> u32 {
         let mut last_completed = self
             .notify
@@ -163,10 +196,12 @@ impl Progress {
         current
     }
 
+    /// Returns the count of sliced layers.
     pub fn completed(&self) -> u32 {
         self.completed.load(Ordering::Relaxed)
     }
 
+    /// Returns the count of layers in the current slicing operation.
     pub fn total(&self) -> u32 {
         self.total
     }

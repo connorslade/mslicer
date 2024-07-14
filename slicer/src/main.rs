@@ -40,6 +40,7 @@ fn main() -> Result<()> {
     let mut mesh = load_mesh(&mut buf, "stl")?;
     let (min, max) = mesh.minmax_point();
 
+    // Scale the model into printer-space (mm => px)
     let real_scale = 1.0;
     mesh.set_scale(Pos::new(
         real_scale / slice_config.platform_size.x * slice_config.platform_resolution.x as f32,
@@ -47,6 +48,7 @@ fn main() -> Result<()> {
         real_scale,
     ));
 
+    // Center the model
     let center = slice_config.platform_resolution / 2;
     let mesh_center = (min + max) / 2.0;
     mesh.set_position(Vector3::new(
@@ -61,6 +63,7 @@ fn main() -> Result<()> {
         mesh.faces.len()
     );
 
+    // Actually slice it on another thread (the slicing is multithreaded)
     let now = Instant::now();
 
     let slicer = Slicer::new(slice_config.clone(), vec![mesh]);
@@ -80,6 +83,7 @@ fn main() -> Result<()> {
         stdout().flush()?;
     }
 
+    // Once slicing is complete write to a .goo file
     let mut serializer = DynamicSerializer::new();
     goo.join().unwrap().serialize(&mut serializer);
     fs::write(OUTPUT_PATH, serializer.into_inner())?;

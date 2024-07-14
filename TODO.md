@@ -15,7 +15,7 @@
 - [ ] Use instancing both for object mesh storage and rendering
 - [x] Less internal dependence on GOO format
 - [ ] Anti-aliasing
-- [ ] Cache transformed points?
+- [x] Cache transformed points?
 - [x] Rename `ui` module to `mslicer`
 - [ ] Proper slice preview scaling
 - [ ] Preview image generation

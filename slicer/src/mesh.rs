@@ -9,6 +9,8 @@ use obj::{Obj, Position};
 
 use crate::Pos;
 
+/// A mesh made of vertices and triangular faces. It can be scaled, translated,
+/// and rotated.
 #[derive(Debug, Clone)]
 pub struct Mesh {
     pub vertices: Arc<Box<[Pos]>>,
@@ -23,6 +25,8 @@ pub struct Mesh {
 }
 
 impl Mesh {
+    /// Creates a new mesh from the givin vertices and faces. The
+    /// transformations are all 0 by default.
     pub fn new(mut vertices: Vec<Pos>, faces: Vec<[u32; 3]>) -> Self {
         center_vertices(&mut vertices);
 
@@ -33,19 +37,29 @@ impl Mesh {
         }
     }
 
-    /// Intersect the mesh with a plane with O(n) time complexity, where n is the number of faces.
-    /// Should probably use a BVH for O(log n) intersections.
+    /// Intersect the mesh with a plane with linier time complexity. You
+    /// should probably use the [`crate::segments::Segments`] struct as it can
+    /// massively accurate slicing of high face count triangles.
     pub fn intersect_plane(&self, height: f32) -> Vec<Pos> {
+        // Point is the position of the plane and normal is the direction /
+        // rotation of the plane.
         let point = self.inv_transform(&Vector3::new(0.0, 0.0, height));
         let normal = (self.inv_transformation_matrix * Vector3::z_axis().to_homogeneous()).xyz();
 
         let mut out = Vec::new();
 
         for face in self.faces.iter() {
+            // Get the vertices of the face
             let v0 = self.vertices[face[0] as usize];
             let v1 = self.vertices[face[1] as usize];
             let v2 = self.vertices[face[2] as usize];
 
+            // By subtracting the position of the plane and doting it with the
+            // normal, we get a value that is positive if the point is above the
+            // plane and negative if it is below. By checking if any of the line
+            // segments of triangle have one point above the plane and one
+            // below, we find any line segments that are intersecting with the
+            // plane.
             let (a, b, c) = (
                 (v0 - point).dot(&normal),
                 (v1 - point).dot(&normal),
@@ -53,6 +67,9 @@ impl Mesh {
             );
             let (a_pos, b_pos, c_pos) = (a > 0.0, b > 0.0, c > 0.0);
 
+            // Closure called when the line segment from v0 to v1 is intersecting the
+            // plane. t is how far along the line the intersection is and intersection,
+            // it well the point that is intersecting with the plane.
             let mut push_intersection = |a: f32, b: f32, v0: Pos, v1: Pos| {
                 let (v0, v1) = (self.transform(&v0), self.transform(&v1));
                 let t = a / (a - b);
@@ -68,6 +85,10 @@ impl Mesh {
         out
     }
 
+    /// Updates the internal transformation matrices. This is called
+    /// automatically if you use [`Mesh::set_position`], [`Mesh::set_scale`], or
+    /// [`Mesh::set_rotation`], but you will need to call it manually if you use
+    /// the unchecked variants of those methods.
     pub fn update_transformation_matrix(&mut self) {
         let scale = Matrix4::new_nonuniform_scaling(&self.scale);
         let rotation =
@@ -78,68 +99,97 @@ impl Mesh {
         self.inv_transformation_matrix = self.transformation_matrix.try_inverse().unwrap();
     }
 
+    /// Transforms a point according to the models translation, scale, and rotation.
     pub fn transform(&self, pos: &Pos) -> Pos {
         (self.transformation_matrix * pos.push(1.0)).xyz()
     }
 
+    /// Undoes the transformation of a point from the models translation, scale, and rotation.
     pub fn inv_transform(&self, pos: &Pos) -> Pos {
         (self.inv_transformation_matrix * pos.push(1.0)).xyz()
     }
 
+    /// Get the minimum and maximum of each component of every vertex in the
+    /// model. These points define the bounding box of the model.
     pub fn minmax_point(&self) -> (Pos, Pos) {
         minmax_vertices(&self.vertices, &self.transformation_matrix)
     }
 }
 
 impl Mesh {
+    /// Gets the current transformation matrix of the model.
     pub fn transformation_matrix(&self) -> &Matrix4<f32> {
         &self.transformation_matrix
     }
 
+    /// Gets the inverse of the current transformation matrix of the model.
     pub fn inv_transformation_matrix(&self) -> &Matrix4<f32> {
         &self.inv_transformation_matrix
     }
 
+    /// Changes the position of the model, automatically updating the internal
+    /// transformation matrix.
     pub fn set_position(&mut self, pos: Pos) {
         self.position = pos;
         self.update_transformation_matrix();
     }
 
+    /// Changes the position of the model without updating the internal
+    /// transformation matrix. You will need to manually call
+    /// [`Mesh::update_transformation_matrix`] at some point.
     pub fn set_position_unchecked(&mut self, pos: Pos) {
         self.position = pos;
     }
 
+    /// Gets the current position of the model.
     pub fn position(&self) -> Pos {
         self.position
     }
 
+    /// Changes the current scale of the model, automatically updating the
+    /// internal transformation matrix.
     pub fn set_scale(&mut self, scale: Pos) {
         self.scale = scale;
         self.update_transformation_matrix();
     }
 
+    /// Changes the current scale of the model without updating the internal
+    /// transformation matrix. You will need to manually call
+    /// [`Mesh::update_transformation_matrix`] at some point.
     pub fn set_scale_unchecked(&mut self, scale: Pos) {
         self.scale = scale;
     }
 
+    /// Gets the current scale of the model.
     pub fn scale(&self) -> Pos {
         self.scale
     }
 
+    /// Changes the current rotation of the model, using [Euler
+    /// angles](https://en.wikipedia.org/wiki/Euler_angles). The internal
+    /// transformation matrix is automatically updated.
     pub fn set_rotation(&mut self, rotation: Pos) {
         self.rotation = rotation;
         self.update_transformation_matrix();
     }
 
+    /// Changes the current rotation of the model (see [`Mesh::set_rotation`]),
+    /// without updating the internal transformation matrix. You will need to
+    /// manually call [`Mesh::update_transformation_matrix`] at some point.
     pub fn set_rotation_unchecked(&mut self, rotation: Pos) {
         self.rotation = rotation;
     }
 
+    /// Gets the current roation of the model.
     pub fn rotation(&self) -> Pos {
         self.rotation
     }
 }
 
+/// Loads a buffer into a mesh.
+/// Supported formats include:
+/// - stl
+/// - obj / mtl
 pub fn load_mesh<T: BufRead + Seek>(reader: &mut T, format: &str) -> Result<Mesh> {
     Ok(match format {
         "stl" => {
@@ -199,6 +249,8 @@ impl Default for Mesh {
 }
 
 // todo: maybe only transform min and max at end
+/// Get the minimum and maximum of each component of every vertex.
+/// These points define the bounding box of the model.
 fn minmax_vertices(vertices: &[Pos], transform: &Matrix4<f32>) -> (Pos, Pos) {
     vertices.iter().fold(
         (
@@ -215,6 +267,7 @@ fn minmax_vertices(vertices: &[Pos], transform: &Matrix4<f32>) -> (Pos, Pos) {
     )
 }
 
+/// Moves the model to have its origin at its centerpoint.
 fn center_vertices(vertices: &mut [Pos]) {
     let (min, max) = minmax_vertices(vertices, &Matrix4::identity());
 
