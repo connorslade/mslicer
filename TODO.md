@@ -38,5 +38,5 @@
 - [ ] Don't store rended mesh after sending to GPU
 - [x] Fix orbit speed slowing with increasing height
 - [x] Use bumpalo or something for allocation of bvhs
-- [ ] Optimize bvh more (benchmarking with criterion)
+- [x] Optimize bvh more (benchmarking with criterion)
 - [ ] Add documentation

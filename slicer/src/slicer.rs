@@ -15,7 +15,7 @@ use nalgebra::Vector3;
 use ordered_float::OrderedFloat;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
-use crate::{bvh::Bvh, mesh::Mesh, Pos};
+use crate::{bvh::Bvh, mesh::Mesh, segments::Segments, Pos};
 
 pub struct Slicer {
     slice_config: SliceConfig,
@@ -67,7 +67,11 @@ impl Slicer {
     }
 
     pub fn slice<Layer: EncodableLayer>(&self) -> SliceResult<Layer::Output> {
-        let bvh = self.models.iter().map(Bvh::from_mesh).collect::<Vec<_>>();
+        let segments = self
+            .models
+            .iter()
+            .map(|x| Segments::from_mesh(x, 100))
+            .collect::<Vec<_>>();
 
         let layers = (0..self.progress.total)
             .into_par_iter()
@@ -78,13 +82,11 @@ impl Slicer {
             .map(|layer| {
                 let height = layer as f32 * self.slice_config.slice_height;
 
-                let intersections = self.models.iter().enumerate().flat_map(|(idx, mesh)| {
-                    let point = mesh.inv_transform(&Vector3::new(0.0, 0.0, height));
-                    let normal = (mesh.inv_transformation_matrix()
-                        * Vector3::z_axis().to_homogeneous())
-                    .xyz();
-                    bvh[idx].intersect_plane(mesh, point, normal)
-                });
+                let intersections = self
+                    .models
+                    .iter()
+                    .enumerate()
+                    .flat_map(|(idx, mesh)| segments[idx].intersect_plane(mesh, height));
                 let segments = intersections
                     .chunks(2)
                     .into_iter()
