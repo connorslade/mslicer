@@ -22,14 +22,18 @@ impl Segments {
         let mut layers = vec![Vec::new(); layer_count + 2];
 
         for face in 0..mesh.faces.len() {
-            let (min_height, max_height) = minmax_triangle_height(&mesh, &transformed_points, face);
+            let (min_height, max_height) = minmax_triangle_height(mesh, &transformed_points, face);
             let (min_layer, max_layer) = (
                 ((min_height - min.z) / layer_height) as usize,
                 ((max_height - min.z) / layer_height) as usize,
             );
 
-            for layer in min_layer.saturating_sub(1)..=(max_layer + 1) {
-                layers[layer].push(face);
+            for layer in layers
+                .iter_mut()
+                .take(max_layer + 2)
+                .skip(min_layer.saturating_sub(1))
+            {
+                layer.push(face);
             }
         }
 
@@ -45,7 +49,7 @@ impl Segments {
 
         let layer = (height - self.start_height) / self.layer_height;
         for &face in self.layers[layer as usize].iter() {
-            intersect_triangle(&mesh, face, height, &mut out);
+            intersect_triangle(mesh, face, height, &mut out);
         }
 
         out

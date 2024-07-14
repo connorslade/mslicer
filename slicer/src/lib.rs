@@ -1,6 +1,5 @@
 use nalgebra::Vector3;
 
-pub mod bvh;
 pub mod mesh;
 pub mod segments;
 pub mod slicer;

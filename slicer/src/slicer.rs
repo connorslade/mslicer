@@ -11,11 +11,10 @@ use common::{
     misc::{EncodableLayer, SliceResult},
 };
 use itertools::Itertools;
-use nalgebra::Vector3;
 use ordered_float::OrderedFloat;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
-use crate::{bvh::Bvh, mesh::Mesh, segments::Segments, Pos};
+use crate::{mesh::Mesh, segments::Segments, Pos};
 
 pub struct Slicer {
     slice_config: SliceConfig,
