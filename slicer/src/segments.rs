@@ -96,9 +96,7 @@ fn intersect_triangle(
 
     // By subtracting the height from each vertex z coord, we can now check if
     // each line segment is crossing the plane if one end is above and one is
-    // below. We can use xor to do this quickly. I'm honestly kinda proud of
-    // this algorithm, its really efficient and I haven't seen it anywhere else
-    // in my research for this project.
+    // below. We can use xor to do this quickly.
     let (a, b, c) = (v0.z - height, v1.z - height, v2.z - height);
     let (a_pos, b_pos, c_pos) = (a > 0.0, b > 0.0, c > 0.0);
 

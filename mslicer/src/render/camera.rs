@@ -41,7 +41,7 @@ impl Camera {
 
         if response.hovered() {
             let scroll = ui.input(|x| x.smooth_scroll_delta);
-            self.distance = (self.distance + scroll.y * 0.1).max(EPSILON);
+            self.distance = (self.distance - scroll.y * 0.1).max(EPSILON);
         }
     }
 

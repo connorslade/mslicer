@@ -1,5 +1,5 @@
 use eframe::Frame;
-use egui::{Context, DragValue, RichText, Sense, Slider, Vec2, Window};
+use egui::{style::HandleShape, Context, DragValue, RichText, Sense, Slider, Vec2, Window};
 use egui_wgpu::Callback;
 use goo_format::LayerDecoder;
 use nalgebra::Vector2;
@@ -12,9 +12,14 @@ pub fn ui(app: &mut App, ctx: &Context, _frame: &mut Frame) {
     if let Some(result) = app.slice_result.lock().unwrap().as_mut() {
         Window::new("Slice Preview").show(ctx, move |ui| {
             ui.horizontal(|ui| {
+                ui.spacing_mut().slider_width = ui.available_size().x
+                    / result.goo.header.x_resolution as f32
+                    * result.goo.header.y_resolution as f32
+                    - 10.0;
                 ui.add(
                     Slider::new(&mut result.slice_preview_layer, 1..=result.goo.layers.len())
                         .vertical()
+                        .handle_shape(HandleShape::Rect { aspect_ratio: 1.0 })
                         .show_value(false),
                 );
 
