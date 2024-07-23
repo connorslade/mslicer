@@ -147,7 +147,7 @@ impl Pipeline<WorkspaceRenderCallback> for TargetPointPipeline {
 
         buffer
             .write(&TargetPointUniforms {
-                transform: resources.transform * Matrix4::new_translation(&resources.target_point),
+                transform: resources.transform * Matrix4::new_translation(&resources.camera.target),
                 color: Vector4::new(1.0, 0.0, 0.0, 0.25),
             })
             .unwrap();

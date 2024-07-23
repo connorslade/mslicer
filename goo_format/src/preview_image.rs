@@ -1,5 +1,5 @@
 use common::serde::{Deserializer, Serializer};
-use image::RgbaImage;
+use image::{imageops::FilterType, RgbaImage};
 
 pub struct PreviewImage<const WIDTH: usize, const HEIGHT: usize> {
     // 0brrrrrggggggbbbbb
@@ -15,7 +15,10 @@ impl<const WIDTH: usize, const HEIGHT: usize> PreviewImage<WIDTH, HEIGHT> {
         }
     }
 
-    pub fn from_image(image: RgbaImage) -> Self {
+    pub fn from_image(image: &RgbaImage) -> Self {
+        assert_eq!(image.width() as usize, WIDTH);
+        assert_eq!(image.height() as usize, HEIGHT);
+
         let mut data = vec![0; WIDTH * HEIGHT];
 
         for (i, pixel) in data.iter_mut().enumerate() {
@@ -32,6 +35,11 @@ impl<const WIDTH: usize, const HEIGHT: usize> PreviewImage<WIDTH, HEIGHT> {
         Self {
             data: data.into_boxed_slice(),
         }
+    }
+
+    pub fn from_image_scaled(image: &RgbaImage, filter: FilterType) -> Self {
+        let scaled = image::imageops::resize(image, WIDTH as u32, HEIGHT as u32, filter);
+        Self::from_image(&scaled)
     }
 
     pub fn inner_data(&self) -> &[u16] {

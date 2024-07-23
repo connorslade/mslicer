@@ -7,12 +7,12 @@ use std::{
 use clone_macro::clone;
 use egui::{CentralPanel, Frame, Sense};
 use egui_wgpu::Callback;
+use image::{imageops::FilterType, RgbaImage};
 use nalgebra::{Vector2, Vector3};
 use slicer::{
     slicer::{Progress as SliceProgress, Slicer},
     Pos,
 };
-use wgpu::{CommandEncoderDescriptor, RenderPassDescriptor};
 
 use crate::{
     render::{
@@ -22,15 +22,17 @@ use crate::{
     windows::{self, Windows},
 };
 use common::config::{ExposureConfig, SliceConfig};
-use goo_format::{File as GooFile, LayerEncoder};
+use goo_format::{File as GooFile, LayerEncoder, PreviewImage};
 
 pub struct App {
     pub camera: Camera,
     pub slice_config: SliceConfig,
     pub meshes: Arc<RwLock<Vec<RenderedMesh>>>,
 
+    // todo: clean this up
     pub slice_progress: Option<SliceProgress>,
     pub slice_result: Arc<Mutex<Option<SliceResult>>>,
+    pub slice_preview_image: Arc<Mutex<Option<RgbaImage>>>,
 
     pub render_style: RenderStyle,
     pub grid_size: f32,
@@ -54,6 +56,8 @@ pub struct FpsTracker {
 
 impl App {
     pub fn slice(&mut self) {
+        *self.slice_preview_image.lock().unwrap() = None;
+
         let slice_config = self.slice_config.clone();
         let mut meshes = Vec::new();
         let mut preview_scale = f32::MAX;
@@ -92,16 +96,31 @@ impl App {
         let slicer = Slicer::new(slice_config, meshes);
         self.slice_progress = Some(slicer.progress());
 
-        thread::spawn(clone!([{ self.slice_result } as slice_result], move || {
-            let goo = GooFile::from_slice_result(slicer.slice::<LayerEncoder>());
-            slice_result.lock().unwrap().replace(SliceResult {
-                goo,
-                slice_preview_layer: 0,
-                last_preview_layer: 0,
-                preview_offset: Vector2::new(0.0, 0.0),
-                preview_scale: preview_scale.max(1.0),
-            });
-        }));
+        thread::spawn(clone!(
+            [
+                { self.slice_result } as slice_result,
+                { self.slice_preview_image } as preview_image
+            ],
+            move || {
+                let mut goo = GooFile::from_slice_result(slicer.slice::<LayerEncoder>());
+
+                let preview_image = preview_image.lock().unwrap();
+                let preview_image = preview_image.as_ref().unwrap();
+
+                goo.header.big_preview =
+                    PreviewImage::from_image_scaled(preview_image, FilterType::Nearest);
+                goo.header.small_preview =
+                    PreviewImage::from_image_scaled(preview_image, FilterType::Nearest);
+
+                slice_result.lock().unwrap().replace(SliceResult {
+                    goo,
+                    slice_preview_layer: 0,
+                    last_preview_layer: 0,
+                    preview_offset: Vector2::new(0.0, 0.0),
+                    preview_scale: preview_scale.max(1.0),
+                });
+            }
+        ));
     }
 }
 
@@ -121,6 +140,7 @@ impl eframe::App for App {
                 let callback = Callback::new_paint_callback(
                     rect,
                     WorkspaceRenderCallback {
+                        camera: self.camera.clone(),
                         transform: self
                             .camera
                             .view_projection_matrix(rect.width() / rect.height()),
@@ -128,8 +148,10 @@ impl eframe::App for App {
                         bed_size: self.slice_config.platform_size,
                         grid_size: self.grid_size,
 
-                        target_point: self.camera.target,
                         is_moving: response.dragged(),
+                        render_preview: (self.slice_progress.is_some()
+                            && self.slice_preview_image.lock().unwrap().is_none())
+                        .then(|| self.slice_preview_image.clone()),
 
                         models: self.meshes.clone(),
                         render_style: self.render_style,
@@ -179,13 +201,16 @@ impl Default for App {
                 },
                 first_layers: 10,
             },
+
             fps: FpsTracker::new(),
-            slice_progress: None,
-            slice_result: Arc::new(Mutex::new(None)),
             meshes: Arc::new(RwLock::new(Vec::new())),
             windows: Windows::default(),
             render_style: RenderStyle::Normals,
             grid_size: 12.16,
+
+            slice_progress: None,
+            slice_result: Arc::new(Mutex::new(None)),
+            slice_preview_image: Arc::new(Mutex::new(None)),
         }
     }
 }

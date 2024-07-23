@@ -1,17 +1,20 @@
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc, Mutex, RwLock};
 
 use egui::PaintCallbackInfo;
 use egui_wgpu::{CallbackResources, CallbackTrait, ScreenDescriptor};
+use image::RgbaImage;
 use nalgebra::{Matrix4, Vector3};
 use wgpu::{CommandBuffer, CommandEncoder, Device, Queue, RenderPass};
 
 use super::{
+    camera::Camera,
     pipelines::{
         build_plate::BuildPlatePipeline,
         model::{ModelPipeline, RenderStyle},
         target_point::TargetPointPipeline,
         Pipeline,
     },
+    preview::render_preview_image,
     rendered_mesh::RenderedMesh,
 };
 
@@ -21,7 +24,9 @@ pub struct WorkspaceRenderResources {
     pub target_point_pipeline: TargetPointPipeline,
 }
 
+#[derive(Clone)]
 pub struct WorkspaceRenderCallback {
+    pub camera: Camera,
     pub transform: Matrix4<f32>,
 
     pub bed_size: Vector3<f32>,
@@ -30,8 +35,8 @@ pub struct WorkspaceRenderCallback {
     pub models: Arc<RwLock<Vec<RenderedMesh>>>,
     pub render_style: RenderStyle,
 
-    pub target_point: Vector3<f32>,
     pub is_moving: bool,
+    pub render_preview: Option<Arc<Mutex<Option<RgbaImage>>>>,
 }
 
 impl CallbackTrait for WorkspaceRenderCallback {
@@ -44,6 +49,20 @@ impl CallbackTrait for WorkspaceRenderCallback {
         resources: &mut CallbackResources,
     ) -> Vec<CommandBuffer> {
         let resources = resources.get_mut::<WorkspaceRenderResources>().unwrap();
+
+        if let Some(preview) = &self.render_preview {
+            let image = render_preview_image(
+                device,
+                queue,
+                screen_descriptor,
+                encoder,
+                (512, 512),
+                &mut resources.model_pipeline,
+                self,
+            );
+
+            *preview.lock().unwrap() = Some(image);
+        }
 
         resources
             .build_plate_pipeline

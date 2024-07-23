@@ -5,6 +5,7 @@ use nalgebra::{Matrix4, Vector2, Vector3};
 
 const EPSILON: f32 = 1e-5;
 
+#[derive(Clone, Debug)]
 pub struct Camera {
     pub target: Vector3<f32>,
     pub angle: Vector2<f32>,
