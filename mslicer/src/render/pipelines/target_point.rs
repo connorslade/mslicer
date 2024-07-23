@@ -10,7 +10,7 @@ use wgpu::{
     util::{BufferInitDescriptor, DeviceExt},
     BindGroup, BindGroupDescriptor, BindGroupEntry, BindingResource, BlendState, Buffer,
     BufferBinding, BufferDescriptor, BufferUsages, ColorTargetState, ColorWrites, CommandEncoder,
-    CompareFunction, DepthStencilState, Device, FragmentState, IndexFormat, MultisampleState,
+    CompareFunction, DepthStencilState, Device, FragmentState, IndexFormat,
     PipelineLayoutDescriptor, PrimitiveState, Queue, RenderPass, RenderPipeline,
     RenderPipelineDescriptor, ShaderModuleDescriptor, ShaderSource, TextureFormat, VertexState,
 };
@@ -98,10 +98,7 @@ impl TargetPointPipeline {
                 stencil: Default::default(),
                 bias: Default::default(),
             }),
-            multisample: MultisampleState {
-                count: 4,
-                ..Default::default()
-            },
+            multisample: Default::default(),
             multiview: None,
         });
 

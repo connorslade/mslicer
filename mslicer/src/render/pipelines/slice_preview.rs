@@ -6,10 +6,9 @@ use wgpu::{
     BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayout, BindGroupLayoutDescriptor,
     BindGroupLayoutEntry, BindingResource, BindingType, Buffer, BufferBinding, BufferBindingType,
     BufferDescriptor, BufferUsages, ColorTargetState, ColorWrites, CommandEncoder, CompareFunction,
-    DepthStencilState, Device, FragmentState, IndexFormat, MultisampleState,
-    PipelineLayoutDescriptor, PrimitiveState, Queue, RenderPass, RenderPipeline,
-    RenderPipelineDescriptor, ShaderModuleDescriptor, ShaderSource, ShaderStages, TextureFormat,
-    VertexState,
+    DepthStencilState, Device, FragmentState, IndexFormat, PipelineLayoutDescriptor,
+    PrimitiveState, Queue, RenderPass, RenderPipeline, RenderPipelineDescriptor,
+    ShaderModuleDescriptor, ShaderSource, ShaderStages, TextureFormat, VertexState,
 };
 
 use crate::{
@@ -98,10 +97,7 @@ impl SlicePreviewPipeline {
                 stencil: Default::default(),
                 bias: Default::default(),
             }),
-            multisample: MultisampleState {
-                count: 4,
-                ..Default::default()
-            },
+            multisample: Default::default(),
             multiview: None,
         });
 

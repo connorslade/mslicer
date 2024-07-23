@@ -1,8 +1,9 @@
 use std::sync::{Arc, RwLock};
 
+use egui::PaintCallbackInfo;
 use egui_wgpu::{CallbackResources, CallbackTrait, ScreenDescriptor};
 use nalgebra::{Matrix4, Vector3};
-use wgpu::{CommandBuffer, CommandEncoder, Device, Queue};
+use wgpu::{CommandBuffer, CommandEncoder, Device, Queue, RenderPass};
 
 use super::{
     pipelines::{
@@ -59,9 +60,9 @@ impl CallbackTrait for WorkspaceRenderCallback {
 
     fn paint<'a>(
         &'a self,
-        _info: egui::PaintCallbackInfo,
-        render_pass: &mut egui_wgpu::wgpu::RenderPass<'a>,
-        callback_resources: &'a egui_wgpu::CallbackResources,
+        _info: PaintCallbackInfo,
+        render_pass: &mut RenderPass<'a>,
+        callback_resources: &'a CallbackResources,
     ) {
         let resources = callback_resources
             .get::<WorkspaceRenderResources>()

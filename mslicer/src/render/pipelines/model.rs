@@ -5,7 +5,7 @@ use wgpu::{
     util::{BufferInitDescriptor, DeviceExt},
     BindGroup, BindGroupEntry, BindGroupLayout, BufferUsages, ColorTargetState, ColorWrites,
     CommandEncoder, CompareFunction, DepthStencilState, Device, FragmentState, IndexFormat,
-    MultisampleState, PipelineLayoutDescriptor, PrimitiveState, Queue, RenderPass, RenderPipeline,
+    PipelineLayoutDescriptor, PrimitiveState, Queue, RenderPass, RenderPipeline,
     RenderPipelineDescriptor, ShaderModuleDescriptor, ShaderSource, TextureFormat, VertexState,
 };
 
@@ -78,10 +78,7 @@ impl ModelPipeline {
                 stencil: Default::default(),
                 bias: Default::default(),
             }),
-            multisample: MultisampleState {
-                count: 4,
-                ..Default::default()
-            },
+            multisample: Default::default(),
             multiview: None,
         });
 

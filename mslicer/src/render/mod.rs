@@ -11,6 +11,7 @@ use wgpu::{BufferAddress, VertexAttribute, VertexBufferLayout, VertexFormat, Ver
 use workspace::WorkspaceRenderResources;
 pub mod camera;
 pub mod pipelines;
+pub mod preview;
 pub mod rendered_mesh;
 pub mod slice_preview;
 pub mod workspace;

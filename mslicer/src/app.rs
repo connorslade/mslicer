@@ -12,6 +12,7 @@ use slicer::{
     slicer::{Progress as SliceProgress, Slicer},
     Pos,
 };
+use wgpu::{CommandEncoderDescriptor, RenderPassDescriptor};
 
 use crate::{
     render::{

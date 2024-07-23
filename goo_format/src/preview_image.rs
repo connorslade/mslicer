@@ -1,4 +1,5 @@
 use common::serde::{Deserializer, Serializer};
+use image::RgbaImage;
 
 pub struct PreviewImage<const WIDTH: usize, const HEIGHT: usize> {
     // 0brrrrrggggggbbbbb
@@ -7,10 +8,25 @@ pub struct PreviewImage<const WIDTH: usize, const HEIGHT: usize> {
 
 impl<const WIDTH: usize, const HEIGHT: usize> PreviewImage<WIDTH, HEIGHT> {
     pub fn empty() -> Self {
+        let data = vec![0; WIDTH * HEIGHT];
+
+        Self {
+            data: data.into_boxed_slice(),
+        }
+    }
+
+    pub fn from_image(image: RgbaImage) -> Self {
         let mut data = vec![0; WIDTH * HEIGHT];
 
         for (i, pixel) in data.iter_mut().enumerate() {
-            *pixel = u16::MAX * (i % 2 == 0) as u16;
+            let (x, y) = (i % WIDTH, i / WIDTH);
+            let color = image.get_pixel(x as u32, y as u32);
+
+            let red = (color[0] as u16) >> 3;
+            let green = (color[1] as u16) >> 2;
+            let blue = (color[2] as u16) >> 3;
+
+            *pixel = (red << 11) | (green << 5) | blue;
         }
 
         Self {
