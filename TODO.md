@@ -39,4 +39,5 @@
 - [x] Fix orbit speed slowing with increasing height
 - [x] Use bumpalo or something for allocation of bvhs
 - [x] Optimize bvh more (benchmarking with criterion)
-- [ ] Add documentation
+- [x] Add documentation to slicer
+- [x] Make the slice preview layer slider full height

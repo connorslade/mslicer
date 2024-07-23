@@ -1,8 +1,9 @@
 use anyhow::{ensure, Result};
 
+use chrono::Local;
 use common::{
     misc::SliceResult,
-    serde::{Deserializer, Serializer},
+    serde::{Deserializer, Serializer, SizedString},
 };
 
 use crate::{HeaderInfo, LayerContent, ENDING_STRING};
@@ -59,6 +60,13 @@ impl File {
                 bottom_lift_speed: slice_config.first_exposure_config.lift_speed,
                 bottom_retract_distance: slice_config.first_exposure_config.retract_distance,
                 bottom_retract_speed: slice_config.first_exposure_config.retract_speed,
+
+                file_time: SizedString::new(
+                    Local::now()
+                        .format("%Y-%m-%d %H:%M:%S")
+                        .to_string()
+                        .as_bytes(),
+                ),
 
                 ..Default::default()
             },

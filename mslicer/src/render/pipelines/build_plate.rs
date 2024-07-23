@@ -237,7 +237,7 @@ fn generate_mesh(bed_size: Vector3<f32>, grid_size: f32) -> Vec<ModelVertex> {
     ];
 
     // Grid on bottom plane
-    for x in 0..(bed_size.x / grid_size).round() as i32 {
+    for x in 0..(bed_size.x / grid_size).ceil() as i32 {
         let x = x as f32 * grid_size + b.x;
         lines.push(Line::new(
             Vector3::new(x, a.y, 0.0),
@@ -245,7 +245,7 @@ fn generate_mesh(bed_size: Vector3<f32>, grid_size: f32) -> Vec<ModelVertex> {
         ));
     }
 
-    for y in 0..(bed_size.y / grid_size).round() as i32 {
+    for y in 0..(bed_size.y / grid_size).ceil() as i32 {
         let y = y as f32 * grid_size + b.y;
         lines.push(Line::new(
             Vector3::new(a.x, y, 0.0),
