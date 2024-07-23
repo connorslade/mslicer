@@ -71,6 +71,9 @@ impl Slicer {
 
     /// Actually runs the slicing operation, it is multithreaded.
     pub fn slice<Layer: EncodableLayer>(&self) -> SliceResult<Layer::Output> {
+        let pixels = (self.slice_config.platform_resolution.x
+            * self.slice_config.platform_resolution.y) as u64;
+
         // A segment contains a reference to all of the triangles it contains. By
         // splitting the mesh into segments, not all triangles need to be tested
         // to find all intersections. This massively speeds up the slicing
@@ -155,6 +158,14 @@ impl Slicer {
                         encoder.add_run(length, 255);
                         last = end;
                     }
+                }
+
+                // Turns out that on my printer, the buffer that each layer is
+                // decoded into is just uninitialized memory. So if the last run
+                // doesn't fill the buffer, the printer will just print whatever
+                // was in the buffer before which just makes a huge mess.
+                if last < pixels {
+                    encoder.add_run(pixels - last, 0);
                 }
 
                 // Finished encoding the layer
