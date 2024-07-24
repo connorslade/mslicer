@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use eframe::Theme;
 use egui::PaintCallbackInfo;
 use egui_wgpu::{CallbackResources, CallbackTrait, ScreenDescriptor};
 use nalgebra::{Matrix4, Vector3};
@@ -38,6 +39,7 @@ pub struct WorkspaceRenderCallback {
     pub render_style: RenderStyle,
 
     pub is_moving: bool,
+    pub theme: Theme,
     pub slice_operation: Option<SliceOperation>,
 }
 

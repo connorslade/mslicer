@@ -1,5 +1,5 @@
-use eframe::Frame;
-use egui::{ComboBox, Context, Window};
+use eframe::{Frame, Theme};
+use egui::{ComboBox, Context, Visuals, Window};
 
 use crate::{
     app::App,
@@ -18,6 +18,24 @@ pub fn ui(app: &mut App, ctx: &Context, _frame: &mut Frame) {
                     ui.selectable_value(&mut app.render_style, RenderStyle::Normals, "Normals");
                     ui.selectable_value(&mut app.render_style, RenderStyle::Rended, "Rended");
                 });
+
+            let last_theme = app.theme;
+            ComboBox::new("theme", "Theme")
+                .selected_text(match app.theme {
+                    Theme::Dark => "Dark",
+                    Theme::Light => "Light",
+                })
+                .show_ui(ui, |ui| {
+                    ui.selectable_value(&mut app.theme, Theme::Dark, "Dark");
+                    ui.selectable_value(&mut app.theme, Theme::Light, "Light");
+                });
+
+            if last_theme != app.theme {
+                match app.theme {
+                    Theme::Dark => ctx.set_visuals(Visuals::dark()),
+                    Theme::Light => ctx.set_visuals(Visuals::light()),
+                }
+            }
 
             dragger(ui, "Grid Size", &mut app.grid_size, |x| x.speed(0.1));
 

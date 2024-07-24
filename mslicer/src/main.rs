@@ -50,6 +50,7 @@ fn main() -> Result<()> {
                 }),
                 ..Default::default()
             },
+            follow_system_theme: false,
             ..Default::default()
         },
         Box::new(|cc| {

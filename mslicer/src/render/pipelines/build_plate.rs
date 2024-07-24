@@ -1,3 +1,4 @@
+use eframe::Theme;
 use egui_wgpu::ScreenDescriptor;
 use encase::{ShaderSize, ShaderType, UniformBuffer};
 use nalgebra::{Matrix4, Vector3, Vector4};
@@ -161,11 +162,16 @@ impl Pipeline<WorkspaceRenderCallback> for BuildPlatePipeline {
             }));
         }
 
+        let color = match resources.theme {
+            Theme::Light => Vector4::new(0.0, 0.0, 0.0, 1.0),
+            Theme::Dark => Vector4::new(1.0, 1.0, 1.0, 1.0),
+        };
+
         let mut buffer = UniformBuffer::new(Vec::new());
         buffer
             .write(&BuildPlateUniforms {
                 transform: resources.transform,
-                color: Vector4::new(1.0, 1.0, 1.0, 1.0),
+                color,
             })
             .unwrap();
         queue.write_buffer(&self.uniform_buffer, 0, &buffer.into_inner());

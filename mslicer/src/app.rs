@@ -1,7 +1,8 @@
 use std::{sync::Arc, thread, time::Instant};
 
 use clone_macro::clone;
-use egui::{CentralPanel, Frame, Sense};
+use eframe::Theme;
+use egui::{CentralPanel, Color32, Frame, Sense};
 use egui_wgpu::Callback;
 use image::imageops::FilterType;
 use nalgebra::{Vector2, Vector3};
@@ -31,6 +32,7 @@ pub struct App {
     pub grid_size: f32,
     pub fps: FpsTracker,
     pub windows: Windows,
+    pub theme: Theme,
 }
 
 pub struct FpsTracker {
@@ -120,6 +122,10 @@ impl eframe::App for App {
                 let (rect, response) = ui.allocate_exact_size(ui.available_size(), Sense::drag());
                 self.camera.handle_movement(&response, ui);
 
+                if self.theme == Theme::Light {
+                    ui.painter().rect_filled(rect, 0.0, Color32::WHITE);
+                }
+
                 let callback = Callback::new_paint_callback(
                     rect,
                     WorkspaceRenderCallback {
@@ -136,6 +142,7 @@ impl eframe::App for App {
 
                         models: self.meshes.clone(),
                         render_style: self.render_style,
+                        theme: self.theme,
                     },
                 );
                 ui.painter().add(callback);
@@ -187,6 +194,7 @@ impl Default for App {
             meshes: Arc::new(RwLock::new(Vec::new())),
             windows: Windows::default(),
             render_style: RenderStyle::Normals,
+            theme: Theme::Dark,
             grid_size: 12.16,
 
             slice_operation: None,
