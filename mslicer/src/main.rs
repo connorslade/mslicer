@@ -23,7 +23,12 @@ fn main() -> Result<()> {
     let filter = filter::Targets::new()
         .with_default(LevelFilter::OFF)
         .with_target("mslicer", LevelFilter::TRACE);
-    tracing_subscriber::registry().with(filter).init();
+    let format = tracing_subscriber::fmt::layer();
+
+    tracing_subscriber::registry()
+        .with(filter)
+        .with(format)
+        .init();
 
     let icon = image::load_from_memory(ICON)?;
     eframe::run_native(

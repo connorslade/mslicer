@@ -191,7 +191,8 @@ impl Mesh {
 /// - stl
 /// - obj / mtl
 pub fn load_mesh<T: BufRead + Seek>(reader: &mut T, format: &str) -> Result<Mesh> {
-    Ok(match format {
+    let format = format.to_ascii_lowercase();
+    Ok(match format.as_str() {
         "stl" => {
             let model = stl_io::read_stl(reader)?;
             Mesh::new(

@@ -3,6 +3,7 @@ use std::{fs::File, io::BufReader};
 use eframe::Frame;
 use egui::{Context, TopBottomPanel, Ui};
 use rfd::FileDialog;
+use tracing::info;
 
 use crate::{app::App, render::rendered_mesh::RenderedMesh};
 
@@ -28,6 +29,7 @@ pub fn ui(app: &mut App, ctx: &Context, _frame: &mut Frame) {
                         let file = File::open(&path).unwrap();
                         let mut buf = BufReader::new(file);
                         let model = slicer::mesh::load_mesh(&mut buf, &format).unwrap();
+                        info!("Loaded model `{name}` with {} faces", model.faces.len());
 
                         app.meshes
                             .write()

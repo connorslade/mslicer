@@ -1,13 +1,19 @@
-use std::sync::Arc;
+use std::{
+    sync::Arc,
+    time::{Duration, Instant},
+};
 
 use goo_format::File as GooFile;
 use image::RgbaImage;
 use nalgebra::Vector2;
 use parking_lot::{Condvar, MappedMutexGuard, Mutex, MutexGuard};
 use slicer::slicer::Progress as SliceProgress;
+use tracing::info;
 
 #[derive(Clone)]
 pub struct SliceOperation {
+    start_time: Instant,
+
     pub progress: SliceProgress,
     pub result: Arc<Mutex<Option<SliceResult>>>,
 
@@ -27,11 +33,16 @@ pub struct SliceResult {
 impl SliceOperation {
     pub fn new(progress: SliceProgress) -> Self {
         Self {
+            start_time: Instant::now(),
             progress,
             result: Arc::new(Mutex::new(None)),
             preview_image: Arc::new(Mutex::new(None)),
             preview_condvar: Arc::new(Condvar::new()),
         }
+    }
+
+    pub fn elapsed(&self) -> Duration {
+        self.start_time.elapsed()
     }
 
     pub fn needs_preview_image(&self) -> bool {
@@ -53,6 +64,7 @@ impl SliceOperation {
     }
 
     pub fn add_result(&self, result: SliceResult) {
+        info!("Slice operation completed in {:?}", self.elapsed());
         self.result.lock().replace(result);
     }
 
