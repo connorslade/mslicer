@@ -1,6 +1,7 @@
 use std::{fs::File, io::BufReader};
 
 use egui::{Align, Context, Layout, TopBottomPanel};
+use egui_modal::Icon;
 use rfd::FileDialog;
 use tracing::info;
 
@@ -22,13 +23,21 @@ pub fn ui(app: &mut App, ctx: &Context) {
                     {
                         let name = path.file_name().unwrap().to_str().unwrap().to_string();
                         let ext = path.extension();
-                        let format = ext
-                            .expect("Selected file has no extension")
-                            .to_string_lossy();
+                        let format = ext.unwrap_or_default().to_string_lossy();
 
                         let file = File::open(&path).unwrap();
                         let mut buf = BufReader::new(file);
-                        let model = slicer::mesh::load_mesh(&mut buf, &format).unwrap();
+                        let model = match slicer::mesh::load_mesh(&mut buf, &format) {
+                            Ok(model) => model,
+                            Err(err) => {
+                                app.dialog_builder()
+                                    .with_title("Import Error")
+                                    .with_body(format!("Failed to import model.\n{err}"))
+                                    .with_icon(Icon::Error)
+                                    .open();
+                                return;
+                            }
+                        };
                         info!("Loaded model `{name}` with {} faces", model.faces.len());
 
                         app.meshes.write().push(

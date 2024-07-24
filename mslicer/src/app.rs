@@ -3,6 +3,7 @@ use std::{sync::Arc, thread, time::Instant};
 use clone_macro::clone;
 use eframe::Theme;
 use egui_dock::{DockState, NodeIndex};
+use egui_modal::{DialogBuilder, Icon, Modal};
 use image::imageops::FilterType;
 use nalgebra::{Vector2, Vector3};
 use parking_lot::RwLock;
@@ -19,11 +20,11 @@ use goo_format::{File as GooFile, LayerEncoder, PreviewImage};
 
 pub struct App {
     pub dock_state: DockState<Tab>,
+    modal: Option<Modal>,
 
     pub camera: Camera,
     pub slice_config: SliceConfig,
     pub meshes: Arc<RwLock<Vec<RenderedMesh>>>,
-
     pub slice_operation: Option<SliceOperation>,
 
     pub render_style: RenderStyle,
@@ -39,6 +40,16 @@ pub struct FpsTracker {
 
 impl App {
     pub fn slice(&mut self) {
+        if self.meshes.read().is_empty() {
+            const NO_MODELS_ERROR: &str = "There are no models to slice. Add one by going to File → Open Model or drag and drop a model file into the workspace.";
+            self.dialog_builder()
+                .with_title("Slicing Error")
+                .with_body(NO_MODELS_ERROR)
+                .with_icon(Icon::Error)
+                .open();
+            return;
+        }
+
         info!("Starting slicing operation");
 
         let slice_config = self.slice_config.clone();
@@ -104,12 +115,21 @@ impl App {
             }
         ));
     }
+
+    pub fn dialog_builder(&mut self) -> DialogBuilder {
+        self.modal.as_mut().unwrap().dialog()
+    }
 }
 
 impl eframe::App for App {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         ctx.request_repaint();
         self.fps.update();
+
+        match &mut self.modal {
+            Some(modal) => modal.show_dialog(),
+            None => self.modal = Some(Modal::new(ctx, "modal")),
+        }
 
         windows::ui(self, ctx);
     }
@@ -145,6 +165,8 @@ impl Default for App {
 
         Self {
             dock_state,
+            modal: None,
+
             camera: Camera::default(),
             slice_config: SliceConfig {
                 platform_resolution: Vector2::new(11_520, 5_120),
@@ -164,10 +186,9 @@ impl Default for App {
 
             fps: FpsTracker::new(),
             meshes: Arc::new(RwLock::new(Vec::new())),
-            render_style: RenderStyle::Normals,
+            render_style: RenderStyle::Rended,
             theme: Theme::Dark,
             grid_size: 12.16,
-
             slice_operation: None,
         }
     }
