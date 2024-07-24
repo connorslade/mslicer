@@ -1158,6 +1158,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "const_format"
+version = "0.2.32"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e3a214c7af3d04997541b18d432afaff4c455e79e2029079647e72fc2bd27673"
+dependencies = [
+ "const_format_proc_macros",
+]
+
+[[package]]
+name = "const_format_proc_macros"
+version = "0.2.32"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c7f6ff08fd20f4f299298a28e2dfa8a8ba1036e6cd2460ac1de7b425d76f2500"
+dependencies = [
+ "proc-macro2 1.0.85",
+ "quote 1.0.36",
+ "unicode-xid 0.2.4",
+]
+
+[[package]]
 name = "const_panic"
 version = "0.2.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1454,6 +1474,15 @@ dependencies = [
  "epaint",
  "log",
  "nohash-hasher",
+]
+
+[[package]]
+name = "egui-phosphor"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6c873785789bc94a14dcbbd361cda1e498957fa1b4ec389ba650fd651849463b"
+dependencies = [
+ "egui",
 ]
 
 [[package]]
@@ -2678,8 +2707,10 @@ dependencies = [
  "bytemuck",
  "clone-macro",
  "common",
+ "const_format",
  "eframe",
  "egui",
+ "egui-phosphor",
  "egui-wgpu",
  "egui_dock",
  "encase",
@@ -2688,6 +2719,7 @@ dependencies = [
  "nalgebra 0.32.6",
  "parking_lot",
  "plexus",
+ "rand 0.8.5",
  "rfd",
  "slicer",
  "tracing",

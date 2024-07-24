@@ -35,9 +35,9 @@ impl Camera {
         }
 
         if response.dragged_by(PointerButton::Secondary) {
-            self.target -=
-                self.position().neg().normalize().cross(&Vector3::z_axis()) * drag_delta.x;
-            self.target += Vector3::new(0.0, 0.0, drag_delta.y * 0.5);
+            let facing = self.position().neg().normalize();
+            self.target -= facing.cross(&Vector3::z_axis()) * drag_delta.x;
+            self.target += facing.cross(&Vector3::x_axis()) * drag_delta.y;
         }
 
         if response.hovered() {
@@ -46,7 +46,7 @@ impl Camera {
         }
     }
 
-    fn position(&self) -> Vector3<f32> {
+    pub fn position(&self) -> Vector3<f32> {
         Vector3::new(self.angle.x.sin(), self.angle.x.cos(), self.angle.y.tan()).normalize()
             * self.distance
     }

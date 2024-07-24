@@ -1,4 +1,6 @@
+use const_format::concatcp;
 use egui::{Context, Grid, Id, Ui};
+use egui_phosphor::regular::DICE_THREE;
 use slicer::Pos;
 
 use crate::{
@@ -105,6 +107,14 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                     (original_rotation != rotation)
                         .then(|| mesh.mesh.set_rotation(deg_to_rad(rotation)));
                     ui.end_row();
+
+                    ui.label("Color");
+                    ui.horizontal(|ui| {
+                        ui.color_edit_button_srgba(&mut mesh.color);
+                        ui.button(concatcp!(DICE_THREE, " Random"))
+                            .clicked()
+                            .then(|| mesh.randomize_color());
+                    });
 
                     ui.label("Name");
                     ui.text_edit_singleline(&mut mesh.name);

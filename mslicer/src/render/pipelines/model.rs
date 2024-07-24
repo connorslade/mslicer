@@ -1,6 +1,6 @@
 use egui_wgpu::ScreenDescriptor;
 use encase::{ShaderType, UniformBuffer};
-use nalgebra::Matrix4;
+use nalgebra::{Matrix4, Vector3, Vector4};
 use wgpu::{
     util::{BufferInitDescriptor, DeviceExt},
     BindGroup, BindGroupEntry, BindGroupLayout, BufferUsages, ColorTargetState, ColorWrites,
@@ -31,6 +31,9 @@ pub struct ModelPipeline {
 struct ModelUniforms {
     transform: Matrix4<f32>,
     model_transform: Matrix4<f32>,
+    model_color: Vector4<f32>,
+    camera_position: Vector3<f32>,
+    camera_target: Vector3<f32>,
     render_style: u32,
 }
 
@@ -114,6 +117,9 @@ impl Pipeline<WorkspaceRenderCallback> for ModelPipeline {
             let uniforms = ModelUniforms {
                 transform: resources.transform * model_transform,
                 model_transform,
+                model_color: model.color.to_normalized_gamma_f32().into(),
+                camera_position: resources.camera.position(),
+                camera_target: resources.camera.target,
                 render_style: resources.render_style as u32,
             };
 

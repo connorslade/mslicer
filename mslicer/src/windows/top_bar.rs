@@ -31,9 +31,11 @@ pub fn ui(app: &mut App, ctx: &Context) {
                         let model = slicer::mesh::load_mesh(&mut buf, &format).unwrap();
                         info!("Loaded model `{name}` with {} faces", model.faces.len());
 
-                        app.meshes
-                            .write()
-                            .push(RenderedMesh::from_mesh(model).with_name(name));
+                        app.meshes.write().push(
+                            RenderedMesh::from_mesh(model)
+                                .with_name(name)
+                                .with_random_color(),
+                        );
                     }
                 }
 

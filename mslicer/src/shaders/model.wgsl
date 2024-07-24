@@ -3,6 +3,9 @@
 struct Context {
     transform: mat4x4<f32>,
     model_transform: mat4x4<f32>,
+    model_color: vec4<f32>,
+    camera_position: vec3<f32>,
+    camera_target: vec3<f32>,
     render_style: u32,
 }
 
@@ -36,8 +39,14 @@ fn frag(in: VertexOutput) -> @location(0) vec4<f32> {
     if context.render_style == 0 {
         return vec4<f32>(in.normal, 1.0);
     } else {
-        let light_dir = normalize(vec3<f32>(0.0, 0.0, 1.0));
-        let intensity = max(dot(in.normal, light_dir), 0.0);
-        return vec4<f32>(intensity, intensity, intensity, 1.0);
+        let camera_direction = normalize(context.camera_position + context.camera_target);
+
+        let diffuse = max(dot(in.normal, camera_direction), 0.0);
+
+        let reflect_dir = reflect(-camera_direction, in.normal);
+        let specular = pow(max(dot(camera_direction, reflect_dir), 0.0), 32.0);
+
+        let intensity = (diffuse + specular + 0.03) * context.model_color.rgb;
+        return vec4<f32>(intensity, context.model_color.a);
     }
 }

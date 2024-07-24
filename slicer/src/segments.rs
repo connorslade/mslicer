@@ -57,6 +57,10 @@ impl Segments {
         let mut out = Vec::new();
 
         let layer = (height - self.start_height) / self.layer_height;
+        if layer < 0.0 || layer >= self.layers.len() as f32 {
+            return out;
+        }
+
         for &face in self.layers[layer as usize].iter() {
             intersect_triangle(mesh, &self.transformed_points, face, height, &mut out);
         }

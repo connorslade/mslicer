@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use eframe::NativeOptions;
-use egui::{IconData, Vec2, ViewportBuilder};
+use egui::{FontDefinitions, IconData, Vec2, ViewportBuilder};
 use egui_wgpu::WgpuConfiguration;
 use tracing::level_filters::LevelFilter;
 use tracing_subscriber::{filter, layer::SubscriberExt, util::SubscriberInitExt};
@@ -56,6 +56,11 @@ fn main() -> Result<()> {
         },
         Box::new(|cc| {
             render::init_wgpu(cc);
+
+            let mut fonts = FontDefinitions::default();
+            egui_phosphor::add_to_fonts(&mut fonts, egui_phosphor::Variant::Regular);
+            cc.egui_ctx.set_fonts(fonts);
+
             Box::new(App::default())
         }),
     )
