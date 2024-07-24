@@ -20,7 +20,7 @@
 - [x] Proper slice preview scaling
 - [x] Preview image generation
 - [x] Don't clone mesh data when sending mesh to slicing thread
-- [ ] Close details dropdown in models window when deleting mesh
+- [x] Close details dropdown in models window when deleting mesh
 - [x] Rotations in degrees
 - [x] Fix slice preview layer and scale controls
 - [x] Clamp camera rotations

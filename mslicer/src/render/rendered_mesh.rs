@@ -1,3 +1,5 @@
+use std::sync::atomic::{AtomicU32, Ordering};
+
 use wgpu::{
     util::{BufferInitDescriptor, DeviceExt},
     Buffer, BufferUsages, Device,
@@ -9,6 +11,7 @@ use super::ModelVertex;
 
 pub struct RenderedMesh {
     pub name: String,
+    pub id: u32,
     pub mesh: Mesh,
     pub hidden: bool,
     pub locked_scale: bool,
@@ -55,6 +58,7 @@ impl RenderedMesh {
 
         Self {
             mesh,
+            id: next_id(),
             name: String::new(),
             hidden: false,
             locked_scale: true,
@@ -102,6 +106,7 @@ impl Clone for RenderedMesh {
     fn clone(&self) -> Self {
         Self {
             name: self.name.clone(),
+            id: next_id(),
             mesh: self.mesh.clone(),
             hidden: self.hidden,
             locked_scale: self.locked_scale,
@@ -109,4 +114,9 @@ impl Clone for RenderedMesh {
             buffers: None,
         }
     }
+}
+
+fn next_id() -> u32 {
+    static NEXT_ID: AtomicU32 = AtomicU32::new(0);
+    NEXT_ID.fetch_add(1, Ordering::Relaxed)
 }

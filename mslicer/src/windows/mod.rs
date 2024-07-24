@@ -1,6 +1,6 @@
 use eframe::Theme;
-use egui::{CentralPanel, Color32, Context, Frame, Sense, Ui, WidgetText};
-use egui_dock::{DockArea, TabViewer};
+use egui::{CentralPanel, Color32, Context, Frame, Id, Sense, Ui, WidgetText};
+use egui_dock::{DockArea, NodeIndex, SurfaceIndex, TabViewer};
 use egui_wgpu::Callback;
 
 use crate::{app::App, render::workspace::WorkspaceRenderCallback};
@@ -13,23 +13,12 @@ mod stats;
 mod top_bar;
 mod workspace;
 
-pub fn ui(app: &mut App, ctx: &Context) {
-    top_bar::ui(app, ctx);
-
-    CentralPanel::default()
-        .frame(Frame::none())
-        .show(ctx, |ui| {
-            // i am once again too tired to deal with this
-            let dock_state = unsafe { &mut *(&mut app.dock_state as *mut _) };
-            DockArea::new(dock_state).show_inside(ui, &mut Tabs { app, ctx });
-        });
-}
-
 struct Tabs<'a> {
     app: &'a mut App,
     ctx: &'a Context,
 }
 
+#[derive(Hash, PartialEq, Eq)]
 pub enum Tab {
     About,
     Models,
@@ -72,6 +61,57 @@ impl<'a> TabViewer for Tabs<'a> {
             Tab::Workspace => workspace::ui(self.app, ui, self.ctx),
         }
     }
+
+    fn add_popup(&mut self, ui: &mut Ui, _surface: SurfaceIndex, _node: NodeIndex) {
+        ui.set_min_width(120.0);
+        ui.style_mut().visuals.button_frame = false;
+
+        for tab in [
+            Tab::About,
+            Tab::Models,
+            Tab::SliceConfig,
+            Tab::Stats,
+            Tab::Workspace,
+        ] {
+            let already_open = self.app.dock_state.find_tab(&tab).is_some();
+            ui.add_enabled_ui(!already_open, |ui| {
+                ui.button(tab.name())
+                    .clicked()
+                    .then(|| self.app.dock_state.add_window(vec![tab]));
+            });
+        }
+    }
+
+    fn closeable(&mut self, tab: &mut Self::Tab) -> bool {
+        *tab != Tab::Viewport
+    }
+
+    fn allowed_in_windows(&self, tab: &mut Self::Tab) -> bool {
+        *tab != Tab::Viewport
+    }
+
+    fn id(&mut self, tab: &mut Self::Tab) -> Id {
+        Id::new(tab)
+    }
+
+    fn scroll_bars(&self, _tab: &Self::Tab) -> [bool; 2] {
+        [false, true]
+    }
+}
+
+pub fn ui(app: &mut App, ctx: &Context) {
+    top_bar::ui(app, ctx);
+
+    CentralPanel::default()
+        .frame(Frame::none())
+        .show(ctx, |ui| {
+            // i am once again too tired to deal with this
+            let dock_state = unsafe { &mut *(&mut app.dock_state as *mut _) };
+            DockArea::new(dock_state)
+                .show_add_buttons(true)
+                .show_add_popup(true)
+                .show_inside(ui, &mut Tabs { app, ctx });
+        });
 }
 
 fn viewport(app: &mut App, ui: &mut Ui, _ctx: &Context) {

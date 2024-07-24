@@ -1,6 +1,6 @@
 use std::{fs::File, io::BufReader};
 
-use egui::{Context, TopBottomPanel};
+use egui::{Align, Context, Layout, TopBottomPanel};
 use rfd::FileDialog;
 use tracing::info;
 
@@ -13,6 +13,7 @@ pub fn ui(app: &mut App, ctx: &Context) {
             ui.separator();
 
             ui.menu_button("🖹 File", |ui| {
+                ui.style_mut().visuals.button_frame = false;
                 if ui.button("Import Model").clicked() {
                     // TODO: async
                     if let Some(path) = FileDialog::new()
@@ -35,39 +36,22 @@ pub fn ui(app: &mut App, ctx: &Context) {
                             .push(RenderedMesh::from_mesh(model).with_name(name));
                     }
                 }
+
+                let _ = ui.button("Save Project");
+                let _ = ui.button("Load Project");
             });
 
-            ui.menu_button("🖹 View", |ui| {
-                if ui.button("Organize windows").clicked() {
-                    ui.ctx().memory_mut(|mem| mem.reset_areas());
-                }
-
-                ui.separator();
-
-                for tab in [
-                    Tab::About,
-                    Tab::Models,
-                    Tab::SliceConfig,
-                    Tab::Stats,
-                    Tab::Workspace,
-                ] {
-                    if ui.button(tab.name()).clicked() {
-                        app.dock_state.add_window(vec![tab]);
+            ui.with_layout(Layout::default().with_cross_align(Align::Max), |ui| {
+                let slicing = match &app.slice_operation {
+                    Some(operation) => operation.progress.completed() < operation.progress.total(),
+                    None => false,
+                };
+                ui.add_enabled_ui(!slicing, |ui| {
+                    if ui.button("Slice!").clicked() {
+                        app.slice();
+                        app.dock_state.add_window(vec![Tab::SliceOperation]);
                     }
-                }
-            });
-
-            ui.separator();
-
-            let slicing = match &app.slice_operation {
-                Some(operation) => operation.progress.completed() < operation.progress.total(),
-                None => false,
-            };
-            ui.add_enabled_ui(!slicing, |ui| {
-                if ui.button("Slice!").clicked() {
-                    app.slice();
-                    app.dock_state.add_window(vec![Tab::SliceOperation]);
-                }
+                });
             });
         });
     });

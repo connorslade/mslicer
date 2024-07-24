@@ -2,7 +2,7 @@ use std::{sync::Arc, thread, time::Instant};
 
 use clone_macro::clone;
 use eframe::Theme;
-use egui_dock::DockState;
+use egui_dock::{DockState, NodeIndex};
 use image::imageops::FilterType;
 use nalgebra::{Vector2, Vector3};
 use parking_lot::RwLock;
@@ -137,8 +137,14 @@ impl FpsTracker {
 
 impl Default for App {
     fn default() -> Self {
+        let mut dock_state = DockState::new(vec![Tab::Viewport]);
+        let surface = dock_state.main_surface_mut();
+        let [_old_node, new_node] = surface.split_left(NodeIndex::root(), 0.20, vec![Tab::Models]);
+        let [_old_node, new_node] = surface.split_below(new_node, 0.5, vec![Tab::SliceConfig]);
+        surface.split_below(new_node, 0.5, vec![Tab::Workspace]);
+
         Self {
-            dock_state: DockState::new(vec![Tab::About, Tab::Models, Tab::Viewport]),
+            dock_state,
             camera: Camera::default(),
             slice_config: SliceConfig {
                 platform_resolution: Vector2::new(11_520, 5_120),
