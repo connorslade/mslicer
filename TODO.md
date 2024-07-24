@@ -46,3 +46,4 @@
 - [x] Re-enable multi-sampling
 - [x] Disable slice button while slicing
 - [x] Use egui_dock to get a more clean look
+- [x] Align to bed button

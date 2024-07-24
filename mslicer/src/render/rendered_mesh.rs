@@ -1,5 +1,6 @@
 use std::sync::atomic::{AtomicU32, Ordering};
 
+use nalgebra::Vector3;
 use wgpu::{
     util::{BufferInitDescriptor, DeviceExt},
     Buffer, BufferUsages, Device,
@@ -70,6 +71,13 @@ impl RenderedMesh {
     pub fn with_name(mut self, name: String) -> Self {
         self.name = name;
         self
+    }
+
+    pub fn align_to_bed(&mut self) {
+        let (bottom, _) = self.mesh.minmax_point();
+
+        let pos = self.mesh.position() - Vector3::new(0.0, 0.0, bottom.z);
+        self.mesh.set_position(pos);
     }
 
     pub fn try_get_buffers(&self) -> Option<&RenderedMeshBuffers> {

@@ -58,6 +58,9 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                         ui.button("🗋 Duplicate")
                             .clicked()
                             .then(|| action = Action::Duplicate(i));
+                        ui.button("⬇ Align to Bed")
+                            .clicked()
+                            .then(|| mesh.align_to_bed());
                     });
                     ui.end_row();
 
