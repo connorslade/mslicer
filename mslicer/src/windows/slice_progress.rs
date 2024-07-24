@@ -11,7 +11,9 @@ pub fn ui(app: &mut App, ctx: &Context, _frame: &mut Frame) {
     let mut window_open = true;
     let mut save_complete = false;
 
-    if let Some(progress) = app.slice_progress.as_ref() {
+    if let Some(slice_operation) = &app.slice_operation {
+        let progress = &slice_operation.progress;
+
         let (current, total) = (progress.completed(), progress.total());
 
         let mut window = Window::new("Slice Progress");
@@ -32,7 +34,9 @@ pub fn ui(app: &mut App, ctx: &Context, _frame: &mut Frame) {
             } else {
                 ui.label("Slicing complete!");
                 if ui.button("Save").clicked() {
-                    let result = app.slice_result.lock().unwrap().take().unwrap();
+                    let result = app.slice_operation.as_ref().unwrap().result();
+                    let result = result.as_ref().unwrap();
+
                     if let Some(path) = FileDialog::new().save_file() {
                         let mut file = File::create(path).unwrap();
                         let mut serializer = DynamicSerializer::new();
@@ -46,6 +50,6 @@ pub fn ui(app: &mut App, ctx: &Context, _frame: &mut Frame) {
     }
 
     if !window_open || save_complete {
-        app.slice_progress = None;
+        app.slice_operation = None;
     }
 }

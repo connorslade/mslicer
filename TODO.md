@@ -17,8 +17,8 @@
 - [ ] Anti-aliasing
 - [x] Cache transformed points?
 - [x] Rename `ui` module to `mslicer`
-- [ ] Proper slice preview scaling
-- [ ] Preview image generation
+- [x] Proper slice preview scaling
+- [x] Preview image generation
 - [x] Don't clone mesh data when sending mesh to slicing thread
 - [ ] Close details dropdown in models window when deleting mesh
 - [x] Rotations in degrees
@@ -41,3 +41,6 @@
 - [x] Optimize bvh more (benchmarking with criterion)
 - [x] Add documentation to slicer
 - [x] Make the slice preview layer slider full height
+- [ ] Combine slice result and slice preview windows and add a close button
+- [ ] Split slice operation to a new module
+- [ ] Re-enable multi-sampling

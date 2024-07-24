@@ -3,6 +3,7 @@ use std::f32::consts::PI;
 use egui_wgpu::ScreenDescriptor;
 use image::{Rgba, RgbaImage};
 use nalgebra::{Vector2, Vector3};
+use tracing::info;
 use wgpu::{
     BufferAddress, BufferDescriptor, BufferUsages, Color, CommandEncoder, CommandEncoderDescriptor,
     Device, Extent3d, ImageCopyBuffer, ImageCopyTexture, ImageDataLayout, LoadOp, Maintain,
@@ -30,19 +31,21 @@ pub fn render_preview_image(
     model_pipeline: &mut ModelPipeline,
     workspace: &WorkspaceRenderCallback,
 ) -> RgbaImage {
+    info!("Generating {}x{} preview image", size.0, size.1);
+
     let (texture, depth_texture) = init_textures(device, size);
     let texture_view = texture.create_view(&TextureViewDescriptor::default());
     let depth_texture_view = depth_texture.create_view(&TextureViewDescriptor::default());
 
     let (mut min, mut max) = (Vector3::repeat(f32::MAX), Vector3::repeat(f32::MIN));
-    for model in workspace.models.read().unwrap().iter() {
+    for model in workspace.models.read().iter() {
         let (model_min, model_max) = model.mesh.minmax_point();
         min = min.zip_map(&model_min, f32::min);
         max = max.zip_map(&model_max, f32::max);
     }
 
     let target = (min + max) / 2.0;
-    let distance = (min - target).magnitude().max((max - target).magnitude());
+    let distance = (min - max).magnitude() / 2.0;
 
     let mut old_workspace = workspace.clone();
     old_workspace.camera = Camera {

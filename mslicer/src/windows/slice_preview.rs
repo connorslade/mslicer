@@ -9,7 +9,12 @@ use crate::{
 };
 
 pub fn ui(app: &mut App, ctx: &Context, _frame: &mut Frame) {
-    if let Some(result) = app.slice_result.lock().unwrap().as_mut() {
+    if let Some(slice_operation) = &app.slice_operation {
+        let mut result = slice_operation.result();
+        let Some(result) = result.as_mut() else {
+            return;
+        };
+
         Window::new("Slice Preview").show(ctx, move |ui| {
             ui.horizontal(|ui| {
                 ui.spacing_mut().slider_width = ui.available_size().x

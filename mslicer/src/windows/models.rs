@@ -17,7 +17,7 @@ pub fn ui(app: &mut App, ctx: &Context, _frame: &mut Frame) {
     Window::new("Models")
         .open(&mut app.windows.show_models)
         .show(ctx, |ui| {
-            let mut meshes = app.meshes.write().unwrap();
+            let mut meshes = app.meshes.write();
             let mut action = Action::None;
 
             if meshes.is_empty() {

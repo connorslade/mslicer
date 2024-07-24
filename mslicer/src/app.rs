@@ -1,18 +1,16 @@
-use std::{
-    sync::{Arc, Mutex, RwLock},
-    thread,
-    time::Instant,
-};
+use std::{sync::Arc, thread, time::Instant};
 
 use clone_macro::clone;
 use egui::{CentralPanel, Frame, Sense};
 use egui_wgpu::Callback;
 use image::{imageops::FilterType, RgbaImage};
 use nalgebra::{Vector2, Vector3};
+use parking_lot::{lock_api::MutexGuard, Condvar, MappedMutexGuard, Mutex, RawMutex, RwLock};
 use slicer::{
     slicer::{Progress as SliceProgress, Slicer},
     Pos,
 };
+use tracing::info;
 
 use crate::{
     render::{
@@ -29,15 +27,17 @@ pub struct App {
     pub slice_config: SliceConfig,
     pub meshes: Arc<RwLock<Vec<RenderedMesh>>>,
 
-    // todo: clean this up
-    pub slice_progress: Option<SliceProgress>,
-    pub slice_result: Arc<Mutex<Option<SliceResult>>>,
-    pub slice_preview_image: Arc<Mutex<Option<RgbaImage>>>,
+    pub slice_operation: Option<SliceOperation>,
 
     pub render_style: RenderStyle,
     pub grid_size: f32,
     pub fps: FpsTracker,
     pub windows: Windows,
+}
+
+pub struct FpsTracker {
+    last_frame: Instant,
+    last_frame_time: f32,
 }
 
 pub struct SliceResult {
@@ -49,14 +49,56 @@ pub struct SliceResult {
     pub preview_scale: f32,
 }
 
-pub struct FpsTracker {
-    last_frame: Instant,
-    last_frame_time: f32,
+// todo: Arc<SliceOperationInner>?
+#[derive(Clone)]
+pub struct SliceOperation {
+    pub progress: SliceProgress,
+    pub result: Arc<Mutex<Option<SliceResult>>>,
+
+    pub preview_image: Arc<Mutex<Option<RgbaImage>>>,
+    preview_condvar: Arc<Condvar>,
+}
+
+impl SliceOperation {
+    pub fn new(progress: SliceProgress) -> Self {
+        Self {
+            progress,
+            result: Arc::new(Mutex::new(None)),
+            preview_image: Arc::new(Mutex::new(None)),
+            preview_condvar: Arc::new(Condvar::new()),
+        }
+    }
+
+    pub fn needs_preview_image(&self) -> bool {
+        self.preview_image.lock().is_none()
+    }
+
+    pub fn add_preview_image(&self, image: RgbaImage) {
+        self.preview_image.lock().replace(image);
+        self.preview_condvar.notify_all();
+    }
+
+    pub fn preview_image(&self) -> MappedMutexGuard<'_, RgbaImage> {
+        let mut preview_image = self.preview_image.lock();
+        while preview_image.is_none() {
+            self.preview_condvar.wait(&mut preview_image);
+        }
+
+        MutexGuard::map(preview_image, |image| image.as_mut().unwrap())
+    }
+
+    pub fn add_result(&self, result: SliceResult) {
+        self.result.lock().replace(result);
+    }
+
+    pub fn result(&self) -> MutexGuard<RawMutex, Option<SliceResult>> {
+        self.result.lock()
+    }
 }
 
 impl App {
     pub fn slice(&mut self) {
-        *self.slice_preview_image.lock().unwrap() = None;
+        info!("Starting slicing operation");
 
         let slice_config = self.slice_config.clone();
         let mut meshes = Vec::new();
@@ -68,7 +110,7 @@ impl App {
             1.0,
         );
 
-        for mesh in self.meshes.read().unwrap().iter().cloned() {
+        for mesh in self.meshes.read().iter().cloned() {
             let mut mesh = mesh.mesh;
 
             mesh.set_scale_unchecked(mesh.scale().component_mul(&mm_to_px));
@@ -94,25 +136,24 @@ impl App {
         }
 
         let slicer = Slicer::new(slice_config, meshes);
-        self.slice_progress = Some(slicer.progress());
+        self.slice_operation
+            .replace(SliceOperation::new(slicer.progress()));
 
         thread::spawn(clone!(
-            [
-                { self.slice_result } as slice_result,
-                { self.slice_preview_image } as preview_image
-            ],
+            [{ self.slice_operation } as slice_operation],
             move || {
+                let slice_operation = slice_operation.as_ref().unwrap();
                 let mut goo = GooFile::from_slice_result(slicer.slice::<LayerEncoder>());
 
-                let preview_image = preview_image.lock().unwrap();
-                let preview_image = preview_image.as_ref().unwrap();
+                {
+                    let preview_image = slice_operation.preview_image();
+                    goo.header.big_preview =
+                        PreviewImage::from_image_scaled(&preview_image, FilterType::Nearest);
+                    goo.header.small_preview =
+                        PreviewImage::from_image_scaled(&preview_image, FilterType::Nearest);
+                }
 
-                goo.header.big_preview =
-                    PreviewImage::from_image_scaled(preview_image, FilterType::Nearest);
-                goo.header.small_preview =
-                    PreviewImage::from_image_scaled(preview_image, FilterType::Nearest);
-
-                slice_result.lock().unwrap().replace(SliceResult {
+                slice_operation.add_result(SliceResult {
                     goo,
                     slice_preview_layer: 0,
                     last_preview_layer: 0,
@@ -149,9 +190,7 @@ impl eframe::App for App {
                         grid_size: self.grid_size,
 
                         is_moving: response.dragged(),
-                        render_preview: (self.slice_progress.is_some()
-                            && self.slice_preview_image.lock().unwrap().is_none())
-                        .then(|| self.slice_preview_image.clone()),
+                        slice_operation: self.slice_operation.clone(),
 
                         models: self.meshes.clone(),
                         render_style: self.render_style,
@@ -208,9 +247,7 @@ impl Default for App {
             render_style: RenderStyle::Normals,
             grid_size: 12.16,
 
-            slice_progress: None,
-            slice_result: Arc::new(Mutex::new(None)),
-            slice_preview_image: Arc::new(Mutex::new(None)),
+            slice_operation: None,
         }
     }
 }

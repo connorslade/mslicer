@@ -31,7 +31,6 @@ pub fn ui(app: &mut App, ctx: &Context, _frame: &mut Frame) {
 
                         app.meshes
                             .write()
-                            .unwrap()
                             .push(RenderedMesh::from_mesh(model).with_name(name));
                     }
                 }

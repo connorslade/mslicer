@@ -1,10 +1,13 @@
-use std::sync::{Arc, Mutex, RwLock};
+use std::sync::Arc;
 
 use egui::PaintCallbackInfo;
 use egui_wgpu::{CallbackResources, CallbackTrait, ScreenDescriptor};
 use image::RgbaImage;
 use nalgebra::{Matrix4, Vector3};
+use parking_lot::{Mutex, RwLock};
 use wgpu::{CommandBuffer, CommandEncoder, Device, Queue, RenderPass};
+
+use crate::app::SliceOperation;
 
 use super::{
     camera::Camera,
@@ -36,7 +39,7 @@ pub struct WorkspaceRenderCallback {
     pub render_style: RenderStyle,
 
     pub is_moving: bool,
-    pub render_preview: Option<Arc<Mutex<Option<RgbaImage>>>>,
+    pub slice_operation: Option<SliceOperation>,
 }
 
 impl CallbackTrait for WorkspaceRenderCallback {
@@ -50,18 +53,20 @@ impl CallbackTrait for WorkspaceRenderCallback {
     ) -> Vec<CommandBuffer> {
         let resources = resources.get_mut::<WorkspaceRenderResources>().unwrap();
 
-        if let Some(preview) = &self.render_preview {
-            let image = render_preview_image(
-                device,
-                queue,
-                screen_descriptor,
-                encoder,
-                (512, 512),
-                &mut resources.model_pipeline,
-                self,
-            );
-
-            *preview.lock().unwrap() = Some(image);
+        match &self.slice_operation {
+            Some(slice_operation) if slice_operation.needs_preview_image() => {
+                let image = render_preview_image(
+                    device,
+                    queue,
+                    screen_descriptor,
+                    encoder,
+                    (512, 512),
+                    &mut resources.model_pipeline,
+                    self,
+                );
+                slice_operation.add_preview_image(image);
+            }
+            _ => {}
         }
 
         resources

@@ -102,7 +102,7 @@ impl Pipeline<WorkspaceRenderCallback> for ModelPipeline {
         self.bind_groups.clear();
         let mut to_generate = Vec::new();
 
-        for (idx, model) in resources.models.read().unwrap().iter().enumerate() {
+        for (idx, model) in resources.models.read().iter().enumerate() {
             if model.try_get_buffers().is_none() {
                 to_generate.push(idx);
             }
@@ -136,7 +136,7 @@ impl Pipeline<WorkspaceRenderCallback> for ModelPipeline {
         }
 
         if !to_generate.is_empty() {
-            let mut meshes = resources.models.write().unwrap();
+            let mut meshes = resources.models.write();
             for idx in to_generate {
                 meshes[idx].get_buffers(device);
             }
@@ -146,7 +146,7 @@ impl Pipeline<WorkspaceRenderCallback> for ModelPipeline {
     fn paint<'a>(&'a self, render_pass: &mut RenderPass<'a>, resources: &WorkspaceRenderCallback) {
         render_pass.set_pipeline(&self.render_pipeline);
 
-        let models = resources.models.read().unwrap();
+        let models = resources.models.read();
         for (idx, model) in models.iter().enumerate().filter(|(_, x)| !x.hidden) {
             render_pass.set_bind_group(0, &self.bind_groups[idx], &[]);
 
