@@ -2,4 +2,4 @@
 
 A work in progress FOSS slicer for resin printers.
 
-![ui_knkAOYDd7f](https://github.com/connorslade/mslicer/assets/50306817/7c8f59cf-bb35-4572-ab06-e6c35c956541)
+![mslicer_BOg0d3xB6g](https://github.com/user-attachments/assets/aecc299c-07e9-4449-82d2-60777378f870)
