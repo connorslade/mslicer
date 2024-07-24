@@ -3,7 +3,7 @@ use std::f32::consts::PI;
 use egui_wgpu::ScreenDescriptor;
 use image::{Rgba, RgbaImage};
 use nalgebra::{Vector2, Vector3};
-use tracing::{debug, info};
+use tracing::info;
 use wgpu::{
     BufferAddress, BufferDescriptor, BufferUsages, Color, CommandEncoder, CommandEncoderDescriptor,
     Device, Extent3d, ImageCopyBuffer, ImageCopyTexture, ImageDataLayout, LoadOp, Maintain,
@@ -62,10 +62,8 @@ pub fn render_preview_image(
             .view_projection_matrix(size.0 as f32 / size.1 as f32),
         ..old_workspace
     };
-    debug!("Preparing");
     model_pipeline.prepare(device, queue, screen_descriptor, encoder, &workspace);
 
-    debug!("Rendering");
     render_preview(
         device,
         queue,
@@ -76,7 +74,6 @@ pub fn render_preview_image(
         &depth_texture_view,
     );
 
-    debug!("Downloading");
     download_preview(device, queue, &resolved_texture)
 }
 

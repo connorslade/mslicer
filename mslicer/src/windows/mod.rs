@@ -6,8 +6,7 @@ use crate::app::App;
 mod about;
 mod models;
 mod slice_config;
-mod slice_preview;
-mod slice_progress;
+mod slice_operation;
 mod stats;
 mod top_bar;
 mod workspace;
@@ -27,8 +26,7 @@ pub fn ui(app: &mut App, ctx: &Context, frame: &mut Frame) {
     stats::ui(app, ctx, frame);
     models::ui(app, ctx, frame);
     about::ui(app, ctx, frame);
-    slice_progress::ui(app, ctx, frame);
-    slice_preview::ui(app, ctx, frame);
+    slice_operation::ui(app, ctx, frame);
 }
 
 impl Default for Windows {
