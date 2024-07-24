@@ -3,7 +3,7 @@ use std::f32::consts::PI;
 use egui_wgpu::ScreenDescriptor;
 use image::{Rgba, RgbaImage};
 use nalgebra::{Vector2, Vector3};
-use tracing::info;
+use tracing::{debug, info};
 use wgpu::{
     BufferAddress, BufferDescriptor, BufferUsages, Color, CommandEncoder, CommandEncoderDescriptor,
     Device, Extent3d, ImageCopyBuffer, ImageCopyTexture, ImageDataLayout, LoadOp, Maintain,
@@ -33,8 +33,9 @@ pub fn render_preview_image(
 ) -> RgbaImage {
     info!("Generating {}x{} preview image", size.0, size.1);
 
-    let (texture, depth_texture) = init_textures(device, size);
+    let (texture, resolved_texture, depth_texture) = init_textures(device, size);
     let texture_view = texture.create_view(&TextureViewDescriptor::default());
+    let resolved_texture_view = resolved_texture.create_view(&TextureViewDescriptor::default());
     let depth_texture_view = depth_texture.create_view(&TextureViewDescriptor::default());
 
     let (mut min, mut max) = (Vector3::repeat(f32::MAX), Vector3::repeat(f32::MIN));
@@ -61,18 +62,22 @@ pub fn render_preview_image(
             .view_projection_matrix(size.0 as f32 / size.1 as f32),
         ..old_workspace
     };
+    debug!("Preparing");
     model_pipeline.prepare(device, queue, screen_descriptor, encoder, &workspace);
 
+    debug!("Rendering");
     render_preview(
         device,
         queue,
         model_pipeline,
         &workspace,
         &texture_view,
+        &resolved_texture_view,
         &depth_texture_view,
     );
 
-    download_preview(device, queue, &texture)
+    debug!("Downloading");
+    download_preview(device, queue, &resolved_texture)
 }
 
 fn render_preview(
@@ -81,6 +86,7 @@ fn render_preview(
     model_pipeline: &ModelPipeline,
     workspace: &WorkspaceRenderCallback,
     texture_view: &TextureView,
+    resolved_texture_view: &TextureView,
     depth_texture_view: &TextureView,
 ) {
     let mut encoder = device.create_command_encoder(&CommandEncoderDescriptor { label: None });
@@ -88,7 +94,7 @@ fn render_preview(
         label: None,
         color_attachments: &[Some(RenderPassColorAttachment {
             view: texture_view,
-            resolve_target: None,
+            resolve_target: Some(resolved_texture_view),
             ops: Operations {
                 load: LoadOp::Clear(Color::BLACK),
                 store: StoreOp::Store,
@@ -116,6 +122,7 @@ fn download_preview(device: &Device, queue: &Queue, texture: &Texture) -> RgbaIm
         device.create_command_encoder(&CommandEncoderDescriptor { label: None });
     let texture_extent = texture.size();
     let texture_size = (texture_extent.width * texture_extent.height * 4) as BufferAddress;
+
     let staging_buffer = device.create_buffer(&BufferDescriptor {
         label: None,
         size: texture_size,
@@ -169,14 +176,27 @@ fn download_preview(device: &Device, queue: &Queue, texture: &Texture) -> RgbaIm
     image
 }
 
-fn init_textures(device: &Device, size: (u32, u32)) -> (Texture, Texture) {
+fn init_textures(device: &Device, size: (u32, u32)) -> (Texture, Texture, Texture) {
+    let size = Extent3d {
+        width: size.0,
+        height: size.1,
+        depth_or_array_layers: 1,
+    };
+
     let texture = device.create_texture(&TextureDescriptor {
         label: None,
-        size: Extent3d {
-            width: size.0,
-            height: size.1,
-            depth_or_array_layers: 1,
-        },
+        size,
+        mip_level_count: 1,
+        sample_count: 4,
+        dimension: TextureDimension::D2,
+        format: TEXTURE_FORMAT,
+        usage: TextureUsages::RENDER_ATTACHMENT,
+        view_formats: &[],
+    });
+
+    let resolved_texture = device.create_texture(&TextureDescriptor {
+        label: None,
+        size,
         mip_level_count: 1,
         sample_count: 1,
         dimension: TextureDimension::D2,
@@ -187,18 +207,14 @@ fn init_textures(device: &Device, size: (u32, u32)) -> (Texture, Texture) {
 
     let depth_texture = device.create_texture(&TextureDescriptor {
         label: None,
-        size: Extent3d {
-            width: size.0,
-            height: size.1,
-            depth_or_array_layers: 1,
-        },
+        size,
         mip_level_count: 1,
-        sample_count: 1,
+        sample_count: 4,
         dimension: TextureDimension::D2,
         format: TextureFormat::Depth24PlusStencil8,
         usage: TextureUsages::RENDER_ATTACHMENT,
         view_formats: &[],
     });
 
-    (texture, depth_texture)
+    (texture, resolved_texture, depth_texture)
 }

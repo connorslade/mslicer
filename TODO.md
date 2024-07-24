@@ -43,4 +43,4 @@
 - [x] Make the slice preview layer slider full height
 - [ ] Combine slice result and slice preview windows and add a close button
 - [x] Split slice operation to a new module
-- [ ] Re-enable multi-sampling
+- [x] Re-enable multi-sampling

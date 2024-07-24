@@ -43,6 +43,7 @@ fn main() -> Result<()> {
                 }),
             depth_buffer: 24,
             stencil_buffer: 8,
+            multisampling: 4,
             wgpu_options: WgpuConfiguration {
                 device_descriptor: Arc::new(|_adapter| DeviceDescriptor {
                     required_features: Features::POLYGON_MODE_LINE,
