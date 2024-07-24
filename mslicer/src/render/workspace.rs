@@ -2,12 +2,11 @@ use std::sync::Arc;
 
 use egui::PaintCallbackInfo;
 use egui_wgpu::{CallbackResources, CallbackTrait, ScreenDescriptor};
-use image::RgbaImage;
 use nalgebra::{Matrix4, Vector3};
-use parking_lot::{Mutex, RwLock};
+use parking_lot::RwLock;
 use wgpu::{CommandBuffer, CommandEncoder, Device, Queue, RenderPass};
 
-use crate::app::SliceOperation;
+use crate::slice_operation::SliceOperation;
 
 use super::{
     camera::Camera,

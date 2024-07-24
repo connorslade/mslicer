@@ -13,6 +13,7 @@ const TEXTURE_FORMAT: TextureFormat = TextureFormat::Bgra8Unorm;
 mod app;
 mod components;
 mod render;
+mod slice_operation;
 mod windows;
 use app::App;
 
