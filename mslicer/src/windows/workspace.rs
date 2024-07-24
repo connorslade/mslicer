@@ -1,5 +1,5 @@
-use eframe::{Frame, Theme};
-use egui::{ComboBox, Context, Ui, Visuals, Window};
+use eframe::Theme;
+use egui::{ComboBox, Context, Ui, Visuals};
 
 use crate::{
     app::App,

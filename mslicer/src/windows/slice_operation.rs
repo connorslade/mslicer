@@ -1,9 +1,8 @@
 use std::{fs::File, io::Write};
 
-use eframe::Frame;
 use egui::{
     style::HandleShape, Align, Context, DragValue, Layout, ProgressBar, RichText, Sense, Slider,
-    Ui, Vec2, Window,
+    Ui, Vec2,
 };
 use egui_wgpu::Callback;
 use goo_format::LayerDecoder;

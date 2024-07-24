@@ -63,13 +63,13 @@ impl<'a> TabViewer for Tabs<'a> {
 
     fn ui(&mut self, ui: &mut Ui, tab: &mut Self::Tab) {
         match tab {
-            Tab::About => about::ui(&mut self.app, ui, self.ctx),
-            Tab::Models => models::ui(&mut self.app, ui, self.ctx),
-            Tab::SliceConfig => slice_config::ui(&mut self.app, ui, self.ctx),
-            Tab::SliceOperation => slice_operation::ui(&mut self.app, ui, self.ctx),
-            Tab::Stats => stats::ui(&mut self.app, ui, self.ctx),
-            Tab::Viewport => viewport(&mut self.app, ui, self.ctx),
-            Tab::Workspace => workspace::ui(&mut self.app, ui, self.ctx),
+            Tab::About => about::ui(self.app, ui, self.ctx),
+            Tab::Models => models::ui(self.app, ui, self.ctx),
+            Tab::SliceConfig => slice_config::ui(self.app, ui, self.ctx),
+            Tab::SliceOperation => slice_operation::ui(self.app, ui, self.ctx),
+            Tab::Stats => stats::ui(self.app, ui, self.ctx),
+            Tab::Viewport => viewport(self.app, ui, self.ctx),
+            Tab::Workspace => workspace::ui(self.app, ui, self.ctx),
         }
     }
 }

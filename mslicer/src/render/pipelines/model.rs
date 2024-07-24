@@ -2,7 +2,11 @@ use egui_wgpu::ScreenDescriptor;
 use encase::{ShaderType, UniformBuffer};
 use nalgebra::Matrix4;
 use wgpu::{
-    util::{BufferInitDescriptor, DeviceExt}, BindGroup, BindGroupEntry, BindGroupLayout, BufferUsages, ColorTargetState, ColorWrites, CommandEncoder, CompareFunction, DepthStencilState, Device, FragmentState, IndexFormat, MultisampleState, PipelineLayoutDescriptor, PrimitiveState, Queue, RenderPass, RenderPipeline, RenderPipelineDescriptor, ShaderModuleDescriptor, ShaderSource, TextureFormat, VertexState
+    util::{BufferInitDescriptor, DeviceExt},
+    BindGroup, BindGroupEntry, BindGroupLayout, BufferUsages, ColorTargetState, ColorWrites,
+    CommandEncoder, CompareFunction, DepthStencilState, Device, FragmentState, IndexFormat,
+    MultisampleState, PipelineLayoutDescriptor, PrimitiveState, Queue, RenderPass, RenderPipeline,
+    RenderPipelineDescriptor, ShaderModuleDescriptor, ShaderSource, TextureFormat, VertexState,
 };
 
 use crate::{

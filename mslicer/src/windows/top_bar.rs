@@ -51,7 +51,7 @@ pub fn ui(app: &mut App, ctx: &Context) {
                     Tab::Stats,
                     Tab::Workspace,
                 ] {
-                    if ui.button(format!("{}", tab.name())).clicked() {
+                    if ui.button(tab.name()).clicked() {
                         app.dock_state.add_window(vec![tab]);
                     }
                 }
