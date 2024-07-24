@@ -1,13 +1,12 @@
 use std::{fs::File, io::BufReader};
 
-use eframe::Frame;
-use egui::{Context, TopBottomPanel, Ui};
+use egui::{Context, TopBottomPanel};
 use rfd::FileDialog;
 use tracing::info;
 
-use crate::{app::App, render::rendered_mesh::RenderedMesh};
+use crate::{app::App, render::rendered_mesh::RenderedMesh, windows::Tab};
 
-pub fn ui(app: &mut App, ctx: &Context, _frame: &mut Frame) {
+pub fn ui(app: &mut App, ctx: &Context) {
     TopBottomPanel::top("top_panel").show(ctx, |ui| {
         ui.horizontal(|ui| {
             ui.heading("mslicer");
@@ -39,23 +38,23 @@ pub fn ui(app: &mut App, ctx: &Context, _frame: &mut Frame) {
             });
 
             ui.menu_button("🖹 View", |ui| {
-                fn show_entry(ui: &mut Ui, name: &str, show: &mut bool) {
-                    *show ^= ui
-                        .button(format!("{} {name}", if *show { "👁" } else { "🗙" }))
-                        .clicked();
-                }
-
                 if ui.button("Organize windows").clicked() {
                     ui.ctx().memory_mut(|mem| mem.reset_areas());
                 }
 
                 ui.separator();
 
-                show_entry(ui, "About", &mut app.windows.show_about);
-                show_entry(ui, "Model", &mut app.windows.show_models);
-                show_entry(ui, "Slice Config", &mut app.windows.show_slice_config);
-                show_entry(ui, "Stats", &mut app.windows.show_stats);
-                show_entry(ui, "Workspace", &mut app.windows.show_workspace);
+                for tab in [
+                    Tab::About,
+                    Tab::Models,
+                    Tab::SliceConfig,
+                    Tab::Stats,
+                    Tab::Workspace,
+                ] {
+                    if ui.button(format!("{}", tab.name())).clicked() {
+                        app.dock_state.add_window(vec![tab]);
+                    }
+                }
             });
 
             ui.separator();
@@ -65,7 +64,10 @@ pub fn ui(app: &mut App, ctx: &Context, _frame: &mut Frame) {
                 None => false,
             };
             ui.add_enabled_ui(!slicing, |ui| {
-                ui.button("Slice!").clicked().then(|| app.slice());
+                if ui.button("Slice!").clicked() {
+                    app.slice();
+                    app.dock_state.add_window(vec![Tab::SliceOperation]);
+                }
             });
         });
     });

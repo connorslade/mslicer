@@ -1,5 +1,4 @@
-use eframe::Frame;
-use egui::{Context, DragValue, Grid, Ui, Window};
+use egui::{Context, DragValue, Grid, Ui};
 
 use crate::{
     app::App,
@@ -7,40 +6,36 @@ use crate::{
 };
 use common::config::ExposureConfig;
 
-pub fn ui(app: &mut App, ctx: &Context, _frame: &mut Frame) {
-    Window::new("Slice Config")
-        .open(&mut app.windows.show_slice_config)
-        .show(ctx, |ui| {
-            Grid::new("slice_config")
-                .num_columns(2)
-                .spacing([40.0, 4.0])
-                .striped(true)
-                .show(ui, |ui| {
-                    ui.label("Platform Resolution");
-                    vec2_dragger(ui, app.slice_config.platform_resolution.as_mut(), |x| x);
-                    ui.end_row();
+pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
+    Grid::new("slice_config")
+        .num_columns(2)
+        .spacing([40.0, 4.0])
+        .striped(true)
+        .show(ui, |ui| {
+            ui.label("Platform Resolution");
+            vec2_dragger(ui, app.slice_config.platform_resolution.as_mut(), |x| x);
+            ui.end_row();
 
-                    ui.label("Platform Size");
-                    vec3_dragger(ui, app.slice_config.platform_size.as_mut(), |x| x);
-                    ui.end_row();
+            ui.label("Platform Size");
+            vec3_dragger(ui, app.slice_config.platform_size.as_mut(), |x| x);
+            ui.end_row();
 
-                    ui.label("Slice Height");
-                    ui.add(DragValue::new(&mut app.slice_config.slice_height));
-                    ui.end_row();
+            ui.label("Slice Height");
+            ui.add(DragValue::new(&mut app.slice_config.slice_height));
+            ui.end_row();
 
-                    ui.label("First Layers");
-                    ui.add(DragValue::new(&mut app.slice_config.first_layers));
-                    ui.end_row();
-                });
-
-            ui.collapsing("Exposure Config", |ui| {
-                exposure_config_grid(ui, &mut app.slice_config.exposure_config);
-            });
-
-            ui.collapsing("First Exposure Config", |ui| {
-                exposure_config_grid(ui, &mut app.slice_config.first_exposure_config);
-            });
+            ui.label("First Layers");
+            ui.add(DragValue::new(&mut app.slice_config.first_layers));
+            ui.end_row();
         });
+
+    ui.collapsing("Exposure Config", |ui| {
+        exposure_config_grid(ui, &mut app.slice_config.exposure_config);
+    });
+
+    ui.collapsing("First Exposure Config", |ui| {
+        exposure_config_grid(ui, &mut app.slice_config.first_exposure_config);
+    });
 }
 
 fn exposure_config_grid(ui: &mut Ui, config: &mut ExposureConfig) {

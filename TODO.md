@@ -45,4 +45,4 @@
 - [x] Split slice operation to a new module
 - [x] Re-enable multi-sampling
 - [x] Disable slice button while slicing
-- [ ] Use egui_dock to get a more clean look
+- [x] Use egui_dock to get a more clean look

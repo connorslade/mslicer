@@ -1,7 +1,9 @@
-use eframe::Frame;
-use egui::Context;
+use eframe::Theme;
+use egui::{CentralPanel, Color32, Context, Frame, Sense, Ui, WidgetText};
+use egui_dock::{DockArea, TabViewer};
+use egui_wgpu::Callback;
 
-use crate::app::App;
+use crate::{app::App, render::workspace::WorkspaceRenderCallback};
 
 mod about;
 mod models;
@@ -11,32 +13,95 @@ mod stats;
 mod top_bar;
 mod workspace;
 
-pub struct Windows {
-    pub show_about: bool,
-    pub show_slice_config: bool,
-    pub show_workspace: bool,
-    pub show_models: bool,
-    pub show_stats: bool,
+pub fn ui(app: &mut App, ctx: &Context) {
+    top_bar::ui(app, ctx);
+
+    CentralPanel::default()
+        .frame(Frame::none())
+        .show(ctx, |ui| {
+            // i am once again too tired to deal with this
+            let dock_state = unsafe { &mut *(&mut app.dock_state as *mut _) };
+            DockArea::new(dock_state).show_inside(ui, &mut Tabs { app, ctx });
+        });
 }
 
-pub fn ui(app: &mut App, ctx: &Context, frame: &mut Frame) {
-    top_bar::ui(app, ctx, frame);
-    slice_config::ui(app, ctx, frame);
-    workspace::ui(app, ctx, frame);
-    stats::ui(app, ctx, frame);
-    models::ui(app, ctx, frame);
-    about::ui(app, ctx, frame);
-    slice_operation::ui(app, ctx, frame);
+struct Tabs<'a> {
+    app: &'a mut App,
+    ctx: &'a Context,
 }
 
-impl Default for Windows {
-    fn default() -> Self {
-        Self {
-            show_about: false,
-            show_slice_config: true,
-            show_workspace: false,
-            show_models: true,
-            show_stats: false,
+pub enum Tab {
+    About,
+    Models,
+    SliceConfig,
+    Stats,
+    Workspace,
+    SliceOperation,
+    Viewport,
+}
+
+impl Tab {
+    pub fn name(&self) -> &'static str {
+        match self {
+            Tab::About => "About",
+            Tab::Models => "Models",
+            Tab::SliceConfig => "Slice Config",
+            Tab::Stats => "Stats",
+            Tab::Workspace => "Workspace",
+            Tab::SliceOperation => "Slice Operation",
+            Tab::Viewport => "Viewport",
         }
     }
+}
+
+impl<'a> TabViewer for Tabs<'a> {
+    type Tab = Tab;
+
+    fn title(&mut self, tab: &mut Self::Tab) -> WidgetText {
+        tab.name().into()
+    }
+
+    fn ui(&mut self, ui: &mut Ui, tab: &mut Self::Tab) {
+        match tab {
+            Tab::About => about::ui(&mut self.app, ui, self.ctx),
+            Tab::Models => models::ui(&mut self.app, ui, self.ctx),
+            Tab::SliceConfig => slice_config::ui(&mut self.app, ui, self.ctx),
+            Tab::SliceOperation => slice_operation::ui(&mut self.app, ui, self.ctx),
+            Tab::Stats => stats::ui(&mut self.app, ui, self.ctx),
+            Tab::Viewport => viewport(&mut self.app, ui, self.ctx),
+            Tab::Workspace => workspace::ui(&mut self.app, ui, self.ctx),
+        }
+    }
+}
+
+fn viewport(app: &mut App, ui: &mut Ui, _ctx: &Context) {
+    let (rect, response) = ui.allocate_exact_size(ui.available_size(), Sense::drag());
+    app.camera.handle_movement(&response, ui);
+
+    let color = match app.theme {
+        Theme::Dark => Color32::from_rgb(9, 9, 9),
+        Theme::Light => Color32::from_rgb(255, 255, 255),
+    };
+    ui.painter().rect_filled(rect, 0.0, color);
+
+    let callback = Callback::new_paint_callback(
+        rect,
+        WorkspaceRenderCallback {
+            camera: app.camera.clone(),
+            transform: app
+                .camera
+                .view_projection_matrix(rect.width() / rect.height()),
+
+            bed_size: app.slice_config.platform_size,
+            grid_size: app.grid_size,
+
+            is_moving: response.dragged(),
+            slice_operation: app.slice_operation.clone(),
+
+            models: app.meshes.clone(),
+            render_style: app.render_style,
+            theme: app.theme,
+        },
+    );
+    ui.painter().add(callback);
 }

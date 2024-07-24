@@ -2,8 +2,7 @@ use std::{sync::Arc, thread, time::Instant};
 
 use clone_macro::clone;
 use eframe::Theme;
-use egui::{CentralPanel, Color32, Frame, Sense};
-use egui_wgpu::Callback;
+use egui_dock::DockState;
 use image::imageops::FilterType;
 use nalgebra::{Vector2, Vector3};
 use parking_lot::RwLock;
@@ -11,17 +10,16 @@ use slicer::{slicer::Slicer, Pos};
 use tracing::info;
 
 use crate::{
-    render::{
-        camera::Camera, pipelines::model::RenderStyle, rendered_mesh::RenderedMesh,
-        workspace::WorkspaceRenderCallback,
-    },
+    render::{camera::Camera, pipelines::model::RenderStyle, rendered_mesh::RenderedMesh},
     slice_operation::{SliceOperation, SliceResult},
-    windows::{self, Windows},
+    windows::{self, Tab},
 };
 use common::config::{ExposureConfig, SliceConfig};
 use goo_format::{File as GooFile, LayerEncoder, PreviewImage};
 
 pub struct App {
+    pub dock_state: DockState<Tab>,
+
     pub camera: Camera,
     pub slice_config: SliceConfig,
     pub meshes: Arc<RwLock<Vec<RenderedMesh>>>,
@@ -31,7 +29,6 @@ pub struct App {
     pub render_style: RenderStyle,
     pub grid_size: f32,
     pub fps: FpsTracker,
-    pub windows: Windows,
     pub theme: Theme,
 }
 
@@ -110,43 +107,11 @@ impl App {
 }
 
 impl eframe::App for App {
-    fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         ctx.request_repaint();
         self.fps.update();
 
-        windows::ui(self, ctx, frame);
-
-        CentralPanel::default()
-            .frame(Frame::none())
-            .show(ctx, |ui| {
-                let (rect, response) = ui.allocate_exact_size(ui.available_size(), Sense::drag());
-                self.camera.handle_movement(&response, ui);
-
-                if self.theme == Theme::Light {
-                    ui.painter().rect_filled(rect, 0.0, Color32::WHITE);
-                }
-
-                let callback = Callback::new_paint_callback(
-                    rect,
-                    WorkspaceRenderCallback {
-                        camera: self.camera.clone(),
-                        transform: self
-                            .camera
-                            .view_projection_matrix(rect.width() / rect.height()),
-
-                        bed_size: self.slice_config.platform_size,
-                        grid_size: self.grid_size,
-
-                        is_moving: response.dragged(),
-                        slice_operation: self.slice_operation.clone(),
-
-                        models: self.meshes.clone(),
-                        render_style: self.render_style,
-                        theme: self.theme,
-                    },
-                );
-                ui.painter().add(callback);
-            });
+        windows::ui(self, ctx);
     }
 }
 
@@ -173,6 +138,7 @@ impl FpsTracker {
 impl Default for App {
     fn default() -> Self {
         Self {
+            dock_state: DockState::new(vec![Tab::About, Tab::Models, Tab::Viewport]),
             camera: Camera::default(),
             slice_config: SliceConfig {
                 platform_resolution: Vector2::new(11_520, 5_120),
@@ -192,7 +158,6 @@ impl Default for App {
 
             fps: FpsTracker::new(),
             meshes: Arc::new(RwLock::new(Vec::new())),
-            windows: Windows::default(),
             render_style: RenderStyle::Normals,
             theme: Theme::Dark,
             grid_size: 12.16,
