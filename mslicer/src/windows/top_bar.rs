@@ -60,9 +60,13 @@ pub fn ui(app: &mut App, ctx: &Context, _frame: &mut Frame) {
 
             ui.separator();
 
-            if ui.button("Slice!").clicked() {
-                app.slice();
-            }
+            let slicing = match &app.slice_operation {
+                Some(operation) => operation.progress.completed() < operation.progress.total(),
+                None => false,
+            };
+            ui.add_enabled_ui(!slicing, |ui| {
+                ui.button("Slice!").clicked().then(|| app.slice());
+            });
         });
     });
 }

@@ -41,6 +41,8 @@
 - [x] Optimize bvh more (benchmarking with criterion)
 - [x] Add documentation to slicer
 - [x] Make the slice preview layer slider full height
-- [ ] Combine slice result and slice preview windows and add a close button
+- [x] Combine slice result and slice preview windows and add a close button
 - [x] Split slice operation to a new module
 - [x] Re-enable multi-sampling
+- [x] Disable slice button while slicing
+- [ ] Use egui_dock to get a more clean look
