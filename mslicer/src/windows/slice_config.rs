@@ -7,13 +7,17 @@ use crate::{
 use common::config::ExposureConfig;
 
 pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
+    let width = ui.available_width();
     Grid::new("slice_config")
         .num_columns(2)
         .spacing([40.0, 4.0])
         .striped(true)
         .show(ui, |ui| {
             ui.label("Platform Resolution");
-            vec2_dragger(ui, app.slice_config.platform_resolution.as_mut(), |x| x);
+            ui.horizontal(|ui| {
+                vec2_dragger(ui, app.slice_config.platform_resolution.as_mut(), |x| x);
+                ui.add_space(width);
+            });
             ui.end_row();
 
             ui.label("Platform Size");

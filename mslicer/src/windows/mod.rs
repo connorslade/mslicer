@@ -25,7 +25,6 @@ pub enum Tab {
     SliceConfig,
     Stats,
     Workspace,
-    SliceOperation,
     Viewport,
 }
 
@@ -37,7 +36,6 @@ impl Tab {
             Tab::SliceConfig => "Slice Config",
             Tab::Stats => "Stats",
             Tab::Workspace => "Workspace",
-            Tab::SliceOperation => "Slice Operation",
             Tab::Viewport => "Viewport",
         }
     }
@@ -55,7 +53,6 @@ impl<'a> TabViewer for Tabs<'a> {
             Tab::About => about::ui(self.app, ui, self.ctx),
             Tab::Models => models::ui(self.app, ui, self.ctx),
             Tab::SliceConfig => slice_config::ui(self.app, ui, self.ctx),
-            Tab::SliceOperation => slice_operation::ui(self.app, ui, self.ctx),
             Tab::Stats => stats::ui(self.app, ui, self.ctx),
             Tab::Viewport => viewport(self.app, ui, self.ctx),
             Tab::Workspace => workspace::ui(self.app, ui, self.ctx),
@@ -101,6 +98,7 @@ impl<'a> TabViewer for Tabs<'a> {
 
 pub fn ui(app: &mut App, ctx: &Context) {
     top_bar::ui(app, ctx);
+    slice_operation::ui(app, ctx);
 
     CentralPanel::default()
         .frame(Frame::none())

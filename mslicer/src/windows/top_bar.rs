@@ -4,7 +4,7 @@ use egui::{Align, Context, Layout, TopBottomPanel};
 use rfd::FileDialog;
 use tracing::info;
 
-use crate::{app::App, render::rendered_mesh::RenderedMesh, windows::Tab};
+use crate::{app::App, render::rendered_mesh::RenderedMesh};
 
 pub fn ui(app: &mut App, ctx: &Context) {
     TopBottomPanel::top("top_panel").show(ctx, |ui| {
@@ -47,10 +47,7 @@ pub fn ui(app: &mut App, ctx: &Context) {
                     None => false,
                 };
                 ui.add_enabled_ui(!slicing, |ui| {
-                    if ui.button("Slice!").clicked() {
-                        app.slice();
-                        app.dock_state.add_window(vec![Tab::SliceOperation]);
-                    }
+                    ui.button("Slice!").clicked().then(|| app.slice());
                 });
             });
         });
