@@ -1,3 +1,38 @@
 [workspace]
 resolver = "2"
 members = ["common", "goo_format", "mslicer", "remote_send", "slicer"]
+
+[workspace.dependencies]
+afire = "3.0.0-alpha.3"
+anyhow = "1.0.86"
+bitflags = "2.5.0"
+bytemuck = "1.16.1"
+chrono = "0.4.38"
+clone-macro = "0.1.0"
+const_format = "0.2.32"
+criterion = "0.5.1"
+eframe = { version = "0.27.2", features = ["wgpu"] }
+egui = "0.27.2"
+egui_dock = "0.12.0"
+egui-modal = "0.3.6"
+egui-phosphor = "0.5.0"
+egui-wgpu = "0.27.2"
+encase = { version = "0.8.0", features = ["nalgebra"] }
+image = "0.25.1"
+itertools = "0.13.0"
+md5 = "0.7.0"
+nalgebra = "0.32.6"
+obj-rs = "0.7.1"
+ordered-float = "4.2.0"
+parking_lot = "0.12.3"
+plexus = "0.0.11"
+rand = "0.8.5"
+rayon = "1.10.0"
+rfd = "0.14.1"
+serde = { version = "1.0.203", features = ["derive"] }
+serde_json = "1.0.120"
+soon = { git = "https://github.com/connorslade/misc" }
+stl_io = "0.7.0"
+tracing = "0.1.40"
+tracing-subscriber = "0.3.18"
+wgpu = "0.19.4"

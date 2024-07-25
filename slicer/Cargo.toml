@@ -4,19 +4,19 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-anyhow = "1.0.86"
-itertools = "0.13.0"
-nalgebra = "0.32.6"
-obj-rs = "0.7.1"
-ordered-float = "4.2.0"
-rayon = "1.10.0"
-stl_io = "0.7.0"
+anyhow.workspace = true
+itertools.workspace = true
+nalgebra.workspace = true
+obj-rs.workspace = true
+ordered-float.workspace = true
+rayon.workspace = true
+stl_io.workspace = true
 
 common = { path = "../common" }
 goo_format = { path = "../goo_format" }
 
 [dev-dependencies]
-criterion = "0.5.1"
+criterion.workspace = true
 
 [[bench]]
 name = "benchmark"

@@ -47,4 +47,4 @@
 - [x] Disable slice button while slicing
 - [x] Use egui_dock to get a more clean look
 - [x] Align to bed button
-- [ ] Define all crate versions in workspace toml
+- [x] Define all crate versions in workspace toml
