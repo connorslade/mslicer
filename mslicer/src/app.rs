@@ -11,6 +11,7 @@ use slicer::{slicer::Slicer, Pos};
 use tracing::info;
 
 use crate::{
+    remote_print::RemotePrint,
     render::{camera::Camera, pipelines::model::RenderStyle, rendered_mesh::RenderedMesh},
     slice_operation::{SliceOperation, SliceResult},
     windows::{self, Tab},
@@ -20,17 +21,24 @@ use goo_format::{File as GooFile, LayerEncoder, PreviewImage};
 
 pub struct App {
     pub dock_state: DockState<Tab>,
+    pub state: UiState,
     modal: Option<Modal>,
 
     pub camera: Camera,
     pub slice_config: SliceConfig,
     pub meshes: Arc<RwLock<Vec<RenderedMesh>>>,
     pub slice_operation: Option<SliceOperation>,
+    pub remote_print: RemotePrint,
 
     pub render_style: RenderStyle,
     pub grid_size: f32,
     pub fps: FpsTracker,
     pub theme: Theme,
+}
+
+#[derive(Default)]
+pub struct UiState {
+    pub working_address: String,
 }
 
 pub struct FpsTracker {
@@ -166,6 +174,7 @@ impl Default for App {
         Self {
             dock_state,
             modal: None,
+            state: UiState::default(),
 
             camera: Camera::default(),
             slice_config: SliceConfig {
@@ -190,6 +199,7 @@ impl Default for App {
             theme: Theme::Dark,
             grid_size: 12.16,
             slice_operation: None,
+            remote_print: RemotePrint::uninitialized(),
         }
     }
 }

@@ -7,6 +7,7 @@ use crate::{app::App, render::workspace::WorkspaceRenderCallback};
 
 mod about;
 mod models;
+mod remote_print;
 mod slice_config;
 mod slice_operation;
 mod stats;
@@ -22,10 +23,11 @@ struct Tabs<'a> {
 pub enum Tab {
     About,
     Models,
+    RemotePrint,
     SliceConfig,
     Stats,
-    Workspace,
     Viewport,
+    Workspace,
 }
 
 impl Tab {
@@ -33,10 +35,11 @@ impl Tab {
         match self {
             Tab::About => "About",
             Tab::Models => "Models",
+            Tab::RemotePrint => "Remote Print",
             Tab::SliceConfig => "Slice Config",
             Tab::Stats => "Stats",
-            Tab::Workspace => "Workspace",
             Tab::Viewport => "Viewport",
+            Tab::Workspace => "Workspace",
         }
     }
 }
@@ -52,6 +55,7 @@ impl<'a> TabViewer for Tabs<'a> {
         match tab {
             Tab::About => about::ui(self.app, ui, self.ctx),
             Tab::Models => models::ui(self.app, ui, self.ctx),
+            Tab::RemotePrint => remote_print::ui(self.app, ui, self.ctx),
             Tab::SliceConfig => slice_config::ui(self.app, ui, self.ctx),
             Tab::Stats => stats::ui(self.app, ui, self.ctx),
             Tab::Viewport => viewport(self.app, ui, self.ctx),
@@ -66,6 +70,7 @@ impl<'a> TabViewer for Tabs<'a> {
         for tab in [
             Tab::About,
             Tab::Models,
+            Tab::RemotePrint,
             Tab::SliceConfig,
             Tab::Stats,
             Tab::Workspace,

@@ -2,14 +2,14 @@ use serde::Deserialize;
 
 use crate::{parse_resolution, Resolution};
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct FullStatusData {
     pub attributes: Attributes,
     pub status: Status,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct StatusData {
     pub status: Status,
@@ -18,7 +18,7 @@ pub struct StatusData {
     pub time_stamp: u64,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct Attributes {
     pub name: String,
@@ -40,14 +40,14 @@ pub struct Attributes {
     pub capabilities: Vec<Capability>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum Capability {
     FileTransfer,
     PrintControl,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct Status {
     pub current_status: u8,
@@ -56,7 +56,7 @@ pub struct Status {
     pub file_transfer_info: FileTransferInfo,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct PrintInfo {
     pub status: u8,
@@ -68,7 +68,7 @@ pub struct PrintInfo {
     pub filename: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct FileTransferInfo {
     pub status: u8,
