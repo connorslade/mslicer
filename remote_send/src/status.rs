@@ -84,15 +84,17 @@ pub struct FileTransferInfo {
 pub enum CurrentStatus {
     Ready = 0,
     Busy = 1,
+    TransferringFile = 2,
 }
 
 #[repr(u8)]
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize_repr)]
 pub enum PrintInfoStatus {
     None = 0,
-    Exposure = 2,
-    Retracting = 3,
-    Lowering = 4,
+    Unknown = 1,
+    Lowering = 2,
+    Exposure = 3,
+    Retracting = 4,
     Complete = 16,
 }
 

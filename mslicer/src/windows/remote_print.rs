@@ -1,6 +1,7 @@
-use std::sync::atomic::Ordering;
+use std::{sync::atomic::Ordering, time::Duration};
 
 use chrono::DateTime;
+use common::misc::human_duration;
 use egui::{vec2, Align, Context, Grid, Layout, ProgressBar, Separator, TextEdit, Ui};
 use remote_send::status::{FileTransferStatus, PrintInfoStatus};
 
@@ -58,6 +59,59 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
             },
         );
 
+        let status = client.status.lock();
+
+        let print_info = &status.print_info;
+        let printing = !matches!(
+            print_info.status,
+            PrintInfoStatus::None | PrintInfoStatus::Complete
+        );
+        if printing {
+            ui.horizontal(|ui| {
+                ui.label("Printing ");
+                ui.monospace(&print_info.filename);
+                ui.label(format!("({:?})", print_info.status));
+            });
+
+            let eta = human_duration(Duration::from_millis(
+                (print_info.total_ticks - print_info.current_ticks) as u64,
+            ));
+            ui.label(format!("ETA: {eta}"));
+
+            ui.add(
+                ProgressBar::new(print_info.current_layer as f32 / print_info.total_layer as f32)
+                    .text(format!(
+                        "{}/{}",
+                        print_info.current_layer, print_info.total_layer
+                    ))
+                    .desired_width(ui.available_width()),
+            );
+        }
+
+        let file_transfer = &status.file_transfer_info;
+        if file_transfer.status == FileTransferStatus::None && file_transfer.file_total_size != 0 {
+            ui.horizontal(|ui| {
+                ui.label("Transferring ");
+                ui.monospace(&file_transfer.filename);
+                ui.label(".");
+            });
+            ui.add(
+                ProgressBar::new(
+                    file_transfer.download_offset as f32 / file_transfer.file_total_size as f32,
+                )
+                .desired_width(ui.available_width()),
+            );
+        }
+
+        if file_transfer.status == FileTransferStatus::Done && !printing {
+            ui.label("File transfer complete.");
+            if ui.button("Print").clicked() {
+                app.remote_print
+                    .print(&attributes.mainboard_id, &file_transfer.filename)
+                    .unwrap();
+            }
+        }
+
         Grid::new(format!("printer_{}", attributes.mainboard_id))
             .num_columns(2)
             .striped(true)
@@ -93,39 +147,6 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                 ui.label("Last Status");
                 ui.monospace(&last_update.format("%Y-%m-%d %H:%M:%S").to_string());
             });
-
-        let status = client.status.lock();
-
-        let print_info = &status.print_info;
-        if !matches!(
-            print_info.status,
-            PrintInfoStatus::None | PrintInfoStatus::Complete
-        ) {
-            ui.horizontal(|ui| {
-                ui.label("Printing ");
-                ui.monospace(&print_info.filename);
-                ui.label(format!(". ({:?})", print_info.status));
-            });
-            ui.add(
-                ProgressBar::new(print_info.current_layer as f32 / print_info.total_layer as f32)
-                    .desired_width(ui.available_width()),
-            );
-        }
-
-        let file_transfer = &status.file_transfer_info;
-        if file_transfer.status == FileTransferStatus::None && file_transfer.file_total_size != 0 {
-            ui.horizontal(|ui| {
-                ui.label("Transferring ");
-                ui.monospace(&file_transfer.filename);
-                ui.label(".");
-            });
-            ui.add(
-                ProgressBar::new(
-                    file_transfer.download_offset as f32 / file_transfer.file_total_size as f32,
-                )
-                .desired_width(ui.available_width()),
-            );
-        }
 
         if i + 1 != printers.len() {
             ui.separator();

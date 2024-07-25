@@ -1146,6 +1146,7 @@ name = "common"
 version = "0.1.0"
 dependencies = [
  "nalgebra 0.32.6",
+ "rand 0.8.5",
 ]
 
 [[package]]

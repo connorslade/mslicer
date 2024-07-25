@@ -1,8 +1,8 @@
-use std::{fs::File, io::Write};
+use std::{fs::File, io::Write, sync::Arc};
 
 use egui::{
-    style::HandleShape, Align, Context, DragValue, Layout, ProgressBar, RichText, Sense, Slider,
-    Vec2, Window,
+    style::HandleShape, text::LayoutJob, Align, Context, DragValue, FontId, FontSelection, Layout,
+    ProgressBar, RichText, Sense, Slider, Style, TextFormat, Vec2, WidgetInfo, WidgetText, Window,
 };
 use egui_wgpu::Callback;
 use goo_format::LayerDecoder;
@@ -47,15 +47,46 @@ pub fn ui(app: &mut App, ctx: &Context) {
 
                     ui.with_layout(Layout::default().with_cross_align(Align::Max), |ui| {
                         ui.horizontal(|ui| {
-                            if ui.button("Send to Printer").clicked() {
-                                let result = app.slice_operation.as_ref().unwrap().result();
-                                let result = result.as_ref().unwrap();
+                            ui.add_enabled_ui(app.remote_print.is_initialized(), |ui| {
+                                ui.menu_button("Send to Printer", |ui| {
+                                    let mqtt = app.remote_print.mqtt();
+                                    for printer in app.remote_print.printers().iter() {
+                                        let client = mqtt.get_client(&printer.mainboard_id);
 
-                                let mut serializer = DynamicSerializer::new();
-                                result.goo.serialize(&mut serializer);
-                                let data = serializer.into_inner();
-                                save_complete = true;
-                            }
+                                        let mut layout_job = LayoutJob::default();
+                                        RichText::new(&format!("{} ", client.attributes.name))
+                                            .append_to(
+                                                &mut layout_job,
+                                                &Style::default(),
+                                                FontSelection::Default,
+                                                Align::LEFT,
+                                            );
+                                        RichText::new(&client.attributes.mainboard_id)
+                                            .monospace()
+                                            .append_to(
+                                                &mut layout_job,
+                                                &Style::default(),
+                                                FontSelection::Default,
+                                                Align::LEFT,
+                                            );
+
+                                        if ui.button(layout_job).clicked() {
+                                            let result =
+                                                app.slice_operation.as_ref().unwrap().result();
+                                            let result = result.as_ref().unwrap();
+
+                                            let mut serializer = DynamicSerializer::new();
+                                            result.goo.serialize(&mut serializer);
+                                            let data = Arc::new(serializer.into_inner());
+                                            save_complete = true;
+
+                                            app.remote_print
+                                                .upload(&printer.mainboard_id, data)
+                                                .unwrap();
+                                        }
+                                    }
+                                });
+                            });
 
                             if ui.button("Save").clicked() {
                                 let result = app.slice_operation.as_ref().unwrap().result();

@@ -169,7 +169,7 @@ impl Default for App {
         let surface = dock_state.main_surface_mut();
         let [_old_node, new_node] = surface.split_left(NodeIndex::root(), 0.20, vec![Tab::Models]);
         let [_old_node, new_node] = surface.split_below(new_node, 0.5, vec![Tab::SliceConfig]);
-        surface.split_below(new_node, 0.5, vec![Tab::Workspace]);
+        surface.split_below(new_node, 0.5, vec![Tab::Workspace, Tab::RemotePrint]);
 
         Self {
             dock_state,

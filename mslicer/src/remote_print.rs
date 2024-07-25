@@ -5,12 +5,17 @@ use std::{
 };
 
 use anyhow::Result;
+use common::misc::random_string;
 use parking_lot::{Mutex, MutexGuard};
 use tracing::info;
 
 use remote_send::{
-    commands::DisconnectCommand, http_server::HttpServer, mqtt::MqttServer, mqtt_server::Mqtt,
-    status::FullStatusData, Response,
+    commands::{DisconnectCommand, StartPrinting, UploadFile},
+    http_server::HttpServer,
+    mqtt::MqttServer,
+    mqtt_server::Mqtt,
+    status::FullStatusData,
+    Response,
 };
 
 pub struct RemotePrint {
@@ -122,6 +127,40 @@ impl RemotePrint {
         services
             .mqtt
             .send_command(&printer.mainboard_id, DisconnectCommand)?;
+
+        Ok(())
+    }
+
+    pub fn upload(&self, mainboard_id: &str, data: Arc<Vec<u8>>) -> Result<()> {
+        let services = self.services.as_ref().unwrap();
+
+        let filename = format!("{}.goo", random_string(8));
+        services.http.add_file(&filename, data.clone());
+
+        services
+            .mqtt
+            .send_command(
+                &mainboard_id,
+                UploadFile::new(filename, services.http_port, &data),
+            )
+            .unwrap();
+
+        Ok(())
+    }
+
+    pub fn print(&self, mainboard_id: &str, filename: &str) -> Result<()> {
+        let services = self.services.as_ref().unwrap();
+
+        services
+            .mqtt
+            .send_command(
+                &mainboard_id,
+                StartPrinting {
+                    filename: filename.to_owned(),
+                    start_layer: 0,
+                },
+            )
+            .unwrap();
 
         Ok(())
     }

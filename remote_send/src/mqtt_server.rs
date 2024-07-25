@@ -9,6 +9,7 @@ use std::{
 
 use anyhow::Result;
 use parking_lot::{MappedRwLockReadGuard, Mutex, RwLock, RwLockReadGuard};
+use serde_json::Value;
 use soon::Soon;
 use tracing::{info, trace, warn};
 
@@ -111,16 +112,15 @@ impl MqttHandler for Mqtt {
 
         if let Some(board_id) = packet.topic.strip_prefix("/sdcp/status/") {
             let status = serde_json::from_slice::<Response<StatusData>>(&packet.data)?;
+            trace!("Got status from `{board_id}`: {status:?}");
 
             let clients = self.clients.write();
             let client = clients.get(board_id).unwrap();
             *client.status.lock() = status.data.status;
             client.last_update.store(epoch(), Ordering::Relaxed);
         } else if let Some(board_id) = packet.topic.strip_prefix("/sdcp/response/") {
-            trace!(
-                "Got command response from `{board_id}`: {}",
-                String::from_utf8_lossy(&packet.data)
-            );
+            let json = serde_json::from_slice::<Value>(&packet.data)?;
+            trace!("Got command response from `{board_id}`: {json}");
         }
 
         Ok(())

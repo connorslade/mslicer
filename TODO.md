@@ -48,3 +48,7 @@
 - [x] Use egui_dock to get a more clean look
 - [x] Align to bed button
 - [x] Define all crate versions in workspace toml
+- [ ] MQTT commands use refs to strings
+- [ ] Ask for filename when sending to printer
+- [ ] Printer scanning (UDP broadcast)
+- [ ] Verify printer capabilities before uploading / printing
