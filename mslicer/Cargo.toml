@@ -18,6 +18,7 @@ egui.workspace = true
 encase.workspace = true
 image.workspace = true
 nalgebra.workspace = true
+notify-rust.workspace = true
 parking_lot.workspace = true
 plexus.workspace = true
 rand.workspace = true

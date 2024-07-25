@@ -30,7 +30,7 @@ struct Services {
 
     mqtt_port: u16,
     http_port: u16,
-    udp_port: u16,
+    _udp_port: u16,
 }
 
 pub struct Printer {
@@ -71,9 +71,9 @@ impl RemotePrint {
         http.start_async();
 
         let udp = UdpSocket::bind("0.0.0.0:0")?;
-        let udp_port = udp.local_addr()?.port();
+        let _udp_port = udp.local_addr()?.port();
 
-        info!("Binds: {{ UDP: {udp_port}, MQTT: {mqtt_port}, HTTP: {http_port} }}");
+        info!("Binds: {{ UDP: {_udp_port}, MQTT: {mqtt_port}, HTTP: {http_port} }}");
 
         self.services = Some(Services {
             mqtt,
@@ -82,7 +82,7 @@ impl RemotePrint {
 
             mqtt_port,
             http_port,
-            udp_port,
+            _udp_port,
         });
 
         Ok(())
@@ -140,7 +140,7 @@ impl RemotePrint {
         services
             .mqtt
             .send_command(
-                &mainboard_id,
+                mainboard_id,
                 UploadFile::new(filename, services.http_port, &data),
             )
             .unwrap();
@@ -154,7 +154,7 @@ impl RemotePrint {
         services
             .mqtt
             .send_command(
-                &mainboard_id,
+                mainboard_id,
                 StartPrinting {
                     filename: filename.to_owned(),
                     start_layer: 0,

@@ -26,7 +26,7 @@ use crate::{
         },
         MqttHandler, MqttServer,
     },
-    status::{Attributes, FullStatusData, Status, StatusData},
+    status::{Attributes, FileTransferInfo, FullStatusData, Status, StatusData},
     Response,
 };
 
@@ -116,7 +116,16 @@ impl MqttHandler for Mqtt {
 
             let clients = self.clients.write();
             let client = clients.get(board_id).unwrap();
-            *client.status.lock() = status.data.status;
+            *client.status.lock() = Status {
+                file_transfer_info: FileTransferInfo {
+                    status: crate::status::FileTransferStatus::None,
+                    download_offset: 634432,
+                    check_offset: 634432,
+                    file_total_size: 1234432,
+                    filename: "file.goo".to_owned(),
+                },
+                ..status.data.status
+            };
             client.last_update.store(epoch(), Ordering::Relaxed);
         } else if let Some(board_id) = packet.topic.strip_prefix("/sdcp/response/") {
             let json = serde_json::from_slice::<Value>(&packet.data)?;

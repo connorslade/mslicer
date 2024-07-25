@@ -1,8 +1,8 @@
 use std::{fs::File, io::Write, sync::Arc};
 
 use egui::{
-    style::HandleShape, text::LayoutJob, Align, Context, DragValue, FontId, FontSelection, Layout,
-    ProgressBar, RichText, Sense, Slider, Style, TextFormat, Vec2, WidgetInfo, WidgetText, Window,
+    style::HandleShape, text::LayoutJob, Align, Context, DragValue, FontSelection, Layout,
+    ProgressBar, RichText, Sense, Slider, Style, Vec2, Window,
 };
 use egui_wgpu::Callback;
 use goo_format::LayerDecoder;

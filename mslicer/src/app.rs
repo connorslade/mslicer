@@ -34,11 +34,13 @@ pub struct App {
     pub grid_size: f32,
     pub fps: FpsTracker,
     pub theme: Theme,
+    pub alert_print_completion: bool,
 }
 
 #[derive(Default)]
 pub struct UiState {
     pub working_address: String,
+    pub send_print_completion: bool,
 }
 
 pub struct FpsTracker {
@@ -200,6 +202,7 @@ impl Default for App {
             grid_size: 12.16,
             slice_operation: None,
             remote_print: RemotePrint::uninitialized(),
+            alert_print_completion: false,
         }
     }
 }

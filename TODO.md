@@ -52,3 +52,6 @@
 - [ ] Ask for filename when sending to printer
 - [ ] Printer scanning (UDP broadcast)
 - [ ] Verify printer capabilities before uploading / printing
+- [ ] Move remote print module to remote send?
+- [ ] Add some optional alert sound for print completion
+- [ ] Create config struct thats saved / loaded on shutdown / startup
