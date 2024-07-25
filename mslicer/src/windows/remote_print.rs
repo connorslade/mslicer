@@ -1,3 +1,6 @@
+use std::sync::atomic::Ordering;
+
+use chrono::{DateTime, NaiveDateTime, TimeZone, Utc};
 use egui::{vec2, Align, Context, Grid, Layout, ProgressBar, Separator, TextEdit, Ui};
 use remote_send::status::{FileTransferStatus, PrintInfoStatus};
 
@@ -22,6 +25,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
         return;
     }
 
+    let mqtt = app.remote_print.mqtt();
     let mut action = Action::None;
 
     ui.heading("Printers");
@@ -31,12 +35,18 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     }
 
     for (i, printer) in printers.iter().enumerate() {
+        let client = mqtt.get_client(&printer.mainboard_id);
+        let attributes = &client.attributes;
+
+        let last_update = client.last_update.load(Ordering::Relaxed);
+        let last_update = DateTime::from_timestamp(last_update, 0).unwrap();
+
         ui.with_layout(
             Layout::left_to_right(Align::Min).with_main_justify(true),
             |ui| {
                 ui.horizontal(|ui| {
-                    ui.strong(&printer.data.attributes.name);
-                    ui.monospace(&printer.data.attributes.mainboard_id);
+                    ui.strong(&attributes.name);
+                    ui.monospace(&attributes.mainboard_id);
                 });
 
                 ui.with_layout(Layout::right_to_left(Align::Min), |ui| {
@@ -48,7 +58,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
             },
         );
 
-        Grid::new(format!("printer_{}", printer.data.attributes.mainboard_id))
+        Grid::new(format!("printer_{}", attributes.mainboard_id))
             .num_columns(2)
             .striped(true)
             .with_row_color(|row, style| (row % 2 == 0).then_some(style.visuals.faint_bg_color))
@@ -59,21 +69,19 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                         .with_main_justify(true)
                         .with_main_align(Align::Min),
                     |ui| {
-                        ui.monospace(&printer.data.attributes.firmware_version);
+                        ui.monospace(&attributes.firmware_version);
                     },
                 );
                 ui.end_row();
 
                 ui.label("Resolution");
-                let resolution = &printer.data.attributes.resolution;
+                let resolution = &attributes.resolution;
                 ui.monospace(format!("{}x{}", resolution.x, resolution.y));
                 ui.end_row();
 
                 ui.label("Capabilities");
                 ui.monospace(
-                    &printer
-                        .data
-                        .attributes
+                    &attributes
                         .capabilities
                         .iter()
                         .map(|x| format!("{x:?}"))
@@ -83,10 +91,12 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                 ui.end_row();
 
                 ui.label("Last Status");
-                ui.monospace(&printer.last_update.format("%Y-%m-%d %H:%M:%S").to_string());
+                ui.monospace(&last_update.format("%Y-%m-%d %H:%M:%S").to_string());
             });
 
-        let print_info = &printer.data.status.print_info;
+        let status = client.status.lock();
+
+        let print_info = &status.print_info;
         if !matches!(
             print_info.status,
             PrintInfoStatus::None | PrintInfoStatus::Complete
@@ -102,7 +112,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
             );
         }
 
-        let file_transfer = &printer.data.status.file_transfer_info;
+        let file_transfer = &status.file_transfer_info;
         if file_transfer.status == FileTransferStatus::None && file_transfer.file_total_size != 0 {
             ui.horizontal(|ui| {
                 ui.label("Transferring ");

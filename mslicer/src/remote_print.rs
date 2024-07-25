@@ -5,12 +5,17 @@ use std::{
 };
 
 use anyhow::Result;
-use parking_lot::{Mutex, MutexGuard};
+use egui::mutex::RwLock;
+use parking_lot::{MappedRwLockReadGuard, Mutex, MutexGuard};
 use tracing::info;
 
 use remote_send::{
-    commands::DisconnectCommand, http_server::HttpServer, mqtt::MqttServer, mqtt_server::Mqtt,
-    status::FullStatusData, Response,
+    commands::DisconnectCommand,
+    http_server::HttpServer,
+    mqtt::MqttServer,
+    mqtt_server::{Mqtt, MqttClient},
+    status::{Attributes, FullStatusData, Status},
+    Response,
 };
 
 pub struct RemotePrint {
@@ -29,8 +34,7 @@ struct Services {
 }
 
 pub struct Printer {
-    pub data: FullStatusData,
-    pub last_update: chrono::NaiveDateTime,
+    pub mainboard_id: String,
 }
 
 impl RemotePrint {
@@ -47,6 +51,10 @@ impl RemotePrint {
 
     pub fn printers(&self) -> MutexGuard<Vec<Printer>> {
         self.printers.lock()
+    }
+
+    pub fn mqtt(&self) -> &Mqtt {
+        &self.services.as_ref().unwrap().mqtt
     }
 
     pub fn init(&mut self) -> Result<()> {
@@ -100,8 +108,7 @@ impl RemotePrint {
         );
 
         self.printers.lock().push(Printer {
-            data: response.data.clone(),
-            last_update: chrono::Utc::now().naive_utc(),
+            mainboard_id: response.data.attributes.mainboard_id.clone(),
         });
 
         services.mqtt.add_future_client(response);
@@ -119,7 +126,7 @@ impl RemotePrint {
 
         services
             .mqtt
-            .send_command(&printer.data.attributes.mainboard_id, DisconnectCommand)?;
+            .send_command(&printer.mainboard_id, DisconnectCommand)?;
 
         Ok(())
     }

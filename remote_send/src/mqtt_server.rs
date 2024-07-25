@@ -2,13 +2,13 @@ use std::{
     collections::HashMap,
     ops::Deref,
     sync::{
-        atomic::{AtomicU16, Ordering},
+        atomic::{AtomicI64, AtomicU16, Ordering},
         Arc,
     },
 };
 
 use anyhow::Result;
-use parking_lot::{Mutex, RwLock};
+use parking_lot::{MappedRwLockReadGuard, Mutex, RwLock, RwLockReadGuard};
 use soon::Soon;
 
 use crate::{
@@ -41,10 +41,11 @@ pub struct Mqtt {
     inner: Arc<MqttInner>,
 }
 
-struct MqttClient {
-    attributes: Attributes,
-    status: Mutex<Status>,
-    machine_id: String,
+pub struct MqttClient {
+    pub attributes: Attributes,
+    pub status: Mutex<Status>,
+    pub machine_id: String,
+    pub last_update: AtomicI64,
     client_id: Option<u64>,
     next_packet_id: AtomicU16,
 }
@@ -110,7 +111,11 @@ impl MqttHandler for Mqtt {
         if let Some(board_id) = packet.topic.strip_prefix("/sdcp/status/") {
             let status = serde_json::from_slice::<Response<StatusData>>(&packet.data)?;
             println!("{:?}", status.data.status);
-            *self.clients.write().get(board_id).unwrap().status.lock() = status.data.status;
+
+            let clients = self.clients.write();
+            let client = clients.get(board_id).unwrap();
+            *client.status.lock() = status.data.status;
+            client.last_update.store(epoch(), Ordering::Relaxed);
         } else if let Some(board_id) = packet.topic.strip_prefix("/sdcp/response/") {
             println!("Got command response from `{}`", board_id);
             println!("{:?}", String::from_utf8_lossy(&packet.data));
@@ -146,6 +151,12 @@ impl Mqtt {
                 client_ids: RwLock::new(HashMap::new()),
             }),
         }
+    }
+
+    pub fn get_client(&self, mainboard_id: &str) -> MappedRwLockReadGuard<MqttClient> {
+        RwLockReadGuard::map(self.clients.read(), |clients| {
+            clients.get(mainboard_id).unwrap()
+        })
     }
 
     pub fn send_command<Data: CommandTrait>(
@@ -200,6 +211,7 @@ impl Mqtt {
             attributes: response.data.attributes,
             status: Mutex::new(response.data.status),
             machine_id: response.id,
+            last_update: AtomicI64::new(epoch()),
             client_id: None,
             next_packet_id: AtomicU16::new(0),
         };
@@ -236,4 +248,8 @@ impl Drop for Mqtt {
             let _ = self.send_command(mainboard_id, DisconnectCommand);
         }
     }
+}
+
+fn epoch() -> i64 {
+    chrono::Utc::now().timestamp() as i64
 }
