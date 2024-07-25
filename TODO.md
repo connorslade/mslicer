@@ -55,3 +55,4 @@
 - [ ] Move remote print module to remote send?
 - [ ] Add some optional alert sound for print completion
 - [ ] Create config struct thats saved / loaded on shutdown / startup
+- [ ] Publish goo_format crate

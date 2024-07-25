@@ -26,10 +26,12 @@ fn main() -> Result<()> {
         .with_target("mslicer", LevelFilter::TRACE)
         .with_target("remote_send", LevelFilter::TRACE);
     let format = tracing_subscriber::fmt::layer();
+    let collector = egui_tracing::EventCollector::new();
 
     tracing_subscriber::registry()
         .with(filter)
         .with(format)
+        .with(collector.clone())
         .init();
 
     let icon = image::load_from_memory(ICON)?;
@@ -63,7 +65,7 @@ fn main() -> Result<()> {
             egui_phosphor::add_to_fonts(&mut fonts, egui_phosphor::Variant::Regular);
             cc.egui_ctx.set_fonts(fonts);
 
-            Box::new(App::default())
+            Box::new(App::new(collector))
         }),
     )
     .unwrap();

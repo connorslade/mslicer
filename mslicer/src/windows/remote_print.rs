@@ -20,7 +20,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
         ui.add_space(8.0);
 
         ui.vertical_centered(|ui| {
-            if ui.button("Initialize").clicked() {
+            if ui.button("Initialize").clicked() | app.init_remote_print_at_startup {
                 app.remote_print.init().unwrap();
             }
         });
@@ -74,10 +74,12 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                     ui.label(format!("({:?})", print_info.status));
                 });
 
-                let eta = human_duration(Duration::from_millis(
-                    (print_info.total_ticks - print_info.current_ticks) as u64,
-                ));
-                ui.label(format!("ETA: {eta}"));
+                if print_info.total_ticks != 0 {
+                    let eta = human_duration(Duration::from_millis(
+                        (print_info.total_ticks - print_info.current_ticks) as u64,
+                    ));
+                    ui.label(format!("ETA: {eta}"));
+                }
 
                 ui.add(
                     ProgressBar::new(
@@ -220,5 +222,10 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     ui.checkbox(
         &mut app.alert_print_completion,
         "Send toast on print complete",
+    );
+
+    ui.checkbox(
+        &mut app.init_remote_print_at_startup,
+        "Initialize remote print at startup",
     );
 }

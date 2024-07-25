@@ -4,6 +4,7 @@ use clone_macro::clone;
 use eframe::Theme;
 use egui_dock::{DockState, NodeIndex};
 use egui_modal::{DialogBuilder, Icon, Modal};
+use egui_tracing::EventCollector;
 use image::imageops::FilterType;
 use nalgebra::{Vector2, Vector3};
 use parking_lot::RwLock;
@@ -35,10 +36,12 @@ pub struct App {
     pub fps: FpsTracker,
     pub theme: Theme,
     pub alert_print_completion: bool,
+    pub init_remote_print_at_startup: bool,
 }
 
 #[derive(Default)]
 pub struct UiState {
+    pub event_collector: EventCollector,
     pub working_address: String,
     pub send_print_completion: bool,
 }
@@ -49,6 +52,50 @@ pub struct FpsTracker {
 }
 
 impl App {
+    pub fn new(event_collector: EventCollector) -> Self {
+        let mut dock_state = DockState::new(vec![Tab::Viewport]);
+        let surface = dock_state.main_surface_mut();
+        let [_old_node, new_node] = surface.split_left(NodeIndex::root(), 0.20, vec![Tab::Models]);
+        let [_old_node, new_node] = surface.split_below(new_node, 0.5, vec![Tab::SliceConfig]);
+        surface.split_below(new_node, 0.5, vec![Tab::Workspace, Tab::RemotePrint]);
+
+        Self {
+            dock_state,
+            modal: None,
+            state: UiState {
+                event_collector,
+                ..Default::default()
+            },
+
+            camera: Camera::default(),
+            slice_config: SliceConfig {
+                platform_resolution: Vector2::new(11_520, 5_120),
+                platform_size: Vector3::new(218.88, 122.904, 260.0),
+                slice_height: 0.05,
+
+                exposure_config: ExposureConfig {
+                    exposure_time: 3.0,
+                    ..Default::default()
+                },
+                first_exposure_config: ExposureConfig {
+                    exposure_time: 50.0,
+                    ..Default::default()
+                },
+                first_layers: 10,
+            },
+
+            fps: FpsTracker::new(),
+            meshes: Arc::new(RwLock::new(Vec::new())),
+            render_style: RenderStyle::Rended,
+            theme: Theme::Dark,
+            grid_size: 12.16,
+            slice_operation: None,
+            remote_print: RemotePrint::uninitialized(),
+            alert_print_completion: false,
+            init_remote_print_at_startup: false,
+        }
+    }
+
     pub fn slice(&mut self) {
         if self.meshes.read().is_empty() {
             const NO_MODELS_ERROR: &str = "There are no models to slice. Add one by going to File → Open Model or drag and drop a model file into the workspace.";
@@ -162,47 +209,5 @@ impl FpsTracker {
 
     pub fn frame_time(&self) -> f32 {
         self.last_frame_time
-    }
-}
-
-impl Default for App {
-    fn default() -> Self {
-        let mut dock_state = DockState::new(vec![Tab::Viewport]);
-        let surface = dock_state.main_surface_mut();
-        let [_old_node, new_node] = surface.split_left(NodeIndex::root(), 0.20, vec![Tab::Models]);
-        let [_old_node, new_node] = surface.split_below(new_node, 0.5, vec![Tab::SliceConfig]);
-        surface.split_below(new_node, 0.5, vec![Tab::Workspace, Tab::RemotePrint]);
-
-        Self {
-            dock_state,
-            modal: None,
-            state: UiState::default(),
-
-            camera: Camera::default(),
-            slice_config: SliceConfig {
-                platform_resolution: Vector2::new(11_520, 5_120),
-                platform_size: Vector3::new(218.88, 122.904, 260.0),
-                slice_height: 0.05,
-
-                exposure_config: ExposureConfig {
-                    exposure_time: 3.0,
-                    ..Default::default()
-                },
-                first_exposure_config: ExposureConfig {
-                    exposure_time: 50.0,
-                    ..Default::default()
-                },
-                first_layers: 10,
-            },
-
-            fps: FpsTracker::new(),
-            meshes: Arc::new(RwLock::new(Vec::new())),
-            render_style: RenderStyle::Rended,
-            theme: Theme::Dark,
-            grid_size: 12.16,
-            slice_operation: None,
-            remote_print: RemotePrint::uninitialized(),
-            alert_print_completion: false,
-        }
     }
 }

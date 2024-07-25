@@ -91,7 +91,7 @@ pub enum CurrentStatus {
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize_repr)]
 pub enum PrintInfoStatus {
     None = 0,
-    Unknown = 1,
+    InitialLower = 1,
     Lowering = 2,
     Exposure = 3,
     Retracting = 4,

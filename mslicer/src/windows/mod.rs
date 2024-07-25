@@ -6,6 +6,7 @@ use egui_wgpu::Callback;
 use crate::{app::App, render::workspace::WorkspaceRenderCallback};
 
 mod about;
+mod logs;
 mod models;
 mod remote_print;
 mod slice_config;
@@ -22,6 +23,7 @@ struct Tabs<'a> {
 #[derive(Hash, PartialEq, Eq)]
 pub enum Tab {
     About,
+    Logs,
     Models,
     RemotePrint,
     SliceConfig,
@@ -34,6 +36,7 @@ impl Tab {
     pub fn name(&self) -> &'static str {
         match self {
             Tab::About => "About",
+            Tab::Logs => "Logs",
             Tab::Models => "Models",
             Tab::RemotePrint => "Remote Print",
             Tab::SliceConfig => "Slice Config",
@@ -54,6 +57,7 @@ impl<'a> TabViewer for Tabs<'a> {
     fn ui(&mut self, ui: &mut Ui, tab: &mut Self::Tab) {
         match tab {
             Tab::About => about::ui(self.app, ui, self.ctx),
+            Tab::Logs => logs::ui(self.app, ui, self.ctx),
             Tab::Models => models::ui(self.app, ui, self.ctx),
             Tab::RemotePrint => remote_print::ui(self.app, ui, self.ctx),
             Tab::SliceConfig => slice_config::ui(self.app, ui, self.ctx),
@@ -69,6 +73,7 @@ impl<'a> TabViewer for Tabs<'a> {
 
         for tab in [
             Tab::About,
+            Tab::Logs,
             Tab::Models,
             Tab::RemotePrint,
             Tab::SliceConfig,
