@@ -1,4 +1,5 @@
 use serde::Deserialize;
+use serde_repr::Deserialize_repr;
 
 use crate::{parse_resolution, Resolution};
 
@@ -50,7 +51,7 @@ pub enum Capability {
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct Status {
-    pub current_status: u8,
+    pub current_status: CurrentStatus,
     pub previous_status: u8,
     pub print_info: PrintInfo,
     pub file_transfer_info: FileTransferInfo,
@@ -59,7 +60,7 @@ pub struct Status {
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct PrintInfo {
-    pub status: u8,
+    pub status: PrintInfoStatus,
     pub current_layer: u32,
     pub total_layer: u32,
     pub current_ticks: u32,
@@ -71,9 +72,34 @@ pub struct PrintInfo {
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct FileTransferInfo {
-    pub status: u8,
+    pub status: FileTransferStatus,
     pub download_offset: u32,
     pub check_offset: u32,
     pub file_total_size: u32,
     pub filename: String,
+}
+
+#[repr(u8)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize_repr)]
+pub enum CurrentStatus {
+    Ready = 0,
+    Busy = 1,
+}
+
+#[repr(u8)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize_repr)]
+pub enum PrintInfoStatus {
+    None = 0,
+    Exposure = 2,
+    Retracting = 3,
+    Lowering = 4,
+    Complete = 16,
+}
+
+#[repr(u8)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize_repr)]
+pub enum FileTransferStatus {
+    None = 0,
+    Done = 2,
+    Error = 3,
 }

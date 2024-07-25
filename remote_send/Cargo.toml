@@ -11,8 +11,9 @@ chrono.workspace = true
 md5.workspace = true
 parking_lot.workspace = true
 rand.workspace = true
-serde.workspace = true
 serde_json.workspace = true
+serde_repr.workspace = true
+serde.workspace = true
 soon.workspace = true
 
 common = { path = "../common" }

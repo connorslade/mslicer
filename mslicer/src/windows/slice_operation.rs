@@ -46,18 +46,30 @@ pub fn ui(app: &mut App, ctx: &Context) {
                     ui.label(format!("Slicing completed in {}!", completion.unwrap()));
 
                     ui.with_layout(Layout::default().with_cross_align(Align::Max), |ui| {
-                        if ui.button("Save").clicked() {
-                            let result = app.slice_operation.as_ref().unwrap().result();
-                            let result = result.as_ref().unwrap();
+                        ui.horizontal(|ui| {
+                            if ui.button("Send to Printer").clicked() {
+                                let result = app.slice_operation.as_ref().unwrap().result();
+                                let result = result.as_ref().unwrap();
 
-                            if let Some(path) = FileDialog::new().save_file() {
-                                let mut file = File::create(path).unwrap();
                                 let mut serializer = DynamicSerializer::new();
                                 result.goo.serialize(&mut serializer);
-                                file.write_all(&serializer.into_inner()).unwrap();
+                                let data = serializer.into_inner();
                                 save_complete = true;
                             }
-                        }
+
+                            if ui.button("Save").clicked() {
+                                let result = app.slice_operation.as_ref().unwrap().result();
+                                let result = result.as_ref().unwrap();
+
+                                if let Some(path) = FileDialog::new().save_file() {
+                                    let mut file = File::create(path).unwrap();
+                                    let mut serializer = DynamicSerializer::new();
+                                    result.goo.serialize(&mut serializer);
+                                    file.write_all(&serializer.into_inner()).unwrap();
+                                    save_complete = true;
+                                }
+                            }
+                        })
                     });
                 });
 

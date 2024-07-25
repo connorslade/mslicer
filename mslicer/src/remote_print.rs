@@ -9,7 +9,8 @@ use parking_lot::{Mutex, MutexGuard};
 use tracing::info;
 
 use remote_send::{
-    http_server::HttpServer, mqtt::MqttServer, mqtt_server::Mqtt, status::FullStatusData, Response,
+    commands::DisconnectCommand, http_server::HttpServer, mqtt::MqttServer, mqtt_server::Mqtt,
+    status::FullStatusData, Response,
 };
 
 pub struct RemotePrint {
@@ -29,6 +30,7 @@ struct Services {
 
 pub struct Printer {
     pub data: FullStatusData,
+    pub last_update: chrono::NaiveDateTime,
 }
 
 impl RemotePrint {
@@ -99,6 +101,7 @@ impl RemotePrint {
 
         self.printers.lock().push(Printer {
             data: response.data.clone(),
+            last_update: chrono::Utc::now().naive_utc(),
         });
 
         services.mqtt.add_future_client(response);
@@ -106,6 +109,17 @@ impl RemotePrint {
         services
             .udp
             .send_to(format!("M66666 {}", services.mqtt_port).as_bytes(), address)?;
+
+        Ok(())
+    }
+
+    pub fn remove_printer(&mut self, index: usize) -> Result<()> {
+        let services = self.services.as_ref().unwrap();
+        let printer = self.printers.lock().remove(index);
+
+        services
+            .mqtt
+            .send_command(&printer.data.attributes.mainboard_id, DisconnectCommand)?;
 
         Ok(())
     }
