@@ -19,6 +19,7 @@ use packets::{
 };
 use parking_lot::{lock_api::MutexGuard, MappedMutexGuard, Mutex};
 use soon::Soon;
+use tracing::{info, warn};
 
 mod misc;
 pub mod packets;
@@ -64,7 +65,7 @@ impl<H: MqttHandler + Send + Sync + 'static> MqttServer<H> {
                     Ok(stream) => stream,
                     Err(e) if e.kind() == ErrorKind::WouldBlock => break,
                     Err(e) => {
-                        eprintln!("Error accepting connection: {:?}", e);
+                        warn!("Error accepting connection: {:?}", e);
                         continue;
                     }
                 };
@@ -74,12 +75,12 @@ impl<H: MqttHandler + Send + Sync + 'static> MqttServer<H> {
                     .lock()
                     .insert(client_id, stream.try_clone().unwrap());
 
-                println!("Connection established: {:?}", stream);
+                info!("Connection established: {:?}", stream);
 
                 let this_self = self.clone();
                 thread::spawn(move || {
                     if let Err(e) = handle_client(this_self, client_id, stream) {
-                        eprintln!("Error handling client: {:?}", e);
+                        warn!("Error handling client: {:?}", e);
                     }
                 });
             }
@@ -159,7 +160,7 @@ where
                 server.remove_client(client_id);
                 break;
             }
-            ty => eprintln!("Unsupported packet type: 0x{ty:x}"),
+            ty => warn!("Unsupported packet type: 0x{ty:x}"),
         }
     }
 

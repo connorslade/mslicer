@@ -10,6 +10,7 @@ use std::{
 use anyhow::Result;
 use parking_lot::{MappedRwLockReadGuard, Mutex, RwLock, RwLockReadGuard};
 use soon::Soon;
+use tracing::{info, trace, warn};
 
 use crate::{
     commands::{Command, CommandTrait, DisconnectCommand},
@@ -56,7 +57,7 @@ impl MqttHandler for Mqtt {
     }
 
     fn on_connect(&self, client_id: u64, _packet: ConnectPacket) -> Result<ConnectAckPacket> {
-        println!("Client `{client_id}` connected");
+        info!("Client `{client_id}` connected");
 
         Ok(ConnectAckPacket {
             flags: ConnectAckFlags::empty(),
@@ -65,7 +66,7 @@ impl MqttHandler for Mqtt {
     }
 
     fn on_subscribe(&self, client_id: u64, packet: SubscribePacket) -> Result<SubscribeAckPacket> {
-        println!(
+        trace!(
             "Client `{client_id}` subscribed to topics: {:?}",
             packet.filters
         );
@@ -81,7 +82,7 @@ impl MqttHandler for Mqtt {
                 })
         {
             if self.clients.read().get(mainboard_id).is_none() {
-                eprintln!("Client `{mainboard_id}` does not exist.");
+                warn!("Client `{mainboard_id}` does not exist.");
                 return Ok(SubscribeAckPacket {
                     packet_id: packet.packet_id,
                     return_codes,
@@ -106,26 +107,27 @@ impl MqttHandler for Mqtt {
     }
 
     fn on_publish(&self, client_id: u64, packet: PublishPacket) -> Result<()> {
-        println!("Client `{client_id}` published to topic `{}`", packet.topic);
+        trace!("Client `{client_id}` published to topic `{}`", packet.topic);
 
         if let Some(board_id) = packet.topic.strip_prefix("/sdcp/status/") {
             let status = serde_json::from_slice::<Response<StatusData>>(&packet.data)?;
-            println!("{:?}", status.data.status);
 
             let clients = self.clients.write();
             let client = clients.get(board_id).unwrap();
             *client.status.lock() = status.data.status;
             client.last_update.store(epoch(), Ordering::Relaxed);
         } else if let Some(board_id) = packet.topic.strip_prefix("/sdcp/response/") {
-            println!("Got command response from `{}`", board_id);
-            println!("{:?}", String::from_utf8_lossy(&packet.data));
+            trace!(
+                "Got command response from `{board_id}`: {}",
+                String::from_utf8_lossy(&packet.data)
+            );
         }
 
         Ok(())
     }
 
     fn on_publish_ack(&self, client_id: u64, packet: PublishAckPacket) -> Result<()> {
-        println!(
+        trace!(
             "Client `{client_id}` acknowledged packet `{}`",
             packet.packet_id
         );
@@ -136,7 +138,7 @@ impl MqttHandler for Mqtt {
         let machine_id = self.client_ids.write().remove(&client_id);
         if let Some(machine_id) = machine_id {
             self.clients.write().remove(&machine_id);
-            println!("Client `{machine_id}` disconnected");
+            info!("Client `{machine_id}` disconnected");
         }
         Ok(())
     }
@@ -169,7 +171,7 @@ impl Mqtt {
         let packet_id = client.next_id();
 
         let Some(client_id) = client.client_id else {
-            eprintln!("Client `{mainboard_id}` is not connected. Command not sent.");
+            warn!("Client `{mainboard_id}` is not connected. Command not sent.");
             return Ok(());
         };
 
@@ -202,7 +204,7 @@ impl Mqtt {
     pub fn add_future_client(&self, response: Response<FullStatusData>) {
         let mainboard_id = &response.data.attributes.mainboard_id;
         if self.clients.read().contains_key(mainboard_id) {
-            println!("Client `{mainboard_id}` already exists.");
+            warn!("Client `{mainboard_id}` already exists.");
             return;
         }
 
@@ -244,12 +246,12 @@ impl Deref for Mqtt {
 impl Drop for Mqtt {
     fn drop(&mut self) {
         for mainboard_id in self.clients.read().keys() {
-            println!("Disconnecting `{mainboard_id}`");
+            info!("Disconnecting `{mainboard_id}`");
             let _ = self.send_command(mainboard_id, DisconnectCommand);
         }
     }
 }
 
 fn epoch() -> i64 {
-    chrono::Utc::now().timestamp() as i64
+    chrono::Utc::now().timestamp()
 }

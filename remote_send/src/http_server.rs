@@ -12,6 +12,7 @@ use afire::{
     trace, Method, Server, Status,
 };
 use parking_lot::RwLock;
+use tracing::info;
 
 pub struct HttpServer {
     inner: Arc<HttpServerInner>,
@@ -60,7 +61,7 @@ impl HttpServer {
 
         server.route(Method::GET, "/{file}", |ctx| {
             let file = ctx.param("file");
-            println!("Sending file `{file}`");
+            info!("Sending file `{file}`");
 
             let state = ctx.app();
             let files = state.files.read();

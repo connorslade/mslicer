@@ -15,5 +15,6 @@ serde_json.workspace = true
 serde_repr.workspace = true
 serde.workspace = true
 soon.workspace = true
+tracing.workspace = true
 
 common = { path = "../common" }

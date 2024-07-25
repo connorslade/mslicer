@@ -5,17 +5,12 @@ use std::{
 };
 
 use anyhow::Result;
-use egui::mutex::RwLock;
-use parking_lot::{MappedRwLockReadGuard, Mutex, MutexGuard};
+use parking_lot::{Mutex, MutexGuard};
 use tracing::info;
 
 use remote_send::{
-    commands::DisconnectCommand,
-    http_server::HttpServer,
-    mqtt::MqttServer,
-    mqtt_server::{Mqtt, MqttClient},
-    status::{Attributes, FullStatusData, Status},
-    Response,
+    commands::DisconnectCommand, http_server::HttpServer, mqtt::MqttServer, mqtt_server::Mqtt,
+    status::FullStatusData, Response,
 };
 
 pub struct RemotePrint {

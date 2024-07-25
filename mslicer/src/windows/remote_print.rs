@@ -1,6 +1,6 @@
 use std::sync::atomic::Ordering;
 
-use chrono::{DateTime, NaiveDateTime, TimeZone, Utc};
+use chrono::DateTime;
 use egui::{vec2, Align, Context, Grid, Layout, ProgressBar, Separator, TextEdit, Ui};
 use remote_send::status::{FileTransferStatus, PrintInfoStatus};
 

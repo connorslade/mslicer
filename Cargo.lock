@@ -3908,6 +3908,7 @@ dependencies = [
  "serde_json",
  "serde_repr",
  "soon",
+ "tracing",
 ]
 
 [[package]]
