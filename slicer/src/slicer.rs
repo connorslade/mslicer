@@ -10,7 +10,6 @@ use common::{
     config::SliceConfig,
     misc::{EncodableLayer, SliceResult},
 };
-use itertools::Itertools;
 use ordered_float::OrderedFloat;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 

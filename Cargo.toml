@@ -20,7 +20,6 @@ egui-phosphor = "0.5.0"
 egui-wgpu = "0.27.2"
 encase = { version = "0.8.0", features = ["nalgebra"] }
 image = "0.25.1"
-itertools = "0.13.0"
 md5 = "0.7.0"
 nalgebra = "0.32.6"
 notify-rust = "4.11.0"

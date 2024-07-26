@@ -97,7 +97,15 @@ impl App {
     }
 
     pub fn slice(&mut self) {
-        if self.meshes.read().is_empty() {
+        let meshes = self
+            .meshes
+            .read()
+            .iter()
+            .filter(|x| !x.hidden)
+            .cloned()
+            .collect::<Vec<_>>();
+
+        if meshes.is_empty() {
             const NO_MODELS_ERROR: &str = "There are no models to slice. Add one by going to File → Open Model or drag and drop a model file into the workspace.";
             self.dialog_builder()
                 .with_title("Slicing Error")
@@ -110,7 +118,7 @@ impl App {
         info!("Starting slicing operation");
 
         let slice_config = self.slice_config.clone();
-        let mut meshes = Vec::new();
+        let mut out = Vec::new();
         let mut preview_scale = f32::MAX;
 
         let mm_to_px = Pos::new(
@@ -119,7 +127,7 @@ impl App {
             1.0,
         );
 
-        for mesh in self.meshes.read().iter().cloned() {
+        for mesh in meshes.into_iter() {
             let mut mesh = mesh.mesh;
 
             mesh.set_scale_unchecked(mesh.scale().component_mul(&mm_to_px));
@@ -141,10 +149,10 @@ impl App {
 
             mesh.update_transformation_matrix();
 
-            meshes.push(mesh);
+            out.push(mesh);
         }
 
-        let slicer = Slicer::new(slice_config, meshes);
+        let slicer = Slicer::new(slice_config, out);
         self.slice_operation
             .replace(SliceOperation::new(slicer.progress()));
 
