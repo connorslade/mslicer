@@ -62,6 +62,10 @@ impl Mesh {
         self.faces().get(index).unwrap()
     }
 
+    pub fn normal(&self, index: usize) -> &Pos {
+        self.normals().get(index).unwrap()
+    }
+
     pub fn vertex_count(&self) -> usize {
         self.vertices().len()
     }
@@ -136,6 +140,11 @@ impl Mesh {
     /// Transforms a point according to the models translation, scale, and rotation.
     pub fn transform(&self, pos: &Pos) -> Pos {
         (self.transformation_matrix * pos.push(1.0)).xyz()
+    }
+
+    /// Transforms a normal according to the models scale and rotation.
+    pub fn transform_normal(&self, normal: &Pos) -> Pos {
+        (self.transformation_matrix * normal.to_homogeneous()).xyz()
     }
 
     /// Undoes the transformation of a point from the models translation, scale, and rotation.

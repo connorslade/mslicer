@@ -53,7 +53,8 @@ impl Segments {
     }
 
     /// Intersects a plane with the mesh this Segments instance was built with.
-    pub fn intersect_plane(&self, mesh: &Mesh, height: f32) -> Vec<Vector3<f32>> {
+    /// Returns a list of line segments along with the direction of the face.
+    pub fn intersect_plane(&self, mesh: &Mesh, height: f32) -> Vec<([Vector3<f32>; 2], bool)> {
         let mut out = Vec::new();
 
         let layer = (height - self.start_height) / self.layer_height;
@@ -62,7 +63,10 @@ impl Segments {
         }
 
         for &face in self.layers[layer as usize].iter() {
-            intersect_triangle(mesh, &self.transformed_points, face, height, &mut out);
+            let segment = intersect_triangle(mesh, &self.transformed_points, face, height);
+            if let Some(segment) = segment {
+                out.push((segment, mesh.transform_normal(mesh.normal(face)).x > 0.0));
+            }
         }
 
         out
@@ -90,8 +94,7 @@ fn intersect_triangle(
     points: &[Vector3<f32>],
     face: usize,
     height: f32,
-    out: &mut Vec<Vector3<f32>>,
-) {
+) -> Option<[Vector3<f32>; 2]> {
     // Get all the vertices of the face
     let face = mesh.face(face);
     let v0 = points[face[0] as usize];
@@ -104,13 +107,17 @@ fn intersect_triangle(
     let (a, b, c) = (v0.z - height, v1.z - height, v2.z - height);
     let (a_pos, b_pos, c_pos) = (a > 0.0, b > 0.0, c > 0.0);
 
+    let mut out = [Vector3::zeros(); 2];
+    let mut n = 0;
+
     // Closure called when the line segment from v0 to v1 is intersecting the
     // plane. t is how far along the line the intersection is and intersections,
     // it well the point that is intersecting with the plane.
     let mut push_intersection = |a: f32, b: f32, v0: Vector3<f32>, v1: Vector3<f32>| {
         let t = a / (a - b);
         let intersection = v0 + t * (v1 - v0);
-        out.push(intersection);
+        out[n] = intersection;
+        n += 1;
     };
 
     // And as you can see my aversion to else blocks now includes if blocks...
@@ -119,4 +126,6 @@ fn intersect_triangle(
     (a_pos ^ b_pos).then(|| push_intersection(a, b, v0, v1));
     (b_pos ^ c_pos).then(|| push_intersection(b, c, v1, v2));
     (c_pos ^ a_pos).then(|| push_intersection(c, a, v2, v0));
+
+    (n == 2).then_some(out)
 }

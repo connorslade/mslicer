@@ -98,15 +98,11 @@ impl Slicer {
                 // model. Because all the faces are triangles, every triangle
                 // intersection will return two points. These can then be
                 // interpreted as line segments making up a polygon.
-                let intersections = self
+                let segments = self
                     .models
                     .iter()
                     .enumerate()
-                    .flat_map(|(idx, mesh)| segments[idx].intersect_plane(mesh, height));
-                let segments = intersections
-                    .chunks(2)
-                    .into_iter()
-                    .map(|mut x| (x.next().unwrap(), x.next().unwrap()))
+                    .flat_map(|(idx, mesh)| segments[idx].intersect_plane(mesh, height))
                     .collect::<Vec<_>>();
 
                 // Creates a new encoded for this layer. Because printers can
@@ -126,26 +122,49 @@ impl Slicer {
                     let yf = y as f32;
                     let mut intersections = segments
                         .iter()
+                        .map(|x| (x.0[0], x.0[1], x.1))
                         // Filtering to only consider segments with one point
                         // above the current row and one point below.
-                        .filter(|&(a, b)| ((a.y > yf) ^ (b.y > yf)))
-                        .map(|(a, b)| {
+                        .filter(|&(a, b, _)| ((a.y > yf) ^ (b.y > yf)))
+                        .map(|(a, b, facing)| {
                             // Get the x position of the line segment at this y
                             let t = (yf - a.y) / (b.y - a.y);
-                            a.x + t * (b.x - a.x)
+                            (a.x + t * (b.x - a.x), facing)
                         })
                         .collect::<Vec<_>>();
 
                     // Sort all these intersections for run-length encoding
-                    intersections.sort_by_key(|&x| OrderedFloat(x));
+                    intersections.sort_by_key(|&(x, _)| OrderedFloat(x));
+
+                    // In order to avoid creating a cavity in the model when
+                    // there is an intersection either by the same mesh or
+                    // another mesh, these intersections are removed. This is
+                    // done by looking at the direction each line segment is
+                    // facing. For example, <- <- -> -> would be reduced to <- ->.
+                    let mut i = 1;
+                    let mut ignore = 0;
+                    while i < intersections.len() {
+                        let (_, last_facing) = intersections[i - 1];
+                        let (_, facing) = intersections[i];
+
+                        if facing == last_facing {
+                            intersections.remove(i);
+                            ignore += 1;
+                        } else if ignore > 0 {
+                            intersections.remove(i);
+                            ignore -= 1;
+                        } else {
+                            i += 1;
+                        }
+                    }
 
                     // Convert the intersections into runs of white pixels to be
                     // encoded into the layer
                     for span in intersections.chunks_exact(2) {
                         let y_offset = (self.slice_config.platform_resolution.x * y) as u64;
 
-                        let a = span[0].round() as u64;
-                        let b = span[1].round() as u64;
+                        let a = span[0].0.round() as u64;
+                        let b = span[1].0.round() as u64;
 
                         let start = a + y_offset;
                         let end = b + y_offset;

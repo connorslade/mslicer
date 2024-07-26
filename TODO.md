@@ -1,9 +1,9 @@
 # Todo
 
 - [ ] Verify slicer on more models
-- [ ] Preprocess mesh to remove self-intersections?
-- [ ] Separate each surface from a mesh before slicing to fix the self intersection problem?
-- [ ] Integrate remote send into ui
+- [x] Preprocess mesh to remove self-intersections?
+- [x] Separate each surface from a mesh before slicing to fix the self intersection problem?
+- [x] Integrate remote send into ui
 - [x] Allow slicing multiple modals at once
 - [x] Fix translation in slicer (its currently moved by pixels not mm)
 - [x] Allow rotating modals
@@ -26,7 +26,7 @@
 - [x] Clamp camera rotations
 - [x] Fix slicing rotated objects
 - [ ] 0-pad slice preview layer display so its width doesn't change as you move the slider
-- [ ] Preload layer 1 in slice preview
+- [x] Preload layer 1 in slice preview
 - [x] Better camera movement (left click to orbit, right click to change orbit point)
 - [ ] Don't crash when slicing an object outside of bounds
 - [x] Add support for loading .obj files
@@ -48,7 +48,6 @@
 - [x] Use egui_dock to get a more clean look
 - [x] Align to bed button
 - [x] Define all crate versions in workspace toml
-- [ ] MQTT commands use refs to strings
 - [ ] Ask for filename when sending to printer
 - [ ] Printer scanning (UDP broadcast)
 - [ ] Verify printer capabilities before uploading / printing
