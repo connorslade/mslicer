@@ -53,7 +53,7 @@ pub struct FpsTracker {
 
 impl App {
     pub fn new(event_collector: EventCollector) -> Self {
-        let mut dock_state = DockState::new(vec![Tab::Viewport]);
+        let mut dock_state = DockState::new(vec![Tab::Viewport, Tab::Logs]);
         let surface = dock_state.main_surface_mut();
         let [_old_node, new_node] = surface.split_left(NodeIndex::root(), 0.20, vec![Tab::Models]);
         let [_old_node, new_node] = surface.split_below(new_node, 0.5, vec![Tab::SliceConfig]);

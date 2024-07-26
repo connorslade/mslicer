@@ -164,7 +164,7 @@ impl Pipeline<WorkspaceRenderCallback> for ModelPipeline {
                 unsafe { &*(model.try_get_buffers().unwrap() as *const RenderedMeshBuffers) };
             render_pass.set_vertex_buffer(0, buffers.vertex_buffer.slice(..));
             render_pass.set_index_buffer(buffers.index_buffer.slice(..), IndexFormat::Uint32);
-            render_pass.draw_indexed(0..(model.mesh.faces.len() as u32 * 3), 0, 0..1);
+            render_pass.draw_indexed(0..(model.mesh.face_count() as u32 * 3), 0, 0..1);
         }
     }
 }

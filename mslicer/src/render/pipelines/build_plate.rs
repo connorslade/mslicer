@@ -152,6 +152,7 @@ impl Pipeline<WorkspaceRenderCallback> for BuildPlatePipeline {
             let vertex = generate_mesh(resources.bed_size, resources.grid_size);
             self.vertex_count = vertex.len() as u32;
             self.last_bed_size = resources.bed_size;
+            self.last_grid_size = resources.grid_size;
 
             self.vertex_buffer = Some(device.create_buffer_init(&BufferInitDescriptor {
                 label: None,

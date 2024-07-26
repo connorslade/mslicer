@@ -31,17 +31,19 @@ pub struct RenderedMeshBuffers {
 
 impl RenderedMesh {
     pub fn from_mesh(mesh: Mesh) -> Self {
-        let mut vertices = Vec::new();
+        let mut out = Vec::new();
 
-        for face in mesh.faces.iter() {
+        let vertices = mesh.vertices();
+        for face in mesh.faces() {
             let (a, b, c) = (
-                mesh.vertices[face[0] as usize],
-                mesh.vertices[face[1] as usize],
-                mesh.vertices[face[2] as usize],
+                vertices[face[0] as usize],
+                vertices[face[1] as usize],
+                vertices[face[2] as usize],
             );
             let normal = (b - a).cross(&(c - a)).normalize();
 
-            vertices.extend_from_slice(&[
+            // todo: use real normals
+            out.extend_from_slice(&[
                 ModelVertex {
                     position: [a.x, a.y, a.z, 1.0],
                     tex_coords: [0.0, 0.0],
@@ -67,7 +69,7 @@ impl RenderedMesh {
             color: Color32::WHITE,
             hidden: false,
             locked_scale: true,
-            vertices,
+            vertices: out,
             buffers: None,
         }
     }
@@ -114,7 +116,7 @@ impl RenderedMesh {
             let index_buffer = device.create_buffer_init(&BufferInitDescriptor {
                 label: None,
                 contents: bytemuck::cast_slice(
-                    &(0..self.mesh.faces.len() as u32 * 3).collect::<Vec<u32>>(),
+                    &(0..self.mesh.face_count() as u32 * 3).collect::<Vec<u32>>(),
                 ),
                 usage: BufferUsages::INDEX | BufferUsages::COPY_DST,
             });

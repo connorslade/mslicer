@@ -5,7 +5,7 @@ use std::{
 
 use anyhow::Result;
 use nalgebra::{Matrix4, Vector3};
-use obj::{Obj, Position};
+use obj::{Obj, Vertex};
 
 use crate::Pos;
 
@@ -13,8 +13,7 @@ use crate::Pos;
 /// and rotated.
 #[derive(Debug, Clone)]
 pub struct Mesh {
-    pub vertices: Arc<Box<[Pos]>>,
-    pub faces: Arc<Box<[[u32; 3]]>>,
+    inner: Arc<MeshInner>,
 
     transformation_matrix: Matrix4<f32>,
     inv_transformation_matrix: Matrix4<f32>,
@@ -24,17 +23,51 @@ pub struct Mesh {
     rotation: Pos,
 }
 
+#[derive(Debug)]
+struct MeshInner {
+    pub vertices: Box<[Vector3<f32>]>,
+    pub faces: Box<[[u32; 3]]>,
+    pub normals: Box<[Vector3<f32>]>,
+}
+
 impl Mesh {
     /// Creates a new mesh from the givin vertices and faces. The
     /// transformations are all 0 by default.
-    pub fn new(mut vertices: Vec<Pos>, faces: Vec<[u32; 3]>) -> Self {
+    pub fn new(mut vertices: Vec<Pos>, faces: Vec<[u32; 3]>, normals: Vec<Pos>) -> Self {
         center_vertices(&mut vertices);
 
         Self {
-            vertices: Arc::new(vertices.into_boxed_slice()),
-            faces: Arc::new(faces.into_boxed_slice()),
+            inner: Arc::new(MeshInner {
+                vertices: vertices.into_boxed_slice(),
+                faces: faces.into_boxed_slice(),
+                normals: normals.into_boxed_slice(),
+            }),
             ..Default::default()
         }
+    }
+
+    pub fn vertices(&self) -> &[Pos] {
+        self.inner.vertices.as_ref()
+    }
+
+    pub fn faces(&self) -> &[[u32; 3]] {
+        self.inner.faces.as_ref()
+    }
+
+    pub fn normals(&self) -> &[Pos] {
+        self.inner.normals.as_ref()
+    }
+
+    pub fn face(&self, index: usize) -> &[u32; 3] {
+        self.faces().get(index).unwrap()
+    }
+
+    pub fn vertex_count(&self) -> usize {
+        self.vertices().len()
+    }
+
+    pub fn face_count(&self) -> usize {
+        self.faces().len()
     }
 
     /// Intersect the mesh with a plane with linier time complexity. You
@@ -48,11 +81,12 @@ impl Mesh {
 
         let mut out = Vec::new();
 
-        for face in self.faces.iter() {
+        let vertices = self.vertices();
+        for face in self.faces() {
             // Get the vertices of the face
-            let v0 = self.vertices[face[0] as usize];
-            let v1 = self.vertices[face[1] as usize];
-            let v2 = self.vertices[face[2] as usize];
+            let v0 = vertices[face[0] as usize];
+            let v1 = vertices[face[1] as usize];
+            let v2 = vertices[face[2] as usize];
 
             // By subtracting the position of the plane and doting it with the
             // normal, we get a value that is positive if the point is above the
@@ -112,7 +146,7 @@ impl Mesh {
     /// Get the minimum and maximum of each component of every vertex in the
     /// model. These points define the bounding box of the model.
     pub fn minmax_point(&self) -> (Pos, Pos) {
-        minmax_vertices(&self.vertices, &self.transformation_matrix)
+        minmax_vertices(self.vertices(), &self.transformation_matrix)
     }
 }
 
@@ -195,39 +229,54 @@ pub fn load_mesh<T: BufRead + Seek>(reader: &mut T, format: &str) -> Result<Mesh
     Ok(match format.as_str() {
         "stl" => {
             let model = stl_io::read_stl(reader)?;
-            Mesh::new(
-                model
-                    .vertices
-                    .iter()
-                    .map(|v| Pos::new(v[0], v[1], v[2]))
-                    .collect(),
-                model
-                    .faces
-                    .iter()
-                    .map(|f| {
-                        [
-                            f.vertices[0] as u32,
-                            f.vertices[1] as u32,
-                            f.vertices[2] as u32,
-                        ]
-                    })
-                    .collect(),
-            )
+            let vertices = model
+                .vertices
+                .iter()
+                .map(|v| Pos::new(v[0], v[1], v[2]))
+                .collect();
+            let faces = model
+                .faces
+                .iter()
+                .map(|f| {
+                    [
+                        f.vertices[0] as u32,
+                        f.vertices[1] as u32,
+                        f.vertices[2] as u32,
+                    ]
+                })
+                .collect();
+            let normals = model
+                .faces
+                .iter()
+                .map(|f| Vector3::new(f.normal[0], f.normal[1], f.normal[2]))
+                .collect();
+            Mesh::new(vertices, faces, normals)
         }
         "obj" | "mtl" => {
-            let model: Obj<Position> = obj::load_obj(reader)?;
-            Mesh::new(
-                model
-                    .vertices
-                    .iter()
-                    .map(|v| Pos::new(v.position[0], v.position[1], v.position[2]))
-                    .collect(),
-                model
-                    .indices
-                    .chunks_exact(3)
-                    .map(|i| [i[0] as u32, i[1] as u32, i[2] as u32])
-                    .collect(),
-            )
+            let model: Obj<Vertex> = obj::load_obj(reader)?;
+            let vertices = model
+                .vertices
+                .iter()
+                .map(|v| Pos::new(v.position[0], v.position[1], v.position[2]))
+                .collect();
+            let faces = model
+                .indices
+                .chunks_exact(3)
+                .map(|i| [i[0] as u32, i[1] as u32, i[2] as u32])
+                .collect::<Vec<_>>();
+            let normals = faces
+                .iter()
+                .map(|face| {
+                    let n1 = model.vertices[face[0] as usize].normal;
+                    let n2 = model.vertices[face[1] as usize].normal;
+                    let n3 = model.vertices[face[2] as usize].normal;
+                    let normal = Vector3::new(n1[0], n1[1], n1[2])
+                        + Vector3::new(n2[0], n2[1], n2[2])
+                        + Vector3::new(n3[0], n3[1], n3[2]);
+                    normal.normalize()
+                })
+                .collect();
+            Mesh::new(vertices, faces, normals)
         }
         _ => return Err(anyhow::anyhow!("Unsupported format: {}", format)),
     })
@@ -236,8 +285,11 @@ pub fn load_mesh<T: BufRead + Seek>(reader: &mut T, format: &str) -> Result<Mesh
 impl Default for Mesh {
     fn default() -> Self {
         Self {
-            vertices: Default::default(),
-            faces: Default::default(),
+            inner: Arc::new(MeshInner {
+                vertices: Box::new([]),
+                faces: Box::new([]),
+                normals: Box::new([]),
+            }),
 
             transformation_matrix: Matrix4::identity(),
             inv_transformation_matrix: Matrix4::identity(),

@@ -59,8 +59,8 @@ fn main() -> Result<()> {
 
     println!(
         "Loaded mesh. {{ vert: {}, face: {} }}",
-        mesh.vertices.len(),
-        mesh.faces.len()
+        mesh.vertex_count(),
+        mesh.face_count()
     );
 
     // Actually slice it on another thread (the slicing is multithreaded)

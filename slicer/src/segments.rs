@@ -21,7 +21,7 @@ impl Segments {
 
         // Caching transformed points makes slicing faster.
         let transformed_points = mesh
-            .vertices
+            .vertices()
             .iter()
             .map(|x| mesh.transform(x))
             .collect::<Vec<_>>();
@@ -31,7 +31,7 @@ impl Segments {
         let mut layers = vec![Vec::new(); layer_count + 1];
 
         // Adds the index of each face into all of the segments it covers.
-        for face in 0..mesh.faces.len() {
+        for face in 0..mesh.face_count() {
             let (min_height, max_height) = minmax_triangle_height(mesh, &transformed_points, face);
             let (min_layer, max_layer) = (
                 ((min_height - min.z) / layer_height) as usize,
@@ -71,7 +71,7 @@ impl Segments {
 
 /// Gets the min and max heights of the vertices of a face.
 fn minmax_triangle_height(mesh: &Mesh, points: &[Vector3<f32>], triangle: usize) -> (f32, f32) {
-    let triangle = mesh.faces[triangle];
+    let triangle = mesh.faces()[triangle];
     let heights = (
         points[triangle[0] as usize].z,
         points[triangle[1] as usize].z,
@@ -93,7 +93,7 @@ fn intersect_triangle(
     out: &mut Vec<Vector3<f32>>,
 ) {
     // Get all the vertices of the face
-    let face = mesh.faces[face];
+    let face = mesh.face(face);
     let v0 = points[face[0] as usize];
     let v1 = points[face[1] as usize];
     let v2 = points[face[2] as usize];

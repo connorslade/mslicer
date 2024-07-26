@@ -38,7 +38,7 @@ pub fn ui(app: &mut App, ctx: &Context) {
                                 return;
                             }
                         };
-                        info!("Loaded model `{name}` with {} faces", model.faces.len());
+                        info!("Loaded model `{name}` with {} faces", model.face_count());
 
                         app.meshes.write().push(
                             RenderedMesh::from_mesh(model)

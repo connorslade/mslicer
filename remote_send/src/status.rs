@@ -95,6 +95,7 @@ pub enum PrintInfoStatus {
     Lowering = 2,
     Exposure = 3,
     Retracting = 4,
+    FinalRetract = 12,
     Complete = 16,
 }
 

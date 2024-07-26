@@ -121,11 +121,11 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                     ui.end_row();
 
                     ui.label("Vertices");
-                    ui.monospace(mesh.mesh.vertices.len().to_string());
+                    ui.monospace(mesh.mesh.vertex_count().to_string());
                     ui.end_row();
 
                     ui.label("Triangles");
-                    ui.monospace(mesh.mesh.faces.len().to_string());
+                    ui.monospace(mesh.mesh.face_count().to_string());
                     ui.end_row();
                 });
         }

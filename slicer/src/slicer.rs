@@ -41,7 +41,7 @@ impl Slicer {
     /// Creates a new slicer given a slice config and list of models.
     pub fn new(slice_config: SliceConfig, models: Vec<Mesh>) -> Self {
         let max = models.iter().fold(Pos::zeros(), |max, model| {
-            let f = model.vertices.iter().fold(Pos::zeros(), |max, &f| {
+            let f = model.vertices().iter().fold(Pos::zeros(), |max, &f| {
                 let f = model.transform(&f);
                 Pos::new(max.x.max(f.x), max.y.max(f.y), max.z.max(f.z))
             });
