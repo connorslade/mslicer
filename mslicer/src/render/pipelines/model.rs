@@ -1,12 +1,14 @@
+use egui::epaint::util::OrderedFloat;
 use egui_wgpu::ScreenDescriptor;
 use encase::{ShaderType, UniformBuffer};
 use nalgebra::{Matrix4, Vector3, Vector4};
 use wgpu::{
     util::{BufferInitDescriptor, DeviceExt},
-    BindGroup, BindGroupEntry, BindGroupLayout, BufferUsages, ColorTargetState, ColorWrites,
-    CommandEncoder, CompareFunction, DepthStencilState, Device, FragmentState, IndexFormat,
-    MultisampleState, PipelineLayoutDescriptor, PrimitiveState, Queue, RenderPass, RenderPipeline,
-    RenderPipelineDescriptor, ShaderModuleDescriptor, ShaderSource, TextureFormat, VertexState,
+    BindGroup, BindGroupEntry, BindGroupLayout, BlendState, BufferUsages, ColorTargetState,
+    ColorWrites, CommandEncoder, CompareFunction, DepthStencilState, Device, FragmentState,
+    IndexFormat, MultisampleState, PipelineLayoutDescriptor, PrimitiveState, Queue, RenderPass,
+    RenderPipeline, RenderPipelineDescriptor, ShaderModuleDescriptor, ShaderSource, TextureFormat,
+    VertexState,
 };
 
 use crate::{
@@ -69,7 +71,7 @@ impl ModelPipeline {
                 entry_point: "frag",
                 targets: &[Some(ColorTargetState {
                     format: TEXTURE_FORMAT,
-                    blend: None,
+                    blend: Some(BlendState::ALPHA_BLENDING),
                     write_mask: ColorWrites::all(),
                 })],
             }),
@@ -156,7 +158,24 @@ impl Pipeline<WorkspaceRenderCallback> for ModelPipeline {
         render_pass.set_pipeline(&self.render_pipeline);
 
         let models = resources.models.read();
-        for (idx, model) in models.iter().enumerate().filter(|(_, x)| !x.hidden) {
+        let mut indexes = models
+            .iter()
+            .enumerate()
+            .filter(|(_, x)| !x.hidden)
+            .map(|(idx, _)| idx)
+            .collect::<Vec<_>>();
+
+        // todo: cache order and dont use when no translucent objects
+        let camera = resources.camera.position();
+        indexes.sort_by_cached_key(|&idx| {
+            let model_center = models[idx].mesh.position();
+            let distance = (camera - model_center).magnitude();
+            OrderedFloat::from(-distance)
+        });
+
+        for idx in indexes {
+            let model = &models[idx];
+
             render_pass.set_bind_group(0, &self.bind_groups[idx], &[]);
 
             // SAFETY: im really tired and i dont care anymore
