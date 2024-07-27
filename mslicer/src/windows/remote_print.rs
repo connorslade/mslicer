@@ -5,6 +5,7 @@ use common::misc::human_duration;
 use egui::{
     vec2, Align, Context, DragValue, Grid, Layout, ProgressBar, Separator, Spinner, TextEdit, Ui,
 };
+use egui_modal::Icon;
 use notify_rust::Notification;
 use remote_send::status::{FileTransferStatus, PrintInfoStatus};
 
@@ -218,10 +219,24 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
 
                     ui.add_sized(vec2(2.0, height), Separator::default());
                     if ui.button("Connect").clicked() {
-                        app.state.remote_print_connecting = RemotePrintConnectStatus::Connecting;
-                        app.remote_print
+                        if app
+                            .remote_print
                             .add_printer(&app.state.working_address)
-                            .unwrap();
+                            .is_err()
+                        {
+                            app.dialog_builder()
+                                .with_title("Remote Print Error")
+                                .with_body(format!(
+                                    "The entered address `{}` is invalid.",
+                                    app.state.working_address,
+                                ))
+                                .with_icon(Icon::Error)
+                                .open();
+                            app.state.working_address.clear();
+                        } else {
+                            app.state.remote_print_connecting =
+                                RemotePrintConnectStatus::Connecting;
+                        }
                     }
 
                     ui.add_sized(
