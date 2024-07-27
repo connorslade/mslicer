@@ -33,16 +33,15 @@ impl RenderedMesh {
     pub fn from_mesh(mesh: Mesh) -> Self {
         let mut out = Vec::new();
 
-        let vertices = mesh.vertices();
-        for face in mesh.faces() {
+        let (vertices, normals) = (mesh.vertices(), mesh.normals());
+        for (i, face) in mesh.faces().iter().enumerate() {
             let (a, b, c) = (
                 vertices[face[0] as usize],
                 vertices[face[1] as usize],
                 vertices[face[2] as usize],
             );
-            let normal = (b - a).cross(&(c - a)).normalize();
+            let normal = normals[i];
 
-            // todo: use real normals
             out.extend_from_slice(&[
                 ModelVertex {
                     position: [a.x, a.y, a.z, 1.0],

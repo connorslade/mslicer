@@ -2,10 +2,12 @@ use std::{sync::atomic::Ordering, time::Duration};
 
 use chrono::DateTime;
 use common::misc::human_duration;
+use const_format::concatcp;
 use egui::{
     vec2, Align, Context, DragValue, Grid, Layout, ProgressBar, Separator, Spinner, TextEdit, Ui,
 };
 use egui_modal::Icon;
+use egui_phosphor::regular::{NETWORK, PLUGS, TRASH_SIMPLE, UPLOAD_SIMPLE};
 use notify_rust::Notification;
 use remote_send::status::{FileTransferStatus, PrintInfoStatus};
 
@@ -55,9 +57,12 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                     });
 
                     ui.with_layout(Layout::right_to_left(Align::Min), |ui| {
-                        if ui.button("🗑 Delete").clicked() {
+                        if ui.button(concatcp!(TRASH_SIMPLE, " Delete")).clicked() {
                             action = Action::Remove(i);
                         }
+
+                        if ui.button(concatcp!(UPLOAD_SIMPLE, " Upload")).clicked() {}
+
                         ui.add_space(ui.available_width());
                     })
                 },
@@ -209,7 +214,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
             app.state.remote_print_connecting == RemotePrintConnectStatus::None,
             |ui| {
                 ui.with_layout(Layout::right_to_left(Align::Min), |ui| {
-                    let scan = ui.button("Scan");
+                    let scan = ui.button(concatcp!(NETWORK, " Scan"));
                     let height = scan.rect.height();
                     if scan.clicked() {
                         app.state.remote_print_connecting = RemotePrintConnectStatus::Scanning;
@@ -218,7 +223,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                     }
 
                     ui.add_sized(vec2(2.0, height), Separator::default());
-                    if ui.button("Connect").clicked() {
+                    if ui.button(concatcp!(PLUGS, " Connect")).clicked() {
                         if app
                             .remote_print
                             .add_printer(&app.state.working_address)

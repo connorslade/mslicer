@@ -65,3 +65,4 @@
 - [ ] Dont repaint if nothing changes
 - [ ] Allow changing broadcast address
 - [ ] Split up remote_print module
+- [ ] Actually init remote print at startup if requested
