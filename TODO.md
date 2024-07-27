@@ -53,7 +53,7 @@
 - [ ] Verify printer capabilities before uploading / printing
 - [ ] Move remote print module to remote send?
 - [ ] Add some optional alert sound for print completion
-- [ ] Create config struct thats saved / loaded on shutdown / startup
+- [x] Create config struct thats saved / loaded on shutdown / startup
 - [ ] Publish goo_format crate
 - [ ] Allow uploading / printing a local .goo file
 - [x] Load normals from model files

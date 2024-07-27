@@ -11,7 +11,8 @@ chrono = "0.4.38"
 clone-macro = "0.1.0"
 const_format = "0.2.32"
 criterion = "0.5.1"
-eframe = { version = "0.27.2", features = ["wgpu"] }
+dirs = "5.0.1"
+eframe = { version = "0.27.2", features = ["wgpu", "serde"] }
 egui = "0.27.2"
 egui_dock = "0.12.0"
 egui_tracing = "0.2.2"
@@ -35,6 +36,7 @@ serde_json = "1.0.120"
 serde_repr = "0.1.19"
 soon = { git = "https://github.com/connorslade/misc" }
 stl_io = "0.7.0"
+toml = "0.8.16"
 tracing = "0.1.40"
 tracing-subscriber = "0.3.18"
 wgpu = "0.19.4"

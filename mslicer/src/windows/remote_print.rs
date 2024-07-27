@@ -8,7 +8,7 @@ use egui::{
 use notify_rust::Notification;
 use remote_send::status::{FileTransferStatus, PrintInfoStatus};
 
-use crate::app::{App, RemotePrintConnectStatus};
+use crate::{app::App, ui_state::RemotePrintConnectStatus};
 
 enum Action {
     None,
@@ -212,7 +212,8 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                     let height = scan.rect.height();
                     if scan.clicked() {
                         app.state.remote_print_connecting = RemotePrintConnectStatus::Scanning;
-                        app.remote_print.scan_for_printers();
+                        app.remote_print
+                            .scan_for_printers(app.config.network_broadcast_address);
                     }
 
                     ui.add_sized(vec2(2.0, height), Separator::default());

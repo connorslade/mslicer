@@ -1,7 +1,8 @@
-use std::{sync::Arc, thread, time::Instant};
+use std::{path::PathBuf, sync::Arc, thread, time::Instant};
 
 use clone_macro::clone;
 use eframe::Theme;
+use egui::Visuals;
 use egui_dock::{DockState, NodeIndex};
 use egui_modal::{DialogBuilder, Icon, Modal};
 use egui_tracing::EventCollector;
@@ -9,12 +10,14 @@ use image::imageops::FilterType;
 use nalgebra::{Vector2, Vector3};
 use parking_lot::RwLock;
 use slicer::{slicer::Slicer, Pos};
-use tracing::info;
+use tracing::{info, warn};
 
 use crate::{
+    config::Config,
     remote_print::RemotePrint,
-    render::{camera::Camera, pipelines::model::RenderStyle, rendered_mesh::RenderedMesh},
+    render::{camera::Camera, rendered_mesh::RenderedMesh},
     slice_operation::{SliceOperation, SliceResult},
+    ui_state::UiState,
     windows::{self, Tab},
 };
 use common::config::{ExposureConfig, SliceConfig};
@@ -33,31 +36,7 @@ pub struct App {
     pub meshes: Arc<RwLock<Vec<RenderedMesh>>>,
     pub slice_operation: Option<SliceOperation>,
     pub remote_print: RemotePrint,
-}
-
-#[derive(Default)]
-pub struct UiState {
-    pub event_collector: EventCollector,
-    pub working_address: String,
-    pub send_print_completion: bool,
-    pub remote_print_connecting: RemotePrintConnectStatus,
-}
-
-#[derive(Default, PartialEq, Eq)]
-pub enum RemotePrintConnectStatus {
-    #[default]
-    None,
-    Connecting,
-    Scanning,
-}
-
-pub struct Config {
-    pub render_style: RenderStyle,
-    pub grid_size: f32,
-    pub theme: Theme,
-    pub alert_print_completion: bool,
-    pub init_remote_print_at_startup: bool,
-    pub network_timeout: f32,
+    pub config_dir: PathBuf,
 }
 
 pub struct FpsTracker {
@@ -73,6 +52,15 @@ impl App {
         let [_old_node, new_node] = surface.split_below(new_node, 0.5, vec![Tab::SliceConfig]);
         surface.split_below(new_node, 0.5, vec![Tab::Workspace, Tab::RemotePrint]);
 
+        let config_dir = dirs::config_dir().unwrap().join("mslicer");
+        let config = match Config::load(&config_dir) {
+            Ok(config) => config,
+            Err(err) => {
+                warn!("Failed to load config, using defaults: {}", err);
+                Config::default()
+            }
+        };
+
         Self {
             dock_state,
             modal: None,
@@ -80,14 +68,7 @@ impl App {
                 event_collector,
                 ..Default::default()
             },
-            config: Config {
-                render_style: RenderStyle::Rended,
-                theme: Theme::Dark,
-                grid_size: 12.16,
-                alert_print_completion: false,
-                init_remote_print_at_startup: false,
-                network_timeout: 5.0,
-            },
+            config,
             camera: Camera::default(),
             slice_config: SliceConfig {
                 platform_resolution: Vector2::new(11_520, 5_120),
@@ -108,6 +89,7 @@ impl App {
             meshes: Arc::new(RwLock::new(Vec::new())),
             slice_operation: None,
             remote_print: RemotePrint::uninitialized(),
+            config_dir,
         }
     }
 
@@ -205,14 +187,29 @@ impl eframe::App for App {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         ctx.request_repaint();
         self.fps.update();
-        self.remote_print.tick(&mut self.modal, &mut self.state);
+
+        match self.config.theme {
+            Theme::Dark => ctx.set_visuals(Visuals::dark()),
+            Theme::Light => ctx.set_visuals(Visuals::light()),
+        }
 
         match &mut self.modal {
             Some(modal) => modal.show_dialog(),
             None => self.modal = Some(Modal::new(ctx, "modal")),
         }
 
+        self.remote_print.tick(&mut self.modal, &mut self.state);
         windows::ui(self, ctx);
+    }
+}
+
+impl Drop for App {
+    fn drop(&mut self) {
+        if let Err(err) = self.config.save(&self.config_dir) {
+            warn!("Failed to save config: {}", err);
+            return;
+        }
+        info!("Successfully saved config");
     }
 }
 

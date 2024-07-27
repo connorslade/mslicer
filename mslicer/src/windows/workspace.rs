@@ -1,5 +1,5 @@
 use eframe::Theme;
-use egui::{ComboBox, Context, Ui, Visuals};
+use egui::{ComboBox, Context, Ui};
 
 use crate::{
     app::App,
@@ -7,7 +7,7 @@ use crate::{
     render::pipelines::model::RenderStyle,
 };
 
-pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
+pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     ComboBox::new("render_style", "Render Style")
         .selected_text(app.config.render_style.name())
         .show_ui(ui, |ui| {
@@ -19,7 +19,6 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
             ui.selectable_value(&mut app.config.render_style, RenderStyle::Rended, "Rended");
         });
 
-    let last_theme = app.config.theme;
     ComboBox::new("theme", "Theme")
         .selected_text(match app.config.theme {
             Theme::Dark => "Dark",
@@ -29,13 +28,6 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
             ui.selectable_value(&mut app.config.theme, Theme::Dark, "Dark");
             ui.selectable_value(&mut app.config.theme, Theme::Light, "Light");
         });
-
-    if last_theme != app.config.theme {
-        match app.config.theme {
-            Theme::Dark => ctx.set_visuals(Visuals::dark()),
-            Theme::Light => ctx.set_visuals(Visuals::light()),
-        }
-    }
 
     dragger(ui, "Grid Size", &mut app.config.grid_size, |x| x.speed(0.1));
 

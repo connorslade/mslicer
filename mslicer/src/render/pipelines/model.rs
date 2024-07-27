@@ -2,6 +2,7 @@ use egui::epaint::util::OrderedFloat;
 use egui_wgpu::ScreenDescriptor;
 use encase::{ShaderType, UniformBuffer};
 use nalgebra::{Matrix4, Vector3, Vector4};
+use serde::{Deserialize, Serialize};
 use wgpu::{
     util::{BufferInitDescriptor, DeviceExt},
     BindGroup, BindGroupEntry, BindGroupLayout, BlendState, BufferUsages, ColorTargetState,
@@ -39,7 +40,7 @@ struct ModelUniforms {
     render_style: u32,
 }
 
-#[derive(Copy, Clone, PartialEq, Eq)]
+#[derive(Copy, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[repr(u8)]
 pub enum RenderStyle {
     Normals,

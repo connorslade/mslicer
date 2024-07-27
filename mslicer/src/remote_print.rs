@@ -1,6 +1,6 @@
 use std::{
     io::ErrorKind,
-    net::{IpAddr, Ipv4Addr, SocketAddr, TcpListener, UdpSocket},
+    net::{IpAddr, SocketAddr, TcpListener, UdpSocket},
     str::FromStr,
     sync::Arc,
     thread::{self, JoinHandle},
@@ -23,7 +23,7 @@ use remote_send::{
     Response,
 };
 
-use crate::app::{RemotePrintConnectStatus, UiState};
+use crate::ui_state::{RemotePrintConnectStatus, UiState};
 
 pub struct RemotePrint {
     services: Option<Arc<Services>>,
@@ -157,12 +157,12 @@ impl RemotePrint {
         Ok(())
     }
 
-    pub fn scan_for_printers(&mut self) {
+    pub fn scan_for_printers(&mut self, broadcast: IpAddr) {
         self.jobs.push(AsyncJob::new(
             thread::spawn(clone!(
                 [{ self.printers } as printers, { self.services } as services],
                 move || {
-                    scan_for_printers(services.unwrap(), printers)
+                    scan_for_printers(services.unwrap(), printers, broadcast)
                         .context("Error scanning for printers.")
                 }
             )),
@@ -254,13 +254,15 @@ fn add_printer(
     Ok(())
 }
 
-fn scan_for_printers(services: Arc<Services>, printers: Arc<Mutex<Vec<Printer>>>) -> Result<()> {
-    const BROADCAST: IpAddr = IpAddr::V4(Ipv4Addr::new(192, 168, 1, 255));
-
-    info!("Scanning for printers on {BROADCAST}");
+fn scan_for_printers(
+    services: Arc<Services>,
+    printers: Arc<Mutex<Vec<Printer>>>,
+    broadcast: IpAddr,
+) -> Result<()> {
+    info!("Scanning for printers on {broadcast}");
     services
         .udp
-        .send_to(b"M99999", SocketAddr::new(BROADCAST, 3000))?;
+        .send_to(b"M99999", SocketAddr::new(broadcast, 3000))?;
 
     let mut buffer = [0; 1024];
     loop {
