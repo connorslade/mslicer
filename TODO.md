@@ -57,3 +57,5 @@
 - [ ] Publish goo_format crate
 - [ ] Allow uploading / printing a local .goo file
 - [x] Load normals from model files
+- [ ] Fix camera movement
+- [ ] Optionally proxy printer state over http (api and sse)

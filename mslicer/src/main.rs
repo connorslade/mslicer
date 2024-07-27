@@ -6,7 +6,7 @@ use egui::{FontDefinitions, IconData, Vec2, ViewportBuilder};
 use egui_wgpu::WgpuConfiguration;
 use tracing::level_filters::LevelFilter;
 use tracing_subscriber::{filter, layer::SubscriberExt, util::SubscriberInitExt};
-use wgpu::{DeviceDescriptor, Features, TextureFormat};
+use wgpu::{DeviceDescriptor, Features, Limits, TextureFormat};
 
 const TEXTURE_FORMAT: TextureFormat = TextureFormat::Bgra8Unorm;
 
@@ -50,8 +50,12 @@ fn main() -> Result<()> {
             multisampling: 4,
             wgpu_options: WgpuConfiguration {
                 device_descriptor: Arc::new(|_adapter| DeviceDescriptor {
+                    label: None,
                     required_features: Features::POLYGON_MODE_LINE,
-                    ..Default::default()
+                    required_limits: Limits {
+                        max_buffer_size: 512 << 20,
+                        ..Limits::default()
+                    },
                 }),
                 ..Default::default()
             },

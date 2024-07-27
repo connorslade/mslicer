@@ -35,9 +35,11 @@ impl Camera {
         }
 
         if response.dragged_by(PointerButton::Secondary) {
-            let facing = self.position().neg().normalize();
+            let facing = Vector3::new(self.angle.x.sin(), self.angle.x.cos(), self.angle.y.tan())
+                .normalize()
+                .neg();
             self.target -= facing.cross(&Vector3::z_axis()) * drag_delta.x;
-            self.target += facing.cross(&Vector3::x_axis()) * drag_delta.y;
+            self.target -= facing.cross(&Vector3::x_axis()) * drag_delta.y;
         }
 
         if response.hovered() {

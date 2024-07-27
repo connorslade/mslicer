@@ -46,7 +46,7 @@ fn frag(in: VertexOutput) -> @location(0) vec4<f32> {
         let reflect_dir = reflect(-camera_direction, in.normal);
         let specular = pow(max(dot(camera_direction, reflect_dir), 0.0), 32.0);
 
-        let intensity = (diffuse + specular + 0.03) * context.model_color.rgb;
+        let intensity = (diffuse + specular + 0.1) * context.model_color.rgb;
         return vec4<f32>(intensity, context.model_color.a);
     }
 }

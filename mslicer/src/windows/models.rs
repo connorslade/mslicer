@@ -1,6 +1,6 @@
 use const_format::concatcp;
 use egui::{Context, Grid, Id, Ui};
-use egui_phosphor::regular::DICE_THREE;
+use egui_phosphor::regular::{DICE_THREE, EYE, EYE_SLASH};
 use slicer::Pos;
 
 use crate::{
@@ -36,7 +36,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                 ui.data_mut(|map| map.insert_temp(id, !open));
             }
             mesh.hidden ^= ui
-                .button(if mesh.hidden { "🗙" } else { "👁" })
+                .button(if mesh.hidden { EYE_SLASH } else { EYE })
                 .on_hover_text(if mesh.hidden { "Show" } else { "Hide" })
                 .clicked();
 
