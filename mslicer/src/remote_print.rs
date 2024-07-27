@@ -2,10 +2,14 @@ use std::{
     net::{IpAddr, SocketAddr, TcpListener, UdpSocket},
     str::FromStr,
     sync::Arc,
+    thread::{self, JoinHandle},
+    time::Duration,
 };
 
-use anyhow::Result;
+use anyhow::{Context, Result};
+use clone_macro::clone;
 use common::misc::random_string;
+use egui_modal::{Icon, Modal};
 use parking_lot::{Mutex, MutexGuard};
 use tracing::info;
 
@@ -18,9 +22,12 @@ use remote_send::{
     Response,
 };
 
+use crate::app::UiState;
+
 pub struct RemotePrint {
-    services: Option<Services>,
+    services: Option<Arc<Services>>,
     printers: Arc<Mutex<Vec<Printer>>>,
+    jobs: Vec<AsyncJob>,
 }
 
 struct Services {
@@ -37,11 +44,17 @@ pub struct Printer {
     pub mainboard_id: String,
 }
 
+struct AsyncJob {
+    handle: JoinHandle<Result<()>>,
+    action: Box<dyn FnOnce(&mut UiState)>,
+}
+
 impl RemotePrint {
     pub fn uninitialized() -> Self {
         Self {
             services: None,
             printers: Arc::new(Mutex::new(Vec::new())),
+            jobs: Vec::new(),
         }
     }
 
@@ -55,6 +68,11 @@ impl RemotePrint {
 
     pub fn mqtt(&self) -> &Mqtt {
         &self.services.as_ref().unwrap().mqtt
+    }
+
+    pub fn set_network_timeout(&self, timeout: Duration) {
+        let services = self.services.as_ref().unwrap();
+        services.udp.set_read_timeout(Some(timeout)).unwrap();
     }
 
     pub fn init(&mut self) -> Result<()> {
@@ -75,7 +93,7 @@ impl RemotePrint {
 
         info!("Binds: {{ UDP: {_udp_port}, MQTT: {mqtt_port}, HTTP: {http_port} }}");
 
-        self.services = Some(Services {
+        self.services = Some(Arc::new(Services {
             mqtt,
             http,
             udp,
@@ -83,39 +101,56 @@ impl RemotePrint {
             mqtt_port,
             http_port,
             _udp_port,
-        });
+        }));
 
         Ok(())
     }
 
-    // todo: async
-    pub fn add_printer(&mut self, address: &str) -> Result<()> {
-        let services = self.services.as_ref().unwrap();
+    pub fn tick(&mut self, modal: &mut Option<Modal>, ui_state: &mut UiState) {
+        let mut dialog_builder = || modal.as_mut().unwrap().dialog();
 
+        let mut i = 0;
+        while i < self.jobs.len() {
+            if self.jobs[i].is_finished() {
+                let AsyncJob { handle, action } = self.jobs.remove(i);
+                action(ui_state);
+                if let Err(e) = handle.join().unwrap() {
+                    let mut body = String::new();
+                    for link in e.chain() {
+                        body.push_str(&link.to_string());
+                        body.push(' ');
+                    }
+
+                    dialog_builder()
+                        .with_title("Remote Print Error")
+                        .with_body(&body[..body.len() - 1])
+                        .with_icon(Icon::Error)
+                        .open();
+                }
+                continue;
+            }
+
+            i += 1;
+        }
+    }
+
+    pub fn add_printer(&mut self, address: &str) -> Result<()> {
         let address = IpAddr::from_str(address)?;
         let address = SocketAddr::new(address, 3000);
 
-        services.udp.send_to(b"M99999", address)?;
-
-        let mut buffer = [0; 1024];
-        let (len, _addr) = services.udp.recv_from(&mut buffer)?;
-
-        let received = String::from_utf8_lossy(&buffer[..len]);
-        let response = serde_json::from_str::<Response<FullStatusData>>(&received)?;
-        info!(
-            "Got status from `{}`",
-            response.data.attributes.machine_name
-        );
-
-        self.printers.lock().push(Printer {
-            mainboard_id: response.data.attributes.mainboard_id.clone(),
-        });
-
-        services.mqtt.add_future_client(response);
-
-        services
-            .udp
-            .send_to(format!("M66666 {}", services.mqtt_port).as_bytes(), address)?;
+        self.jobs.push(AsyncJob::new(
+            thread::spawn(clone!(
+                [{ self.printers } as printers, { self.services } as services],
+                move || {
+                    add_printer(services.unwrap(), printers, address)
+                        .with_context(|| format!("Error adding printer at {}.", address.ip()))
+                }
+            )),
+            |ui_state| {
+                ui_state.remote_print_connecting = false;
+                ui_state.working_address.clear();
+            },
+        ));
 
         Ok(())
     }
@@ -164,4 +199,53 @@ impl RemotePrint {
 
         Ok(())
     }
+}
+
+impl AsyncJob {
+    fn new(handle: JoinHandle<Result<()>>, action: impl FnOnce(&mut UiState) + 'static) -> Self {
+        Self {
+            handle,
+            action: Box::new(action),
+        }
+    }
+
+    fn is_finished(&self) -> bool {
+        self.handle.is_finished()
+    }
+}
+
+fn add_printer(
+    services: Arc<Services>,
+    printers: Arc<Mutex<Vec<Printer>>>,
+    address: SocketAddr,
+) -> Result<()> {
+    services.udp.send_to(b"M99999", address)?;
+
+    let mut buffer = [0; 1024];
+    let (len, _addr) = services
+        .udp
+        .recv_from(&mut buffer)
+        .context("No response from printer.")?;
+
+    let received = String::from_utf8_lossy(&buffer[..len]);
+    let response = serde_json::from_str::<Response<FullStatusData>>(&received)
+        .context("Invalid response from printer.")?;
+
+    info!(
+        "Got status from `{}`",
+        response.data.attributes.machine_name
+    );
+
+    printers.lock().push(Printer {
+        mainboard_id: response.data.attributes.mainboard_id.clone(),
+    });
+
+    services.mqtt.add_future_client(response);
+
+    services
+        .udp
+        .send_to(format!("M66666 {}", services.mqtt_port).as_bytes(), address)
+        .context("Failed to send mqtt connection command.")?;
+
+    Ok(())
 }

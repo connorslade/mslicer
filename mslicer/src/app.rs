@@ -22,21 +22,17 @@ use goo_format::{File as GooFile, LayerEncoder, PreviewImage};
 
 pub struct App {
     pub dock_state: DockState<Tab>,
-    pub state: UiState,
+    pub fps: FpsTracker,
     modal: Option<Modal>,
 
-    pub camera: Camera,
+    pub state: UiState,
+    pub config: Config,
     pub slice_config: SliceConfig,
+
+    pub camera: Camera,
     pub meshes: Arc<RwLock<Vec<RenderedMesh>>>,
     pub slice_operation: Option<SliceOperation>,
     pub remote_print: RemotePrint,
-
-    pub render_style: RenderStyle,
-    pub grid_size: f32,
-    pub fps: FpsTracker,
-    pub theme: Theme,
-    pub alert_print_completion: bool,
-    pub init_remote_print_at_startup: bool,
 }
 
 #[derive(Default)]
@@ -44,6 +40,16 @@ pub struct UiState {
     pub event_collector: EventCollector,
     pub working_address: String,
     pub send_print_completion: bool,
+    pub remote_print_connecting: bool,
+}
+
+pub struct Config {
+    pub render_style: RenderStyle,
+    pub grid_size: f32,
+    pub theme: Theme,
+    pub alert_print_completion: bool,
+    pub init_remote_print_at_startup: bool,
+    pub network_timeout: f32,
 }
 
 pub struct FpsTracker {
@@ -66,7 +72,14 @@ impl App {
                 event_collector,
                 ..Default::default()
             },
-
+            config: Config {
+                render_style: RenderStyle::Rended,
+                theme: Theme::Dark,
+                grid_size: 12.16,
+                alert_print_completion: false,
+                init_remote_print_at_startup: false,
+                network_timeout: 5.0,
+            },
             camera: Camera::default(),
             slice_config: SliceConfig {
                 platform_resolution: Vector2::new(11_520, 5_120),
@@ -83,16 +96,10 @@ impl App {
                 },
                 first_layers: 10,
             },
-
             fps: FpsTracker::new(),
             meshes: Arc::new(RwLock::new(Vec::new())),
-            render_style: RenderStyle::Rended,
-            theme: Theme::Dark,
-            grid_size: 12.16,
             slice_operation: None,
             remote_print: RemotePrint::uninitialized(),
-            alert_print_completion: false,
-            init_remote_print_at_startup: false,
         }
     }
 
@@ -190,6 +197,7 @@ impl eframe::App for App {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         ctx.request_repaint();
         self.fps.update();
+        self.remote_print.tick(&mut self.modal, &mut self.state);
 
         match &mut self.modal {
             Some(modal) => modal.show_dialog(),

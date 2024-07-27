@@ -126,7 +126,7 @@ fn viewport(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     let (rect, response) = ui.allocate_exact_size(ui.available_size(), Sense::drag());
     app.camera.handle_movement(&response, ui);
 
-    let color = match app.theme {
+    let color = match app.config.theme {
         Theme::Dark => Color32::from_rgb(9, 9, 9),
         Theme::Light => Color32::from_rgb(255, 255, 255),
     };
@@ -141,14 +141,14 @@ fn viewport(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                 .view_projection_matrix(rect.width() / rect.height()),
 
             bed_size: app.slice_config.platform_size,
-            grid_size: app.grid_size,
+            grid_size: app.config.grid_size,
 
             is_moving: response.dragged(),
             slice_operation: app.slice_operation.clone(),
 
             models: app.meshes.clone(),
-            render_style: app.render_style,
-            theme: app.theme,
+            render_style: app.config.render_style,
+            theme: app.config.theme,
         },
     );
     ui.painter().add(callback);

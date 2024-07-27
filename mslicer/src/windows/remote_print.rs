@@ -2,7 +2,9 @@ use std::{sync::atomic::Ordering, time::Duration};
 
 use chrono::DateTime;
 use common::misc::human_duration;
-use egui::{vec2, Align, Context, Grid, Layout, ProgressBar, Separator, TextEdit, Ui};
+use egui::{
+    vec2, Align, Context, DragValue, Grid, Layout, ProgressBar, Separator, Spinner, TextEdit, Ui,
+};
 use notify_rust::Notification;
 use remote_send::status::{FileTransferStatus, PrintInfoStatus};
 
@@ -20,8 +22,10 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
         ui.add_space(8.0);
 
         ui.vertical_centered(|ui| {
-            if ui.button("Initialize").clicked() | app.init_remote_print_at_startup {
+            if ui.button("Initialize").clicked() | app.config.init_remote_print_at_startup {
                 app.remote_print.init().unwrap();
+                app.remote_print
+                    .set_network_timeout(Duration::from_secs_f32(app.config.network_timeout));
             }
         });
     } else {
@@ -95,7 +99,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
             }
 
             if print_info.status == PrintInfoStatus::Complete
-                && app.alert_print_completion
+                && app.config.alert_print_completion
                 && !app.state.send_print_completion
             {
                 app.state.send_print_completion = true;
@@ -184,30 +188,38 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
 
         ui.add_space(16.0);
         ui.heading("Add Printer");
-        ui.with_layout(Layout::right_to_left(Align::Min), |ui| {
-            let scan = ui.button("Scan");
-            let height = scan.rect.height();
-            if scan.clicked() {
-                app.dialog_builder()
-                    .with_title("Unimplemented")
-                    .with_body("Printer scanning is not implemented yet.")
-                    .open();
-            }
+        ui.add_enabled_ui(!app.state.remote_print_connecting, |ui| {
+            ui.with_layout(Layout::right_to_left(Align::Min), |ui| {
+                let scan = ui.button("Scan");
+                let height = scan.rect.height();
+                if scan.clicked() {
+                    app.dialog_builder()
+                        .with_title("Unimplemented")
+                        .with_body("Printer scanning is not implemented yet.")
+                        .open();
+                }
 
-            ui.add_sized(vec2(2.0, height), Separator::default());
-            if ui.button("Connect").clicked() {
-                app.remote_print
-                    .add_printer(&app.state.working_address)
-                    .unwrap();
-                app.state.working_address.clear();
-            }
+                ui.add_sized(vec2(2.0, height), Separator::default());
+                if ui.button("Connect").clicked() {
+                    app.state.remote_print_connecting = true;
+                    app.remote_print
+                        .add_printer(&app.state.working_address)
+                        .unwrap();
+                }
 
-            ui.add_sized(
-                vec2(ui.available_width(), height),
-                TextEdit::singleline(&mut app.state.working_address)
-                    .hint_text("192.168.1.233")
-                    .desired_width(ui.available_width()),
-            );
+                ui.with_layout(Layout::left_to_right(Align::Min), |ui| {
+                    if app.state.remote_print_connecting {
+                        ui.add(Spinner::new());
+                    }
+
+                    ui.add_sized(
+                        vec2(ui.available_width(), height),
+                        TextEdit::singleline(&mut app.state.working_address)
+                            .hint_text("192.168.1.233")
+                            .desired_width(ui.available_width()),
+                    );
+                });
+            });
         });
 
         match action {
@@ -220,12 +232,29 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     ui.heading("Config");
 
     ui.checkbox(
-        &mut app.alert_print_completion,
+        &mut app.config.alert_print_completion,
         "Send toast on print complete",
     );
 
     ui.checkbox(
-        &mut app.init_remote_print_at_startup,
+        &mut app.config.init_remote_print_at_startup,
         "Initialize remote print at startup",
     );
+
+    let last_timeout = app.config.network_timeout;
+    ui.horizontal(|ui| {
+        ui.add(
+            DragValue::new(&mut app.config.network_timeout)
+                .suffix("s")
+                .max_decimals(1)
+                .speed(0.1)
+                .clamp_range(0.1..=60.0),
+        );
+        ui.label("Network timeout");
+    });
+
+    if app.remote_print.is_initialized() && last_timeout != app.config.network_timeout {
+        app.remote_print
+            .set_network_timeout(Duration::from_secs_f32(app.config.network_timeout));
+    }
 }

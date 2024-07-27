@@ -9,31 +9,35 @@ use crate::{
 
 pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
     ComboBox::new("render_style", "Render Style")
-        .selected_text(app.render_style.name())
+        .selected_text(app.config.render_style.name())
         .show_ui(ui, |ui| {
-            ui.selectable_value(&mut app.render_style, RenderStyle::Normals, "Normals");
-            ui.selectable_value(&mut app.render_style, RenderStyle::Rended, "Rended");
+            ui.selectable_value(
+                &mut app.config.render_style,
+                RenderStyle::Normals,
+                "Normals",
+            );
+            ui.selectable_value(&mut app.config.render_style, RenderStyle::Rended, "Rended");
         });
 
-    let last_theme = app.theme;
+    let last_theme = app.config.theme;
     ComboBox::new("theme", "Theme")
-        .selected_text(match app.theme {
+        .selected_text(match app.config.theme {
             Theme::Dark => "Dark",
             Theme::Light => "Light",
         })
         .show_ui(ui, |ui| {
-            ui.selectable_value(&mut app.theme, Theme::Dark, "Dark");
-            ui.selectable_value(&mut app.theme, Theme::Light, "Light");
+            ui.selectable_value(&mut app.config.theme, Theme::Dark, "Dark");
+            ui.selectable_value(&mut app.config.theme, Theme::Light, "Light");
         });
 
-    if last_theme != app.theme {
-        match app.theme {
+    if last_theme != app.config.theme {
+        match app.config.theme {
             Theme::Dark => ctx.set_visuals(Visuals::dark()),
             Theme::Light => ctx.set_visuals(Visuals::light()),
         }
     }
 
-    dragger(ui, "Grid Size", &mut app.grid_size, |x| x.speed(0.1));
+    dragger(ui, "Grid Size", &mut app.config.grid_size, |x| x.speed(0.1));
 
     ui.collapsing("Camera", |ui| {
         ui.label("Target");
