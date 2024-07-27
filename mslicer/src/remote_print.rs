@@ -1,5 +1,6 @@
 use std::{
-    net::{IpAddr, SocketAddr, TcpListener, UdpSocket},
+    io::ErrorKind,
+    net::{IpAddr, Ipv4Addr, SocketAddr, TcpListener, UdpSocket},
     str::FromStr,
     sync::Arc,
     thread::{self, JoinHandle},
@@ -11,7 +12,7 @@ use clone_macro::clone;
 use common::misc::random_string;
 use egui_modal::{Icon, Modal};
 use parking_lot::{Mutex, MutexGuard};
-use tracing::info;
+use tracing::{info, warn};
 
 use remote_send::{
     commands::{DisconnectCommand, StartPrinting, UploadFile},
@@ -89,6 +90,7 @@ impl RemotePrint {
         http.start_async();
 
         let udp = UdpSocket::bind("0.0.0.0:0")?;
+        udp.set_broadcast(true)?;
         let _udp_port = udp.local_addr()?.port();
 
         info!("Binds: {{ UDP: {_udp_port}, MQTT: {mqtt_port}, HTTP: {http_port} }}");
@@ -155,6 +157,21 @@ impl RemotePrint {
         Ok(())
     }
 
+    pub fn scan_for_printers(&mut self) {
+        self.jobs.push(AsyncJob::new(
+            thread::spawn(clone!(
+                [{ self.printers } as printers, { self.services } as services],
+                move || {
+                    scan_for_printers(services.unwrap(), printers)
+                        .context("Error scanning for printers.")
+                }
+            )),
+            |ui_state| {
+                ui_state.remote_print_connecting = false;
+            },
+        ));
+    }
+
     pub fn remove_printer(&mut self, index: usize) -> Result<()> {
         let services = self.services.as_ref().unwrap();
         let printer = self.printers.lock().remove(index);
@@ -219,6 +236,8 @@ fn add_printer(
     printers: Arc<Mutex<Vec<Printer>>>,
     address: SocketAddr,
 ) -> Result<()> {
+    info!("Attempting to connect to printer at {}", address.ip());
+
     services.udp.send_to(b"M99999", address)?;
 
     let mut buffer = [0; 1024];
@@ -231,6 +250,46 @@ fn add_printer(
     let response = serde_json::from_str::<Response<FullStatusData>>(&received)
         .context("Invalid response from printer.")?;
 
+    connect_printer(services, printers, response, address)?;
+    Ok(())
+}
+
+fn scan_for_printers(services: Arc<Services>, printers: Arc<Mutex<Vec<Printer>>>) -> Result<()> {
+    const BROADCAST: IpAddr = IpAddr::V4(Ipv4Addr::new(192, 168, 1, 255));
+
+    info!("Scanning for printers");
+
+    services
+        .udp
+        .send_to(b"M99999", SocketAddr::new(BROADCAST, 3000))?;
+
+    let mut buffer = [0; 1024];
+    loop {
+        let (len, addr) = match services.udp.recv_from(&mut buffer) {
+            Ok(data) => data,
+            Err(e) if e.kind() == ErrorKind::WouldBlock => break,
+            Err(_) => continue,
+        };
+
+        let received = String::from_utf8_lossy(&buffer[..len]);
+        let Ok(response) = serde_json::from_str::<Response<FullStatusData>>(&received) else {
+            continue;
+        };
+
+        if let Err(err) = connect_printer(services.clone(), printers.clone(), response, addr) {
+            warn!("Failed to connect to printer while scanning: {}", err);
+        };
+    }
+
+    Ok(())
+}
+
+fn connect_printer(
+    services: Arc<Services>,
+    printers: Arc<Mutex<Vec<Printer>>>,
+    response: Response<FullStatusData>,
+    address: SocketAddr,
+) -> Result<()> {
     info!(
         "Got status from `{}`",
         response.data.attributes.machine_name

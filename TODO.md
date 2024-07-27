@@ -49,7 +49,7 @@
 - [x] Align to bed button
 - [x] Define all crate versions in workspace toml
 - [ ] Ask for filename when sending to printer
-- [ ] Printer scanning (UDP broadcast)
+- [x] Printer scanning (UDP broadcast)
 - [ ] Verify printer capabilities before uploading / printing
 - [ ] Move remote print module to remote send?
 - [ ] Add some optional alert sound for print completion
@@ -63,3 +63,4 @@
 - [x] Make all network operations async (not block ui)
 - [ ] Make model loading async
 - [ ] Dont repaint if nothing changes
+- [ ] Allow changing broadcast address

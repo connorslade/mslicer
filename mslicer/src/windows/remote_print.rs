@@ -193,10 +193,8 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                 let scan = ui.button("Scan");
                 let height = scan.rect.height();
                 if scan.clicked() {
-                    app.dialog_builder()
-                        .with_title("Unimplemented")
-                        .with_body("Printer scanning is not implemented yet.")
-                        .open();
+                    app.state.working_address.clear();
+                    app.remote_print.scan_for_printers();
                 }
 
                 ui.add_sized(vec2(2.0, height), Separator::default());
