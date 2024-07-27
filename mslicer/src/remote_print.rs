@@ -23,7 +23,7 @@ use remote_send::{
     Response,
 };
 
-use crate::app::UiState;
+use crate::app::{RemotePrintConnectStatus, UiState};
 
 pub struct RemotePrint {
     services: Option<Arc<Services>>,
@@ -149,7 +149,7 @@ impl RemotePrint {
                 }
             )),
             |ui_state| {
-                ui_state.remote_print_connecting = false;
+                ui_state.remote_print_connecting = RemotePrintConnectStatus::None;
                 ui_state.working_address.clear();
             },
         ));
@@ -167,7 +167,7 @@ impl RemotePrint {
                 }
             )),
             |ui_state| {
-                ui_state.remote_print_connecting = false;
+                ui_state.remote_print_connecting = RemotePrintConnectStatus::None;
             },
         ));
     }
@@ -257,8 +257,7 @@ fn add_printer(
 fn scan_for_printers(services: Arc<Services>, printers: Arc<Mutex<Vec<Printer>>>) -> Result<()> {
     const BROADCAST: IpAddr = IpAddr::V4(Ipv4Addr::new(192, 168, 1, 255));
 
-    info!("Scanning for printers");
-
+    info!("Scanning for printers on {BROADCAST}");
     services
         .udp
         .send_to(b"M99999", SocketAddr::new(BROADCAST, 3000))?;
@@ -267,7 +266,7 @@ fn scan_for_printers(services: Arc<Services>, printers: Arc<Mutex<Vec<Printer>>>
     loop {
         let (len, addr) = match services.udp.recv_from(&mut buffer) {
             Ok(data) => data,
-            Err(e) if e.kind() == ErrorKind::WouldBlock => break,
+            Err(e) if e.kind() == ErrorKind::TimedOut => break,
             Err(_) => continue,
         };
 

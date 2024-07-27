@@ -8,7 +8,7 @@ use egui::{
 use notify_rust::Notification;
 use remote_send::status::{FileTransferStatus, PrintInfoStatus};
 
-use crate::app::App;
+use crate::app::{App, RemotePrintConnectStatus};
 
 enum Action {
     None,
@@ -188,26 +188,39 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
 
         ui.add_space(16.0);
         ui.heading("Add Printer");
-        ui.add_enabled_ui(!app.state.remote_print_connecting, |ui| {
-            ui.with_layout(Layout::right_to_left(Align::Min), |ui| {
-                let scan = ui.button("Scan");
-                let height = scan.rect.height();
-                if scan.clicked() {
-                    app.state.working_address.clear();
-                    app.remote_print.scan_for_printers();
-                }
 
-                ui.add_sized(vec2(2.0, height), Separator::default());
-                if ui.button("Connect").clicked() {
-                    app.state.remote_print_connecting = true;
-                    app.remote_print
-                        .add_printer(&app.state.working_address)
-                        .unwrap();
-                }
+        if app.state.remote_print_connecting != RemotePrintConnectStatus::None {
+            ui.horizontal(|ui| {
+                ui.add(Spinner::new());
+                match app.state.remote_print_connecting {
+                    RemotePrintConnectStatus::Connecting => {
+                        ui.label("Connecting to printer...");
+                    }
+                    RemotePrintConnectStatus::Scanning => {
+                        ui.label("Scanning for printers...");
+                    }
+                    _ => {}
+                };
+            });
+        }
 
-                ui.with_layout(Layout::left_to_right(Align::Min), |ui| {
-                    if app.state.remote_print_connecting {
-                        ui.add(Spinner::new());
+        ui.add_enabled_ui(
+            app.state.remote_print_connecting == RemotePrintConnectStatus::None,
+            |ui| {
+                ui.with_layout(Layout::right_to_left(Align::Min), |ui| {
+                    let scan = ui.button("Scan");
+                    let height = scan.rect.height();
+                    if scan.clicked() {
+                        app.state.remote_print_connecting = RemotePrintConnectStatus::Scanning;
+                        app.remote_print.scan_for_printers();
+                    }
+
+                    ui.add_sized(vec2(2.0, height), Separator::default());
+                    if ui.button("Connect").clicked() {
+                        app.state.remote_print_connecting = RemotePrintConnectStatus::Connecting;
+                        app.remote_print
+                            .add_printer(&app.state.working_address)
+                            .unwrap();
                     }
 
                     ui.add_sized(
@@ -217,8 +230,8 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                             .desired_width(ui.available_width()),
                     );
                 });
-            });
-        });
+            },
+        );
 
         match action {
             Action::Remove(i) => app.remote_print.remove_printer(i).unwrap(),
