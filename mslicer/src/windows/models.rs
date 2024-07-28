@@ -5,7 +5,7 @@ use slicer::Pos;
 
 use crate::{
     app::App,
-    components::{vec3_dragger, vec3_dragger_proportional},
+    ui::components::{vec3_dragger, vec3_dragger_proportional},
 };
 
 enum Action {

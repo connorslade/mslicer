@@ -10,7 +10,6 @@ use std::{
 use anyhow::{Context, Result};
 use clone_macro::clone;
 use common::misc::random_string;
-use egui_modal::{Icon, Modal};
 use parking_lot::{Mutex, MutexGuard};
 use tracing::{info, warn};
 
@@ -25,7 +24,7 @@ use remote_send::{
 
 use crate::{
     config::Config,
-    ui_state::{RemotePrintConnectStatus, UiState},
+    ui::state::{RemotePrintConnectStatus, UiState},
 };
 
 pub struct RemotePrint {
@@ -115,7 +114,7 @@ impl RemotePrint {
         Ok(())
     }
 
-    pub fn tick(&mut self, modal: &mut Option<Modal>, ui_state: &mut UiState, config: &Config) {
+    pub fn tick(&mut self, ui_state: &mut UiState, config: &Config) {
         if !self.is_initialized() && config.init_remote_print_at_startup {
             self.init().unwrap();
             self.set_network_timeout(Duration::from_secs_f32(config.network_timeout));
@@ -124,7 +123,7 @@ impl RemotePrint {
             services.http.set_proxy_enabled(config.http_status_proxy);
         }
 
-        let mut dialog_builder = || modal.as_mut().unwrap().dialog();
+        // let mut dialog_builder = || modal.as_mut().unwrap().dialog();
 
         let mut i = 0;
         while i < self.jobs.len() {
@@ -138,11 +137,11 @@ impl RemotePrint {
                         body.push(' ');
                     }
 
-                    dialog_builder()
-                        .with_title("Remote Print Error")
-                        .with_body(&body[..body.len() - 1])
-                        .with_icon(Icon::Error)
-                        .open();
+                    // dialog_builder()
+                    //     .with_title("Remote Print Error")
+                    //     .with_body(&body[..body.len() - 1])
+                    //     .with_icon(Icon::Error)
+                    //     .open();
                 }
                 continue;
             }

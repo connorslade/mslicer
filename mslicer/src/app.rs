@@ -4,7 +4,6 @@ use clone_macro::clone;
 use eframe::Theme;
 use egui::Visuals;
 use egui_dock::{DockState, NodeIndex};
-use egui_modal::{DialogBuilder, Icon, Modal};
 use egui_tracing::EventCollector;
 use image::imageops::FilterType;
 use nalgebra::{Vector2, Vector3};
@@ -17,16 +16,20 @@ use crate::{
     remote_print::RemotePrint,
     render::{camera::Camera, rendered_mesh::RenderedMesh},
     slice_operation::{SliceOperation, SliceResult},
-    ui_state::UiState,
+    ui::{
+        popup::{Popup, PopupIcon, PopupManager},
+        state::UiState,
+    },
     windows::{self, Tab},
 };
 use common::config::{ExposureConfig, SliceConfig};
 use goo_format::{File as GooFile, LayerEncoder, PreviewImage};
 
 pub struct App {
+    // todo: dock state in ui_state?
     pub dock_state: DockState<Tab>,
     pub fps: FpsTracker,
-    modal: Option<Modal>,
+    pub popup: PopupManager,
 
     pub state: UiState,
     pub config: Config,
@@ -63,7 +66,7 @@ impl App {
 
         Self {
             dock_state,
-            modal: None,
+            popup: PopupManager::new(),
             state: UiState {
                 event_collector,
                 ..Default::default()
@@ -104,11 +107,11 @@ impl App {
 
         if meshes.is_empty() {
             const NO_MODELS_ERROR: &str = "There are no models to slice. Add one by going to File → Open Model or drag and drop a model file into the workspace.";
-            self.dialog_builder()
-                .with_title("Slicing Error")
-                .with_body(NO_MODELS_ERROR)
-                .with_icon(Icon::Error)
-                .open();
+            self.popup.open(Popup::simple(
+                "Slicing Error",
+                PopupIcon::Error,
+                NO_MODELS_ERROR,
+            ));
             return;
         }
 
@@ -177,29 +180,21 @@ impl App {
             }
         ));
     }
-
-    pub fn dialog_builder(&mut self) -> DialogBuilder {
-        self.modal.as_mut().unwrap().dialog()
-    }
 }
 
 impl eframe::App for App {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         ctx.request_repaint();
         self.fps.update();
+        self.popup.render(ctx);
 
+        // only update the visuals if the theme has changed
         match self.config.theme {
             Theme::Dark => ctx.set_visuals(Visuals::dark()),
             Theme::Light => ctx.set_visuals(Visuals::light()),
         }
 
-        match &mut self.modal {
-            Some(modal) => modal.show_dialog(),
-            None => self.modal = Some(Modal::new(ctx, "modal")),
-        }
-
-        self.remote_print
-            .tick(&mut self.modal, &mut self.state, &self.config);
+        self.remote_print.tick(&mut self.state, &self.config);
         windows::ui(self, ctx);
     }
 }

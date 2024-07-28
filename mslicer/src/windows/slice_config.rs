@@ -2,7 +2,7 @@ use egui::{Context, DragValue, Grid, Ui};
 
 use crate::{
     app::App,
-    components::{vec2_dragger, vec3_dragger},
+    ui::components::{vec2_dragger, vec3_dragger},
 };
 use common::config::ExposureConfig;
 

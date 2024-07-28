@@ -1,11 +1,14 @@
 use std::{fs::File, io::BufReader};
 
 use egui::{Align, Context, Layout, TopBottomPanel};
-use egui_modal::Icon;
 use rfd::FileDialog;
 use tracing::info;
 
-use crate::{app::App, render::rendered_mesh::RenderedMesh};
+use crate::{
+    app::App,
+    render::rendered_mesh::RenderedMesh,
+    ui::popup::{Popup, PopupIcon},
+};
 
 pub fn ui(app: &mut App, ctx: &Context) {
     TopBottomPanel::top("top_panel").show(ctx, |ui| {
@@ -30,11 +33,11 @@ pub fn ui(app: &mut App, ctx: &Context) {
                         let model = match slicer::mesh::load_mesh(&mut buf, &format) {
                             Ok(model) => model,
                             Err(err) => {
-                                app.dialog_builder()
-                                    .with_title("Import Error")
-                                    .with_body(format!("Failed to import model.\n{err}"))
-                                    .with_icon(Icon::Error)
-                                    .open();
+                                app.popup.open(Popup::simple(
+                                    "Import Error",
+                                    PopupIcon::Error,
+                                    format!("Failed to import model.\n{err}"),
+                                ));
                                 return;
                             }
                         };

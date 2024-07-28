@@ -11,12 +11,11 @@ use wgpu::{DeviceDescriptor, Features, Limits, TextureFormat};
 const TEXTURE_FORMAT: TextureFormat = TextureFormat::Bgra8Unorm;
 
 mod app;
-mod components;
 mod config;
 mod remote_print;
 mod render;
 mod slice_operation;
-mod ui_state;
+mod ui;
 mod windows;
 use app::App;
 

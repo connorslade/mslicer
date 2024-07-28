@@ -6,12 +6,17 @@ use const_format::concatcp;
 use egui::{
     vec2, Align, Context, DragValue, Grid, Layout, ProgressBar, Separator, Spinner, TextEdit, Ui,
 };
-use egui_modal::Icon;
 use egui_phosphor::regular::{NETWORK, PLUGS, TRASH_SIMPLE, UPLOAD_SIMPLE};
 use notify_rust::Notification;
 use remote_send::status::{FileTransferStatus, PrintInfoStatus};
 
-use crate::{app::App, ui_state::RemotePrintConnectStatus};
+use crate::{
+    app::App,
+    ui::{
+        popup::{Popup, PopupIcon},
+        state::RemotePrintConnectStatus,
+    },
+};
 
 enum Action {
     None,
@@ -229,14 +234,14 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                             .add_printer(&app.state.working_address)
                             .is_err()
                         {
-                            app.dialog_builder()
-                                .with_title("Remote Print Error")
-                                .with_body(format!(
+                            app.popup.open(Popup::simple(
+                                "Remote Print Error",
+                                PopupIcon::Error,
+                                format!(
                                     "The entered address `{}` is invalid.",
                                     app.state.working_address,
-                                ))
-                                .with_icon(Icon::Error)
-                                .open();
+                                ),
+                            ));
                             app.state.working_address.clear();
                         } else {
                             app.state.remote_print_connecting =

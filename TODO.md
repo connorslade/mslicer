@@ -65,3 +65,4 @@
 - [ ] Allow changing broadcast address
 - [x] Actually init remote print at startup if requested
 - [ ] Preferred service ports
+- [ ] Button to disable remote print services

@@ -1540,15 +1540,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "egui-modal"
-version = "0.3.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "738cdffefd15dbb6a5fff75d118eee82a9e894bbfa45e41c24d7de42519fa673"
-dependencies = [
- "egui",
-]
-
-[[package]]
 name = "egui-phosphor"
 version = "0.5.0"
 source = "git+https://github.com/connorslade/egui-phosphor#94b45fde8123d83f06d31416ba627a2a10d4e575"
@@ -2846,7 +2837,6 @@ dependencies = [
  "dirs",
  "eframe",
  "egui",
- "egui-modal",
  "egui-phosphor",
  "egui-wgpu",
  "egui_dock",

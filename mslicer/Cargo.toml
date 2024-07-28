@@ -13,7 +13,6 @@ dirs.workspace = true
 eframe.workspace = true
 egui_dock.workspace = true
 egui_tracing.workspace = true
-egui-modal.workspace = true
 egui-phosphor.workspace = true
 egui-wgpu.workspace = true
 egui.workspace = true

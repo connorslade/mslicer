@@ -10,7 +10,7 @@ use nalgebra::Vector2;
 use rfd::FileDialog;
 
 use crate::{
-    app::App, components::vec2_dragger, render::slice_preview::SlicePreviewRenderCallback,
+    app::App, ui::components::vec2_dragger, render::slice_preview::SlicePreviewRenderCallback,
     slice_operation::SliceResult,
 };
 use common::serde::DynamicSerializer;
