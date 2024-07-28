@@ -3,16 +3,26 @@ use std::{
     io::{self, ErrorKind, Read},
     net::TcpListener,
     ops::Deref,
-    sync::{atomic::Ordering, Arc},
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc,
+    },
     thread,
 };
 
 use afire::{
     internal::{event_loop::EventLoop, handle::handle, socket::Socket},
-    trace, Method, Server, Status,
+    Content, Method, Server, Status,
 };
 use parking_lot::RwLock;
-use tracing::info;
+use serde::Serialize;
+use serde_json::json;
+use tracing::{error, trace};
+
+use crate::{
+    mqtt_server::{Mqtt, MqttInner},
+    status::{self, Attributes},
+};
 
 pub struct HttpServer {
     inner: Arc<HttpServerInner>,
@@ -21,6 +31,9 @@ pub struct HttpServer {
 pub struct HttpServerInner {
     files: RwLock<HashMap<String, Arc<Vec<u8>>>>,
     listener: TcpListener,
+
+    proxy_enabled: AtomicBool,
+    mqtt_server: Arc<MqttInner>,
 }
 
 struct ServerEventLoop;
@@ -31,11 +44,14 @@ struct ArcReader {
 }
 
 impl HttpServer {
-    pub fn new(listener: TcpListener) -> Self {
+    pub fn new(listener: TcpListener, mqtt_server: &Mqtt) -> Self {
         Self {
             inner: Arc::new(HttpServerInner {
                 files: RwLock::new(HashMap::new()),
                 listener,
+
+                proxy_enabled: AtomicBool::new(false),
+                mqtt_server: mqtt_server.inner.clone(),
             }),
         }
     }
@@ -60,17 +76,51 @@ impl HttpServer {
         });
 
         server.route(Method::GET, "/{file}", |ctx| {
-            let file = ctx.param("file");
-            info!("Sending file `{file}`");
+            let file_name = ctx.param("file");
 
             let state = ctx.app();
             let files = state.files.read();
-            let Some(file) = files.get(file) else {
+            let Some(file) = files.get(file_name) else {
                 ctx.status(Status::NotFound).text("File not found").send()?;
                 return Ok(());
             };
 
+            trace!("Sending file `{file_name}`");
             ctx.stream(ArcReader::new(file.clone())).send()?;
+            Ok(())
+        });
+
+        server.route(Method::GET, "/status", |ctx| {
+            let state = ctx.app();
+            if !state.proxy_enabled.load(Ordering::Relaxed) {
+                ctx.status(Status::Forbidden)
+                    .text("Proxy is disabled")
+                    .send()?;
+                return Ok(());
+            }
+
+            trace!("Status requested by {}", ctx.req.address);
+
+            #[derive(Serialize)]
+            struct Printer<'a> {
+                machine_id: &'a str,
+                attributes: &'a Attributes,
+                status: status::Status,
+                last_update: i64,
+            }
+
+            let clients = state.mqtt_server.clients.read();
+            let clients = clients
+                .iter()
+                .map(|(machine_id, printer)| Printer {
+                    machine_id,
+                    attributes: &printer.attributes,
+                    status: printer.status.lock().clone(),
+                    last_update: printer.last_update.load(Ordering::Relaxed),
+                })
+                .collect::<Vec<_>>();
+
+            ctx.text(json!(clients)).content(Content::JSON).send()?;
             Ok(())
         });
 
@@ -81,6 +131,10 @@ impl HttpServer {
 
     pub fn shutdown(&self) {
         self.inner.listener.set_nonblocking(true).unwrap();
+    }
+
+    pub fn set_proxy_enabled(&self, enabled: bool) {
+        self.inner.proxy_enabled.store(enabled, Ordering::Relaxed);
     }
 
     pub fn add_file(&self, name: &str, data: Arc<Vec<u8>>) {
@@ -113,7 +167,7 @@ impl EventLoop<Arc<HttpServerInner>> for ServerEventLoop {
                     server.thread_pool.execute(|| handle(event, this_server));
                 }
                 Err(e) if e.kind() == ErrorKind::WouldBlock => break,
-                Err(_err) => trace!(Level::Error, "Error accepting connection: {_err}"),
+                Err(_err) => error!("Error accepting connection: {_err}"),
             };
         }
         Ok(())

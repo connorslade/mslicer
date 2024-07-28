@@ -51,18 +51,17 @@
 - [ ] Ask for filename when sending to printer
 - [x] Printer scanning (UDP broadcast)
 - [ ] Verify printer capabilities before uploading / printing
-- [ ] Move remote print module to remote send?
 - [ ] Add some optional alert sound for print completion
 - [x] Create config struct thats saved / loaded on shutdown / startup
 - [ ] Publish goo_format crate
 - [ ] Allow uploading / printing a local .goo file
 - [x] Load normals from model files
 - [ ] Fix camera movement
-- [ ] Optionally proxy printer state over http (api and sse)
+- [x] Optionally proxy printer state over http (api and sse)
 - [x] Remote print error handing
 - [x] Make all network operations async (not block ui)
 - [ ] Make model loading async
 - [ ] Dont repaint if nothing changes
 - [ ] Allow changing broadcast address
-- [ ] Split up remote_print module
-- [ ] Actually init remote print at startup if requested
+- [x] Actually init remote print at startup if requested
+- [ ] Preferred service ports

@@ -23,7 +23,10 @@ use remote_send::{
     Response,
 };
 
-use crate::ui_state::{RemotePrintConnectStatus, UiState};
+use crate::{
+    config::Config,
+    ui_state::{RemotePrintConnectStatus, UiState},
+};
 
 pub struct RemotePrint {
     services: Option<Arc<Services>>,
@@ -71,6 +74,10 @@ impl RemotePrint {
         &self.services.as_ref().unwrap().mqtt
     }
 
+    pub fn http(&self) -> &HttpServer {
+        &self.services.as_ref().unwrap().http
+    }
+
     pub fn set_network_timeout(&self, timeout: Duration) {
         let services = self.services.as_ref().unwrap();
         services.udp.set_read_timeout(Some(timeout)).unwrap();
@@ -86,7 +93,7 @@ impl RemotePrint {
 
         let http_listener = TcpListener::bind("0.0.0.0:0")?;
         let http_port = http_listener.local_addr()?.port();
-        let http = HttpServer::new(http_listener);
+        let http = HttpServer::new(http_listener, &mqtt);
         http.start_async();
 
         let udp = UdpSocket::bind("0.0.0.0:0")?;
@@ -108,7 +115,15 @@ impl RemotePrint {
         Ok(())
     }
 
-    pub fn tick(&mut self, modal: &mut Option<Modal>, ui_state: &mut UiState) {
+    pub fn tick(&mut self, modal: &mut Option<Modal>, ui_state: &mut UiState, config: &Config) {
+        if !self.is_initialized() && config.init_remote_print_at_startup {
+            self.init().unwrap();
+            self.set_network_timeout(Duration::from_secs_f32(config.network_timeout));
+
+            let services = self.services.as_ref().unwrap();
+            services.http.set_proxy_enabled(config.http_status_proxy);
+        }
+
         let mut dialog_builder = || modal.as_mut().unwrap().dialog();
 
         let mut i = 0;

@@ -12,12 +12,16 @@ use tracing::info;
 use crate::render::pipelines::model::RenderStyle;
 
 #[derive(Serialize, Deserialize)]
+#[serde(default)]
 pub struct Config {
     pub render_style: RenderStyle,
     pub grid_size: f32,
     pub theme: Theme,
+
+    // Remote print settings
     pub alert_print_completion: bool,
     pub init_remote_print_at_startup: bool,
+    pub http_status_proxy: bool,
     pub network_timeout: f32,
     pub network_broadcast_address: IpAddr,
 }
@@ -55,6 +59,7 @@ impl Default for Config {
             grid_size: 12.16,
             alert_print_completion: false,
             init_remote_print_at_startup: false,
+            http_status_proxy: false,
             network_timeout: 5.0,
             network_broadcast_address: IpAddr::V4(Ipv4Addr::new(192, 168, 1, 255)),
         }

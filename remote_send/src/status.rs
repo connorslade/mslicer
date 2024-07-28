@@ -1,16 +1,16 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_repr::Deserialize_repr;
 
 use crate::{parse_resolution, Resolution};
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct FullStatusData {
     pub attributes: Attributes,
     pub status: Status,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct StatusData {
     pub status: Status,
@@ -19,7 +19,7 @@ pub struct StatusData {
     pub time_stamp: u64,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct Attributes {
     pub name: String,
@@ -41,14 +41,14 @@ pub struct Attributes {
     pub capabilities: Vec<Capability>,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum Capability {
     FileTransfer,
     PrintControl,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct Status {
     pub current_status: CurrentStatus,
@@ -57,7 +57,7 @@ pub struct Status {
     pub file_transfer_info: FileTransferInfo,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct PrintInfo {
     pub status: PrintInfoStatus,
@@ -69,7 +69,7 @@ pub struct PrintInfo {
     pub filename: String,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct FileTransferInfo {
     pub status: FileTransferStatus,
@@ -80,7 +80,7 @@ pub struct FileTransferInfo {
 }
 
 #[repr(u8)]
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize_repr)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize_repr, Serialize)]
 pub enum CurrentStatus {
     Ready = 0,
     Busy = 1,
@@ -88,7 +88,7 @@ pub enum CurrentStatus {
 }
 
 #[repr(u8)]
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize_repr)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize_repr, Serialize)]
 pub enum PrintInfoStatus {
     None = 0,
     InitialLower = 1,
@@ -100,7 +100,7 @@ pub enum PrintInfoStatus {
 }
 
 #[repr(u8)]
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize_repr)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize_repr, Serialize)]
 pub enum FileTransferStatus {
     None = 0,
     Done = 2,

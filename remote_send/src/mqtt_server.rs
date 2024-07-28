@@ -33,14 +33,14 @@ use crate::{
 pub struct MqttInner {
     server: Soon<Arc<MqttServer<Mqtt>>>,
     /// mainboard_id -> MqttClient
-    clients: RwLock<HashMap<String, MqttClient>>,
+    pub(crate) clients: RwLock<HashMap<String, MqttClient>>,
     /// client_id -> mainboard_id
     client_ids: RwLock<HashMap<u64, String>>,
 }
 
 #[derive(Clone)]
 pub struct Mqtt {
-    inner: Arc<MqttInner>,
+    pub(crate) inner: Arc<MqttInner>,
 }
 
 pub struct MqttClient {

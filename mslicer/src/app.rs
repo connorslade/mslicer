@@ -198,7 +198,8 @@ impl eframe::App for App {
             None => self.modal = Some(Modal::new(ctx, "modal")),
         }
 
-        self.remote_print.tick(&mut self.modal, &mut self.state);
+        self.remote_print
+            .tick(&mut self.modal, &mut self.state, &self.config);
         windows::ui(self, ctx);
     }
 }

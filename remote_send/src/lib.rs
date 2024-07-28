@@ -14,7 +14,7 @@ pub struct Response<Data> {
     pub data: Data,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct Resolution {
     pub x: u16,
     pub y: u16,

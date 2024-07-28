@@ -25,7 +25,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
         ui.add_space(8.0);
 
         ui.vertical_centered(|ui| {
-            if ui.button("Initialize").clicked() | app.config.init_remote_print_at_startup {
+            if ui.button("Initialize").clicked() {
                 app.remote_print.init().unwrap();
                 app.remote_print
                     .set_network_timeout(Duration::from_secs_f32(app.config.network_timeout));
@@ -272,6 +272,18 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
         &mut app.config.init_remote_print_at_startup,
         "Initialize remote print at startup",
     );
+
+    let last_status_proxy = app.config.http_status_proxy;
+    ui.checkbox(
+        &mut app.config.http_status_proxy,
+        "Enable HTTP status proxy",
+    );
+
+    if last_status_proxy != app.config.http_status_proxy {
+        app.remote_print
+            .http()
+            .set_proxy_enabled(app.config.http_status_proxy);
+    }
 
     let last_timeout = app.config.network_timeout;
     ui.horizontal(|ui| {

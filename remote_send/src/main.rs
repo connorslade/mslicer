@@ -26,7 +26,7 @@ fn main() -> Result<()> {
 
     let http_listener = TcpListener::bind("0.0.0.0:0")?;
     let http_port = http_listener.local_addr()?.port();
-    let http = HttpServer::new(http_listener);
+    let http = HttpServer::new(http_listener, &mqtt);
     http.start_async();
 
     let socket = UdpSocket::bind("0.0.0.0:0")?;
