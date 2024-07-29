@@ -1,4 +1,10 @@
-use std::{path::PathBuf, sync::Arc, thread, time::Instant};
+use std::{
+    io::{BufRead, Seek},
+    path::PathBuf,
+    sync::Arc,
+    thread,
+    time::Instant,
+};
 
 use clone_macro::clone;
 use eframe::Theme;
@@ -17,6 +23,7 @@ use crate::{
     render::{camera::Camera, rendered_mesh::RenderedMesh},
     slice_operation::{SliceOperation, SliceResult},
     ui::{
+        drag_and_drop,
         popup::{Popup, PopupIcon, PopupManager},
         state::UiState,
     },
@@ -180,6 +187,27 @@ impl App {
             }
         ));
     }
+
+    pub fn load_mesh<T: BufRead + Seek>(&mut self, buf: &mut T, format: &str, name: String) {
+        let model = match slicer::mesh::load_mesh(buf, format) {
+            Ok(model) => model,
+            Err(err) => {
+                self.popup.open(Popup::simple(
+                    "Import Error",
+                    PopupIcon::Error,
+                    format!("Failed to import model.\n{err}"),
+                ));
+                return;
+            }
+        };
+        info!("Loaded model `{name}` with {} faces", model.face_count());
+
+        self.meshes.write().push(
+            RenderedMesh::from_mesh(model)
+                .with_name(name)
+                .with_random_color(),
+        );
+    }
 }
 
 impl eframe::App for App {
@@ -190,14 +218,15 @@ impl eframe::App for App {
         // todo: probably dont do this
         let app = unsafe { &mut *(self as *mut _) };
         self.popup.render(app, ctx);
-
         // only update the visuals if the theme has changed
+
         match self.config.theme {
             Theme::Dark => ctx.set_visuals(Visuals::dark()),
             Theme::Light => ctx.set_visuals(Visuals::light()),
         }
 
         self.remote_print.tick(&mut self.state, &self.config);
+        drag_and_drop::update(self, ctx);
         windows::ui(self, ctx);
     }
 }

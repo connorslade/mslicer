@@ -41,6 +41,7 @@ fn main() -> Result<()> {
         NativeOptions {
             viewport: ViewportBuilder::default()
                 .with_inner_size(Vec2::new(1920.0, 1080.0))
+                .with_drag_and_drop(true)
                 .with_icon(IconData {
                     rgba: icon.to_rgba8().to_vec(),
                     width: icon.width(),

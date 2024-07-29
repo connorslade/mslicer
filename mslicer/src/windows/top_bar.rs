@@ -1,17 +1,12 @@
 use std::{
     fs::File,
-    io::{BufRead, BufReader, Cursor, Seek},
+    io::{BufReader, Cursor},
 };
 
 use egui::{Align, Context, Layout, TopBottomPanel};
 use rfd::FileDialog;
-use tracing::info;
 
-use crate::{
-    app::App,
-    render::rendered_mesh::RenderedMesh,
-    ui::popup::{Popup, PopupIcon},
-};
+use crate::app::App;
 
 pub fn ui(app: &mut App, ctx: &Context) {
     TopBottomPanel::top("top_panel").show(ctx, |ui| {
@@ -33,13 +28,13 @@ pub fn ui(app: &mut App, ctx: &Context) {
 
                         let file = File::open(&path).unwrap();
                         let mut buf = BufReader::new(file);
-                        load_mesh(app, &mut buf, &format, name);
+                        app.load_mesh(&mut buf, &format, name);
                     }
                 }
 
                 if ui.button("Load Utah Teapot").clicked() {
                     let mut buf = Cursor::new(include_bytes!("../assets/teapot.stl"));
-                    load_mesh(app, &mut buf, "stl", "Utah Teapot".into());
+                    app.load_mesh(&mut buf, "stl", "Utah Teapot".into());
                 }
 
                 ui.separator();
@@ -59,25 +54,4 @@ pub fn ui(app: &mut App, ctx: &Context) {
             });
         });
     });
-}
-
-fn load_mesh<T: BufRead + Seek>(app: &mut App, buf: &mut T, format: &str, name: String) {
-    let model = match slicer::mesh::load_mesh(buf, format) {
-        Ok(model) => model,
-        Err(err) => {
-            app.popup.open(Popup::simple(
-                "Import Error",
-                PopupIcon::Error,
-                format!("Failed to import model.\n{err}"),
-            ));
-            return;
-        }
-    };
-    info!("Loaded model `{name}` with {} faces", model.face_count());
-
-    app.meshes.write().push(
-        RenderedMesh::from_mesh(model)
-            .with_name(name)
-            .with_random_color(),
-    );
 }
