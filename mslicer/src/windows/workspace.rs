@@ -6,8 +6,8 @@ use tracing::error;
 
 use crate::{
     app::App,
-    ui::components::{dragger, vec2_dragger, vec3_dragger},
     render::pipelines::model::RenderStyle,
+    ui::components::{dragger, vec2_dragger, vec3_dragger},
 };
 
 pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {

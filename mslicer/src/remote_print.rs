@@ -197,10 +197,20 @@ impl RemotePrint {
         Ok(())
     }
 
-    pub fn upload(&self, mainboard_id: &str, data: Arc<Vec<u8>>) -> Result<()> {
+    pub fn upload(
+        &self,
+        mainboard_id: &str,
+        data: Arc<Vec<u8>>,
+        mut filename: String,
+    ) -> Result<()> {
         let services = self.services.as_ref().unwrap();
 
-        let filename = format!("{}.goo", random_string(8));
+        if !filename.is_empty() {
+            filename.push('_');
+        }
+        filename.push_str(&random_string(8));
+        filename.push_str(".goo");
+
         services.http.add_file(&filename, data.clone());
 
         services

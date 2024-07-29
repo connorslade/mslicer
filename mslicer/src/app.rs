@@ -186,7 +186,10 @@ impl eframe::App for App {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         ctx.request_repaint();
         self.fps.update();
-        self.popup.render(ctx);
+
+        // todo: probably dont do this
+        let app = unsafe { &mut *(self as *mut _) };
+        self.popup.render(app, ctx);
 
         // only update the visuals if the theme has changed
         match self.config.theme {

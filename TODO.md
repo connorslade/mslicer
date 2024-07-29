@@ -48,7 +48,7 @@
 - [x] Use egui_dock to get a more clean look
 - [x] Align to bed button
 - [x] Define all crate versions in workspace toml
-- [ ] Ask for filename when sending to printer
+- [x] Ask for filename when sending to printer
 - [x] Printer scanning (UDP broadcast)
 - [ ] Verify printer capabilities before uploading / printing
 - [ ] Add some optional alert sound for print completion

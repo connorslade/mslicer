@@ -1,5 +1,8 @@
 use egui::{pos2, vec2, Color32, Context, Grid, Id, RichText, Ui, WidgetText, Window};
 
+use crate::app::App;
+
+type UiFunction = dyn FnMut(&mut App, &mut Ui) -> bool;
 pub struct PopupManager {
     popups: Vec<Popup>,
 }
@@ -7,9 +10,10 @@ pub struct PopupManager {
 pub struct Popup {
     title: String,
     id: Id,
-    ui: Box<dyn FnMut(&mut Ui) -> bool>,
+    ui: Box<UiFunction>,
 }
 
+#[allow(dead_code)]
 pub enum PopupIcon {
     Info,
     Warning,
@@ -26,7 +30,7 @@ impl PopupManager {
         self.popups.push(popup);
     }
 
-    pub fn render(&mut self, ctx: &Context) {
+    pub fn render(&mut self, app: &mut App, ctx: &Context) {
         let window_size = ctx.screen_rect().size();
 
         let mut i = 0;
@@ -48,7 +52,7 @@ impl PopupManager {
                         ui.heading(popup.title.clone());
                     });
                     ui.separator();
-                    close = (popup.ui)(ui);
+                    close = (popup.ui)(app, ui);
                 });
 
             if close {
@@ -61,11 +65,11 @@ impl PopupManager {
 }
 
 impl Popup {
-    pub fn new(title: String, ui: impl FnMut(&mut Ui) -> bool + 'static) -> Self {
-        Self::new_with_id(Id::new(rand::random::<u64>()), title, ui)
-    }
-
-    fn new_with_id(id: Id, title: String, ui: impl FnMut(&mut Ui) -> bool + 'static) -> Self {
+    fn new_with_id(
+        id: Id,
+        title: String,
+        ui: impl FnMut(&mut App, &mut Ui) -> bool + 'static,
+    ) -> Self {
         Self {
             title,
             id,
@@ -73,12 +77,23 @@ impl Popup {
         }
     }
 
+    pub fn new(
+        title: impl AsRef<str>,
+        ui: impl FnMut(&mut App, &mut Ui) -> bool + 'static,
+    ) -> Self {
+        Self::new_with_id(
+            Id::new(rand::random::<u64>()),
+            title.as_ref().to_owned(),
+            ui,
+        )
+    }
+
     pub fn simple(title: impl AsRef<str>, icon: PopupIcon, body: impl Into<WidgetText>) -> Self {
         let id = Id::new(rand::random::<u64>());
         let title = title.as_ref().to_owned();
         let body = body.into();
 
-        Self::new_with_id(id, title, move |ui| {
+        Self::new_with_id(id, title, move |_app, ui| {
             let mut close = false;
             ui.centered_and_justified(|ui| {
                 Grid::new(id.with("grid")).num_columns(2).show(ui, |ui| {
