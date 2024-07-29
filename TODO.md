@@ -66,6 +66,6 @@
 - [x] Actually init remote print at startup if requested
 - [ ] Preferred service ports
 - [ ] Button to disable remote print services
-- [ ] Check if files are removed from the file server after being downloaded once
+- [x] Check if files are removed from the file server after being downloaded once
 - [x] Dont allow adding the same printer multiple times
 - [x] Drag and drop to load models

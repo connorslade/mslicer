@@ -14,7 +14,7 @@ use afire::{
     internal::{event_loop::EventLoop, handle::handle, socket::Socket},
     Content, Method, Server, Status,
 };
-use parking_lot::RwLock;
+use parking_lot::Mutex;
 use serde::Serialize;
 use serde_json::json;
 use tracing::{error, trace};
@@ -29,7 +29,7 @@ pub struct HttpServer {
 }
 
 pub struct HttpServerInner {
-    files: RwLock<HashMap<String, Arc<Vec<u8>>>>,
+    files: Mutex<HashMap<String, Arc<Vec<u8>>>>,
     listener: TcpListener,
 
     proxy_enabled: AtomicBool,
@@ -47,7 +47,7 @@ impl HttpServer {
     pub fn new(listener: TcpListener, mqtt_server: &Mqtt) -> Self {
         Self {
             inner: Arc::new(HttpServerInner {
-                files: RwLock::new(HashMap::new()),
+                files: Mutex::new(HashMap::new()),
                 listener,
 
                 proxy_enabled: AtomicBool::new(false),
@@ -65,7 +65,7 @@ impl HttpServer {
             let file = ctx.param("file");
 
             let state = ctx.app();
-            let files = state.files.read();
+            let files = state.files.lock();
             let Some(_) = files.get(file) else {
                 ctx.status(Status::NotFound).text("File not found").send()?;
                 return Ok(());
@@ -79,7 +79,7 @@ impl HttpServer {
             let file_name = ctx.param("file");
 
             let state = ctx.app();
-            let files = state.files.read();
+            let mut files = state.files.lock();
             let Some(file) = files.get(file_name) else {
                 ctx.status(Status::NotFound).text("File not found").send()?;
                 return Ok(());
@@ -87,6 +87,10 @@ impl HttpServer {
 
             trace!("Sending file `{file_name}`");
             ctx.stream(ArcReader::new(file.clone())).send()?;
+
+            trace!("Removing file `{file_name}`");
+            files.remove(file_name);
+
             Ok(())
         });
 
@@ -138,12 +142,12 @@ impl HttpServer {
     }
 
     pub fn add_file(&self, name: &str, data: Arc<Vec<u8>>) {
-        let mut files = self.files.write();
+        let mut files = self.files.lock();
         files.insert(name.to_owned(), data);
     }
 
     pub fn remove_file(&self, name: &str) {
-        let mut files = self.files.write();
+        let mut files = self.files.lock();
         files.remove(name);
     }
 }
