@@ -23,11 +23,15 @@ use remote_send::{
 };
 
 use crate::{
-    config::Config,
-    ui::state::{RemotePrintConnectStatus, UiState},
+    app::App,
+    ui::{
+        popup::{Popup, PopupIcon},
+        state::{RemotePrintConnectStatus, UiState},
+    },
 };
 
 pub struct RemotePrint {
+    been_started: bool,
     services: Option<Arc<Services>>,
     printers: Arc<Mutex<Vec<Printer>>>,
     jobs: Vec<AsyncJob>,
@@ -55,6 +59,7 @@ struct AsyncJob {
 impl RemotePrint {
     pub fn uninitialized() -> Self {
         Self {
+            been_started: false,
             services: None,
             printers: Arc::new(Mutex::new(Vec::new())),
             jobs: Vec::new(),
@@ -101,6 +106,7 @@ impl RemotePrint {
 
         info!("Binds: {{ UDP: {_udp_port}, MQTT: {mqtt_port}, HTTP: {http_port} }}");
 
+        self.been_started = true;
         self.services = Some(Arc::new(Services {
             mqtt,
             http,
@@ -114,8 +120,18 @@ impl RemotePrint {
         Ok(())
     }
 
-    pub fn tick(&mut self, ui_state: &mut UiState, config: &Config) {
-        if !self.is_initialized() && config.init_remote_print_at_startup {
+    pub fn shutdown(&mut self) {
+        if let Some(services) = self.services.take() {
+            info!("Shutting down remote print services");
+            services.http.shutdown();
+            services.mqtt.shutdown();
+        }
+    }
+
+    pub fn tick(&mut self, app: &mut App) {
+        let config = &app.config;
+
+        if !self.been_started && !self.is_initialized() && config.init_remote_print_at_startup {
             self.init().unwrap();
             self.set_network_timeout(Duration::from_secs_f32(config.network_timeout));
 
@@ -123,13 +139,11 @@ impl RemotePrint {
             services.http.set_proxy_enabled(config.http_status_proxy);
         }
 
-        // let mut dialog_builder = || modal.as_mut().unwrap().dialog();
-
         let mut i = 0;
         while i < self.jobs.len() {
             if self.jobs[i].is_finished() {
                 let AsyncJob { handle, action } = self.jobs.remove(i);
-                action(ui_state);
+                action(&mut app.state);
                 if let Err(e) = handle.join().unwrap() {
                     let mut body = String::new();
                     for link in e.chain() {
@@ -137,11 +151,11 @@ impl RemotePrint {
                         body.push(' ');
                     }
 
-                    // dialog_builder()
-                    //     .with_title("Remote Print Error")
-                    //     .with_body(&body[..body.len() - 1])
-                    //     .with_icon(Icon::Error)
-                    //     .open();
+                    app.popup.open(Popup::simple(
+                        "Remote Print Error",
+                        PopupIcon::Error,
+                        &body[..body.len() - 1],
+                    ));
                 }
                 continue;
             }

@@ -65,7 +65,8 @@
 - [ ] Allow changing broadcast address
 - [x] Actually init remote print at startup if requested
 - [ ] Preferred service ports
-- [ ] Button to disable remote print services
+- [x] Button to disable remote print services
 - [x] Check if files are removed from the file server after being downloaded once
 - [x] Dont allow adding the same printer multiple times
 - [x] Drag and drop to load models
+- [ ] Look into mqtt server resource leak on disable

@@ -1,8 +1,11 @@
 use std::{
     collections::HashMap,
     io::ErrorKind,
-    net::{TcpListener, TcpStream},
-    sync::Arc,
+    net::{Ipv4Addr, SocketAddr, TcpListener, TcpStream},
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc,
+    },
     thread,
 };
 
@@ -19,12 +22,13 @@ use packets::{
 };
 use parking_lot::{lock_api::MutexGuard, MappedMutexGuard, Mutex};
 use soon::Soon;
-use tracing::{info, warn};
+use tracing::{info, trace, warn};
 
 mod misc;
 pub mod packets;
 
 pub struct MqttServer<H: MqttHandler> {
+    shutdown: AtomicBool,
     listener: Mutex<Option<TcpListener>>,
     clients: Mutex<HashMap<u64, TcpStream>>,
     handler: Soon<H>,
@@ -45,6 +49,7 @@ where
 impl<H: MqttHandler + Send + Sync + 'static> MqttServer<H> {
     pub fn new(handler: H) -> Arc<Self> {
         let this = Arc::new(Self {
+            shutdown: AtomicBool::new(false),
             listener: Mutex::new(None),
             clients: Mutex::new(HashMap::new()),
             handler: Soon::empty(),
@@ -61,6 +66,10 @@ impl<H: MqttHandler + Send + Sync + 'static> MqttServer<H> {
 
         thread::spawn(move || {
             for stream in socket.incoming() {
+                if self.shutdown.load(Ordering::Relaxed) {
+                    break;
+                }
+
                 let stream = match stream {
                     Ok(stream) => stream,
                     Err(e) if e.kind() == ErrorKind::WouldBlock => break,
@@ -84,14 +93,19 @@ impl<H: MqttHandler + Send + Sync + 'static> MqttServer<H> {
                     }
                 });
             }
+
+            trace!("Stopping MQTT event loop");
         });
 
         Ok(())
     }
 
     pub fn shutdown(self: Arc<Self>) {
+        self.shutdown.store(true, Ordering::Relaxed);
         if let Some(listener) = self.listener.lock().take() {
-            listener.set_nonblocking(true).unwrap();
+            let port = listener.local_addr().unwrap().port();
+            let socket_address = SocketAddr::new(Ipv4Addr::LOCALHOST.into(), port);
+            let _ = TcpStream::connect(socket_address).unwrap();
         }
     }
 

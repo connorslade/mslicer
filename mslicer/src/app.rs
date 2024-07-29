@@ -225,7 +225,7 @@ impl eframe::App for App {
             Theme::Light => ctx.set_visuals(Visuals::light()),
         }
 
-        self.remote_print.tick(&mut self.state, &self.config);
+        self.remote_print.tick(app);
         drag_and_drop::update(self, ctx);
         windows::ui(self, ctx);
     }

@@ -10,7 +10,7 @@ use const_format::concatcp;
 use egui::{
     vec2, Align, Context, DragValue, Grid, Layout, ProgressBar, Separator, Spinner, TextEdit, Ui,
 };
-use egui_phosphor::regular::{NETWORK, PLUGS, PRINTER, TRASH_SIMPLE, UPLOAD_SIMPLE};
+use egui_phosphor::regular::{NETWORK, PLUGS, PRINTER, STOP, TRASH_SIMPLE, UPLOAD_SIMPLE};
 use goo_format::File as GooFile;
 use notify_rust::Notification;
 use remote_send::status::{FileTransferStatus, PrintInfoStatus};
@@ -286,6 +286,16 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
 
     ui.add_space(16.0);
     ui.heading("Config");
+
+    if app.remote_print.is_initialized() {
+        if ui
+            .button(concatcp!(STOP, " Disable Remote Print"))
+            .clicked()
+        {
+            app.remote_print.shutdown();
+        }
+        ui.add_space(8.0);
+    }
 
     ui.checkbox(
         &mut app.config.alert_print_completion,

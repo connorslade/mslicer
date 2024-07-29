@@ -1,7 +1,7 @@
 use std::{
     collections::HashMap,
     io::{self, ErrorKind, Read},
-    net::TcpListener,
+    net::{Ipv4Addr, SocketAddr, TcpListener, TcpStream},
     ops::Deref,
     sync::{
         atomic::{AtomicBool, Ordering},
@@ -32,6 +32,7 @@ pub struct HttpServerInner {
     files: Mutex<HashMap<String, Arc<Vec<u8>>>>,
     listener: TcpListener,
 
+    shutdown: Arc<AtomicBool>,
     proxy_enabled: AtomicBool,
     mqtt_server: Arc<MqttInner>,
 }
@@ -50,6 +51,7 @@ impl HttpServer {
                 files: Mutex::new(HashMap::new()),
                 listener,
 
+                shutdown: Arc::new(AtomicBool::new(false)),
                 proxy_enabled: AtomicBool::new(false),
                 mqtt_server: mqtt_server.inner.clone(),
             }),
@@ -134,7 +136,11 @@ impl HttpServer {
     }
 
     pub fn shutdown(&self) {
-        self.inner.listener.set_nonblocking(true).unwrap();
+        self.inner.shutdown.store(true, Ordering::Relaxed);
+
+        let port = self.inner.listener.local_addr().unwrap().port();
+        let listener_address = SocketAddr::new(Ipv4Addr::LOCALHOST.into(), port);
+        let _ = TcpStream::connect(listener_address).unwrap();
     }
 
     pub fn set_proxy_enabled(&self, enabled: bool) {
@@ -158,9 +164,13 @@ impl EventLoop<Arc<HttpServerInner>> for ServerEventLoop {
         server: Arc<Server<Arc<HttpServerInner>>>,
         _addr: std::net::SocketAddr,
     ) -> afire::error::Result<()> {
-        let listener = server.app().listener.try_clone()?;
+        let app = server.app();
+        let listener = app.listener.try_clone()?;
+        let shutdown = app.shutdown.clone();
+
         for i in listener.incoming() {
-            if !server.running.load(Ordering::Relaxed) {
+            if shutdown.load(Ordering::Relaxed) {
+                trace!("Stopping HTTP event loop");
                 break;
             }
 

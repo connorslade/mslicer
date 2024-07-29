@@ -155,6 +155,10 @@ impl Mqtt {
         }
     }
 
+    pub fn shutdown(&self) {
+        self.server.clone().shutdown();
+    }
+
     pub fn get_client(&self, mainboard_id: &str) -> MappedRwLockReadGuard<MqttClient> {
         RwLockReadGuard::map(self.clients.read(), |clients| {
             clients.get(mainboard_id).unwrap()
