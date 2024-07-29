@@ -1,4 +1,8 @@
-use std::{sync::atomic::Ordering, time::Duration};
+use std::{
+    fs,
+    sync::{atomic::Ordering, Arc},
+    time::Duration,
+};
 
 use chrono::DateTime;
 use common::misc::human_duration;
@@ -6,9 +10,12 @@ use const_format::concatcp;
 use egui::{
     vec2, Align, Context, DragValue, Grid, Layout, ProgressBar, Separator, Spinner, TextEdit, Ui,
 };
-use egui_phosphor::regular::{NETWORK, PLUGS, TRASH_SIMPLE, UPLOAD_SIMPLE};
+use egui_phosphor::regular::{NETWORK, PLUGS, PRINTER, TRASH_SIMPLE, UPLOAD_SIMPLE};
+use goo_format::File as GooFile;
 use notify_rust::Notification;
 use remote_send::status::{FileTransferStatus, PrintInfoStatus};
+use rfd::FileDialog;
+use tracing::{info, warn};
 
 use crate::{
     app::App,
@@ -18,9 +25,12 @@ use crate::{
     },
 };
 
+const FAILED_TO_READ_GOO: &str = "Failed to read goo file, it may have been corrupted.";
+
 enum Action {
     None,
     Remove(usize),
+    UploadFile { mainboard_id: String },
 }
 
 pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
@@ -66,7 +76,11 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                             action = Action::Remove(i);
                         }
 
-                        if ui.button(concatcp!(UPLOAD_SIMPLE, " Upload")).clicked() {}
+                        if ui.button(concatcp!(UPLOAD_SIMPLE, " Upload")).clicked() {
+                            action = Action::UploadFile {
+                                mainboard_id: attributes.mainboard_id.clone(),
+                            };
+                        }
 
                         ui.add_space(ui.available_width());
                     })
@@ -145,8 +159,12 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
 
             if file_transfer.status == FileTransferStatus::Done && !printing {
                 ui.add_space(8.0);
-                ui.label("File transfer complete.");
-                if ui.button("Print").clicked() {
+                ui.horizontal(|ui| {
+                    ui.label("File transfer of");
+                    ui.monospace(&file_transfer.filename);
+                    ui.label("is complete.");
+                });
+                if ui.button(concatcp!(PRINTER, " Print")).clicked() {
                     app.remote_print
                         .print(&attributes.mainboard_id, &file_transfer.filename)
                         .unwrap();
@@ -261,6 +279,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
 
         match action {
             Action::Remove(i) => app.remote_print.remove_printer(i).unwrap(),
+            Action::UploadFile { mainboard_id } => upload_file(app, mainboard_id),
             Action::None => {}
         }
     }
@@ -305,5 +324,29 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     if app.remote_print.is_initialized() && last_timeout != app.config.network_timeout {
         app.remote_print
             .set_network_timeout(Duration::from_secs_f32(app.config.network_timeout));
+    }
+}
+
+fn upload_file(app: &mut App, mainboard_id: String) {
+    if let Some(file) = FileDialog::new()
+        .add_filter("Sliced Model", &["goo"])
+        .pick_file()
+    {
+        info!("Uploading local file {file:?} to printer `{mainboard_id}`");
+        let data = Arc::new(fs::read(&file).unwrap());
+        if let Err(err) = GooFile::deserialize(&data) {
+            warn!("Failed to read goo file: {err}");
+            app.popup.open(Popup::simple(
+                "Invalid File",
+                PopupIcon::Error,
+                format!("{FAILED_TO_READ_GOO}\n{err}"),
+            ));
+        } else {
+            let file_name = file.file_name().unwrap().to_string_lossy();
+            let file_name = file_name.rsplit_once('.').map(|x| x.0).unwrap_or_default();
+            app.remote_print
+                .upload(&mainboard_id, data, file_name.to_owned())
+                .unwrap();
+        }
     }
 }

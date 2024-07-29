@@ -54,7 +54,7 @@
 - [ ] Add some optional alert sound for print completion
 - [x] Create config struct thats saved / loaded on shutdown / startup
 - [ ] Publish goo_format crate
-- [ ] Allow uploading / printing a local .goo file
+- [x] Allow uploading / printing a local .goo file
 - [x] Load normals from model files
 - [ ] Fix camera movement
 - [x] Optionally proxy printer state over http (api and sse)
@@ -66,3 +66,5 @@
 - [x] Actually init remote print at startup if requested
 - [ ] Preferred service ports
 - [ ] Button to disable remote print services
+- [ ] Check if files are removed from the file server after being downloaded once
+- [ ] Dont allow adding the same printer multiple times
