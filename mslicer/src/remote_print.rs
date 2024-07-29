@@ -320,7 +320,19 @@ fn connect_printer(
         response.data.attributes.machine_name
     );
 
-    printers.lock().push(Printer {
+    let mut printers = printers.lock();
+    if printers
+        .iter()
+        .any(|p| p.mainboard_id == response.data.attributes.mainboard_id)
+    {
+        warn!(
+            "Printer `{}` already connected.",
+            response.data.attributes.mainboard_id
+        );
+        return Ok(());
+    }
+
+    printers.push(Printer {
         mainboard_id: response.data.attributes.mainboard_id.clone(),
     });
 

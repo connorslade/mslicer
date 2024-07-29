@@ -67,4 +67,5 @@
 - [ ] Preferred service ports
 - [ ] Button to disable remote print services
 - [ ] Check if files are removed from the file server after being downloaded once
-- [ ] Dont allow adding the same printer multiple times
+- [x] Dont allow adding the same printer multiple times
+- [ ] Drag and drop to load models
