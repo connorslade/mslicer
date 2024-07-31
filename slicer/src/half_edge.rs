@@ -72,7 +72,7 @@ impl<'a> HalfEdgeMesh<'a> {
                 break;
             };
             edge = self.half_edges[this_edge as usize].next;
-            if this_edge == start_edge {
+            if edge == start_edge {
                 break;
             }
         }
@@ -81,6 +81,6 @@ impl<'a> HalfEdgeMesh<'a> {
     }
 
     pub fn vertex(&self, idx: u32) -> u32 {
-        self.half_edges[idx as usize].vertex
+        self.half_edges[idx as usize].origin_vertex
     }
 }
