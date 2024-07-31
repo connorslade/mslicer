@@ -58,6 +58,8 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     ui.add_space(16.0);
     ui.heading("Advanced");
 
+    ui.checkbox(&mut app.config.show_normals, "Show Normals");
+
     ui.collapsing("Camera", |ui| {
         ui.label("Target");
 

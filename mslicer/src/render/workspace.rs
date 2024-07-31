@@ -1,21 +1,17 @@
 use std::sync::Arc;
 
-use eframe::Theme;
 use egui::PaintCallbackInfo;
 use egui_wgpu::{CallbackResources, CallbackTrait, ScreenDescriptor};
 use nalgebra::{Matrix4, Vector3};
 use parking_lot::RwLock;
 use wgpu::{CommandBuffer, CommandEncoder, Device, Queue, RenderPass};
 
-use crate::slice_operation::SliceOperation;
+use crate::{config::Config, slice_operation::SliceOperation};
 
 use super::{
     camera::Camera,
     dispatch::solid_line::SolidLineDispatch,
-    pipelines::{
-        model::{ModelPipeline, RenderStyle},
-        target_point::TargetPointPipeline,
-    },
+    pipelines::{model::ModelPipeline, target_point::TargetPointPipeline},
     preview::render_preview_image,
     rendered_mesh::RenderedMesh,
 };
@@ -36,10 +32,9 @@ pub struct WorkspaceRenderCallback {
     pub grid_size: f32,
 
     pub models: Arc<RwLock<Vec<RenderedMesh>>>,
-    pub render_style: RenderStyle,
+    pub config: Config,
 
     pub is_moving: bool,
-    pub theme: Theme,
     pub slice_operation: Option<SliceOperation>,
 }
 

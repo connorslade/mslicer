@@ -5,10 +5,9 @@ use serde::{Deserialize, Serialize};
 use wgpu::{
     util::{BufferInitDescriptor, DeviceExt},
     BindGroup, BindGroupEntry, BindGroupLayout, BlendState, BufferUsages, ColorTargetState,
-    ColorWrites, CompareFunction, DepthStencilState, Device, FragmentState,
-    IndexFormat, MultisampleState, PipelineLayoutDescriptor, PrimitiveState, RenderPass,
-    RenderPipeline, RenderPipelineDescriptor, ShaderModuleDescriptor, ShaderSource, TextureFormat,
-    VertexState,
+    ColorWrites, CompareFunction, DepthStencilState, Device, FragmentState, IndexFormat,
+    MultisampleState, PipelineLayoutDescriptor, PrimitiveState, RenderPass, RenderPipeline,
+    RenderPipelineDescriptor, ShaderModuleDescriptor, ShaderSource, TextureFormat, VertexState,
 };
 
 use crate::{
@@ -115,7 +114,7 @@ impl ModelPipeline {
                 model_color: model.color.to_normalized_gamma_f32().into(),
                 camera_position: resources.camera.position(),
                 camera_target: resources.camera.target,
-                render_style: resources.render_style as u32,
+                render_style: resources.config.render_style as u32,
             };
 
             let mut buffer = UniformBuffer::new(Vec::new());

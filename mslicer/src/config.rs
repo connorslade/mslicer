@@ -11,10 +11,11 @@ use tracing::info;
 
 use crate::render::pipelines::model::RenderStyle;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Config {
     pub render_style: RenderStyle,
+    pub show_normals: bool,
     pub grid_size: f32,
     pub theme: Theme,
 
@@ -55,6 +56,7 @@ impl Default for Config {
     fn default() -> Self {
         Self {
             render_style: RenderStyle::Rended,
+            show_normals: false,
             theme: Theme::Dark,
             grid_size: 12.16,
             alert_print_completion: false,

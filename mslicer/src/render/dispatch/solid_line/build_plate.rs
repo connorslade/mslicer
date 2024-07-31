@@ -1,7 +1,9 @@
 use eframe::Theme;
 use nalgebra::Vector3;
 
-use crate::render::pipelines::solid_line::Line;
+use crate::render::{pipelines::solid_line::Line, workspace::WorkspaceRenderCallback};
+
+use super::LineDispatch;
 
 pub struct BuildPlateDispatch {
     last_bed_size: Vector3<f32>,
@@ -21,8 +23,14 @@ impl BuildPlateDispatch {
             cached_lines: Vec::new(),
         }
     }
+}
 
-    pub fn generate_lines(&mut self, bed_size: Vector3<f32>, grid_size: f32, theme: Theme) -> bool {
+impl LineDispatch for BuildPlateDispatch {
+    fn generate_lines(&mut self, resources: &WorkspaceRenderCallback) -> bool {
+        let bed_size = resources.bed_size;
+        let grid_size = resources.grid_size;
+        let theme = resources.config.theme;
+
         if bed_size != self.last_bed_size
             || grid_size != self.last_grid_size
             || theme != self.last_theme
@@ -37,7 +45,7 @@ impl BuildPlateDispatch {
         false
     }
 
-    pub fn lines(&self) -> &[Line] {
+    fn lines(&self) -> &[Line] {
         &self.cached_lines
     }
 }

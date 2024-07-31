@@ -147,8 +147,7 @@ fn viewport(app: &mut App, ui: &mut Ui, _ctx: &Context) {
             slice_operation: app.slice_operation.clone(),
 
             models: app.meshes.clone(),
-            render_style: app.config.render_style,
-            theme: app.config.theme,
+            config: app.config.clone(),
         },
     );
     ui.painter().add(callback);
