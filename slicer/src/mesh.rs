@@ -76,7 +76,7 @@ impl Mesh {
 
     /// Intersect the mesh with a plane with linier time complexity. You
     /// should probably use the [`crate::segments::Segments`] struct as it can
-    /// massively accurate slicing of high face count triangles.
+    /// massively accelerate slicing of high face count triangles.
     pub fn intersect_plane(&self, height: f32) -> Vec<Pos> {
         // Point is the position of the plane and normal is the direction /
         // rotation of the plane.

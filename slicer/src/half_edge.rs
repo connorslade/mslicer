@@ -2,8 +2,7 @@ use std::collections::{HashMap, HashSet};
 
 use crate::mesh::Mesh;
 
-pub struct HalfEdgeMesh<'a> {
-    mesh: &'a Mesh,
+pub struct HalfEdgeMesh {
     half_edges: Vec<HalfEdge>,
 }
 
@@ -18,8 +17,8 @@ pub struct HalfEdge {
     twin: Option<u32>,
 }
 
-impl<'a> HalfEdgeMesh<'a> {
-    pub fn new(mesh: &'a Mesh) -> Self {
+impl HalfEdgeMesh {
+    pub fn new(mesh: &Mesh) -> Self {
         let mut half_edges = Vec::new();
         let mut edge_map = HashMap::new();
 
@@ -49,7 +48,7 @@ impl<'a> HalfEdgeMesh<'a> {
             edge.twin = edge_map.get(&(edge.vertex, edge.origin_vertex)).copied();
         }
 
-        Self { mesh, half_edges }
+        Self { half_edges }
     }
 
     pub fn half_edges(&self) -> &[HalfEdge] {

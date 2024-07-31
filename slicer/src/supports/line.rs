@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use nalgebra::Vector3;
 
 use crate::{half_edge::HalfEdgeMesh, mesh::Mesh};
@@ -8,38 +10,43 @@ pub struct LineSupport {
     pub radius: f32,
 }
 
-pub fn generate_line_supports(mesh: &Mesh) -> Vec<LineSupport> {
-    let _half_edge_mesh = HalfEdgeMesh::new(mesh);
+pub fn generate_line_supports(mesh: &Mesh) -> Vec<[Vector3<f32>; 2]> {
+    let half_edge_mesh = HalfEdgeMesh::new(mesh);
 
-    vec![]
+    let points = detect_point_overhangs(mesh, &half_edge_mesh);
+    println!("Found {} overhangs", points.len());
+
+    points
 }
 
 /// Find all points that are both lower than their surrounding points and have down facing normals
-fn _detect_point_overhangs(base: &Mesh, mesh: &HalfEdgeMesh) -> Vec<Vector3<f32>> {
+fn detect_point_overhangs(mesh: &Mesh, half_edge: &HalfEdgeMesh) -> Vec<[Vector3<f32>; 2]> {
     let mut overhangs = Vec::new();
+    let mut seen = HashSet::new();
 
-    let vertices = base.vertices();
-    let normals = base.normals();
+    let vertices = mesh.vertices();
+    let normals = mesh.normals();
 
-    'outer: for edge in 0..mesh.half_edges().len() {
-        let origin_vertex = mesh.vertex(edge as u32);
-
-        // Ignore points that are not on the bottom of the mesh
-        let origin_normal = normals[origin_vertex as usize];
-        if origin_normal.z > 0.0 {
+    for edge in 0..half_edge.half_edges().len() {
+        let origin_vertex = half_edge.vertex(edge as u32);
+        if !seen.insert(origin_vertex) {
             continue;
         }
 
-        let origin_pos = vertices[origin_vertex as usize].z;
-        for connected in mesh.connected_vertices(edge as u32) {
-            let this_pos = vertices[connected as usize].z;
-            // Only add to overhangs if the original point is lower than all connected points
-            if this_pos <= origin_pos {
-                continue 'outer;
-            }
+        // Ignore points that are not on the bottom of the mesh
+        let origin_normal = mesh.transform_normal(&normals[origin_vertex as usize]);
+        if origin_normal.z >= -0.5 {
+            continue;
         }
 
-        overhangs.push(vertices[origin_vertex as usize]);
+        // Only add to overhangs if the original point is lower than all connected points by one layer
+        let origin_pos = mesh.transform(&vertices[origin_vertex as usize]);
+        let neighbors = half_edge.connected_vertices(edge as u32);
+        if neighbors.iter().all(|connected| {
+            (origin_pos.z - mesh.transform(&vertices[*connected as usize]).z) <= 0.05
+        }) {
+            overhangs.push([origin_pos, origin_normal]);
+        }
     }
 
     overhangs
@@ -67,10 +74,6 @@ fn _detect_face_overhangs(base: &Mesh, _mesh: &HalfEdgeMesh) -> Vec<Vector3<f32>
             .iter()
             .fold(Vector3::zeros(), |acc, &v| acc + vertices[v as usize])
             / 3.0;
-
-        if center.z > 5.0 {
-            continue;
-        }
 
         overhangs.push(center);
     }
