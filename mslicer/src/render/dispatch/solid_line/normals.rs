@@ -33,8 +33,11 @@ impl NormalsDispatch {
 
 impl LineDispatch for NormalsDispatch {
     fn generate_lines(&mut self, resources: &WorkspaceRenderCallback) -> bool {
-        // TODO: Dont do all this computation if normals are not shown
         let show_normals = resources.config.show_normals;
+        if !show_normals && show_normals == self.last_normals {
+            return false;
+        }
+
         let models = resources.models.read();
         let ids = models.iter().map(|x| x.id).collect::<Vec<_>>();
         let transforms = models
@@ -42,13 +45,10 @@ impl LineDispatch for NormalsDispatch {
             .map(|x| *x.mesh.transformation_matrix())
             .collect::<Vec<_>>();
 
-        if ids != self.last_models
-            || transforms != self.last_transforms
-            || show_normals != self.last_normals
-        {
+        self.last_normals = show_normals;
+        if ids != self.last_models || transforms != self.last_transforms {
             self.last_models = ids;
             self.last_transforms = transforms;
-            self.last_normals = show_normals;
 
             if show_normals {
                 self.cached_lines = generate_normals(resources.models.clone());
