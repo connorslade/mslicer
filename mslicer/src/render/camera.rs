@@ -38,8 +38,10 @@ impl Camera {
             let facing = Vector3::new(self.angle.x.sin(), self.angle.x.cos(), self.angle.y.tan())
                 .normalize()
                 .neg();
-            self.target -= facing.cross(&Vector3::z_axis()) * drag_delta.x;
-            self.target -= facing.cross(&Vector3::x_axis()) * drag_delta.y;
+
+            let right = facing.cross(&Vector3::z()).normalize();
+            let up = right.cross(&facing).normalize();
+            self.target -= (right * drag_delta.x * 0.1) - (up * drag_delta.y * 0.1);
         }
 
         if response.hovered() {
