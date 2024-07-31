@@ -2,8 +2,10 @@
 
 use nalgebra::Vector3;
 
+pub mod half_edge;
 pub mod mesh;
 pub mod segments;
 pub mod slicer;
+pub mod supports;
 
 pub type Pos = Vector3<f32>;

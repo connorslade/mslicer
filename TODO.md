@@ -51,7 +51,6 @@
 - [x] Ask for filename when sending to printer
 - [x] Printer scanning (UDP broadcast)
 - [ ] Verify printer capabilities before uploading / printing
-- [ ] Add some optional alert sound for print completion
 - [x] Create config struct thats saved / loaded on shutdown / startup
 - [ ] Publish goo_format crate
 - [x] Allow uploading / printing a local .goo file
