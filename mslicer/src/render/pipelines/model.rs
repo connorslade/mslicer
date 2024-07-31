@@ -1,13 +1,12 @@
 use egui::epaint::util::OrderedFloat;
-use egui_wgpu::ScreenDescriptor;
 use encase::{ShaderType, UniformBuffer};
 use nalgebra::{Matrix4, Vector3, Vector4};
 use serde::{Deserialize, Serialize};
 use wgpu::{
     util::{BufferInitDescriptor, DeviceExt},
     BindGroup, BindGroupEntry, BindGroupLayout, BlendState, BufferUsages, ColorTargetState,
-    ColorWrites, CommandEncoder, CompareFunction, DepthStencilState, Device, FragmentState,
-    IndexFormat, MultisampleState, PipelineLayoutDescriptor, PrimitiveState, Queue, RenderPass,
+    ColorWrites, CompareFunction, DepthStencilState, Device, FragmentState,
+    IndexFormat, MultisampleState, PipelineLayoutDescriptor, PrimitiveState, RenderPass,
     RenderPipeline, RenderPipelineDescriptor, ShaderModuleDescriptor, ShaderSource, TextureFormat,
     VertexState,
 };

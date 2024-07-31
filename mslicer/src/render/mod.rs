@@ -3,7 +3,7 @@ use std::mem;
 use dispatch::solid_line::SolidLineDispatch;
 use eframe::CreationContext;
 use pipelines::{
-    model::ModelPipeline, slice_preview::SlicePreviewPipeline, solid_line::SolidLinePipeline,
+    model::ModelPipeline, slice_preview::SlicePreviewPipeline,
     target_point::TargetPointPipeline,
 };
 use slice_preview::SlicePreviewRenderResources;

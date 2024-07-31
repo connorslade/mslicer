@@ -1,4 +1,3 @@
-use egui_wgpu::ScreenDescriptor;
 use encase::{ShaderSize, ShaderType, UniformBuffer};
 use nalgebra::{Matrix4, Vector4};
 use plexus::primitive::{
@@ -9,7 +8,7 @@ use plexus::primitive::{
 use wgpu::{
     util::{BufferInitDescriptor, DeviceExt},
     BindGroup, BindGroupDescriptor, BindGroupEntry, BindingResource, BlendState, Buffer,
-    BufferBinding, BufferDescriptor, BufferUsages, ColorTargetState, ColorWrites, CommandEncoder,
+    BufferBinding, BufferDescriptor, BufferUsages, ColorTargetState, ColorWrites,
     CompareFunction, DepthStencilState, Device, FragmentState, IndexFormat, MultisampleState,
     PipelineLayoutDescriptor, PrimitiveState, Queue, RenderPass, RenderPipeline,
     RenderPipelineDescriptor, ShaderModuleDescriptor, ShaderSource, TextureFormat, VertexState,

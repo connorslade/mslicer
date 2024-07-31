@@ -14,7 +14,6 @@ use super::{
     dispatch::solid_line::SolidLineDispatch,
     pipelines::{
         model::{ModelPipeline, RenderStyle},
-        solid_line::SolidLinePipeline,
         target_point::TargetPointPipeline,
     },
     preview::render_preview_image,
