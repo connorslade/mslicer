@@ -3,7 +3,7 @@ use std::{
     ops::Deref,
     sync::{
         atomic::{AtomicI64, AtomicU16, Ordering},
-        Arc,
+        Arc, Weak,
     },
 };
 
@@ -31,7 +31,7 @@ use crate::{
 };
 
 pub struct MqttInner {
-    server: Soon<Arc<MqttServer<Mqtt>>>,
+    server: Soon<Weak<MqttServer<Mqtt>>>,
     /// mainboard_id -> MqttClient
     pub(crate) clients: RwLock<HashMap<String, MqttClient>>,
     /// client_id -> mainboard_id
@@ -53,8 +53,8 @@ pub struct MqttClient {
 }
 
 impl MqttHandler for Mqtt {
-    fn init(&self, server: Arc<MqttServer<Self>>) {
-        self.server.replace(server);
+    fn init(&self, server: &Arc<MqttServer<Self>>) {
+        self.server.replace(Arc::downgrade(server));
     }
 
     fn on_connect(&self, client_id: u64, _packet: ConnectPacket) -> Result<ConnectAckPacket> {
@@ -156,7 +156,9 @@ impl Mqtt {
     }
 
     pub fn shutdown(&self) {
-        self.server.clone().shutdown();
+        if let Some(server) = self.server.upgrade() {
+            server.shutdown();
+        }
     }
 
     pub fn get_client(&self, mainboard_id: &str) -> MappedRwLockReadGuard<MqttClient> {
@@ -189,18 +191,20 @@ impl Mqtt {
         };
         let data = serde_json::to_vec(&data).unwrap();
 
-        self.server
-            .send_packet(
-                client_id,
-                PublishPacket {
-                    flags: PublishFlags::QOS1,
-                    topic: format!("/sdcp/request/{}", client.attributes.mainboard_id),
-                    packet_id: Some(packet_id),
-                    data,
-                }
-                .to_packet(),
-            )
-            .unwrap();
+        if let Some(server) = self.server.upgrade() {
+            server
+                .send_packet(
+                    client_id,
+                    PublishPacket {
+                        flags: PublishFlags::QOS1,
+                        topic: format!("/sdcp/request/{}", client.attributes.mainboard_id),
+                        packet_id: Some(packet_id),
+                        data,
+                    }
+                    .to_packet(),
+                )
+                .unwrap();
+        }
 
         Ok(())
     }

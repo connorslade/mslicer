@@ -38,7 +38,7 @@ pub trait MqttHandler
 where
     Self: Sized,
 {
-    fn init(&self, server: Arc<MqttServer<Self>>);
+    fn init(&self, server: &Arc<MqttServer<Self>>);
     fn on_connect(&self, client_id: u64, packet: ConnectPacket) -> Result<ConnectAckPacket>;
     fn on_subscribe(&self, client_id: u64, packet: SubscribePacket) -> Result<SubscribeAckPacket>;
     fn on_publish(&self, client_id: u64, packet: PublishPacket) -> Result<()>;
@@ -55,7 +55,7 @@ impl<H: MqttHandler + Send + Sync + 'static> MqttServer<H> {
             handler: Soon::empty(),
         });
 
-        handler.init(this.clone());
+        handler.init(&this);
         this.handler.replace(handler);
 
         this

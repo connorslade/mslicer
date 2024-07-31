@@ -68,4 +68,4 @@
 - [x] Check if files are removed from the file server after being downloaded once
 - [x] Dont allow adding the same printer multiple times
 - [x] Drag and drop to load models
-- [ ] Look into mqtt server resource leak on disable
+- [x] Look into mqtt server resource leak on disable
