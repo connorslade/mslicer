@@ -27,7 +27,9 @@ impl Camera {
     }
 
     pub fn handle_movement(&mut self, response: &Response, ui: &Ui) {
-        let drag_delta = response.drag_delta();
+        let shift_down = ui.input(|x| x.modifiers.shift);
+        let drag_delta = response.drag_delta() * if shift_down { 0.1 } else { 1.0 };
+
         if response.dragged_by(PointerButton::Primary) {
             self.angle.x += drag_delta.x * 0.01;
             self.angle.y = (self.angle.y + drag_delta.y * 0.01)

@@ -81,9 +81,12 @@ fn generate_normals(models: Models) -> Vec<Line> {
         for (&face, normal) in face.iter().zip(normals.iter()) {
             let center = face
                 .iter()
-                .map(|&idx| model.mesh.transform(&vertices[idx as usize]))
+                .map(|&idx| vertices[idx as usize])
                 .sum::<Vector3<f32>>()
                 / 3.0;
+            let center = model.mesh.transform(&center);
+            let normal = model.mesh.transform_normal(normal);
+
             lines.push(Line::new(center, center + normal * 0.2).color(color));
         }
     }

@@ -69,7 +69,6 @@ impl SlicePreviewPipeline {
             push_constant_ranges: &[],
         });
 
-        println!("SlicePreviewPipeline created");
         let render_pipeline = device.create_render_pipeline(&RenderPipelineDescriptor {
             label: None,
             layout: Some(&pipeline_layout),
