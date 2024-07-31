@@ -8,8 +8,8 @@ use plexus::primitive::{
 use wgpu::{
     util::{BufferInitDescriptor, DeviceExt},
     BindGroup, BindGroupDescriptor, BindGroupEntry, BindingResource, BlendState, Buffer,
-    BufferBinding, BufferDescriptor, BufferUsages, ColorTargetState, ColorWrites,
-    CompareFunction, DepthStencilState, Device, FragmentState, IndexFormat, MultisampleState,
+    BufferBinding, BufferDescriptor, BufferUsages, ColorTargetState, ColorWrites, CompareFunction,
+    DepthStencilState, Device, FragmentState, IndexFormat, MultisampleState,
     PipelineLayoutDescriptor, PrimitiveState, Queue, RenderPass, RenderPipeline,
     RenderPipelineDescriptor, ShaderModuleDescriptor, ShaderSource, TextureFormat, VertexState,
 };
@@ -69,6 +69,7 @@ impl TargetPointPipeline {
             }],
         });
 
+        println!("TargetPointPipeline created");
         let render_pipeline = device.create_render_pipeline(&RenderPipelineDescriptor {
             label: None,
             layout: Some(&pipeline_layout),
@@ -176,7 +177,6 @@ fn generate_sphere(precision: usize) -> (Vec<ModelVertex>, Vec<u32>) {
                 x.2.into_inner() as f32,
                 1.0,
             ],
-            tex_coords: [0.0, 0.0],
             normal: [0.0, 0.0, 0.0],
         })
         .collect();

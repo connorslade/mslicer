@@ -69,6 +69,7 @@ impl SlicePreviewPipeline {
             push_constant_ranges: &[],
         });
 
+        println!("SlicePreviewPipeline created");
         let render_pipeline = device.create_render_pipeline(&RenderPipelineDescriptor {
             label: None,
             layout: Some(&pipeline_layout),
@@ -105,7 +106,6 @@ impl SlicePreviewPipeline {
             .into_iter()
             .map(|[x, y]| ModelVertex {
                 position: [x, y, 0.0, 1.0],
-                tex_coords: [0.0, 0.0],
                 normal: [0.0, 0.0, 1.0],
             })
             .collect::<Vec<_>>();

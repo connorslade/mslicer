@@ -3,8 +3,7 @@ use std::mem;
 use dispatch::solid_line::SolidLineDispatch;
 use eframe::CreationContext;
 use pipelines::{
-    model::ModelPipeline, slice_preview::SlicePreviewPipeline,
-    target_point::TargetPointPipeline,
+    model::ModelPipeline, slice_preview::SlicePreviewPipeline, target_point::TargetPointPipeline,
 };
 use slice_preview::SlicePreviewRenderResources;
 use wgpu::{BufferAddress, VertexAttribute, VertexBufferLayout, VertexFormat, VertexStepMode};
@@ -28,14 +27,9 @@ pub const VERTEX_BUFFER_LAYOUT: VertexBufferLayout = VertexBufferLayout {
             shader_location: 0,
         },
         VertexAttribute {
-            format: VertexFormat::Float32x2,
+            format: VertexFormat::Float32x3,
             offset: 4 * 4,
             shader_location: 1,
-        },
-        VertexAttribute {
-            format: VertexFormat::Float32x3,
-            offset: 4 * 4 + 4 * 2,
-            shader_location: 2,
         },
     ],
 };
@@ -44,7 +38,6 @@ pub const VERTEX_BUFFER_LAYOUT: VertexBufferLayout = VertexBufferLayout {
 #[derive(Default, Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct ModelVertex {
     pub position: [f32; 4],
-    pub tex_coords: [f32; 2],
     pub normal: [f32; 3],
 }
 

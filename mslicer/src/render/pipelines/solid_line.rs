@@ -92,6 +92,7 @@ impl SolidLinePipeline {
             }],
         });
 
+        println!("SolidLinePipeline created");
         let render_pipeline = device.create_render_pipeline(&RenderPipelineDescriptor {
             label: None,
             layout: Some(&pipeline_layout),

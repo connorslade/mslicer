@@ -11,25 +11,18 @@ struct Context {
 
 struct VertexOutput {
     @builtin(position)
-    camera_position: vec4<f32>,
-    @location(0)
     position: vec4<f32>,
     @location(1)
-    tex_coord: vec2<f32>,
-    @location(2)
     normal: vec3<f32>,
 };
 
 @vertex
 fn vert(
     @location(0) position: vec4<f32>,
-    @location(1) tex_coord: vec2<f32>,
-    @location(2) normal: vec3<f32>,
+    @location(1) normal: vec3<f32>,
 ) -> VertexOutput {
     var out: VertexOutput;
-    out.camera_position = context.transform * position;
     out.position = context.transform * position;
-    out.tex_coord = tex_coord;
     out.normal = normalize((context.model_transform * vec4(normal, 0.0)).xyz);
     return out;
 }

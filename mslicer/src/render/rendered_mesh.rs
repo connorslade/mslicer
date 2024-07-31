@@ -45,17 +45,14 @@ impl RenderedMesh {
             out.extend_from_slice(&[
                 ModelVertex {
                     position: [a.x, a.y, a.z, 1.0],
-                    tex_coords: [0.0, 0.0],
                     normal: normal.into(),
                 },
                 ModelVertex {
                     position: [b.x, b.y, b.z, 1.0],
-                    tex_coords: [0.0, 0.0],
                     normal: normal.into(),
                 },
                 ModelVertex {
                     position: [c.x, c.y, c.z, 1.0],
-                    tex_coords: [0.0, 0.0],
                     normal: normal.into(),
                 },
             ]);
