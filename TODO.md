@@ -52,7 +52,7 @@
 - [x] Printer scanning (UDP broadcast)
 - [ ] Verify printer capabilities before uploading / printing
 - [x] Create config struct thats saved / loaded on shutdown / startup
-- [ ] Publish goo_format crate
+- [x] Publish goo_format crate
 - [x] Allow uploading / printing a local .goo file
 - [x] Load normals from model files
 - [ ] Fix camera movement

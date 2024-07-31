@@ -6,7 +6,7 @@ impl Default for HeaderInfo {
     fn default() -> Self {
         Self {
             version: SizedString::new(b"V3.0"),
-            software_info: SizedString::new(b"mlicer by Connor Slade"),
+            software_info: SizedString::new(b"mslicer by Connor Slade"),
             software_version: SizedString::new(b"0.1.0"),
             file_time: SizedString::new(b""),
             printer_name: SizedString::new(b"standard"),

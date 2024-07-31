@@ -8,6 +8,7 @@ anyhow = "1.0.86"
 bitflags = "2.5.0"
 bytemuck = "1.16.1"
 chrono = "0.4.38"
+clap = { version = "4.5.7", features = ["derive"] }
 clone-macro = "0.1.0"
 const_format = "0.2.32"
 criterion = "0.5.1"
