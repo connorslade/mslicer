@@ -1,21 +1,19 @@
+use std::mem;
+
 use encase::{ShaderSize, ShaderType, UniformBuffer};
 use nalgebra::{Matrix4, Vector3};
 use wgpu::{
     util::{BufferInitDescriptor, DeviceExt},
     BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayoutDescriptor,
-    BindGroupLayoutEntry, BindingResource, BindingType, Buffer, BufferBinding, BufferBindingType,
-    BufferDescriptor, BufferUsages, ColorTargetState, ColorWrites, CompareFunction,
-    DepthStencilState, Device, FragmentState, IndexFormat, MultisampleState,
+    BindGroupLayoutEntry, BindingResource, BindingType, Buffer, BufferAddress, BufferBinding,
+    BufferBindingType, BufferDescriptor, BufferUsages, ColorTargetState, ColorWrites,
+    CompareFunction, DepthStencilState, Device, FragmentState, IndexFormat, MultisampleState,
     PipelineLayoutDescriptor, PolygonMode, PrimitiveState, Queue, RenderPass, RenderPipeline,
     RenderPipelineDescriptor, ShaderModuleDescriptor, ShaderSource, ShaderStages, TextureFormat,
-    VertexState,
+    VertexAttribute, VertexBufferLayout, VertexFormat, VertexState, VertexStepMode,
 };
 
-use crate::{
-    include_shader,
-    render::{workspace::WorkspaceRenderCallback, ModelVertex, VERTEX_BUFFER_LAYOUT},
-    TEXTURE_FORMAT,
-};
+use crate::{include_shader, render::workspace::WorkspaceRenderCallback, TEXTURE_FORMAT};
 
 pub struct SolidLinePipeline {
     render_pipeline: RenderPipeline,
@@ -30,17 +28,24 @@ pub struct SolidLinePipeline {
     vertex_count: u32,
 }
 
-#[derive(ShaderType)]
-struct SolidLineUniforms {
-    transform: Matrix4<f32>,
-}
-
 #[derive(Clone)]
 pub struct Line {
     start: Vector3<f32>,
     end: Vector3<f32>,
 
     color: Vector3<f32>,
+}
+
+#[derive(ShaderType)]
+struct SolidLineUniforms {
+    transform: Matrix4<f32>,
+}
+
+#[repr(C)]
+#[derive(Default, Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
+struct LineVertex {
+    pub position: [f32; 4],
+    pub color: [f32; 3],
 }
 
 impl SolidLinePipeline {
@@ -93,7 +98,22 @@ impl SolidLinePipeline {
             vertex: VertexState {
                 module: &shader,
                 entry_point: "vert",
-                buffers: &[VERTEX_BUFFER_LAYOUT],
+                buffers: &[VertexBufferLayout {
+                    array_stride: mem::size_of::<LineVertex>() as BufferAddress,
+                    step_mode: VertexStepMode::Vertex,
+                    attributes: &[
+                        VertexAttribute {
+                            format: VertexFormat::Float32x4,
+                            offset: 0,
+                            shader_location: 0,
+                        },
+                        VertexAttribute {
+                            format: VertexFormat::Float32x3,
+                            offset: 4 * 4,
+                            shader_location: 1,
+                        },
+                    ],
+                }],
             },
             fragment: Some(FragmentState {
                 module: &shader,
@@ -195,7 +215,7 @@ impl Line {
         Self {
             start,
             end,
-            color: Vector3::new(1.0, 1.0, 1.0),
+            color: Vector3::zeros(),
         }
     }
 
@@ -204,24 +224,20 @@ impl Line {
         self
     }
 
-    fn to_vertex(&self) -> [ModelVertex; 3] {
-        let normal = [self.color.x, self.color.y, self.color.z];
-        let tex_coords = [0.0, 0.0];
+    fn to_vertex(&self) -> [LineVertex; 3] {
+        let color = [self.color.x, self.color.y, self.color.z];
         [
-            ModelVertex {
+            LineVertex {
                 position: [self.start.x, self.start.y, self.start.z, 1.0],
-                tex_coords,
-                normal,
+                color,
             },
-            ModelVertex {
+            LineVertex {
                 position: [self.end.x, self.end.y, self.end.z, 1.0],
-                tex_coords,
-                normal,
+                color,
             },
-            ModelVertex {
+            LineVertex {
                 position: [self.start.x, self.start.y, self.start.z, 1.0],
-                tex_coords,
-                normal,
+                color,
             },
         ]
     }

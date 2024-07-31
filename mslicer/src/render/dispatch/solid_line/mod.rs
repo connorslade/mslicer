@@ -21,9 +21,11 @@ impl SolidLineDispatch {
     }
 
     pub fn prepare(&mut self, device: &Device, queue: &Queue, resources: &WorkspaceRenderCallback) {
-        let changed = self
-            .build_plate
-            .generate_lines(resources.bed_size, resources.grid_size);
+        let changed = self.build_plate.generate_lines(
+            resources.bed_size,
+            resources.grid_size,
+            resources.theme,
+        );
 
         if changed {
             let lines = &[self.build_plate.lines()][..];
