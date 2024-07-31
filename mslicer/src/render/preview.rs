@@ -15,18 +15,12 @@ use wgpu::{
 
 use crate::TEXTURE_FORMAT;
 
-use super::{
-    camera::Camera,
-    pipelines::{model::ModelPipeline, Pipeline},
-    workspace::WorkspaceRenderCallback,
-};
+use super::{camera::Camera, pipelines::model::ModelPipeline, workspace::WorkspaceRenderCallback};
 
 // TODO: Allow rendering multiple preview images at once
 pub fn render_preview_image(
     device: &Device,
     queue: &Queue,
-    screen_descriptor: &ScreenDescriptor,
-    encoder: &mut CommandEncoder,
     size: (u32, u32),
     model_pipeline: &mut ModelPipeline,
     workspace: &WorkspaceRenderCallback,
@@ -62,7 +56,7 @@ pub fn render_preview_image(
             .view_projection_matrix(size.0 as f32 / size.1 as f32),
         ..old_workspace
     };
-    model_pipeline.prepare(device, queue, screen_descriptor, encoder, &workspace);
+    model_pipeline.prepare(device, &workspace);
 
     render_preview(
         device,

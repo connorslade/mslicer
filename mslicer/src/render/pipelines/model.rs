@@ -21,7 +21,7 @@ use crate::{
     TEXTURE_FORMAT,
 };
 
-use super::{consts::BASE_BIND_GROUP_LAYOUT_DESCRIPTOR, Pipeline};
+use super::consts::BASE_BIND_GROUP_LAYOUT_DESCRIPTOR;
 
 pub struct ModelPipeline {
     render_pipeline: RenderPipeline,
@@ -99,15 +99,8 @@ impl ModelPipeline {
     }
 }
 
-impl Pipeline<WorkspaceRenderCallback> for ModelPipeline {
-    fn prepare(
-        &mut self,
-        device: &Device,
-        _queue: &Queue,
-        _screen_descriptor: &ScreenDescriptor,
-        _encoder: &mut CommandEncoder,
-        resources: &WorkspaceRenderCallback,
-    ) {
+impl ModelPipeline {
+    pub fn prepare(&mut self, device: &Device, resources: &WorkspaceRenderCallback) {
         self.bind_groups.clear();
         let mut to_generate = Vec::new();
 
@@ -155,7 +148,11 @@ impl Pipeline<WorkspaceRenderCallback> for ModelPipeline {
         }
     }
 
-    fn paint<'a>(&'a self, render_pass: &mut RenderPass<'a>, resources: &WorkspaceRenderCallback) {
+    pub fn paint<'a>(
+        &'a self,
+        render_pass: &mut RenderPass<'a>,
+        resources: &WorkspaceRenderCallback,
+    ) {
         render_pass.set_pipeline(&self.render_pipeline);
 
         let models = resources.models.read();

@@ -1,12 +1,10 @@
-use eframe::Theme;
-use egui_wgpu::ScreenDescriptor;
 use encase::{ShaderSize, ShaderType, UniformBuffer};
-use nalgebra::{Matrix4, Vector3, Vector4};
+use nalgebra::{Matrix4, Vector3};
 use wgpu::{
     util::{BufferInitDescriptor, DeviceExt},
     BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayoutDescriptor,
     BindGroupLayoutEntry, BindingResource, BindingType, Buffer, BufferBinding, BufferBindingType,
-    BufferDescriptor, BufferUsages, ColorTargetState, ColorWrites, CommandEncoder, CompareFunction,
+    BufferDescriptor, BufferUsages, ColorTargetState, ColorWrites, CompareFunction,
     DepthStencilState, Device, FragmentState, IndexFormat, MultisampleState,
     PipelineLayoutDescriptor, PolygonMode, PrimitiveState, Queue, RenderPass, RenderPipeline,
     RenderPipelineDescriptor, ShaderModuleDescriptor, ShaderSource, ShaderStages, TextureFormat,
@@ -19,9 +17,7 @@ use crate::{
     TEXTURE_FORMAT,
 };
 
-use super::Pipeline;
-
-pub struct BuildPlatePipeline {
+pub struct SolidLinePipeline {
     render_pipeline: RenderPipeline,
     bind_group: BindGroup,
 
@@ -35,23 +31,25 @@ pub struct BuildPlatePipeline {
 }
 
 #[derive(ShaderType)]
-struct BuildPlateUniforms {
+struct SolidLineUniforms {
     transform: Matrix4<f32>,
-    color: Vector4<f32>,
 }
 
-struct Line {
+#[derive(Clone)]
+pub struct Line {
     start: Vector3<f32>,
     end: Vector3<f32>,
+
+    color: Vector3<f32>,
 }
 
-impl BuildPlatePipeline {
+impl SolidLinePipeline {
     pub fn new(device: &Device) -> Self {
-        let shader = device.create_shader_module(include_shader!("solid.wgsl"));
+        let shader = device.create_shader_module(include_shader!("solid_line.wgsl"));
 
         let uniform_buffer = device.create_buffer(&BufferDescriptor {
             label: None,
-            size: BuildPlateUniforms::SHADER_SIZE.get(),
+            size: SolidLineUniforms::SHADER_SIZE.get(),
             usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
@@ -139,17 +137,20 @@ impl BuildPlatePipeline {
     }
 }
 
-impl Pipeline<WorkspaceRenderCallback> for BuildPlatePipeline {
-    fn prepare(
+impl SolidLinePipeline {
+    pub fn prepare(
         &mut self,
         device: &Device,
         queue: &Queue,
-        _screen_descriptor: &ScreenDescriptor,
-        _encoder: &mut CommandEncoder,
         resources: &WorkspaceRenderCallback,
+        lines: Option<&[&[Line]]>,
     ) {
-        if self.last_bed_size != resources.bed_size || self.last_grid_size != resources.grid_size {
-            let vertex = generate_mesh(resources.bed_size, resources.grid_size);
+        if let Some(lines) = lines {
+            let vertex = lines
+                .iter()
+                .flat_map(|x| x.iter())
+                .flat_map(Line::to_vertex)
+                .collect::<Vec<_>>();
             self.vertex_count = vertex.len() as u32;
             self.last_bed_size = resources.bed_size;
             self.last_grid_size = resources.grid_size;
@@ -167,22 +168,16 @@ impl Pipeline<WorkspaceRenderCallback> for BuildPlatePipeline {
             }));
         }
 
-        let color = match resources.theme {
-            Theme::Light => Vector4::new(0.0, 0.0, 0.0, 1.0),
-            Theme::Dark => Vector4::new(1.0, 1.0, 1.0, 1.0),
-        };
-
         let mut buffer = UniformBuffer::new(Vec::new());
         buffer
-            .write(&BuildPlateUniforms {
+            .write(&SolidLineUniforms {
                 transform: resources.transform,
-                color,
             })
             .unwrap();
         queue.write_buffer(&self.uniform_buffer, 0, &buffer.into_inner());
     }
 
-    fn paint<'a>(&'a self, render_pass: &mut RenderPass<'a>, _resources: &WorkspaceRenderCallback) {
+    pub fn paint<'a>(&'a self, render_pass: &mut RenderPass<'a>) {
         render_pass.set_pipeline(&self.render_pipeline);
         render_pass.set_bind_group(0, &self.bind_group, &[]);
 
@@ -196,69 +191,38 @@ impl Pipeline<WorkspaceRenderCallback> for BuildPlatePipeline {
 }
 
 impl Line {
-    fn new(start: Vector3<f32>, end: Vector3<f32>) -> Self {
-        Self { start, end }
+    pub fn new(start: Vector3<f32>, end: Vector3<f32>) -> Self {
+        Self {
+            start,
+            end,
+            color: Vector3::new(1.0, 1.0, 1.0),
+        }
+    }
+
+    pub fn color(mut self, color: Vector3<f32>) -> Self {
+        self.color = color;
+        self
     }
 
     fn to_vertex(&self) -> [ModelVertex; 3] {
+        let normal = [self.color.x, self.color.y, self.color.z];
+        let tex_coords = [0.0, 0.0];
         [
             ModelVertex {
                 position: [self.start.x, self.start.y, self.start.z, 1.0],
-                tex_coords: [0.0, 0.0],
-                normal: [0.0, 0.0, 0.0],
+                tex_coords,
+                normal,
             },
             ModelVertex {
                 position: [self.end.x, self.end.y, self.end.z, 1.0],
-                tex_coords: [0.0, 0.0],
-                normal: [0.0, 0.0, 0.0],
+                tex_coords,
+                normal,
             },
             ModelVertex {
                 position: [self.start.x, self.start.y, self.start.z, 1.0],
-                tex_coords: [0.0, 0.0],
-                normal: [0.0, 0.0, 0.0],
+                tex_coords,
+                normal,
             },
         ]
     }
-}
-
-fn generate_mesh(bed_size: Vector3<f32>, grid_size: f32) -> Vec<ModelVertex> {
-    let (a, b) = (bed_size / 2.0, -bed_size / 2.0);
-    let z = bed_size.z;
-
-    let mut lines = vec![
-        // Bottom plane
-        Line::new(Vector3::new(a.x, a.y, 0.0), Vector3::new(b.x, a.y, 0.0)),
-        Line::new(Vector3::new(a.x, b.y, 0.0), Vector3::new(b.x, b.y, 0.0)),
-        Line::new(Vector3::new(a.x, a.y, 0.0), Vector3::new(a.x, b.y, 0.0)),
-        Line::new(Vector3::new(b.x, a.y, 0.0), Vector3::new(b.x, b.y, 0.0)),
-        // Top plane
-        Line::new(Vector3::new(a.x, a.y, z), Vector3::new(b.x, a.y, z)),
-        Line::new(Vector3::new(a.x, b.y, z), Vector3::new(b.x, b.y, z)),
-        Line::new(Vector3::new(a.x, a.y, z), Vector3::new(a.x, b.y, z)),
-        Line::new(Vector3::new(b.x, a.y, z), Vector3::new(b.x, b.y, z)),
-        // Vertical lines
-        Line::new(Vector3::new(a.x, a.y, 0.0), Vector3::new(a.x, a.y, z)),
-        Line::new(Vector3::new(b.x, a.y, 0.0), Vector3::new(b.x, a.y, z)),
-        Line::new(Vector3::new(a.x, b.y, 0.0), Vector3::new(a.x, b.y, z)),
-        Line::new(Vector3::new(b.x, b.y, 0.0), Vector3::new(b.x, b.y, z)),
-    ];
-
-    // Grid on bottom plane
-    for x in 0..(bed_size.x / grid_size).ceil() as i32 {
-        let x = x as f32 * grid_size + b.x;
-        lines.push(Line::new(
-            Vector3::new(x, a.y, 0.0),
-            Vector3::new(x, b.y, 0.0),
-        ));
-    }
-
-    for y in 0..(bed_size.y / grid_size).ceil() as i32 {
-        let y = y as f32 * grid_size + b.y;
-        lines.push(Line::new(
-            Vector3::new(a.x, y, 0.0),
-            Vector3::new(b.x, y, 0.0),
-        ));
-    }
-
-    lines.iter().flat_map(Line::to_vertex).collect::<Vec<_>>()
 }

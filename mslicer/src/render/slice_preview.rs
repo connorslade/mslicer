@@ -2,7 +2,7 @@ use egui_wgpu::{CallbackResources, CallbackTrait, ScreenDescriptor};
 use nalgebra::Vector2;
 use wgpu::{CommandBuffer, CommandEncoder, Device, Queue};
 
-use super::pipelines::{slice_preview::SlicePreviewPipeline, Pipeline};
+use super::pipelines::slice_preview::SlicePreviewPipeline;
 
 pub struct SlicePreviewRenderResources {
     pub slice_preview_pipeline: SlicePreviewPipeline,
@@ -21,15 +21,15 @@ impl CallbackTrait for SlicePreviewRenderCallback {
         &self,
         device: &Device,
         queue: &Queue,
-        screen_descriptor: &ScreenDescriptor,
-        encoder: &mut CommandEncoder,
+        _screen_descriptor: &ScreenDescriptor,
+        _encoder: &mut CommandEncoder,
         resources: &mut CallbackResources,
     ) -> Vec<CommandBuffer> {
         let resources = resources.get_mut::<SlicePreviewRenderResources>().unwrap();
 
         resources
             .slice_preview_pipeline
-            .prepare(device, queue, screen_descriptor, encoder, self);
+            .prepare(device, queue, self);
 
         Vec::new()
     }
@@ -44,6 +44,6 @@ impl CallbackTrait for SlicePreviewRenderCallback {
             .get::<SlicePreviewRenderResources>()
             .unwrap();
 
-        resources.slice_preview_pipeline.paint(render_pass, self);
+        resources.slice_preview_pipeline.paint(render_pass);
     }
 }

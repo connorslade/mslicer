@@ -21,10 +21,7 @@ use crate::{
     TEXTURE_FORMAT,
 };
 
-use super::{
-    consts::{BASE_BIND_GROUP_LAYOUT_DESCRIPTOR, BASE_UNIFORM_DESCRIPTOR},
-    Pipeline,
-};
+use super::consts::{BASE_BIND_GROUP_LAYOUT_DESCRIPTOR, BASE_UNIFORM_DESCRIPTOR};
 
 pub struct TargetPointPipeline {
     render_pipeline: RenderPipeline,
@@ -133,15 +130,8 @@ impl TargetPointPipeline {
     }
 }
 
-impl Pipeline<WorkspaceRenderCallback> for TargetPointPipeline {
-    fn prepare(
-        &mut self,
-        _device: &Device,
-        queue: &Queue,
-        _screen_descriptor: &ScreenDescriptor,
-        _encoder: &mut CommandEncoder,
-        resources: &WorkspaceRenderCallback,
-    ) {
+impl TargetPointPipeline {
+    pub fn prepare(&mut self, queue: &Queue, resources: &WorkspaceRenderCallback) {
         if !resources.is_moving {
             return;
         };
@@ -157,7 +147,11 @@ impl Pipeline<WorkspaceRenderCallback> for TargetPointPipeline {
         queue.write_buffer(&self.uniform_buffer, 0, &buffer.into_inner());
     }
 
-    fn paint<'a>(&'a self, render_pass: &mut RenderPass<'a>, resources: &WorkspaceRenderCallback) {
+    pub fn paint<'a>(
+        &'a self,
+        render_pass: &mut RenderPass<'a>,
+        resources: &WorkspaceRenderCallback,
+    ) {
         if !resources.is_moving {
             return;
         };

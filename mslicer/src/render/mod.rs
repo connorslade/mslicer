@@ -1,8 +1,9 @@
 use std::mem;
 
+use dispatch::solid_line::SolidLineDispatch;
 use eframe::CreationContext;
 use pipelines::{
-    build_plate::BuildPlatePipeline, model::ModelPipeline, slice_preview::SlicePreviewPipeline,
+    model::ModelPipeline, slice_preview::SlicePreviewPipeline, solid_line::SolidLinePipeline,
     target_point::TargetPointPipeline,
 };
 use slice_preview::SlicePreviewRenderResources;
@@ -10,6 +11,7 @@ use wgpu::{BufferAddress, VertexAttribute, VertexBufferLayout, VertexFormat, Ver
 
 use workspace::WorkspaceRenderResources;
 pub mod camera;
+mod dispatch;
 pub mod pipelines;
 pub mod preview;
 pub mod rendered_mesh;
@@ -52,7 +54,7 @@ pub fn init_wgpu(cc: &CreationContext) {
 
     let resources = &mut render_state.renderer.write().callback_resources;
     resources.insert(WorkspaceRenderResources {
-        build_plate_pipeline: BuildPlatePipeline::new(device),
+        solid_line: SolidLineDispatch::new(device),
         model_pipeline: ModelPipeline::new(device),
         target_point_pipeline: TargetPointPipeline::new(device),
     });

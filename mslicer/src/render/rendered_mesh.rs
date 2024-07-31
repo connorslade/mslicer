@@ -84,7 +84,7 @@ impl RenderedMesh {
     }
 
     pub fn randomize_color(&mut self) -> &mut Self {
-        let shift = rand::random::<f32>() * std::f32::consts::PI;
+        let shift = rand::random::<f32>() * std::f32::consts::PI * 2.0;
         let color = START_COLOR
             .hue_shift(shift)
             .to_srgb()

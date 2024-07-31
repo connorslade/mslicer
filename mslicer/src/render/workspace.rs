@@ -11,20 +11,21 @@ use crate::slice_operation::SliceOperation;
 
 use super::{
     camera::Camera,
+    dispatch::solid_line::SolidLineDispatch,
     pipelines::{
-        build_plate::BuildPlatePipeline,
         model::{ModelPipeline, RenderStyle},
+        solid_line::SolidLinePipeline,
         target_point::TargetPointPipeline,
-        Pipeline,
     },
     preview::render_preview_image,
     rendered_mesh::RenderedMesh,
 };
 
 pub struct WorkspaceRenderResources {
-    pub build_plate_pipeline: BuildPlatePipeline,
     pub model_pipeline: ModelPipeline,
     pub target_point_pipeline: TargetPointPipeline,
+
+    pub solid_line: SolidLineDispatch,
 }
 
 #[derive(Clone)]
@@ -48,37 +49,24 @@ impl CallbackTrait for WorkspaceRenderCallback {
         &self,
         device: &Device,
         queue: &Queue,
-        screen_descriptor: &ScreenDescriptor,
-        encoder: &mut CommandEncoder,
+        _screen_descriptor: &ScreenDescriptor,
+        _encoder: &mut CommandEncoder,
         resources: &mut CallbackResources,
     ) -> Vec<CommandBuffer> {
         let resources = resources.get_mut::<WorkspaceRenderResources>().unwrap();
 
         match &self.slice_operation {
             Some(slice_operation) if slice_operation.needs_preview_image() => {
-                let image = render_preview_image(
-                    device,
-                    queue,
-                    screen_descriptor,
-                    encoder,
-                    (512, 512),
-                    &mut resources.model_pipeline,
-                    self,
-                );
+                let pipeline = &mut resources.model_pipeline;
+                let image = render_preview_image(device, queue, (512, 512), pipeline, self);
                 slice_operation.add_preview_image(image);
             }
             _ => {}
         }
 
-        resources
-            .build_plate_pipeline
-            .prepare(device, queue, screen_descriptor, encoder, self);
-        resources
-            .model_pipeline
-            .prepare(device, queue, screen_descriptor, encoder, self);
-        resources
-            .target_point_pipeline
-            .prepare(device, queue, screen_descriptor, encoder, self);
+        resources.solid_line.prepare(device, queue, self);
+        resources.model_pipeline.prepare(device, self);
+        resources.target_point_pipeline.prepare(queue, self);
 
         Vec::new()
     }
@@ -93,7 +81,7 @@ impl CallbackTrait for WorkspaceRenderCallback {
             .get::<WorkspaceRenderResources>()
             .unwrap();
 
-        resources.build_plate_pipeline.paint(render_pass, self);
+        resources.solid_line.paint(render_pass);
         resources.model_pipeline.paint(render_pass, self);
         resources.target_point_pipeline.paint(render_pass, self);
     }

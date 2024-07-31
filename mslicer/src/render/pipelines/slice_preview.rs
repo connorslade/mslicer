@@ -18,10 +18,7 @@ use crate::{
     TEXTURE_FORMAT,
 };
 
-use super::{
-    consts::{BASE_UNIFORM_DESCRIPTOR, UNIFORM_BIND_GROUP_LAYOUT_ENTRY},
-    Pipeline,
-};
+use super::consts::{BASE_UNIFORM_DESCRIPTOR, UNIFORM_BIND_GROUP_LAYOUT_ENTRY};
 
 pub struct SlicePreviewPipeline {
     render_pipeline: RenderPipeline,
@@ -139,13 +136,11 @@ impl SlicePreviewPipeline {
     }
 }
 
-impl Pipeline<SlicePreviewRenderCallback> for SlicePreviewPipeline {
-    fn prepare(
+impl SlicePreviewPipeline {
+    pub fn prepare(
         &mut self,
         device: &Device,
         queue: &Queue,
-        _screen_descriptor: &ScreenDescriptor,
-        _encoder: &mut CommandEncoder,
         resources: &SlicePreviewRenderCallback,
     ) {
         let slice_buffer = self.slice_buffer.take().unwrap_or_else(|| {
@@ -196,11 +191,7 @@ impl Pipeline<SlicePreviewRenderCallback> for SlicePreviewPipeline {
         queue.write_buffer(&self.uniform_buffer, 0, &buffer.into_inner());
     }
 
-    fn paint<'a>(
-        &'a self,
-        render_pass: &mut RenderPass<'a>,
-        _resources: &SlicePreviewRenderCallback,
-    ) {
+    pub fn paint<'a>(&'a self, render_pass: &mut RenderPass<'a>) {
         render_pass.set_pipeline(&self.render_pipeline);
         render_pass.set_bind_group(0, self.bind_group.as_ref().unwrap(), &[]);
 
