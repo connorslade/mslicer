@@ -8,13 +8,13 @@ pub struct HalfEdgeMesh {
 
 #[derive(Debug)]
 pub struct HalfEdge {
-    origin_vertex: u32,
-    vertex: u32,
-    face: u32,
+    pub origin_vertex: u32,
+    pub vertex: u32,
+    pub face: u32,
 
-    next: u32,
-    prev: u32,
-    twin: Option<u32>,
+    pub next: u32,
+    pub prev: u32,
+    pub twin: Option<u32>,
 }
 
 impl HalfEdgeMesh {
@@ -55,6 +55,10 @@ impl HalfEdgeMesh {
         &self.half_edges
     }
 
+    pub fn half_edge_count(&self) -> usize {
+        self.half_edges.len()
+    }
+
     /// Returns a set of all edges connected to the given vertex.
     pub fn connected_vertices(&self, start_edge: u32) -> Vec<u32> {
         let mut seen = HashSet::new();
@@ -81,5 +85,9 @@ impl HalfEdgeMesh {
 
     pub fn vertex(&self, idx: u32) -> u32 {
         self.half_edges[idx as usize].origin_vertex
+    }
+
+    pub fn get_edge(&self, idx: u32) -> &HalfEdge {
+        &self.half_edges[idx as usize]
     }
 }

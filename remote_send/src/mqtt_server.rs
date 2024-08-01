@@ -156,9 +156,7 @@ impl Mqtt {
     }
 
     pub fn shutdown(&self) {
-        if let Some(server) = self.server.upgrade() {
-            server.shutdown();
-        }
+        self.server.upgrade().unwrap().shutdown();
     }
 
     pub fn get_client(&self, mainboard_id: &str) -> MappedRwLockReadGuard<MqttClient> {
@@ -191,20 +189,19 @@ impl Mqtt {
         };
         let data = serde_json::to_vec(&data).unwrap();
 
-        if let Some(server) = self.server.upgrade() {
-            server
-                .send_packet(
-                    client_id,
-                    PublishPacket {
-                        flags: PublishFlags::QOS1,
-                        topic: format!("/sdcp/request/{}", client.attributes.mainboard_id),
-                        packet_id: Some(packet_id),
-                        data,
-                    }
-                    .to_packet(),
-                )
-                .unwrap();
-        }
+        let server = self.server.upgrade().unwrap();
+        server
+            .send_packet(
+                client_id,
+                PublishPacket {
+                    flags: PublishFlags::QOS1,
+                    topic: format!("/sdcp/request/{}", client.attributes.mainboard_id),
+                    packet_id: Some(packet_id),
+                    data,
+                }
+                .to_packet(),
+            )
+            .unwrap();
 
         Ok(())
     }

@@ -36,6 +36,7 @@ pub struct WorkspaceRenderCallback {
 
     pub is_moving: bool,
     pub slice_operation: Option<SliceOperation>,
+    pub line_support_debug: Vec<[Vector3<f32>; 2]>,
 }
 
 impl CallbackTrait for WorkspaceRenderCallback {

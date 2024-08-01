@@ -1,8 +1,12 @@
 use egui_tracing::EventCollector;
+use nalgebra::Vector3;
+use slicer::supports::line::LineSupportConfig;
 
 #[derive(Default)]
 pub struct UiState {
     pub event_collector: EventCollector,
+    pub line_support_config: LineSupportConfig,
+    pub line_support_debug: Vec<[Vector3<f32>; 2]>,
 
     // remote send ui
     pub working_address: String,

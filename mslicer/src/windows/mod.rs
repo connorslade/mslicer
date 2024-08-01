@@ -12,6 +12,7 @@ mod remote_print;
 mod slice_config;
 mod slice_operation;
 mod stats;
+mod supports;
 mod top_bar;
 mod workspace;
 
@@ -28,6 +29,7 @@ pub enum Tab {
     RemotePrint,
     SliceConfig,
     Stats,
+    Supports,
     Viewport,
     Workspace,
 }
@@ -41,6 +43,7 @@ impl Tab {
             Tab::RemotePrint => "Remote Print",
             Tab::SliceConfig => "Slice Config",
             Tab::Stats => "Stats",
+            Tab::Supports => "Supports",
             Tab::Viewport => "Viewport",
             Tab::Workspace => "Workspace",
         }
@@ -62,6 +65,7 @@ impl<'a> TabViewer for Tabs<'a> {
             Tab::RemotePrint => remote_print::ui(self.app, ui, self.ctx),
             Tab::SliceConfig => slice_config::ui(self.app, ui, self.ctx),
             Tab::Stats => stats::ui(self.app, ui, self.ctx),
+            Tab::Supports => supports::ui(self.app, ui, self.ctx),
             Tab::Viewport => viewport(self.app, ui, self.ctx),
             Tab::Workspace => workspace::ui(self.app, ui, self.ctx),
         }
@@ -78,6 +82,7 @@ impl<'a> TabViewer for Tabs<'a> {
             Tab::RemotePrint,
             Tab::SliceConfig,
             Tab::Stats,
+            Tab::Supports,
             Tab::Workspace,
         ] {
             let already_open = self.app.dock_state.find_tab(&tab).is_some();
@@ -148,6 +153,7 @@ fn viewport(app: &mut App, ui: &mut Ui, _ctx: &Context) {
 
             models: app.meshes.clone(),
             config: app.config.clone(),
+            line_support_debug: app.state.line_support_debug.clone(),
         },
     );
     ui.painter().add(callback);

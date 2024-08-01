@@ -45,10 +45,13 @@ impl LineDispatch for NormalsDispatch {
             .map(|x| *x.mesh.transformation_matrix())
             .collect::<Vec<_>>();
 
-        self.last_normals = show_normals;
-        if ids != self.last_models || transforms != self.last_transforms {
+        if ids != self.last_models
+            || transforms != self.last_transforms
+            || show_normals != self.last_normals
+        {
             self.last_models = ids;
             self.last_transforms = transforms;
+            self.last_normals = show_normals;
 
             if show_normals {
                 self.cached_lines = generate_normals(resources.models.clone());

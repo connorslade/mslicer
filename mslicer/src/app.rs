@@ -59,7 +59,8 @@ impl App {
         let mut dock_state = DockState::new(vec![Tab::Viewport, Tab::Logs]);
         let surface = dock_state.main_surface_mut();
         let [_old_node, new_node] = surface.split_left(NodeIndex::root(), 0.20, vec![Tab::Models]);
-        let [_old_node, new_node] = surface.split_below(new_node, 0.5, vec![Tab::SliceConfig]);
+        let [_old_node, new_node] =
+            surface.split_below(new_node, 0.5, vec![Tab::SliceConfig, Tab::Supports]);
         surface.split_below(new_node, 0.5, vec![Tab::Workspace, Tab::RemotePrint]);
 
         let config_dir = dirs::config_dir().unwrap().join("mslicer");
