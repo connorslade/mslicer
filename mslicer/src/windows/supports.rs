@@ -12,7 +12,8 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
         }
     }
 
-    ui.label("Support Config");
+    ui.add_space(16.0);
+    ui.heading("Support Config");
 
     dragger(
         ui,
@@ -25,6 +26,13 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
         ui,
         "Max Neighbor Z Diff",
         &mut app.state.line_support_config.max_neighbor_z_diff,
+        |x| x.speed(0.01),
+    );
+
+    dragger(
+        ui,
+        "Min Angle",
+        &mut app.state.line_support_config.min_angle,
         |x| x.speed(0.01),
     );
 }

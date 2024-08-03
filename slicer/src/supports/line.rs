@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::{collections::HashSet, f32::consts::PI};
 
 use nalgebra::Vector3;
 
@@ -13,21 +13,24 @@ pub struct LineSupport {
 pub struct LineSupportConfig {
     pub max_origin_normal_z: f32,
     pub max_neighbor_z_diff: f32,
+    pub min_angle: f32,
 }
 
 impl Default for LineSupportConfig {
     fn default() -> Self {
         Self {
-            max_origin_normal_z: -0.5,
-            max_neighbor_z_diff: 0.05,
+            max_origin_normal_z: 0.0,
+            max_neighbor_z_diff: -0.01,
+            min_angle: PI / 4.0,
         }
     }
 }
 
 pub fn generate_line_supports(mesh: &Mesh, config: &LineSupportConfig) -> Vec<[Vector3<f32>; 2]> {
-    let half_edge_mesh = HalfEdgeMesh::new(mesh);
+    // let half_edge_mesh = HalfEdgeMesh::new(mesh);
 
-    let points = detect_point_overhangs(mesh, &half_edge_mesh, config);
+    // let points = detect_point_overhangs(mesh, &half_edge_mesh, config);
+    let points = detect_face_overhangs(mesh, config);
     println!("Found {} overhangs", points.len());
 
     points
@@ -71,30 +74,27 @@ fn detect_point_overhangs(
     overhangs
 }
 
-fn _detect_face_overhangs(base: &Mesh, _mesh: &HalfEdgeMesh) -> Vec<Vector3<f32>> {
+fn detect_face_overhangs(mesh: &Mesh, config: &LineSupportConfig) -> Vec<[Vector3<f32>; 2]> {
     let mut overhangs = Vec::new();
 
-    for (_idx, face) in base.faces().iter().enumerate() {
-        // let face_normal = base.face_normal(idx);
-        // if face_normal.z > 0.0 {
-        //     continue;
-        // }
-
-        let normals = base.normals();
-        if normals[face[0] as usize].z > 0.0
-            || normals[face[1] as usize].z > 0.0
-            || normals[face[2] as usize].z > 0.0
-        {
+    let vertices = mesh.vertices();
+    for (face, normal) in mesh.faces().iter().zip(mesh.normals().iter()) {
+        let normal = mesh.transform_normal(&normal);
+        if normal.z >= config.max_origin_normal_z {
             continue;
         }
 
-        let vertices = base.vertices();
+        let angle = normal.angle(&Vector3::z());
+        if angle < config.min_angle {
+            continue;
+        }
+
         let center = face
             .iter()
             .fold(Vector3::zeros(), |acc, &v| acc + vertices[v as usize])
             / 3.0;
 
-        overhangs.push(center);
+        overhangs.push([center, normal]);
     }
 
     overhangs
