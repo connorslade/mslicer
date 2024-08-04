@@ -13,7 +13,7 @@ use common::{
 use ordered_float::OrderedFloat;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
-use crate::{mesh::Mesh, segments::Segments, Pos};
+use crate::{mesh::Mesh, segments::Segments1D, Pos};
 
 /// Used to slice a mesh.
 pub struct Slicer {
@@ -80,7 +80,7 @@ impl Slicer {
         let segments = self
             .models
             .iter()
-            .map(|x| Segments::from_mesh(x, 100))
+            .map(|x| Segments1D::from_mesh(x, 100))
             .collect::<Vec<_>>();
 
         let layers = (0..self.progress.total)

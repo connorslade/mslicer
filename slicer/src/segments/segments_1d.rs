@@ -6,7 +6,7 @@ use crate::mesh::Mesh;
 /// along the slicing axis and adding references to all the triangles that
 /// overlap each segment, to slice a layer, you don't need to loop through every
 /// triangle in the mesh to find all intersecting faces.
-pub struct Segments {
+pub struct Segments1D {
     start_height: f32,
     layer_height: f32,
 
@@ -14,7 +14,7 @@ pub struct Segments {
     transformed_points: Vec<Vector3<f32>>,
 }
 
-impl Segments {
+impl Segments1D {
     /// Creates a new Segments structure from a given mesh and segment count.
     pub fn from_mesh(mesh: &Mesh, layer_count: usize) -> Self {
         let (min, max) = mesh.minmax_point();
