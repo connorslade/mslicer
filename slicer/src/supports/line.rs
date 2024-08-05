@@ -77,6 +77,7 @@ impl<'a> LineSupportGenerator<'a> {
 
     fn detect_face_overhangs(&self, mesh: &Mesh) -> Vec<[Vector3<f32>; 2]> {
         let mut overhangs = Vec::new();
+        let mut out = Vec::new();
 
         let vertices = mesh.vertices();
         let normals = mesh.normals();
@@ -106,13 +107,32 @@ impl<'a> LineSupportGenerator<'a> {
                 );
 
                 // intersect ray
-                // let intersections =
+                let mut intersections = Vec::new();
+                for idx in overhangs.iter() {
+                    let face = mesh.face(*idx);
+                    if let Some(intersection) = ray_triangle_intersection(
+                        [
+                            mesh.transform(&vertices[face[0] as usize]),
+                            mesh.transform(&vertices[face[1] as usize]),
+                            mesh.transform(&vertices[face[2] as usize]),
+                        ],
+                        pos.to_homogeneous(),
+                        Vector3::z(),
+                    ) {
+                        intersections.push((intersection, idx));
+                    }
+                }
 
-                // if normal of intersection is facing down then add to overhangs
+                for (intersection, &idx) in intersections {
+                    let normal = mesh.transform_normal(&normals[idx]);
+                    if normal.z < 0.0 {
+                        out.push([intersection, normal]);
+                    }
+                }
             }
         }
 
-        todo!()
+        out
     }
 }
 
@@ -125,4 +145,42 @@ impl Default for LineSupportConfig {
             face_support_spacing: 10.0,
         }
     }
+}
+
+// https://www.scratchapixel.com/lessons/3d-basic-rendering/ray-tracing-rendering-a-triangle/ray-triangle-intersection-geometric-solution.html
+fn ray_triangle_intersection(
+    face: [Vector3<f32>; 3],
+    start: Vector3<f32>,
+    direction: Vector3<f32>,
+) -> Option<Vector3<f32>> {
+    let plane_normal = face[0].cross(&face[1]);
+    let distance = -plane_normal.dot(&face[0]);
+
+    // Check if plane and direction are parallel
+    let denominator = plane_normal.dot(&direction);
+    if denominator == 0.0 {
+        return None;
+    }
+
+    // Ignore if intersection is behind the ray
+    let t = -(plane_normal.dot(&start) + distance) / denominator;
+    if t < 0.0 {
+        return None;
+    }
+
+    let intersection = start + t * direction;
+
+    // Check if intersection is inside triangle
+    let edge_0 = face[1] - face[0];
+    let edge_1 = face[2] - face[1];
+    let edge_2 = face[0] - face[2];
+
+    let c0 = intersection - face[0];
+    let c1 = intersection - face[1];
+    let c2 = intersection - face[2];
+
+    let inside = edge_0.cross(&c0).dot(&plane_normal) >= 0.0
+        && edge_1.cross(&c1).dot(&plane_normal) >= 0.0
+        && edge_2.cross(&c2).dot(&plane_normal) >= 0.0;
+    inside.then_some(intersection)
 }
