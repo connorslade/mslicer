@@ -25,6 +25,7 @@ fn main() -> Result<()> {
     let filter = filter::Targets::new()
         .with_default(LevelFilter::OFF)
         .with_target("mslicer", LevelFilter::TRACE)
+        .with_target("slicer", LevelFilter::TRACE)
         .with_target("remote_send", LevelFilter::TRACE);
     let format = tracing_subscriber::fmt::layer();
     let collector = egui_tracing::EventCollector::new();

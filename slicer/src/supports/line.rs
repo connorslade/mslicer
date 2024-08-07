@@ -1,6 +1,7 @@
 use std::{collections::HashSet, f32::consts::PI};
 
 use nalgebra::{Vector2, Vector3};
+use tracing::info;
 
 use crate::{half_edge::HalfEdgeMesh, mesh::Mesh};
 
@@ -32,7 +33,8 @@ impl<'a> LineSupportGenerator<'a> {
 
         // let points = detect_point_overhangs(mesh, &half_edge_mesh, config);
         let points = self.detect_face_overhangs(mesh);
-        println!("Found {} overhangs", points.len());
+
+        info!("Line support generation identified {} points", points.len());
 
         points
     }
@@ -98,24 +100,26 @@ impl<'a> LineSupportGenerator<'a> {
 
         let x_count = (self.bed_size.x / self.config.face_support_spacing) as i32;
         let y_count = (self.bed_size.y / self.config.face_support_spacing) as i32;
+        dbg!(x_count, y_count);
 
         for x in 0..x_count {
             for y in 0..y_count {
                 let pos = Vector2::new(
-                    x as f32 * self.config.face_support_spacing,
-                    y as f32 * self.config.face_support_spacing,
+                    x as f32 * self.config.face_support_spacing - self.bed_size.x / 2.0,
+                    y as f32 * self.config.face_support_spacing - self.bed_size.y / 2.0,
                 );
 
                 // intersect ray
                 let mut intersections = Vec::new();
-                for idx in overhangs.iter() {
-                    let face = mesh.face(*idx);
+                for &idx in overhangs.iter() {
+                    let face = mesh.face(idx);
                     if let Some(intersection) = ray_triangle_intersection(
                         [
                             mesh.transform(&vertices[face[0] as usize]),
                             mesh.transform(&vertices[face[1] as usize]),
                             mesh.transform(&vertices[face[2] as usize]),
                         ],
+                        mesh.transform_normal(&normals[idx]),
                         pos.to_homogeneous(),
                         Vector3::z(),
                     ) {
@@ -123,9 +127,9 @@ impl<'a> LineSupportGenerator<'a> {
                     }
                 }
 
-                for (intersection, &idx) in intersections {
+                for (intersection, idx) in intersections {
                     let normal = mesh.transform_normal(&normals[idx]);
-                    if normal.z < 0.0 {
+                    if normal.z < self.config.max_origin_normal_z {
                         out.push([intersection, normal]);
                     }
                 }
@@ -134,6 +138,41 @@ impl<'a> LineSupportGenerator<'a> {
 
         out
     }
+}
+
+// https://www.scratchapixel.com/lessons/3d-basic-rendering/ray-tracing-rendering-a-triangle/ray-triangle-intersection-geometric-solution.html
+// https://math.stackexchange.com/questions/4322/check-whether-a-point-is-within-a-3d-triangle
+fn ray_triangle_intersection(
+    face: [Vector3<f32>; 3],
+    face_normal: Vector3<f32>,
+    start: Vector3<f32>,
+    direction: Vector3<f32>,
+) -> Option<Vector3<f32>> {
+    let distance = -face_normal.dot(&face[0]);
+
+    // Check if plane and direction are parallel
+    let denominator = face_normal.dot(&direction);
+    if denominator == 0.0 {
+        return None;
+    }
+
+    let t = -(face_normal.dot(&start) + distance) / denominator;
+    let intersection = start + t * direction;
+
+    // Check if intersection is inside triangle
+    let two_area = (face[1] - face[0]).cross(&(face[2] - face[0])).norm();
+
+    let calc = |a: Vector3<f32>, b: Vector3<f32>| {
+        (a - intersection).cross(&(b - intersection)).norm() / two_area
+    };
+    let alpha = calc(face[1], face[2]);
+    let beta = calc(face[2], face[0]);
+    let gamma = 1.0 - alpha - beta;
+
+    let inside_triangle =
+        alpha >= 0.0 && beta >= 0.0 && gamma >= 0.0 && alpha <= 1.0 && beta <= 1.0 && gamma <= 1.0;
+
+    inside_triangle.then_some(intersection)
 }
 
 impl Default for LineSupportConfig {
@@ -145,42 +184,4 @@ impl Default for LineSupportConfig {
             face_support_spacing: 10.0,
         }
     }
-}
-
-// https://www.scratchapixel.com/lessons/3d-basic-rendering/ray-tracing-rendering-a-triangle/ray-triangle-intersection-geometric-solution.html
-fn ray_triangle_intersection(
-    face: [Vector3<f32>; 3],
-    start: Vector3<f32>,
-    direction: Vector3<f32>,
-) -> Option<Vector3<f32>> {
-    let plane_normal = face[0].cross(&face[1]);
-    let distance = -plane_normal.dot(&face[0]);
-
-    // Check if plane and direction are parallel
-    let denominator = plane_normal.dot(&direction);
-    if denominator == 0.0 {
-        return None;
-    }
-
-    // Ignore if intersection is behind the ray
-    let t = -(plane_normal.dot(&start) + distance) / denominator;
-    if t < 0.0 {
-        return None;
-    }
-
-    let intersection = start + t * direction;
-
-    // Check if intersection is inside triangle
-    let edge_0 = face[1] - face[0];
-    let edge_1 = face[2] - face[1];
-    let edge_2 = face[0] - face[2];
-
-    let c0 = intersection - face[0];
-    let c1 = intersection - face[1];
-    let c2 = intersection - face[2];
-
-    let inside = edge_0.cross(&c0).dot(&plane_normal) >= 0.0
-        && edge_1.cross(&c1).dot(&plane_normal) >= 0.0
-        && edge_2.cross(&c2).dot(&plane_normal) >= 0.0;
-    inside.then_some(intersection)
 }

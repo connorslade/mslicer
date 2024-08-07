@@ -4347,6 +4347,7 @@ dependencies = [
  "ordered-float",
  "rayon",
  "stl_io",
+ "tracing",
 ]
 
 [[package]]
