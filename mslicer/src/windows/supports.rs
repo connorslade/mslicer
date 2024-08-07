@@ -1,7 +1,7 @@
 use egui::{Context, Ui};
 use slicer::supports::line::LineSupportGenerator;
 
-use crate::{app::App, ui::components::dragger};
+use crate::{app::App, render::rendered_mesh::RenderedMesh, ui::components::dragger};
 
 pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     if ui.button("Generate").clicked() {
@@ -11,9 +11,17 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
             app.slice_config.platform_size,
         );
 
-        for mesh in app.meshes.read().iter() {
+        let mut meshes = app.meshes.write();
+
+        for i in 0..meshes.len() {
+            let mesh = &meshes[i];
+
             let supports = generator.generate_line_supports(&mesh.mesh);
-            app.state.line_support_debug.extend(supports);
+            let mesh = RenderedMesh::from_mesh(supports)
+                .with_name("Supports".into())
+                .with_random_color();
+
+            meshes.push(mesh);
         }
     }
 

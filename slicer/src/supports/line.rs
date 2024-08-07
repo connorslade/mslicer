@@ -4,7 +4,7 @@ use nalgebra::{Vector2, Vector3};
 use ordered_float::OrderedFloat;
 use tracing::info;
 
-use crate::{half_edge::HalfEdgeMesh, mesh::Mesh};
+use crate::{builder::MeshBuilder, half_edge::HalfEdgeMesh, mesh::Mesh};
 
 pub struct LineSupportGenerator<'a> {
     config: &'a LineSupportConfig,
@@ -18,6 +18,11 @@ pub struct LineSupport {
 }
 
 pub struct LineSupportConfig {
+    /// Support generation
+    pub support_radius: f32,
+    pub base_radius: f32,
+
+    /// Overhang detection
     pub max_origin_normal_z: f32,
     pub max_neighbor_z_diff: f32,
     pub min_angle: f32,
@@ -29,16 +34,33 @@ impl<'a> LineSupportGenerator<'a> {
         Self { config, bed_size }
     }
 
-    pub fn generate_line_supports(&self, mesh: &Mesh) -> Vec<[Vector3<f32>; 2]> {
+    pub fn generate_line_supports(&self, mesh: &Mesh) -> Mesh {
         let half_edge_mesh = HalfEdgeMesh::new(mesh);
 
-        let mut points = Vec::new();
-        points.extend_from_slice(&self.detect_point_overhangs(mesh, &half_edge_mesh));
-        points.extend_from_slice(&self.detect_face_overhangs(mesh));
+        let mut overhangs = Vec::new();
 
-        info!("Line support generation identified {} points", points.len());
+        let point_overhangs = self.detect_point_overhangs(mesh, &half_edge_mesh);
+        overhangs.extend_from_slice(&point_overhangs);
 
-        points
+        let face_overhangs = self.detect_face_overhangs(mesh);
+        overhangs.extend_from_slice(&face_overhangs);
+
+        info!(
+            "Found {} overhangs {{ face: {}, point: {} }}",
+            overhangs.len(),
+            face_overhangs.len(),
+            point_overhangs.len()
+        );
+
+        let mut out = MeshBuilder::new();
+        for [origin, _normal] in overhangs {
+            let bottom = origin.xy().to_homogeneous();
+            out.add_vertical_cylinder(bottom, origin.z, self.config.support_radius, 10);
+        }
+
+        out.save_stl("debug.stl").unwrap();
+
+        out.build()
     }
 
     /// Find all points that are both lower than their surrounding points and have down facing normals
@@ -183,6 +205,9 @@ fn ray_triangle_intersection(
 impl Default for LineSupportConfig {
     fn default() -> Self {
         Self {
+            support_radius: 0.1,
+            base_radius: 1.0,
+
             max_origin_normal_z: 0.0,
             max_neighbor_z_diff: -0.01,
             min_angle: 3.0,

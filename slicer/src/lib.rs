@@ -2,6 +2,7 @@
 
 use nalgebra::Vector3;
 
+pub mod builder;
 pub mod half_edge;
 pub mod mesh;
 pub mod segments;
