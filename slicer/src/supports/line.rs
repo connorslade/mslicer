@@ -1,6 +1,7 @@
-use std::{collections::HashSet, f32::consts::PI};
+use std::collections::HashSet;
 
 use nalgebra::{Vector2, Vector3};
+use ordered_float::OrderedFloat;
 use tracing::info;
 
 use crate::{half_edge::HalfEdgeMesh, mesh::Mesh};
@@ -29,10 +30,11 @@ impl<'a> LineSupportGenerator<'a> {
     }
 
     pub fn generate_line_supports(&self, mesh: &Mesh) -> Vec<[Vector3<f32>; 2]> {
-        // let half_edge_mesh = HalfEdgeMesh::new(mesh);
+        let half_edge_mesh = HalfEdgeMesh::new(mesh);
 
-        // let points = detect_point_overhangs(mesh, &half_edge_mesh, config);
-        let points = self.detect_face_overhangs(mesh);
+        let mut points = Vec::new();
+        points.extend_from_slice(&self.detect_point_overhangs(mesh, &half_edge_mesh));
+        points.extend_from_slice(&self.detect_face_overhangs(mesh));
 
         info!("Line support generation identified {} points", points.len());
 
@@ -100,7 +102,6 @@ impl<'a> LineSupportGenerator<'a> {
 
         let x_count = (self.bed_size.x / self.config.face_support_spacing) as i32;
         let y_count = (self.bed_size.y / self.config.face_support_spacing) as i32;
-        dbg!(x_count, y_count);
 
         for x in 0..x_count {
             for y in 0..y_count {
@@ -109,7 +110,6 @@ impl<'a> LineSupportGenerator<'a> {
                     y as f32 * self.config.face_support_spacing - self.bed_size.y / 2.0,
                 );
 
-                // intersect ray
                 let mut intersections = Vec::new();
                 for &idx in overhangs.iter() {
                     let face = mesh.face(idx);
@@ -127,11 +127,12 @@ impl<'a> LineSupportGenerator<'a> {
                     }
                 }
 
+                intersections.sort_by_key(|x| OrderedFloat(x.0.z));
+                intersections.dedup_by(|a, b| (a.0.z - b.0.z).abs() < 0.1);
+
                 for (intersection, idx) in intersections {
                     let normal = mesh.transform_normal(&normals[idx]);
-                    if normal.z < self.config.max_origin_normal_z {
-                        out.push([intersection, normal]);
-                    }
+                    out.push([intersection, normal]);
                 }
             }
         }
@@ -157,6 +158,10 @@ fn ray_triangle_intersection(
     }
 
     let t = -(face_normal.dot(&start) + distance) / denominator;
+    if t < 0.0 {
+        return None;
+    }
+
     let intersection = start + t * direction;
 
     // Check if intersection is inside triangle
@@ -180,8 +185,8 @@ impl Default for LineSupportConfig {
         Self {
             max_origin_normal_z: 0.0,
             max_neighbor_z_diff: -0.01,
-            min_angle: PI / 4.0,
-            face_support_spacing: 10.0,
+            min_angle: 3.0,
+            face_support_spacing: 1.0,
         }
     }
 }
