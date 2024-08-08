@@ -37,7 +37,7 @@ impl MeshBuilder {
     }
 
     pub fn build(self) -> Mesh {
-        Mesh::new(self.vertices, self.faces, self.normals)
+        Mesh::new_uncentred(self.vertices, self.faces, self.normals)
     }
 
     pub fn save_stl(&self, path: &str) -> Result<()> {

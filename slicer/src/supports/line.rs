@@ -21,6 +21,7 @@ pub struct LineSupportConfig {
     /// Support generation
     pub support_radius: f32,
     pub base_radius: f32,
+    pub support_precision: u32,
 
     /// Overhang detection
     pub max_origin_normal_z: f32,
@@ -34,7 +35,7 @@ impl<'a> LineSupportGenerator<'a> {
         Self { config, bed_size }
     }
 
-    pub fn generate_line_supports(&self, mesh: &Mesh) -> Mesh {
+    pub fn generate_line_supports(&self, mesh: &Mesh) -> (Mesh, Vec<[Vector3<f32>; 2]>) {
         let half_edge_mesh = HalfEdgeMesh::new(mesh);
 
         let mut overhangs = Vec::new();
@@ -52,13 +53,21 @@ impl<'a> LineSupportGenerator<'a> {
             point_overhangs.len()
         );
 
-        let mut out = MeshBuilder::new();
+        let mut mesh = MeshBuilder::new();
+        let mut debug_points = Vec::new();
+
         for [origin, _normal] in overhangs {
             let bottom = origin.xy().to_homogeneous();
-            out.add_vertical_cylinder(bottom, origin.z, self.config.support_radius, 15);
+            mesh.add_vertical_cylinder(
+                bottom,
+                origin.z,
+                self.config.support_radius,
+                self.config.support_precision,
+            );
+            debug_points.push([origin, -Vector3::z()]);
         }
 
-        out.build()
+        (mesh.build(), debug_points)
     }
 
     /// Find all points that are both lower than their surrounding points and have down facing normals
@@ -205,6 +214,7 @@ impl Default for LineSupportConfig {
         Self {
             support_radius: 0.1,
             base_radius: 1.0,
+            support_precision: 15,
 
             max_origin_normal_z: 0.0,
             max_neighbor_z_diff: -0.01,
