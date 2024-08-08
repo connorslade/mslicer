@@ -9,6 +9,8 @@ struct Context {
 
 struct VertexOutput {
     @builtin(position)
+    camera_position: vec4<f32>,
+    @location(0)
     position: vec4<f32>,
 };
 
@@ -18,6 +20,7 @@ fn vert(
     @location(1) normal: vec3<f32>,
 ) -> VertexOutput {
     var out: VertexOutput;
+    out.camera_position = position;
     out.position = position;
     return out;
 }
