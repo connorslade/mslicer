@@ -109,13 +109,13 @@ impl SlicePreviewPipeline {
             })
             .collect::<Vec<_>>();
         let vertex_buffer = device.create_buffer_init(&BufferInitDescriptor {
-            label: Some("Platform Vertex Buffer"),
+            label: None,
             contents: bytemuck::cast_slice(&vert),
             usage: BufferUsages::VERTEX | BufferUsages::COPY_DST,
         });
 
         let index_buffer = device.create_buffer_init(&BufferInitDescriptor {
-            label: Some("Platform Index Buffer"),
+            label: None,
             contents: bytemuck::cast_slice(&[0, 1, 2]),
             usage: BufferUsages::INDEX | BufferUsages::COPY_DST,
         });

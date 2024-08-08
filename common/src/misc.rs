@@ -9,6 +9,7 @@ pub struct SliceResult<'a, Layer> {
     pub slice_config: &'a SliceConfig,
 }
 
+#[derive(Debug)]
 pub struct Run {
     pub length: u64,
     pub value: u8,

@@ -55,10 +55,8 @@ impl<'a> LineSupportGenerator<'a> {
         let mut out = MeshBuilder::new();
         for [origin, _normal] in overhangs {
             let bottom = origin.xy().to_homogeneous();
-            out.add_vertical_cylinder(bottom, origin.z, self.config.support_radius, 10);
+            out.add_vertical_cylinder(bottom, origin.z, self.config.support_radius, 15);
         }
-
-        out.save_stl("debug.stl").unwrap();
 
         out.build()
     }
@@ -109,7 +107,7 @@ impl<'a> LineSupportGenerator<'a> {
         let normals = mesh.normals();
 
         for (face, normal) in normals.iter().enumerate() {
-            let normal = mesh.transform_normal(&normal);
+            let normal = mesh.transform_normal(normal);
             if normal.z >= self.config.max_origin_normal_z {
                 continue;
             }
