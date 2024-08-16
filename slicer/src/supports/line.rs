@@ -36,9 +36,8 @@ impl<'a> LineSupportGenerator<'a> {
     }
 
     pub fn generate_line_supports(&self, mesh: &Mesh) -> (Mesh, Vec<[Vector3<f32>; 2]>) {
-        let half_edge_mesh = HalfEdgeMesh::new(mesh);
-
         let mut overhangs = Vec::new();
+        let half_edge_mesh = HalfEdgeMesh::new(mesh);
 
         let point_overhangs = self.detect_point_overhangs(mesh, &half_edge_mesh);
         overhangs.extend_from_slice(&point_overhangs);
@@ -60,7 +59,7 @@ impl<'a> LineSupportGenerator<'a> {
             let bottom = origin.xy().to_homogeneous();
             mesh.add_vertical_cylinder(
                 bottom,
-                origin.z,
+                origin.z + 0.1,
                 self.config.support_radius,
                 self.config.support_precision,
             );

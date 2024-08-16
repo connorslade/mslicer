@@ -22,8 +22,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                         app.slice_config.platform_size,
                     );
 
-                    let debug = generate_support(&mut meshes, idx, &generator);
-                    app.state.line_support_debug.extend_from_slice(&debug);
+                    app.state.line_support_debug = generate_support(&mut meshes, idx, &generator);
                 }
             }
         });
@@ -98,12 +97,10 @@ fn generate_support(
     let mesh = &meshes[idx];
 
     let (supports, debug) = support.generate_line_supports(&mesh.mesh);
-
     let mesh = RenderedMesh::from_mesh(supports)
         .with_name(format!("Supports {}", mesh.name))
         .with_random_color();
 
     meshes.push(mesh);
-
     debug
 }

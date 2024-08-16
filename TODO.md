@@ -55,7 +55,7 @@
 - [x] Publish goo_format crate
 - [x] Allow uploading / printing a local .goo file
 - [x] Load normals from model files
-- [ ] Fix camera movement
+- [x] Fix camera movement
 - [x] Optionally proxy printer state over http (api and sse)
 - [x] Remote print error handing
 - [x] Make all network operations async (not block ui)
