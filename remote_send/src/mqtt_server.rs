@@ -187,21 +187,19 @@ impl Mqtt {
             ),
             id: client.machine_id.to_owned(),
         };
-        let data = serde_json::to_vec(&data).unwrap();
+        let data = serde_json::to_vec(&data)?;
 
         let server = self.server.upgrade().unwrap();
-        server
-            .send_packet(
-                client_id,
-                PublishPacket {
-                    flags: PublishFlags::QOS1,
-                    topic: format!("/sdcp/request/{}", client.attributes.mainboard_id),
-                    packet_id: Some(packet_id),
-                    data,
-                }
-                .to_packet(),
-            )
-            .unwrap();
+        server.send_packet(
+            client_id,
+            PublishPacket {
+                flags: PublishFlags::QOS1,
+                topic: format!("/sdcp/request/{}", client.attributes.mainboard_id),
+                packet_id: Some(packet_id),
+                data,
+            }
+            .to_packet(),
+        )?;
 
         Ok(())
     }
