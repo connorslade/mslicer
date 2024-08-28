@@ -4,12 +4,11 @@ use image::{Rgba, RgbaImage};
 use nalgebra::{Vector2, Vector3};
 use tracing::info;
 use wgpu::{
-    BufferAddress, BufferDescriptor, BufferUsages, Color, CommandEncoderDescriptor,
-    Device, Extent3d, ImageCopyBuffer, ImageCopyTexture, ImageDataLayout, LoadOp, Maintain,
-    MapMode, Operations, Origin3d, Queue, RenderPassColorAttachment,
-    RenderPassDepthStencilAttachment, RenderPassDescriptor, StoreOp, Texture, TextureAspect,
-    TextureDescriptor, TextureDimension, TextureFormat, TextureUsages, TextureView,
-    TextureViewDescriptor,
+    BufferAddress, BufferDescriptor, BufferUsages, Color, CommandEncoderDescriptor, Device,
+    Extent3d, ImageCopyBuffer, ImageCopyTexture, ImageDataLayout, LoadOp, Maintain, MapMode,
+    Operations, Origin3d, Queue, RenderPassColorAttachment, RenderPassDepthStencilAttachment,
+    RenderPassDescriptor, StoreOp, Texture, TextureAspect, TextureDescriptor, TextureDimension,
+    TextureFormat, TextureUsages, TextureView, TextureViewDescriptor,
 };
 
 use crate::TEXTURE_FORMAT;

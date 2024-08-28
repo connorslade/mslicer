@@ -40,6 +40,16 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     ui.collapsing("First Exposure Config", |ui| {
         exposure_config_grid(ui, &mut app.slice_config.first_exposure_config);
     });
+
+    ui.add_space(16.0);
+    ui.heading("Plugins");
+
+    let this_app = unsafe { &mut *(app as *mut _) };
+    for plugin in &mut app.plugin_manager.plugins {
+        ui.collapsing(plugin.name(), |ui| {
+            plugin.ui(this_app, ui, _ctx);
+        });
+    }
 }
 
 fn exposure_config_grid(ui: &mut Ui, config: &mut ExposureConfig) {

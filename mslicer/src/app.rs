@@ -19,6 +19,7 @@ use tracing::{info, warn};
 
 use crate::{
     config::Config,
+    plugins::{elephant_foot_fixer::ElephantFootFixerPlugin, PluginManager},
     remote_print::RemotePrint,
     render::{camera::Camera, rendered_mesh::RenderedMesh},
     slice_operation::{SliceOperation, SliceResult},
@@ -41,6 +42,7 @@ pub struct App {
     pub state: UiState,
     pub config: Config,
     pub slice_config: SliceConfig,
+    pub plugin_manager: PluginManager,
 
     pub camera: Camera,
     pub meshes: Arc<RwLock<Vec<RenderedMesh>>>,
@@ -95,6 +97,12 @@ impl App {
                     ..Default::default()
                 },
                 first_layers: 10,
+            },
+            plugin_manager: PluginManager {
+                plugins: vec![Box::new(ElephantFootFixerPlugin {
+                    enabled: false,
+                    rest_time: 20.0,
+                })],
             },
             fps: FpsTracker::new(),
             meshes: Arc::new(RwLock::new(Vec::new())),

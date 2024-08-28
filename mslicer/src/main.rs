@@ -12,6 +12,7 @@ const TEXTURE_FORMAT: TextureFormat = TextureFormat::Bgra8Unorm;
 
 mod app;
 mod config;
+mod plugins;
 mod remote_print;
 mod render;
 mod slice_operation;

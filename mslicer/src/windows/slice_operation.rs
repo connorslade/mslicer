@@ -58,7 +58,7 @@ pub fn ui(app: &mut App, ctx: &Context) {
                                         let client = mqtt.get_client(&printer.mainboard_id);
 
                                         let mut layout_job = LayoutJob::default();
-                                        RichText::new(&format!("{} ", client.attributes.name))
+                                        RichText::new(format!("{} ", client.attributes.name))
                                             .append_to(
                                                 &mut layout_job,
                                                 &Style::default(),

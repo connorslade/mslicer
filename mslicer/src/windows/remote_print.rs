@@ -196,7 +196,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
 
                     ui.label("Capabilities");
                     ui.monospace(
-                        &attributes
+                        attributes
                             .capabilities
                             .iter()
                             .map(|x| format!("{x:?}"))
@@ -206,7 +206,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                     ui.end_row();
 
                     ui.label("Last Status");
-                    ui.monospace(&last_update.format("%Y-%m-%d %H:%M:%S").to_string());
+                    ui.monospace(last_update.format("%Y-%m-%d %H:%M:%S").to_string());
                 });
 
             if i + 1 != printers.len() {
