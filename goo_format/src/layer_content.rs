@@ -5,24 +5,44 @@ use common::serde::{Deserializer, Serializer};
 use crate::DELIMITER;
 
 pub struct LayerContent {
+    /// 0: Don't pause; 1: Pause on current layer
     pub pause_flag: u16,
+    /// The Z position to to if paused, in mm.
     pub pause_position_z: f32,
+    /// The Z position of the layer, in mm.
+    /// `(layer_height * (i + 1))`.
     pub layer_position_z: f32,
+    /// Exposure time for the layer, in seconds.
     pub layer_exposure_time: f32,
+    /// Time to wait after the layer is done when exposure delay mode is 0, in seconds.
     pub layer_off_time: f32,
+    /// Time to wait before lifting the platform when exposure delay mode is 1, in seconds.
     pub before_lift_time: f32,
+    /// Time to wait after lifting the platform when exposure delay mode is 1, in seconds.
     pub after_lift_time: f32,
+    /// Time to wait after retracting the platform when exposure delay mode is 1, in seconds.
     pub after_retract_time: f32,
+    /// Distance to lift the platform, in mm.
     pub lift_distance: f32,
+    /// Speed to lift the platform, in mm/min.
     pub lift_speed: f32,
+    /// Distance to lift the platform a second time, in mm.
     pub second_lift_distance: f32,
+    /// Speed to lift the platform a second time, in mm/min.
     pub second_lift_speed: f32,
+    /// Distance to retract the platform, in mm.
     pub retract_distance: f32,
+    /// Speed to retract the platform, in mm/min.
     pub retract_speed: f32,
+    /// Distance to retract the platform a second time, in mm.
     pub second_retract_distance: f32,
+    /// Speed to retract the platform a second time, in mm/min.
     pub second_retract_speed: f32,
+    /// Brightness of the light, 0-255.
     pub light_pwm: u16,
+    /// The actual layer data, run length encoded with [`goo_format::LayerEncoder`].
     pub data: Vec<u8>,
+    /// Negative wrapping sum of all bytes in `data`.
     pub checksum: u8,
 }
 

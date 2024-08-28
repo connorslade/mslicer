@@ -14,10 +14,13 @@ use parking_lot::{Condvar, MappedMutexGuard, Mutex, MutexGuard};
 use slicer::slicer::Progress as SliceProgress;
 use tracing::info;
 
+use crate::app::App;
+
 #[derive(Clone)]
 pub struct SliceOperation {
     start_time: Instant,
     completion: Arc<AtomicU32>,
+    has_post_processed: bool,
 
     pub progress: SliceProgress,
     pub result: Arc<Mutex<Option<SliceResult>>>,
@@ -40,6 +43,8 @@ impl SliceOperation {
         Self {
             start_time: Instant::now(),
             completion: Arc::new(AtomicU32::new(0)),
+            has_post_processed: false,
+
             progress,
             result: Arc::new(Mutex::new(None)),
             preview_image: Arc::new(Mutex::new(None)),
@@ -77,6 +82,21 @@ impl SliceOperation {
 
         info!("Slice operation completed in {:?}", elapsed);
         self.result.lock().replace(result);
+    }
+
+    pub fn post_process_if_needed(&mut self, app: &mut App) {
+        if self.has_post_processed {
+            return;
+        }
+
+        let mut result = self.result.lock();
+        if result.is_none() {
+            return;
+        }
+
+        let goo = &mut result.as_mut().unwrap().goo;
+        app.plugin_manager.post_slice(app, goo);
+        self.has_post_processed = true;
     }
 
     pub fn result(&self) -> MutexGuard<Option<SliceResult>> {

@@ -19,7 +19,10 @@ use tracing::{info, warn};
 
 use crate::{
     config::Config,
-    plugins::{elephant_foot_fixer::ElephantFootFixerPlugin, PluginManager},
+    plugins::{
+        elephant_foot_fixer::{self},
+        PluginManager,
+    },
     remote_print::RemotePrint,
     render::{camera::Camera, rendered_mesh::RenderedMesh},
     slice_operation::{SliceOperation, SliceResult},
@@ -99,10 +102,7 @@ impl App {
                 first_layers: 10,
             },
             plugin_manager: PluginManager {
-                plugins: vec![Box::new(ElephantFootFixerPlugin {
-                    enabled: false,
-                    rest_time: 20.0,
-                })],
+                plugins: vec![elephant_foot_fixer::get_plugin()],
             },
             fps: FpsTracker::new(),
             meshes: Arc::new(RwLock::new(Vec::new())),
@@ -232,6 +232,10 @@ impl eframe::App for App {
         match self.config.theme {
             Theme::Dark => ctx.set_visuals(Visuals::dark()),
             Theme::Light => ctx.set_visuals(Visuals::light()),
+        }
+
+        if let Some(operation) = &mut self.slice_operation {
+            operation.post_process_if_needed(app);
         }
 
         self.remote_print.tick(app);
