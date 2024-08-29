@@ -1,4 +1,5 @@
-use egui::{emath::Numeric, DragValue, Ui};
+use egui::{emath::Numeric, Align, DragValue, Layout, Ui};
+use egui_phosphor::regular::INFO;
 
 pub fn dragger<Num: Numeric>(
     ui: &mut Ui,
@@ -9,6 +10,23 @@ pub fn dragger<Num: Numeric>(
     ui.horizontal(|ui| {
         ui.add(func(DragValue::new(value)));
         ui.label(label);
+    });
+}
+
+pub fn dragger_tip<Num: Numeric>(
+    ui: &mut Ui,
+    label: &str,
+    tip: &str,
+    value: &mut Num,
+    func: fn(DragValue) -> DragValue,
+) {
+    ui.horizontal(|ui| {
+        ui.add(func(DragValue::new(value)));
+        ui.label(label);
+        ui.with_layout(Layout::right_to_left(Align::Min), |ui| {
+            ui.label(INFO).on_hover_text(tip);
+            ui.add_space(ui.available_width());
+        })
     });
 }
 
