@@ -66,8 +66,8 @@ impl Plugin for ElephantFootFixerPlugin {
             .take(goo.header.bottom_layers as usize)
         {
             let decoder = LayerDecoder::new(&layer.data);
-            let image = Image::from_decoder(width, height, decoder);
-            let image = erode(image, self.intensity_multiplier / 100.0, x_radius, y_radius);
+            let mut image = Image::from_decoder(width, height, decoder);
+            apply(&mut image, self.intensity_multiplier / 100.0, 5, 5);
 
             let mut new_layer = LayerEncoder::new();
             for run in image.runs() {
@@ -89,27 +89,61 @@ pub fn get_plugin() -> Box<dyn Plugin> {
     })
 }
 
-pub fn erode(image: Image, intensity: f32, x_radius: usize, y_radius: usize) -> Image {
-    let mut new_layer = image.clone();
+pub fn apply(image: &mut Image, intensity: f32, x_radius: usize, y_radius: usize) {
+    let mut x_distances = vec![u16::MAX; image.size.x * image.size.y];
+    let mut y_distances = vec![u16::MAX; image.size.x * image.size.y];
+
+    let update_distance = |distances: &mut [u16], distance: &mut u16, x, y| {
+        *distance += 1;
+
+        let pixel = image.get_pixel(x, y);
+        (pixel == 0).then(|| *distance = 0);
+
+        let idx = y * image.size.x + x;
+        let old = distances[idx];
+        if *distance < old {
+            distances[idx] = *distance;
+        }
+    };
 
     for x in 0..image.size.x {
-        'outer: for y in 0..image.size.y {
-            let pixel = image.get_pixel(x, y);
-            if pixel == 0 {
-                continue;
-            }
-
-            // if there are any black pixels in the radius, multiply the pixel by the intensity multiplier
-            for xp in x.saturating_sub(x_radius)..(x + x_radius).min(image.size.x) {
-                for yp in y.saturating_sub(y_radius)..(y + y_radius).min(image.size.y) {
-                    if image.get_pixel(xp, yp) == 0 {
-                        new_layer.set_pixel(x, y, (pixel as f32 * intensity) as u8);
-                        continue 'outer;
-                    }
-                }
-            }
+        let mut distance = 0;
+        for y in 0..image.size.y {
+            update_distance(&mut y_distances, &mut distance, x, y);
         }
     }
 
-    new_layer
+    for y in 0..image.size.y {
+        let mut distance = 0;
+        for x in 0..image.size.x {
+            update_distance(&mut x_distances, &mut distance, x, y);
+        }
+    }
+
+    for x in (0..image.size.x).rev() {
+        let mut distance = 0;
+        for y in (0..image.size.y).rev() {
+            update_distance(&mut y_distances, &mut distance, x, y);
+        }
+    }
+
+    for y in (0..image.size.y).rev() {
+        let mut distance = 0;
+        for x in (0..image.size.x).rev() {
+            update_distance(&mut x_distances, &mut distance, x, y);
+        }
+    }
+
+    for x in 0..image.size.x {
+        for y in 0..image.size.y {
+            let pixel = image.get_pixel(x, y);
+
+            let x_distance = x_distances[y * image.size.x + x];
+            let y_distance = y_distances[y * image.size.x + x];
+
+            if x_distance < x_radius as u16 || y_distance < y_radius as u16 {
+                image.set_pixel(x, y, (pixel as f32 * intensity).round() as u8);
+            }
+        }
+    }
 }
