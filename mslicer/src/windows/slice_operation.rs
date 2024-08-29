@@ -112,10 +112,13 @@ pub fn ui(app: &mut App, ctx: &Context) {
                 slice_preview(ui, result);
 
                 ui.horizontal(|ui| {
+                    let layer_digits = result.layer_count.1 as usize;
                     ui.add(
                         DragValue::new(&mut result.slice_preview_layer)
                             .clamp_range(1..=result.goo.layers.len())
-                            .custom_formatter(|n, _| format!("{}/{}", n, result.goo.layers.len())),
+                            .custom_formatter(|n, _| {
+                                format!("{:0>layer_digits$}/{}", n, result.layer_count.0)
+                            }),
                     );
                     result.slice_preview_layer +=
                         ui.button(RichText::new("+").monospace()).clicked() as usize;
@@ -128,7 +131,11 @@ pub fn ui(app: &mut App, ctx: &Context) {
 
                     ui.separator();
                     ui.label("Scale");
-                    ui.add(DragValue::new(&mut result.preview_scale));
+                    ui.add(
+                        DragValue::new(&mut result.preview_scale)
+                            .clamp_range(1.0..=f32::MAX)
+                            .speed(0.1),
+                    );
                 });
             }
         });
@@ -189,14 +196,14 @@ fn slice_preview(ui: &mut egui::Ui, result: &mut SliceResult) {
                 Sense::drag(),
             );
 
+            let preview_scale = result.preview_scale.exp2();
             let drag = response.drag_delta();
-            result.preview_offset.x -= drag.x / rect.width() * width as f32 / result.preview_scale;
-            result.preview_offset.y +=
-                drag.y / rect.height() * height as f32 / result.preview_scale;
+            result.preview_offset.x -= drag.x / rect.width() * width as f32 / preview_scale;
+            result.preview_offset.y += drag.y / rect.height() * height as f32 / preview_scale;
 
             if response.hovered() {
                 let scroll = ui.input(|x| x.smooth_scroll_delta);
-                result.preview_scale += scroll.y * 0.02;
+                result.preview_scale += scroll.y * 0.01;
                 result.preview_scale = result.preview_scale.max(1.0);
             }
 
@@ -208,7 +215,7 @@ fn slice_preview(ui: &mut egui::Ui, result: &mut SliceResult) {
                         result.goo.header.y_resolution as u32,
                     ),
                     offset: result.preview_offset,
-                    scale: result.preview_scale,
+                    scale: preview_scale,
                     new_preview,
                 },
             );

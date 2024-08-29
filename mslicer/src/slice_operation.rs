@@ -36,6 +36,7 @@ pub struct SliceResult {
     pub last_preview_layer: usize,
     pub preview_offset: Vector2<f32>,
     pub preview_scale: f32,
+    pub layer_count: (usize, u8),
 }
 
 impl SliceOperation {
