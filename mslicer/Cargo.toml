@@ -24,6 +24,7 @@ open.workspace = true
 parking_lot.workspace = true
 plexus.workspace = true
 rand.workspace = true
+rayon.workspace = true
 rfd.workspace = true
 serde_json.workspace = true
 serde.workspace = true

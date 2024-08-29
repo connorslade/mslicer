@@ -1,5 +1,6 @@
 use common::image::Image;
 use egui::{Context, Ui};
+use rayon::iter::{ParallelBridge, ParallelIterator};
 use tracing::info;
 
 use crate::{app::App, ui::components::dragger_tip};
@@ -60,24 +61,26 @@ impl Plugin for ElephantFootFixerPlugin {
             x_radius, y_radius
         );
 
-        for layer in goo
-            .layers
+        goo.layers
             .iter_mut()
             .take(goo.header.bottom_layers as usize)
-        {
-            let decoder = LayerDecoder::new(&layer.data);
-            let mut image = Image::from_decoder(width, height, decoder);
-            apply(&mut image, self.intensity_multiplier / 100.0, 5, 5);
+            .par_bridge()
+            .for_each(|layer| {
+                let decoder = LayerDecoder::new(&layer.data);
+                let mut image = Image::from_decoder(width, height, decoder);
 
-            let mut new_layer = LayerEncoder::new();
-            for run in image.runs() {
-                new_layer.add_run(run.length, run.value)
-            }
+                let intensity = self.intensity_multiplier / 100.0;
+                apply(&mut image, intensity, x_radius, y_radius);
 
-            let (data, checksum) = new_layer.finish();
-            layer.data = data;
-            layer.checksum = checksum;
-        }
+                let mut new_layer = LayerEncoder::new();
+                for run in image.runs() {
+                    new_layer.add_run(run.length, run.value)
+                }
+
+                let (data, checksum) = new_layer.finish();
+                layer.data = data;
+                layer.checksum = checksum;
+            });
     }
 }
 
@@ -89,11 +92,18 @@ pub fn get_plugin() -> Box<dyn Plugin> {
     })
 }
 
-pub fn apply(image: &mut Image, intensity: f32, x_radius: usize, y_radius: usize) {
+fn apply(image: &mut Image, intensity: f32, x_radius: usize, y_radius: usize) {
     let mut x_distances = vec![u16::MAX; image.size.x * image.size.y];
     let mut y_distances = vec![u16::MAX; image.size.x * image.size.y];
 
-    let update_distance = |distances: &mut [u16], distance: &mut u16, x, y| {
+    #[inline(always)]
+    fn update_distance(
+        image: &Image,
+        distances: &mut [u16],
+        distance: &mut u16,
+        x: usize,
+        y: usize,
+    ) {
         *distance += 1;
 
         let pixel = image.get_pixel(x, y);
@@ -101,36 +111,34 @@ pub fn apply(image: &mut Image, intensity: f32, x_radius: usize, y_radius: usize
 
         let idx = y * image.size.x + x;
         let old = distances[idx];
-        if *distance < old {
-            distances[idx] = *distance;
-        }
-    };
+        (*distance < old).then(|| distances[idx] = *distance);
+    }
 
     for x in 0..image.size.x {
         let mut distance = 0;
         for y in 0..image.size.y {
-            update_distance(&mut y_distances, &mut distance, x, y);
+            update_distance(&image, &mut y_distances, &mut distance, x, y);
         }
     }
 
     for y in 0..image.size.y {
         let mut distance = 0;
         for x in 0..image.size.x {
-            update_distance(&mut x_distances, &mut distance, x, y);
+            update_distance(&image, &mut x_distances, &mut distance, x, y);
         }
     }
 
     for x in (0..image.size.x).rev() {
         let mut distance = 0;
         for y in (0..image.size.y).rev() {
-            update_distance(&mut y_distances, &mut distance, x, y);
+            update_distance(&image, &mut y_distances, &mut distance, x, y);
         }
     }
 
     for y in (0..image.size.y).rev() {
         let mut distance = 0;
         for x in (0..image.size.x).rev() {
-            update_distance(&mut x_distances, &mut distance, x, y);
+            update_distance(&image, &mut x_distances, &mut distance, x, y);
         }
     }
 

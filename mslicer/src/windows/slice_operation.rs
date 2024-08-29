@@ -178,7 +178,6 @@ fn slice_preview(ui: &mut egui::Ui, result: &mut SliceResult) {
             None
         };
 
-        result.preview_scale = result.preview_scale.max(0.1);
         egui::Frame::canvas(ui.style()).show(ui, |ui| {
             let available_size = ui.available_size();
             let (rect, response) = ui.allocate_exact_size(
@@ -195,8 +194,11 @@ fn slice_preview(ui: &mut egui::Ui, result: &mut SliceResult) {
             result.preview_offset.y +=
                 drag.y / rect.height() * height as f32 / result.preview_scale;
 
-            let scroll = ui.input(|x| x.smooth_scroll_delta);
-            result.preview_scale += scroll.y * 0.02;
+            if response.hovered() {
+                let scroll = ui.input(|x| x.smooth_scroll_delta);
+                result.preview_scale += scroll.y * 0.02;
+                result.preview_scale = result.preview_scale.max(1.0);
+            }
 
             let callback = Callback::new_paint_callback(
                 rect,

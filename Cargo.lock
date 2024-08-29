@@ -2850,6 +2850,7 @@ dependencies = [
  "parking_lot",
  "plexus",
  "rand 0.8.5",
+ "rayon",
  "remote_send",
  "rfd",
  "serde",
