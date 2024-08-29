@@ -152,13 +152,14 @@ fn slice_preview(ui: &mut egui::Ui, result: &mut SliceResult) {
                 .show_value(false),
         );
 
+        let (width, height) = (
+            result.goo.header.x_resolution as u32,
+            result.goo.header.y_resolution as u32,
+        );
+
         result.slice_preview_layer = result.slice_preview_layer.clamp(1, result.goo.layers.len());
         let new_preview = if result.last_preview_layer != result.slice_preview_layer {
             result.last_preview_layer = result.slice_preview_layer;
-            let (width, height) = (
-                result.goo.header.x_resolution as u32,
-                result.goo.header.y_resolution as u32,
-            );
 
             let layer_data = &result.goo.layers[result.slice_preview_layer - 1].data;
             let decoder = LayerDecoder::new(layer_data);
@@ -180,7 +181,7 @@ fn slice_preview(ui: &mut egui::Ui, result: &mut SliceResult) {
         result.preview_scale = result.preview_scale.max(0.1);
         egui::Frame::canvas(ui.style()).show(ui, |ui| {
             let available_size = ui.available_size();
-            let (rect, _response) = ui.allocate_exact_size(
+            let (rect, response) = ui.allocate_exact_size(
                 Vec2::new(
                     available_size.x,
                     available_size.x / result.goo.header.x_resolution as f32
@@ -188,6 +189,15 @@ fn slice_preview(ui: &mut egui::Ui, result: &mut SliceResult) {
                 ),
                 Sense::drag(),
             );
+
+            let drag = response.drag_delta();
+            result.preview_offset.x -= drag.x / rect.width() * width as f32 / result.preview_scale;
+            result.preview_offset.y +=
+                drag.y / rect.height() * height as f32 / result.preview_scale;
+
+            let scroll = ui.input(|x| x.smooth_scroll_delta);
+            result.preview_scale += scroll.y * 0.02;
+
             let callback = Callback::new_paint_callback(
                 rect,
                 SlicePreviewRenderCallback {

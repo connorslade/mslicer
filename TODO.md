@@ -69,3 +69,5 @@
 - [x] Dont allow adding the same printer multiple times
 - [x] Drag and drop to load models
 - [x] Look into mqtt server resource leak on disable
+- [ ] Run post-slice plugins on slice thread
+- [x] Allow dragging slice operation preview
