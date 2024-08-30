@@ -133,7 +133,7 @@ pub fn ui(app: &mut App, ctx: &Context) {
                     ui.label("Scale");
                     ui.add(
                         DragValue::new(&mut result.preview_scale)
-                            .clamp_range(1.0..=f32::MAX)
+                            .clamp_range(0.1..=f32::MAX)
                             .speed(0.1),
                     );
                 });
@@ -204,7 +204,7 @@ fn slice_preview(ui: &mut egui::Ui, result: &mut SliceResult) {
             if response.hovered() {
                 let scroll = ui.input(|x| x.smooth_scroll_delta);
                 result.preview_scale += scroll.y * 0.01;
-                result.preview_scale = result.preview_scale.max(1.0);
+                result.preview_scale = result.preview_scale.max(0.1);
             }
 
             let callback = Callback::new_paint_callback(

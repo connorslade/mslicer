@@ -25,13 +25,13 @@
 - [x] Fix slice preview layer and scale controls
 - [x] Clamp camera rotations
 - [x] Fix slicing rotated objects
-- [ ] 0-pad slice preview layer display so its width doesn't change as you move the slider
+- [x] 0-pad slice preview layer display so its width doesn't change as you move the slider
 - [x] Preload layer 1 in slice preview
 - [x] Better camera movement (left click to orbit, right click to change orbit point)
 - [ ] Don't crash when slicing an object outside of bounds
 - [x] Add support for loading .obj files
 - [x] Move call to slicer into app from top_bar
-- [ ] Determine which side is the front of the printer
+- [x] Determine which side is the front of the printer
 - [x] Render orbit target point
 - [x] Factor out common descriptors from pipelines
 - [x] Improve include_shader macro
@@ -71,3 +71,5 @@
 - [x] Look into mqtt server resource leak on disable
 - [ ] Run post-slice plugins on slice thread
 - [x] Allow dragging slice operation preview
+- [x] Fix rotation on Z axis
+- [x] Fix Z translation being doubled

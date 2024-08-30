@@ -165,7 +165,7 @@ impl App {
                     + Pos::new(
                         self.slice_config.platform_resolution.x as f32 / 2.0,
                         self.slice_config.platform_resolution.y as f32 / 2.0,
-                        pos.z - self.slice_config.slice_height,
+                        -self.slice_config.slice_height,
                     ),
             );
 
