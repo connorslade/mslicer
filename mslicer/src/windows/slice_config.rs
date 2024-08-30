@@ -1,10 +1,13 @@
 use egui::{Context, DragValue, Grid, Ui};
+use egui_phosphor::regular::INFO;
 
 use crate::{
     app::App,
     ui::components::{vec2_dragger, vec3_dragger},
 };
 use common::config::ExposureConfig;
+
+const TRANSITION_LAYER_TOOLTIP: &str = "Transition layers interpolate between the first exposure settings and the normal exposure settings.";
 
 pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     Grid::new("slice_config")
@@ -29,6 +32,13 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
 
             ui.label("First Layers");
             ui.add(DragValue::new(&mut app.slice_config.first_layers));
+            ui.end_row();
+
+            ui.horizontal(|ui| {
+                ui.label("Transition Layers");
+                ui.label(INFO).on_hover_text(TRANSITION_LAYER_TOOLTIP);
+            });
+            ui.add(DragValue::new(&mut app.slice_config.transition_layers));
             ui.end_row();
         });
 

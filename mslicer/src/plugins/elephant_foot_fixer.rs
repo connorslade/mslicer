@@ -32,7 +32,6 @@ impl Plugin for ElephantFootFixerPlugin {
             |x| x.speed(0.1).suffix("mm"),
         );
 
-        ui.add_space(8.0);
         dragger_tip(
             ui,
             "Intensity",

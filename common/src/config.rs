@@ -9,6 +9,7 @@ pub struct SliceConfig {
     pub exposure_config: ExposureConfig,
     pub first_exposure_config: ExposureConfig,
     pub first_layers: u32,
+    pub transition_layers: u32,
 }
 
 #[derive(Clone, Debug)]

@@ -92,16 +92,16 @@ impl App {
                 platform_resolution: Vector2::new(11_520, 5_120),
                 platform_size: Vector3::new(218.88, 122.904, 260.0),
                 slice_height: 0.05,
-
                 exposure_config: ExposureConfig {
                     exposure_time: 3.0,
                     ..Default::default()
                 },
                 first_exposure_config: ExposureConfig {
-                    exposure_time: 50.0,
+                    exposure_time: 30.0,
                     ..Default::default()
                 },
-                first_layers: 10,
+                first_layers: 3,
+                transition_layers: 10,
             },
             plugin_manager: PluginManager {
                 plugins: vec![elephant_foot_fixer::get_plugin()],

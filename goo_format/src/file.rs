@@ -47,7 +47,7 @@ impl File {
                 printing_time: total_time as u32,
                 layer_thickness: slice_config.slice_height,
                 bottom_layers: slice_config.first_layers,
-                transition_layers: slice_config.first_layers as u16 + 1,
+                transition_layers: slice_config.transition_layers as u16,
 
                 exposure_time: slice_config.exposure_config.exposure_time,
                 lift_distance: slice_config.exposure_config.lift_distance,
