@@ -7,9 +7,11 @@ use std::{
 };
 
 use clone_macro::clone;
+use const_format::concatcp;
 use eframe::Theme;
 use egui::Visuals;
 use egui_dock::{DockState, NodeIndex};
+use egui_phosphor::regular::CARET_RIGHT;
 use egui_tracing::EventCollector;
 use image::imageops::FilterType;
 use nalgebra::{Vector2, Vector3};
@@ -122,7 +124,11 @@ impl App {
             .collect::<Vec<_>>();
 
         if meshes.is_empty() {
-            const NO_MODELS_ERROR: &str = "There are no models to slice. Add one by going to File → Open Model or drag and drop a model file into the workspace.";
+            const NO_MODELS_ERROR: &str = concatcp!(
+                "There are no models to slice. Add one by going to File ",
+                CARET_RIGHT,
+                " Open Model or drag and drop a model file into the workspace."
+            );
             self.popup.open(Popup::simple(
                 "Slicing Error",
                 PopupIcon::Error,

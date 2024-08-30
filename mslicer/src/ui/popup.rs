@@ -1,4 +1,4 @@
-use egui::{pos2, vec2, Color32, Context, Grid, Id, RichText, Ui, WidgetText, Window};
+use egui::{pos2, vec2, Color32, Context, Grid, Id, Label, RichText, Ui, WidgetText, Window};
 
 use crate::app::App;
 
@@ -95,10 +95,11 @@ impl Popup {
 
         Self::new_with_id(id, title, move |_app, ui| {
             let mut close = false;
+            ui.set_height(50.0);
             ui.centered_and_justified(|ui| {
                 Grid::new(id.with("grid")).num_columns(2).show(ui, |ui| {
                     ui.label(RichText::new(icon.as_char()).size(30.0).color(icon.color()));
-                    ui.label(body.clone());
+                    ui.add(Label::new(body.clone()).wrap(true));
                 });
                 ui.add_space(5.0);
                 close = ui.button("Close").clicked();
