@@ -48,6 +48,7 @@ impl PopupManager {
                     window_size.y * 0.5 - 100.0,
                 ))
                 .show(ctx, |ui| {
+                    ui.set_height(50.0);
                     ui.vertical_centered(|ui| {
                         ui.heading(popup.title.clone());
                     });
@@ -95,7 +96,6 @@ impl Popup {
 
         Self::new_with_id(id, title, move |_app, ui| {
             let mut close = false;
-            ui.set_height(50.0);
             ui.centered_and_justified(|ui| {
                 Grid::new(id.with("grid")).num_columns(2).show(ui, |ui| {
                     ui.label(RichText::new(icon.as_char()).size(30.0).color(icon.color()));

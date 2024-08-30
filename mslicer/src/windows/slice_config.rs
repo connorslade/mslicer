@@ -22,11 +22,11 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
             });
             ui.end_row();
 
-            ui.label("Platform Size");
+            ui.label("Platform Size (mm)");
             vec3_dragger(ui, app.slice_config.platform_size.as_mut(), |x| x);
             ui.end_row();
 
-            ui.label("Slice Height");
+            ui.label("Slice Height (mm)");
             ui.add(DragValue::new(&mut app.slice_config.slice_height));
             ui.end_row();
 

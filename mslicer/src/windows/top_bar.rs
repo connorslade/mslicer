@@ -14,6 +14,7 @@ use crate::app::App;
 const IMPORT_MODEL_SHORTCUT: KeyboardShortcut = KeyboardShortcut::new(Modifiers::CTRL, Key::I);
 const LOAD_TEAPOT_SHORTCUT: KeyboardShortcut = KeyboardShortcut::new(Modifiers::CTRL, Key::T);
 const QUIT_SHORTCUT: KeyboardShortcut = KeyboardShortcut::new(Modifiers::CTRL, Key::Q);
+const SLICE_SHORTCUT: KeyboardShortcut = KeyboardShortcut::new(Modifiers::CTRL, Key::R);
 
 pub fn ui(app: &mut App, ctx: &Context) {
     ctx.input_mut(|x| x.consume_shortcut(&IMPORT_MODEL_SHORTCUT))
@@ -22,6 +23,8 @@ pub fn ui(app: &mut App, ctx: &Context) {
         .then(|| import_teapot(app));
     ctx.input_mut(|x| x.consume_shortcut(&QUIT_SHORTCUT))
         .then(|| quit());
+    ctx.input_mut(|x| x.consume_shortcut(&SLICE_SHORTCUT))
+        .then(|| app.slice());
 
     TopBottomPanel::top("top_panel").show(ctx, |ui| {
         ui.horizontal(|ui| {
@@ -61,9 +64,11 @@ pub fn ui(app: &mut App, ctx: &Context) {
                 None => false,
             };
             ui.add_enabled_ui(!slicing, |ui| {
-                ui.button(concatcp!(STACK, " Slice"))
-                    .clicked()
-                    .then(|| app.slice());
+                let slice_button = ui.add(
+                    Button::new(concatcp!(STACK, " Slice"))
+                        .shortcut_text(ctx.format_shortcut(&SLICE_SHORTCUT)),
+                );
+                slice_button.clicked().then(|| app.slice());
             });
         });
     });
