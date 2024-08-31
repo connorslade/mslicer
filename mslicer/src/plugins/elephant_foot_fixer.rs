@@ -1,11 +1,14 @@
-use common::image::Image;
+use std::{mem, time::Instant};
+
 use egui::{Context, Ui};
 use image::{GrayImage, Luma};
-use imageproc::morphology::Mask;
+use imageproc::{morphology::Mask, point::Point};
+use itertools::Itertools;
 use rayon::iter::{ParallelBridge, ParallelIterator};
 use tracing::info;
 
 use crate::{app::App, ui::components::dragger_tip};
+use common::image::Image;
 use goo_format::{File as GooFile, LayerDecoder, LayerEncoder};
 
 use super::Plugin;
@@ -58,13 +61,16 @@ impl Plugin for ElephantFootFixerPlugin {
             (self.inset_distance * (height as f32 / goo.header.y_size)) as usize,
         );
         info!(
-            "Eroding bottom layers with radius ({}, {})",
-            x_radius, y_radius
+            "Eroding {} bottom layers with radius ({}, {})",
+            goo.header.bottom_layers, x_radius, y_radius
         );
 
         let intensity = self.intensity_multiplier / 100.0;
+        let mask = generate_mask(x_radius, y_radius);
+
         let darken = |value: u8| (value as f32 * intensity).round() as u8;
 
+        let start = Instant::now();
         goo.layers
             .iter_mut()
             .take(goo.header.bottom_layers as usize)
@@ -75,7 +81,7 @@ impl Plugin for ElephantFootFixerPlugin {
                 let mut image =
                     GrayImage::from_raw(width as u32, height as u32, raw_image).unwrap();
 
-                let erode = imageproc::morphology::grayscale_erode(&image, &Mask::square(10));
+                let erode = imageproc::morphology::grayscale_erode(&image, &mask);
                 for (x, y, pixel) in image.enumerate_pixels_mut() {
                     if erode.get_pixel(x, y)[0] == 0 && pixel[0] != 0 {
                         *pixel = Luma([darken(pixel[0])]);
@@ -92,13 +98,30 @@ impl Plugin for ElephantFootFixerPlugin {
                 layer.data = data;
                 layer.checksum = checksum;
             });
+
+        info!("Eroded bottom layers in {:?}", start.elapsed());
     }
 }
 
 pub fn get_plugin() -> Box<dyn Plugin> {
     Box::new(ElephantFootFixerPlugin {
         enabled: false,
-        inset_distance: 2.0,
+        inset_distance: 0.5,
         intensity_multiplier: 30.0,
     })
+}
+
+fn generate_mask(width: usize, height: usize) -> Mask {
+    let (width, height) = (width as i16, height as i16);
+
+    let points = (-width..=width)
+        .cartesian_product(-height..=height)
+        .map(|(x, y)| Point::new(x, y))
+        .collect::<Vec<_>>();
+
+    new_mask_unsafe(points)
+}
+
+fn new_mask_unsafe(points: Vec<Point<i16>>) -> Mask {
+    unsafe { mem::transmute(points) }
 }
