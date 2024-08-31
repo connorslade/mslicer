@@ -22,7 +22,7 @@ pub fn ui(app: &mut App, ctx: &Context) {
     ctx.input_mut(|x| x.consume_shortcut(&LOAD_TEAPOT_SHORTCUT))
         .then(|| import_teapot(app));
     ctx.input_mut(|x| x.consume_shortcut(&QUIT_SHORTCUT))
-        .then(|| quit());
+        .then(quit);
     ctx.input_mut(|x| x.consume_shortcut(&SLICE_SHORTCUT))
         .then(|| app.slice());
 
@@ -56,7 +56,7 @@ pub fn ui(app: &mut App, ctx: &Context) {
 
                 let quit_button =
                     ui.add(Button::new("Quit").shortcut_text(ctx.format_shortcut(&QUIT_SHORTCUT)));
-                quit_button.clicked().then(|| quit());
+                quit_button.clicked().then(quit);
             });
 
             let slicing = match &app.slice_operation {

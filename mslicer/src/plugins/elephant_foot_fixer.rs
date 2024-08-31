@@ -1,14 +1,9 @@
-use std::{
-    collections::{HashSet, VecDeque},
-    time::Instant,
-};
-
-use common::{image::Image, rle_image::RleImage};
+use common::image::Image;
 use egui::{Context, Ui};
 use image::{GrayImage, Luma};
-use imageproc::{distance_transform::Norm, morphology::Mask};
+use imageproc::morphology::Mask;
 use rayon::iter::{ParallelBridge, ParallelIterator};
-use tracing::{info, trace};
+use tracing::info;
 
 use crate::{app::App, ui::components::dragger_tip};
 use goo_format::{File as GooFile, LayerDecoder, LayerEncoder};
