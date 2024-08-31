@@ -33,6 +33,14 @@ impl Image {
         image
     }
 
+    pub fn from_raw(width: usize, height: usize, data: Vec<u8>) -> Self {
+        Self {
+            size: Vector2::new(width, height),
+            data,
+            idx: 0,
+        }
+    }
+
     pub fn add_run(&mut self, length: usize, value: u8) {
         self.data[self.idx..self.idx + length].fill(value);
         self.idx += length;

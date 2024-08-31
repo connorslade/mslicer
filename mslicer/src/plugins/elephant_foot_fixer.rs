@@ -1,7 +1,14 @@
-use common::image::Image;
+use std::{
+    collections::{HashSet, VecDeque},
+    time::Instant,
+};
+
+use common::{image::Image, rle_image::RleImage};
 use egui::{Context, Ui};
+use image::{GrayImage, Luma};
+use imageproc::{distance_transform::Norm, morphology::Mask};
 use rayon::iter::{ParallelBridge, ParallelIterator};
-use tracing::info;
+use tracing::{info, trace};
 
 use crate::{app::App, ui::components::dragger_tip};
 use goo_format::{File as GooFile, LayerDecoder, LayerEncoder};
@@ -60,19 +67,29 @@ impl Plugin for ElephantFootFixerPlugin {
             x_radius, y_radius
         );
 
+        let intensity = self.intensity_multiplier / 100.0;
+        let darken = |value: u8| (value as f32 * intensity).round() as u8;
+
         goo.layers
             .iter_mut()
             .take(goo.header.bottom_layers as usize)
             .par_bridge()
             .for_each(|layer| {
                 let decoder = LayerDecoder::new(&layer.data);
-                let mut image = Image::from_decoder(width, height, decoder);
+                let raw_image = Image::from_decoder(width, height, decoder).take();
+                let mut image =
+                    GrayImage::from_raw(width as u32, height as u32, raw_image).unwrap();
 
-                let intensity = self.intensity_multiplier / 100.0;
-                apply(&mut image, intensity, x_radius, y_radius);
+                let erode = imageproc::morphology::grayscale_erode(&image, &Mask::square(10));
+                for (x, y, pixel) in image.enumerate_pixels_mut() {
+                    if erode.get_pixel(x, y)[0] == 0 && pixel[0] != 0 {
+                        *pixel = Luma([darken(pixel[0])]);
+                    }
+                }
 
                 let mut new_layer = LayerEncoder::new();
-                for run in image.runs() {
+                let raw_image = Image::from_raw(width, height, image.into_raw());
+                for run in raw_image.runs() {
                     new_layer.add_run(run.length, run.value)
                 }
 
@@ -89,68 +106,4 @@ pub fn get_plugin() -> Box<dyn Plugin> {
         inset_distance: 2.0,
         intensity_multiplier: 30.0,
     })
-}
-
-fn apply(image: &mut Image, intensity: f32, x_radius: usize, y_radius: usize) {
-    let mut x_distances = vec![u16::MAX; image.size.x * image.size.y];
-    let mut y_distances = vec![u16::MAX; image.size.x * image.size.y];
-
-    #[inline(always)]
-    fn update_distance(
-        image: &Image,
-        distances: &mut [u16],
-        distance: &mut u16,
-        x: usize,
-        y: usize,
-    ) {
-        *distance += 1;
-
-        let pixel = image.get_pixel(x, y);
-        (pixel == 0).then(|| *distance = 0);
-
-        let idx = y * image.size.x + x;
-        let old = distances[idx];
-        (*distance < old).then(|| distances[idx] = *distance);
-    }
-
-    for x in 0..image.size.x {
-        let mut distance = 0;
-        for y in 0..image.size.y {
-            update_distance(&image, &mut y_distances, &mut distance, x, y);
-        }
-    }
-
-    for y in 0..image.size.y {
-        let mut distance = 0;
-        for x in 0..image.size.x {
-            update_distance(&image, &mut x_distances, &mut distance, x, y);
-        }
-    }
-
-    for x in (0..image.size.x).rev() {
-        let mut distance = 0;
-        for y in (0..image.size.y).rev() {
-            update_distance(&image, &mut y_distances, &mut distance, x, y);
-        }
-    }
-
-    for y in (0..image.size.y).rev() {
-        let mut distance = 0;
-        for x in (0..image.size.x).rev() {
-            update_distance(&image, &mut x_distances, &mut distance, x, y);
-        }
-    }
-
-    for x in 0..image.size.x {
-        for y in 0..image.size.y {
-            let pixel = image.get_pixel(x, y);
-
-            let x_distance = x_distances[y * image.size.x + x];
-            let y_distance = y_distances[y * image.size.x + x];
-
-            if x_distance < x_radius as u16 || y_distance < y_radius as u16 {
-                image.set_pixel(x, y, (pixel as f32 * intensity).round() as u8);
-            }
-        }
-    }
 }

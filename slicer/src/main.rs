@@ -33,6 +33,7 @@ fn main() -> Result<()> {
             ..Default::default()
         },
         first_layers: 10,
+        transition_layers: 10,
     };
 
     let file = File::open(FILE_PATH)?;

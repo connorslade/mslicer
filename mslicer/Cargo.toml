@@ -18,6 +18,7 @@ egui-wgpu.workspace = true
 egui.workspace = true
 encase.workspace = true
 image.workspace = true
+imageproc.workspace = true
 nalgebra.workspace = true
 notify-rust.workspace = true
 open.workspace = true
