@@ -1,9 +1,11 @@
 use std::{fs::File, io::Write, mem, sync::Arc};
 
+use const_format::concatcp;
 use egui::{
     style::HandleShape, text::LayoutJob, Align, Button, Context, DragValue, FontSelection, Grid,
     Id, Layout, ProgressBar, RichText, Sense, Slider, Style, Vec2, Window,
 };
+use egui_phosphor::regular::{FLOPPY_DISK_BACK, PAPER_PLANE_TILT};
 use egui_wgpu::Callback;
 use goo_format::LayerDecoder;
 use nalgebra::Vector2;
@@ -52,44 +54,48 @@ pub fn ui(app: &mut App, ctx: &Context) {
                     ui.with_layout(Layout::default().with_cross_align(Align::Max), |ui| {
                         ui.horizontal(|ui| {
                             ui.add_enabled_ui(app.remote_print.is_initialized(), |ui| {
-                                ui.menu_button("Send to Printer", |ui| {
-                                    let mqtt = app.remote_print.mqtt();
-                                    for printer in app.remote_print.printers().iter() {
-                                        let client = mqtt.get_client(&printer.mainboard_id);
+                                ui.menu_button(
+                                    concatcp!(PAPER_PLANE_TILT, " Send to Printer"),
+                                    |ui| {
+                                        let mqtt = app.remote_print.mqtt();
+                                        for printer in app.remote_print.printers().iter() {
+                                            let client = mqtt.get_client(&printer.mainboard_id);
 
-                                        let mut layout_job = LayoutJob::default();
-                                        RichText::new(format!("{} ", client.attributes.name))
-                                            .append_to(
-                                                &mut layout_job,
-                                                &Style::default(),
-                                                FontSelection::Default,
-                                                Align::LEFT,
-                                            );
-                                        RichText::new(&client.attributes.mainboard_id)
-                                            .monospace()
-                                            .append_to(
-                                                &mut layout_job,
-                                                &Style::default(),
-                                                FontSelection::Default,
-                                                Align::LEFT,
-                                            );
+                                            let mut layout_job = LayoutJob::default();
+                                            RichText::new(format!("{} ", client.attributes.name))
+                                                .append_to(
+                                                    &mut layout_job,
+                                                    &Style::default(),
+                                                    FontSelection::Default,
+                                                    Align::LEFT,
+                                                );
+                                            RichText::new(&client.attributes.mainboard_id)
+                                                .monospace()
+                                                .append_to(
+                                                    &mut layout_job,
+                                                    &Style::default(),
+                                                    FontSelection::Default,
+                                                    Align::LEFT,
+                                                );
 
-                                        let result = app.slice_operation.as_ref().unwrap().result();
-                                        let result = result.as_ref().unwrap();
+                                            let result =
+                                                app.slice_operation.as_ref().unwrap().result();
+                                            let result = result.as_ref().unwrap();
 
-                                        let mut serializer = DynamicSerializer::new();
-                                        result.goo.serialize(&mut serializer);
-                                        let data = Arc::new(serializer.into_inner());
+                                            let mut serializer = DynamicSerializer::new();
+                                            result.goo.serialize(&mut serializer);
+                                            let data = Arc::new(serializer.into_inner());
 
-                                        let mainboard_id = printer.mainboard_id.clone();
-                                        if ui.button(layout_job).clicked() {
-                                            app.popup.open(name_popup(mainboard_id, data));
+                                            let mainboard_id = printer.mainboard_id.clone();
+                                            if ui.button(layout_job).clicked() {
+                                                app.popup.open(name_popup(mainboard_id, data));
+                                            }
                                         }
-                                    }
-                                });
+                                    },
+                                );
                             });
 
-                            if ui.button("Save").clicked() {
+                            if ui.button(concatcp!(FLOPPY_DISK_BACK, " Save")).clicked() {
                                 let result = app.slice_operation.as_ref().unwrap().result();
                                 let result = result.as_ref().unwrap();
 

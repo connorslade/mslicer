@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 anyhow.workspace = true
+bincode.workspace = true
 bytemuck.workspace = true
 chrono.workspace = true
 clone-macro.workspace = true

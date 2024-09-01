@@ -1,11 +1,13 @@
 use std::{
+    fs::File,
     io::{BufRead, Seek},
-    path::PathBuf,
+    path::{Path, PathBuf},
     sync::Arc,
     thread,
     time::Instant,
 };
 
+use anyhow::Result;
 use clone_macro::clone;
 use const_format::concatcp;
 use eframe::Theme;
@@ -25,6 +27,7 @@ use crate::{
         elephant_foot_fixer::{self},
         PluginManager,
     },
+    project::{BorrowedProject, OwnedProject},
     remote_print::RemotePrint,
     render::{camera::Camera, rendered_mesh::RenderedMesh},
     slice_operation::{SliceOperation, SliceResult},
@@ -224,6 +227,23 @@ impl App {
                 .with_name(name)
                 .with_random_color(),
         );
+    }
+
+    pub fn save_project(&self, path: &Path) -> Result<()> {
+        let meshes = self.meshes.read();
+        let project = BorrowedProject::new(&meshes, &self.slice_config);
+
+        let mut file = File::create(path)?;
+        project.serialize(&mut file)?;
+        Ok(())
+    }
+
+    pub fn load_project(&mut self, path: &Path) -> Result<()> {
+        let mut file = File::open(path)?;
+        let project = OwnedProject::deserialize(&mut file)?;
+
+        project.apply(self);
+        Ok(())
     }
 }
 

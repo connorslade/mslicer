@@ -6,3 +6,4 @@ edition = "2021"
 [dependencies]
 nalgebra.workspace = true
 rand.workspace = true
+serde.workspace = true

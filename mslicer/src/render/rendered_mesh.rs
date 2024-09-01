@@ -75,6 +75,16 @@ impl RenderedMesh {
         self
     }
 
+    pub fn with_color(mut self, color: Color32) -> Self {
+        self.color = color;
+        self
+    }
+
+    pub fn with_hidden(mut self, hidden: bool) -> Self {
+        self.hidden = hidden;
+        self
+    }
+
     pub fn with_random_color(mut self) -> Self {
         self.randomize_color();
         self

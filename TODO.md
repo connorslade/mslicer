@@ -73,3 +73,8 @@
 - [x] Allow dragging slice operation preview
 - [x] Fix rotation on Z axis
 - [x] Fix Z translation being doubled
+- [ ] Merge goo_format changes into goo crate
+- [ ] Implement .ctb format (see <https://github.com/cbiffle/catibo/blob/master/doc/cbddlp-ctb.adoc>)
+- [ ] Undo / Redo
+- [x] Close file menu if button clicked
+- [ ] Allow dragging in project to load them?

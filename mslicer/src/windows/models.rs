@@ -1,6 +1,6 @@
 use const_format::concatcp;
 use egui::{Context, Grid, Id, Ui};
-use egui_phosphor::regular::{DICE_THREE, EYE, EYE_SLASH};
+use egui_phosphor::regular::{ARROW_LINE_DOWN, COPY, DICE_THREE, EYE, EYE_SLASH, TRASH};
 use slicer::Pos;
 
 use crate::{
@@ -54,16 +54,20 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                 .show(ui, |ui| {
                     ui.label("Actions");
                     ui.horizontal(|ui| {
-                        ui.button("🗑 Delete")
+                        ui.button(concatcp!(TRASH, " Delete"))
                             .clicked()
                             .then(|| action = Action::Remove(i));
-                        ui.button("🗋 Duplicate")
+                        ui.button(concatcp!(COPY, " Duplicate"))
                             .clicked()
                             .then(|| action = Action::Duplicate(i));
-                        ui.button("⬇ Align to Bed")
+                        ui.button(concatcp!(ARROW_LINE_DOWN, " Align to Bed"))
                             .clicked()
                             .then(|| mesh.align_to_bed());
                     });
+                    ui.end_row();
+
+                    ui.label("Name");
+                    ui.text_edit_singleline(&mut mesh.name);
                     ui.end_row();
 
                     ui.horizontal(|ui| {
@@ -103,7 +107,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                     ui.label("Rotation");
                     let mut rotation = rad_to_deg(mesh.mesh.rotation());
                     let original_rotation = rotation;
-                    vec3_dragger(ui, rotation.as_mut(), |x| x);
+                    vec3_dragger(ui, rotation.as_mut(), |x| x.suffix("°"));
                     (original_rotation != rotation)
                         .then(|| mesh.mesh.set_rotation(deg_to_rad(rotation)));
                     ui.end_row();
