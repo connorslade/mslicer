@@ -1,13 +1,17 @@
 use std::{mem, time::Instant};
 
-use egui::{Context, Ui};
+use egui::{Align, Context, Layout, Ui};
+use egui_phosphor::regular::{INFO, WARNING};
 use image::{GrayImage, Luma};
 use imageproc::{morphology::Mask, point::Point};
 use itertools::Itertools;
 use rayon::iter::{ParallelBridge, ParallelIterator};
 use tracing::info;
 
-use crate::{app::App, ui::components::dragger_tip};
+use crate::{
+    app::App,
+    ui::components::{dragger, dragger_tip},
+};
 use common::image::Image;
 use goo_format::{File as GooFile, LayerDecoder, LayerEncoder};
 
@@ -29,13 +33,19 @@ impl Plugin for ElephantFootFixerPlugin {
         ui.checkbox(&mut self.enabled, "Enabled");
 
         ui.add_space(8.0);
-        dragger_tip(
-            ui,
-            "Inset Distance",
-            "The distance in from the edges that will have a reduced intensity.",
-            &mut self.inset_distance,
-            |x| x.speed(0.1).suffix("mm"),
-        );
+        ui.horizontal(|ui| {
+            dragger(ui, "Inset Distance", &mut self.inset_distance, |x| {
+                x.speed(0.1).suffix("mm")
+            });
+            ui.with_layout(Layout::right_to_left(Align::Min), |ui| {
+                ui.label(INFO).on_hover_text(
+                    "The distance in from the edges that will have a reduced intensity.",
+                );
+                ui.label(WARNING)
+                    .on_hover_text("Larger values will drastically increase post-processing time.");
+                ui.add_space(ui.available_width());
+            })
+        });
 
         dragger_tip(
             ui,
@@ -112,7 +122,7 @@ pub fn get_plugin() -> Box<dyn Plugin> {
 }
 
 fn generate_mask(width: usize, height: usize) -> Mask {
-    let (width, height) = (width as i16, height as i16);
+    let (width, height) = ((width / 2) as i16, (height / 2) as i16);
 
     let points = (-width..=width)
         .cartesian_product(-height..=height)
