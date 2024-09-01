@@ -25,7 +25,7 @@ image = "0.25.1"
 imageproc = "0.25.0"
 itertools = "0.13.0"
 md5 = "0.7.0"
-nalgebra = "0.32.6"
+nalgebra = { version = "0.32.6", features = ["serde-serialize"] }
 notify-rust = "4.11.0"
 obj-rs = "0.7.1"
 open = "5.3.0"

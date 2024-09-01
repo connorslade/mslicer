@@ -3,18 +3,14 @@ use nalgebra::Vector3;
 use serde::{Deserialize, Serialize};
 
 use crate::render::rendered_mesh::RenderedMesh;
-use common::serde_impls::{index_list, vector3_list, vector3f};
 use slicer::mesh::Mesh;
 
 #[derive(Deserialize)]
 pub struct OwnedProjectMesh {
     info: ProjectMeshInfo,
 
-    #[serde(with = "vector3_list")]
     vertices: Vec<Vector3<f32>>,
-    #[serde(with = "index_list")]
     faces: Vec<[u32; 3]>,
-    #[serde(with = "vector3_list")]
     normals: Vec<Vector3<f32>>,
 }
 
@@ -22,11 +18,8 @@ pub struct OwnedProjectMesh {
 pub struct BorrowedProjectMesh<'a> {
     info: ProjectMeshInfo,
 
-    #[serde(with = "vector3_list")]
     vertices: &'a [Vector3<f32>],
-    #[serde(with = "index_list")]
     faces: &'a [[u32; 3]],
-    #[serde(with = "vector3_list")]
     normals: &'a [Vector3<f32>],
 }
 
@@ -37,11 +30,8 @@ pub struct ProjectMeshInfo {
     color: Color32,
     hidden: bool,
 
-    #[serde(with = "vector3f")]
     position: Vector3<f32>,
-    #[serde(with = "vector3f")]
     scale: Vector3<f32>,
-    #[serde(with = "vector3f")]
     rotation: Vector3<f32>,
 }
 

@@ -53,7 +53,7 @@ impl OwnedProject {
             anyhow::bail!("Invalid version: Expected {VERSION} found {version}");
         }
 
-        Ok(bincode::deserialize_from(reader).unwrap())
+        Ok(bincode::deserialize_from(reader)?)
     }
 
     pub fn apply(self, app: &mut App) {

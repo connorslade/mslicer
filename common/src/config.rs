@@ -1,13 +1,9 @@
 use nalgebra::{Vector2, Vector3};
 use serde::{Deserialize, Serialize};
 
-use crate::serde_impls::vector3f;
-
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct SliceConfig {
-    #[serde(skip)]
     pub platform_resolution: Vector2<u32>,
-    #[serde(with = "vector3f")]
     pub platform_size: Vector3<f32>,
     pub slice_height: f32,
 
