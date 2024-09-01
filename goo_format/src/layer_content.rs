@@ -5,8 +5,8 @@ use common::serde::{Deserializer, Serializer};
 use crate::DELIMITER;
 
 pub struct LayerContent {
-    /// 0: Don't pause; 1: Pause on current layer
-    pub pause_flag: u16,
+    /// If printing should be paused on current layer.
+    pub pause: bool,
     /// The Z position to to if paused, in mm.
     pub pause_position_z: f32,
     /// The Z position of the layer, in mm.
@@ -39,7 +39,7 @@ pub struct LayerContent {
     /// Speed to retract the platform a second time, in mm/min.
     pub second_retract_speed: f32,
     /// Brightness of the light, 0-255.
-    pub light_pwm: u16,
+    pub light_pwm: u8,
     /// The actual layer data, run length encoded with [`goo_format::LayerEncoder`].
     pub data: Vec<u8>,
     /// Negative wrapping sum of all bytes in `data`.
@@ -48,7 +48,7 @@ pub struct LayerContent {
 
 impl LayerContent {
     pub fn serialize<T: Serializer>(&self, ser: &mut T) {
-        ser.write_u16(self.pause_flag);
+        ser.write_u16(self.pause as u16);
         ser.write_f32(self.pause_position_z);
         ser.write_f32(self.layer_position_z);
         ser.write_f32(self.layer_exposure_time);
@@ -64,7 +64,7 @@ impl LayerContent {
         ser.write_f32(self.retract_speed);
         ser.write_f32(self.second_retract_distance);
         ser.write_f32(self.second_retract_speed);
-        ser.write_u16(self.light_pwm);
+        ser.write_u16(self.light_pwm as u16);
         ser.write_bytes(DELIMITER);
         ser.write_u32(self.data.len() as u32 + 2);
         ser.write_bytes(&[0x55]);
@@ -90,7 +90,7 @@ impl LayerContent {
         let retract_speed = des.read_f32();
         let second_retract_distance = des.read_f32();
         let second_retract_speed = des.read_f32();
-        let light_pwm = des.read_u16();
+        let light_pwm = des.read_u16().min(255) as u8;
         ensure!(des.read_bytes(2) == DELIMITER);
         let data_len = des.read_u32() as usize - 2;
         ensure!(des.read_u8() == 0x55);
@@ -99,7 +99,7 @@ impl LayerContent {
         ensure!(des.read_bytes(2) == DELIMITER);
 
         Ok(Self {
-            pause_flag,
+            pause: pause_flag != 0,
             pause_position_z,
             layer_position_z,
             layer_exposure_time,

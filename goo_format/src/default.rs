@@ -1,6 +1,6 @@
 use common::serde::SizedString;
 
-use crate::{HeaderInfo, LayerContent, PreviewImage};
+use crate::{header_info::ExposureDelayMode, HeaderInfo, LayerContent, PreviewImage};
 
 impl Default for HeaderInfo {
     fn default() -> Self {
@@ -27,7 +27,7 @@ impl Default for HeaderInfo {
             z_size: 260.0,
             layer_thickness: 0.05,
             exposure_time: 3.0,
-            exposure_delay_mode: true,
+            exposure_delay_mode: ExposureDelayMode::StaticTime,
             turn_off_time: 0.0,
             bottom_before_lift_time: 0.0,
             bottom_after_lift_time: 0.0,
@@ -55,7 +55,7 @@ impl Default for HeaderInfo {
             second_retract_speed: 0.0,
             bottom_light_pwm: 255,
             light_pwm: 255,
-            advance_mode: false,
+            per_layer_settings: false,
             printing_time: 2659,
             total_volume: 526.507,
             total_weight: 0.684,
@@ -70,7 +70,7 @@ impl Default for HeaderInfo {
 impl Default for LayerContent {
     fn default() -> Self {
         Self {
-            pause_flag: 0,
+            pause: false,
             pause_position_z: 200.0,
             layer_position_z: 0.05,
             layer_exposure_time: 50.0,
