@@ -22,15 +22,11 @@ use slicer::{slicer::Slicer, Pos};
 use tracing::{info, warn};
 
 use crate::{
-    config::Config,
     plugins::{
         elephant_foot_fixer::{self},
         PluginManager,
     },
-    project::{BorrowedProject, OwnedProject},
-    remote_print::RemotePrint,
     render::{camera::Camera, rendered_mesh::RenderedMesh},
-    slice_operation::{SliceOperation, SliceResult},
     ui::{
         drag_and_drop,
         popup::{Popup, PopupIcon, PopupManager},
@@ -40,6 +36,16 @@ use crate::{
 };
 use common::config::{ExposureConfig, SliceConfig};
 use goo_format::{File as GooFile, LayerEncoder, PreviewImage};
+
+pub mod config;
+pub mod project;
+pub mod remote_print;
+pub mod slice_operation;
+use config::Config;
+use remote_print::RemotePrint;
+use slice_operation::{SliceOperation, SliceResult};
+
+use project::{BorrowedProject, OwnedProject};
 
 pub struct App {
     // todo: dock state in ui_state?
@@ -241,6 +247,8 @@ impl App {
     pub fn load_project(&mut self, path: &Path) -> Result<()> {
         let mut file = File::open(path)?;
         let project = OwnedProject::deserialize(&mut file)?;
+
+        self.config.recent_projects.push(path.to_path_buf());
 
         project.apply(self);
         Ok(())

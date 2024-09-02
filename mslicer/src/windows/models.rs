@@ -41,7 +41,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                 .clicked();
 
             if open {
-                ui.strong(&mesh.name);
+                ui.text_edit_singleline(&mut mesh.name);
             } else {
                 ui.label(&mesh.name);
             }
@@ -64,10 +64,6 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                             .clicked()
                             .then(|| mesh.align_to_bed());
                     });
-                    ui.end_row();
-
-                    ui.label("Name");
-                    ui.text_edit_singleline(&mut mesh.name);
                     ui.end_row();
 
                     ui.horizontal(|ui| {

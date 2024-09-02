@@ -1,7 +1,7 @@
 use std::{
     fs,
     net::{IpAddr, Ipv4Addr},
-    path::Path,
+    path::{Path, PathBuf},
 };
 
 use anyhow::Result;
@@ -18,6 +18,7 @@ pub struct Config {
     pub show_normals: bool,
     pub grid_size: f32,
     pub theme: Theme,
+    pub recent_projects: Vec<PathBuf>,
 
     // Remote print settings
     pub alert_print_completion: bool,
@@ -57,8 +58,11 @@ impl Default for Config {
         Self {
             render_style: RenderStyle::Rended,
             show_normals: false,
-            theme: Theme::Dark,
             grid_size: 12.16,
+            theme: Theme::Dark,
+
+            recent_projects: Vec::new(),
+
             alert_print_completion: false,
             init_remote_print_at_startup: false,
             http_status_proxy: false,

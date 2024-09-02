@@ -6,7 +6,7 @@ use nalgebra::{Matrix4, Vector3};
 use parking_lot::RwLock;
 use wgpu::{CommandBuffer, CommandEncoder, Device, Queue, RenderPass};
 
-use crate::{config::Config, slice_operation::SliceOperation};
+use crate::app::{config::Config, slice_operation::SliceOperation};
 
 use super::{
     camera::Camera,

@@ -12,9 +12,8 @@ use nalgebra::Vector2;
 use rfd::FileDialog;
 
 use crate::{
-    app::App,
+    app::{slice_operation::SliceResult, App},
     render::slice_preview::SlicePreviewRenderCallback,
-    slice_operation::SliceResult,
     ui::{components::vec2_dragger, popup::Popup},
 };
 use common::serde::DynamicSerializer;
