@@ -1,6 +1,6 @@
 use const_format::concatcp;
 use eframe::Theme;
-use egui::{ComboBox, Context, Ui};
+use egui::{ComboBox, Context, DragValue, Grid, Ui};
 use egui_phosphor::regular::{ARROW_COUNTER_CLOCKWISE, FOLDER};
 use tracing::error;
 
@@ -61,25 +61,33 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     ui.checkbox(&mut app.config.show_normals, "Show Normals");
 
     ui.collapsing("Camera", |ui| {
-        ui.label("Target");
+        Grid::new("workspace_camera")
+            .striped(true)
+            .num_columns(2)
+            .show(ui, |ui| {
+                ui.label("Target");
+                vec3_dragger(ui, app.camera.target.as_mut(), |x| x);
+                ui.end_row();
 
-        vec3_dragger(ui, app.camera.target.as_mut(), |x| x);
+                ui.label("Angle");
+                vec2_dragger(ui, app.camera.angle.as_mut(), |x| x);
+                ui.end_row();
 
-        ui.add_space(12.0);
-        ui.label("Angle");
+                ui.label("Distance");
+                dragger(ui, "", &mut app.camera.distance, |x| x.speed(5));
+                ui.end_row();
 
-        vec2_dragger(ui, app.camera.angle.as_mut(), |x| x);
+                ui.label("Fov");
+                ui.add(DragValue::new(&mut app.camera.fov).speed(0.01));
+                ui.end_row();
 
-        ui.add_space(12.0);
-        ui.label("Distance");
+                ui.label("Near");
+                ui.add(DragValue::new(&mut app.camera.near));
+                ui.end_row();
 
-        dragger(ui, "", &mut app.camera.distance, |x| x.speed(5));
-
-        ui.add_space(12.0);
-        ui.label("Misc");
-
-        dragger(ui, "FOV", &mut app.camera.fov, |x| x.speed(0.01));
-        dragger(ui, "Near", &mut app.camera.near, |x| x);
-        dragger(ui, "Far", &mut app.camera.far, |x| x);
+                ui.label("Far");
+                ui.add(DragValue::new(&mut app.camera.far));
+                ui.end_row();
+            });
     });
 }

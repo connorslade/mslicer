@@ -231,12 +231,15 @@ impl App {
             .collect()
     }
 
-    pub fn save_project(&self, path: &Path) -> Result<()> {
+    pub fn save_project(&mut self, path: &Path) -> Result<()> {
         let meshes = self.meshes.read();
         let project = BorrowedProject::new(&meshes, &self.slice_config);
 
         let mut file = File::create(path)?;
         project.serialize(&mut file)?;
+
+        drop(meshes);
+        self.add_recent_project(path.to_path_buf());
         Ok(())
     }
 
@@ -246,6 +249,18 @@ impl App {
 
         self.add_recent_project(path.to_path_buf());
         project.apply(self);
+
+        info!("Loaded project from `{}`", path.display());
+        let meshes = self.meshes.read();
+        for (i, mesh) in meshes.iter().enumerate() {
+            info!(
+                " {} Loaded model `{}` with {} faces",
+                if i + 1 < meshes.len() { "│" } else { "└" },
+                mesh.name,
+                mesh.mesh.face_count()
+            );
+        }
+
         Ok(())
     }
 }
