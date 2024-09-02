@@ -14,7 +14,7 @@
 - [x] Allow deleting objects
 - [ ] Use instancing both for object mesh storage and rendering
 - [x] Less internal dependence on GOO format
-- [ ] Anti-aliasing
+- [x] Anti-aliasing
 - [x] Cache transformed points?
 - [x] Rename `ui` module to `mslicer`
 - [x] Proper slice preview scaling
@@ -82,3 +82,4 @@
 - [ ] Save on remote thread
 - [ ] Printer profiles
 - [x] Save config on quit
+- [ ] Refactor plugins to post processors

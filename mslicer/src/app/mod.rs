@@ -20,8 +20,7 @@ use tracing::{info, warn};
 
 use crate::{
     plugins::{
-        elephant_foot_fixer::{self},
-        PluginManager,
+        anti_alias, elephant_foot_fixer::{self}, PluginManager
     },
     render::{camera::Camera, rendered_mesh::RenderedMesh},
     ui::{
@@ -95,7 +94,7 @@ impl App {
             camera: Camera::default(),
             slice_config: SliceConfig::default(),
             plugin_manager: PluginManager {
-                plugins: vec![elephant_foot_fixer::get_plugin()],
+                plugins: vec![elephant_foot_fixer::get_plugin(), anti_alias::get_plugin()],
             },
             fps: FpsTracker::new(),
             meshes: Arc::new(RwLock::new(Vec::new())),

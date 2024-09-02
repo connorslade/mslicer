@@ -3,6 +3,7 @@ use egui::{Context, Ui};
 use crate::app::App;
 use goo_format::File as GooFile;
 
+pub mod anti_alias;
 pub mod elephant_foot_fixer;
 
 pub trait Plugin {
