@@ -1,6 +1,7 @@
 use std::{
     fs::File,
     io::{BufRead, Seek},
+    iter,
     path::{Path, PathBuf},
     sync::Arc,
     thread,
@@ -16,9 +17,9 @@ use egui_dock::{DockState, NodeIndex};
 use egui_phosphor::regular::CARET_RIGHT;
 use egui_tracing::EventCollector;
 use image::imageops::FilterType;
-use nalgebra::{Vector2, Vector3};
+use itertools::Itertools;
+use nalgebra::Vector2;
 use parking_lot::RwLock;
-use slicer::{slicer::Slicer, Pos};
 use tracing::{info, warn};
 
 use crate::{
@@ -34,8 +35,9 @@ use crate::{
     },
     windows::{self, Tab},
 };
-use common::config::{ExposureConfig, SliceConfig};
+use common::config::SliceConfig;
 use goo_format::{File as GooFile, LayerEncoder, PreviewImage};
+use slicer::{slicer::Slicer, Pos};
 
 pub mod config;
 pub mod project;
@@ -97,21 +99,7 @@ impl App {
             },
             config,
             camera: Camera::default(),
-            slice_config: SliceConfig {
-                platform_resolution: Vector2::new(11_520, 5_120),
-                platform_size: Vector3::new(218.88, 122.904, 260.0),
-                slice_height: 0.05,
-                exposure_config: ExposureConfig {
-                    exposure_time: 3.0,
-                    ..Default::default()
-                },
-                first_exposure_config: ExposureConfig {
-                    exposure_time: 30.0,
-                    ..Default::default()
-                },
-                first_layers: 3,
-                transition_layers: 10,
-            },
+            slice_config: SliceConfig::default(),
             plugin_manager: PluginManager {
                 plugins: vec![elephant_foot_fixer::get_plugin()],
             },
@@ -235,6 +223,14 @@ impl App {
         );
     }
 
+    fn add_recent_project(&mut self, path: PathBuf) {
+        self.config.recent_projects = iter::once(path)
+            .chain(self.config.recent_projects.iter().cloned())
+            .unique()
+            .take(5)
+            .collect()
+    }
+
     pub fn save_project(&self, path: &Path) -> Result<()> {
         let meshes = self.meshes.read();
         let project = BorrowedProject::new(&meshes, &self.slice_config);
@@ -248,8 +244,7 @@ impl App {
         let mut file = File::open(path)?;
         let project = OwnedProject::deserialize(&mut file)?;
 
-        self.config.recent_projects.push(path.to_path_buf());
-
+        self.add_recent_project(path.to_path_buf());
         project.apply(self);
         Ok(())
     }

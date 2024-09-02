@@ -1,11 +1,11 @@
 use std::{
     fs::File,
     io::{BufReader, Cursor},
-    process,
+    path::PathBuf,
 };
 
 use const_format::concatcp;
-use egui::{Button, Context, Key, KeyboardShortcut, Modifiers, TopBottomPanel};
+use egui::{Button, Context, Key, KeyboardShortcut, Modifiers, TopBottomPanel, ViewportCommand};
 use egui_phosphor::regular::STACK;
 use rfd::FileDialog;
 use tracing::error;
@@ -32,7 +32,7 @@ pub fn ui(app: &mut App, ctx: &Context) {
     ctx.input_mut(|x| x.consume_shortcut(&LOAD_PROJECT_SHORTCUT))
         .then(|| load(app));
     ctx.input_mut(|x| x.consume_shortcut(&QUIT_SHORTCUT))
-        .then(quit);
+        .then(|| quit(ctx));
     ctx.input_mut(|x| x.consume_shortcut(&SLICE_SHORTCUT))
         .then(|| app.slice());
 
@@ -71,11 +71,28 @@ pub fn ui(app: &mut App, ctx: &Context) {
                 );
                 load_project_button.clicked().then(|| load(app));
 
+                ui.add_enabled_ui(!app.config.recent_projects.is_empty(), |ui| {
+                    ui.menu_button("Recent Projects", |ui| {
+                        let mut load = None;
+                        for path in app.config.recent_projects.iter() {
+                            let name = path.file_name().unwrap().to_string_lossy();
+                            if ui.button(name).clicked() {
+                                ui.close_menu();
+                                load = Some(path.clone());
+                            }
+                        }
+
+                        if let Some(load) = load {
+                            load_project(app, load);
+                        }
+                    });
+                });
+
                 ui.separator();
 
                 let quit_button =
                     ui.add(Button::new("Quit").shortcut_text(ctx.format_shortcut(&QUIT_SHORTCUT)));
-                quit_button.clicked().then(quit);
+                quit_button.clicked().then(|| quit(ctx));
 
                 // Close the menu if a button is clicked
                 for button in [
@@ -146,17 +163,21 @@ fn load(app: &mut App) {
         .add_filter("mslicer project", &["mslicer"])
         .pick_file()
     {
-        if let Err(error) = app.load_project(&path) {
-            error!("Error loading project: {:?}", error);
-            app.popup.open(Popup::simple(
-                "Error Loading Project",
-                PopupIcon::Error,
-                error.to_string(),
-            ));
-        }
+        load_project(app, path);
     }
 }
 
-fn quit() {
-    process::exit(0);
+fn load_project(app: &mut App, path: PathBuf) {
+    if let Err(error) = app.load_project(&path) {
+        error!("Error loading project: {:?}", error);
+        app.popup.open(Popup::simple(
+            "Error Loading Project",
+            PopupIcon::Error,
+            error.to_string(),
+        ));
+    }
+}
+
+fn quit(ctx: &Context) {
+    ctx.send_viewport_cmd(ViewportCommand::Close)
 }

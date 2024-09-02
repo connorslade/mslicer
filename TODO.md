@@ -78,6 +78,8 @@
 - [ ] Undo / Redo
 - [x] Close file menu if button clicked
 - [ ] Allow dragging in project to load them?
-- [ ] Compress meshes when stored as a project
+- [ ] Compress meshes when stored as a project?
 - [ ] Remember the file that was opened for future save operations
 - [ ] Save on remote thread
+- [ ] Printer profiles
+- [x] Save config on quit

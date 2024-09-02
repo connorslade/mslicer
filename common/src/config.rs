@@ -22,6 +22,26 @@ pub struct ExposureConfig {
     pub retract_speed: f32,
 }
 
+impl Default for SliceConfig {
+    fn default() -> Self {
+        Self {
+            platform_resolution: Vector2::new(11_520, 5_120),
+            platform_size: Vector3::new(218.88, 122.904, 260.0),
+            slice_height: 0.05,
+            exposure_config: ExposureConfig {
+                exposure_time: 3.0,
+                ..Default::default()
+            },
+            first_exposure_config: ExposureConfig {
+                exposure_time: 30.0,
+                ..Default::default()
+            },
+            first_layers: 3,
+            transition_layers: 10,
+        }
+    }
+}
+
 impl Default for ExposureConfig {
     fn default() -> Self {
         Self {
