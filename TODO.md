@@ -83,3 +83,4 @@
 - [ ] Printer profiles
 - [x] Save config on quit
 - [ ] Refactor plugins to post processors
+- [ ] Update readme
