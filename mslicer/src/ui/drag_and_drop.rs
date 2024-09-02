@@ -1,12 +1,8 @@
-use std::{
-    borrow::Cow,
-    fs::File,
-    io::{BufReader, Cursor},
-    path::Path,
-};
+use std::{borrow::Cow, fs::File, io::BufReader, path::Path};
 
 use egui::{pos2, Align2, Color32, Context, FontFamily, FontId, Id, LayerId, Order};
 use egui_phosphor::regular::{FILES, FILE_TEXT};
+use itertools::Itertools;
 
 use crate::app::App;
 
@@ -15,17 +11,21 @@ const HOVER_BACKGROUND: Color32 = Color32::from_rgba_premultiplied(0, 0, 0, 200)
 pub fn update(app: &mut App, ctx: &Context) {
     let hovering = ctx.input(|x| x.raw.hovered_files.len());
     ctx.input(|x| {
-        for file in &x.raw.dropped_files {
+        for (file, (name, format)) in x
+            .raw
+            .dropped_files
+            .iter()
+            .map(|x| (x, parse_path(x.path.as_ref().unwrap())))
+            .sorted_by_key(|(_, (_, format))| format == "mslicer")
+        {
             if let Some(path) = &file.path {
-                let (name, format) = parse_path(path);
-
-                let file = File::open(path).unwrap();
-                let mut buf = BufReader::new(file);
-                app.load_mesh(&mut buf, &format, name);
-            } else if let Some(bytes) = &file.bytes {
-                let (name, format) = parse_path(file.path.as_ref().unwrap());
-                let mut buf = Cursor::new(bytes);
-                app.load_mesh(&mut buf, &format, name);
+                if format == "mslicer" {
+                    app.load_project(path);
+                } else {
+                    let file = File::open(path).unwrap();
+                    let mut buf = BufReader::new(file);
+                    app.load_mesh(&mut buf, &format, name);
+                }
             }
         }
     });

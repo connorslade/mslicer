@@ -123,19 +123,26 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                 ui.add_space(8.0);
             }
 
-            if print_info.status == PrintInfoStatus::Complete
-                && app.config.alert_print_completion
-                && !app.state.send_print_completion
-            {
-                app.state.send_print_completion = true;
-                Notification::new()
-                    .summary("Print Complete")
-                    .body(&format!(
-                        "Printer `{}` has finished printing `{}`.",
-                        attributes.name, print_info.filename
-                    ))
-                    .show()
-                    .unwrap();
+            if print_info.status == PrintInfoStatus::Complete {
+                let print_time =
+                    human_duration(Duration::from_millis(print_info.total_ticks as u64));
+                ui.horizontal(|ui| {
+                    ui.label("Finished printing");
+                    ui.monospace(&print_info.filename);
+                    ui.label(format!("in {print_time}"));
+                });
+
+                if app.config.alert_print_completion && !app.state.send_print_completion {
+                    app.state.send_print_completion = true;
+                    Notification::new()
+                        .summary("Print Complete")
+                        .body(&format!(
+                            "Printer `{}` has finished printing `{}`.",
+                            attributes.name, print_info.filename
+                        ))
+                        .show()
+                        .unwrap();
+                }
             }
 
             let file_transfer = &status.file_transfer_info;
@@ -144,7 +151,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
             {
                 ui.add_space(8.0);
                 ui.horizontal(|ui| {
-                    ui.label("Transferring ");
+                    ui.label("Transferring");
                     ui.monospace(&file_transfer.filename);
                 });
                 ui.add(

@@ -1,13 +1,24 @@
-use std::io::{Read, Write};
+use std::{
+    fs::File,
+    io::{Read, Write},
+    iter,
+    path::{Path, PathBuf},
+};
 
 use anyhow::Result;
 use egui::Color32;
+use itertools::Itertools;
 use nalgebra::Vector3;
 use serde::{Deserialize, Serialize};
-use slicer::mesh::Mesh;
+use tracing::{error, info};
 
-use crate::{app::App, render::rendered_mesh::RenderedMesh};
+use crate::{
+    app::App,
+    render::rendered_mesh::RenderedMesh,
+    ui::popup::{Popup, PopupIcon},
+};
 use common::config::SliceConfig;
+use slicer::mesh::Mesh;
 
 const VERSION: u32 = 0;
 
@@ -51,6 +62,71 @@ pub struct ProjectMeshInfo {
     position: Vector3<f32>,
     scale: Vector3<f32>,
     rotation: Vector3<f32>,
+}
+
+impl App {
+    fn add_recent_project(&mut self, path: PathBuf) {
+        self.config.recent_projects = iter::once(path)
+            .chain(self.config.recent_projects.iter().cloned())
+            .unique()
+            .take(5)
+            .collect()
+    }
+
+    fn _save_project(&mut self, path: &Path) -> Result<()> {
+        let meshes = self.meshes.read();
+        let project = BorrowedProject::new(&meshes, &self.slice_config);
+
+        let mut file = File::create(path)?;
+        project.serialize(&mut file)?;
+
+        drop(meshes);
+        self.add_recent_project(path.to_path_buf());
+        Ok(())
+    }
+
+    pub fn save_project(&mut self, path: &Path) {
+        if let Err(error) = self._save_project(path) {
+            error!("Error saving project: {:?}", error);
+            self.popup.open(Popup::simple(
+                "Error Saving Project",
+                PopupIcon::Error,
+                error.to_string(),
+            ));
+        }
+    }
+
+    fn _load_project(&mut self, path: &Path) -> Result<()> {
+        let mut file = File::open(path)?;
+        let project = OwnedProject::deserialize(&mut file)?;
+
+        self.add_recent_project(path.to_path_buf());
+        project.apply(self);
+
+        info!("Loaded project from `{}`", path.display());
+        let meshes = self.meshes.read();
+        for (i, mesh) in meshes.iter().enumerate() {
+            info!(
+                " {} Loaded model `{}` with {} faces",
+                if i + 1 < meshes.len() { "│" } else { "└" },
+                mesh.name,
+                mesh.mesh.face_count()
+            );
+        }
+
+        Ok(())
+    }
+
+    pub fn load_project(&mut self, path: &Path) {
+        if let Err(error) = self._load_project(path) {
+            error!("Error loading project: {:?}", error);
+            self.popup.open(Popup::simple(
+                "Error Loading Project",
+                PopupIcon::Error,
+                error.to_string(),
+            ));
+        }
+    }
 }
 
 impl<'a> BorrowedProject<'a> {

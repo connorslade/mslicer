@@ -1,19 +1,14 @@
 use std::{
     fs::File,
     io::{BufReader, Cursor},
-    path::PathBuf,
 };
 
 use const_format::concatcp;
 use egui::{Button, Context, Key, KeyboardShortcut, Modifiers, TopBottomPanel, ViewportCommand};
 use egui_phosphor::regular::STACK;
 use rfd::FileDialog;
-use tracing::error;
 
-use crate::{
-    app::App,
-    ui::popup::{Popup, PopupIcon},
-};
+use crate::app::App;
 
 const IMPORT_MODEL_SHORTCUT: KeyboardShortcut = KeyboardShortcut::new(Modifiers::CTRL, Key::I);
 const LOAD_TEAPOT_SHORTCUT: KeyboardShortcut = KeyboardShortcut::new(Modifiers::CTRL, Key::T);
@@ -83,7 +78,7 @@ pub fn ui(app: &mut App, ctx: &Context) {
                         }
 
                         if let Some(load) = load {
-                            load_project(app, load);
+                            app.load_project(&load);
                         }
                     });
                 });
@@ -147,14 +142,7 @@ fn save(app: &mut App) {
         .add_filter("mslicer project", &["mslicer"])
         .save_file()
     {
-        if let Err(error) = app.save_project(&path) {
-            error!("Error saving project: {:?}", error);
-            app.popup.open(Popup::simple(
-                "Error Saving Project",
-                PopupIcon::Error,
-                error.to_string(),
-            ));
-        }
+        app.save_project(&path);
     }
 }
 
@@ -163,18 +151,7 @@ fn load(app: &mut App) {
         .add_filter("mslicer project", &["mslicer"])
         .pick_file()
     {
-        load_project(app, path);
-    }
-}
-
-fn load_project(app: &mut App, path: PathBuf) {
-    if let Err(error) = app.load_project(&path) {
-        error!("Error loading project: {:?}", error);
-        app.popup.open(Popup::simple(
-            "Error Loading Project",
-            PopupIcon::Error,
-            error.to_string(),
-        ));
+        app.load_project(&path);
     }
 }
 

@@ -1,14 +1,11 @@
 use std::{
-    fs::File,
     io::{BufRead, Seek},
-    iter,
-    path::{Path, PathBuf},
+    path::PathBuf,
     sync::Arc,
     thread,
     time::Instant,
 };
 
-use anyhow::Result;
 use clone_macro::clone;
 use const_format::concatcp;
 use eframe::Theme;
@@ -17,7 +14,6 @@ use egui_dock::{DockState, NodeIndex};
 use egui_phosphor::regular::CARET_RIGHT;
 use egui_tracing::EventCollector;
 use image::imageops::FilterType;
-use itertools::Itertools;
 use nalgebra::Vector2;
 use parking_lot::RwLock;
 use tracing::{info, warn};
@@ -46,8 +42,6 @@ pub mod slice_operation;
 use config::Config;
 use remote_print::RemotePrint;
 use slice_operation::{SliceOperation, SliceResult};
-
-use project::{BorrowedProject, OwnedProject};
 
 pub struct App {
     // todo: dock state in ui_state?
@@ -221,47 +215,6 @@ impl App {
                 .with_name(name)
                 .with_random_color(),
         );
-    }
-
-    fn add_recent_project(&mut self, path: PathBuf) {
-        self.config.recent_projects = iter::once(path)
-            .chain(self.config.recent_projects.iter().cloned())
-            .unique()
-            .take(5)
-            .collect()
-    }
-
-    pub fn save_project(&mut self, path: &Path) -> Result<()> {
-        let meshes = self.meshes.read();
-        let project = BorrowedProject::new(&meshes, &self.slice_config);
-
-        let mut file = File::create(path)?;
-        project.serialize(&mut file)?;
-
-        drop(meshes);
-        self.add_recent_project(path.to_path_buf());
-        Ok(())
-    }
-
-    pub fn load_project(&mut self, path: &Path) -> Result<()> {
-        let mut file = File::open(path)?;
-        let project = OwnedProject::deserialize(&mut file)?;
-
-        self.add_recent_project(path.to_path_buf());
-        project.apply(self);
-
-        info!("Loaded project from `{}`", path.display());
-        let meshes = self.meshes.read();
-        for (i, mesh) in meshes.iter().enumerate() {
-            info!(
-                " {} Loaded model `{}` with {} faces",
-                if i + 1 < meshes.len() { "│" } else { "└" },
-                mesh.name,
-                mesh.mesh.face_count()
-            );
-        }
-
-        Ok(())
     }
 }
 

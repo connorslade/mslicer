@@ -77,8 +77,7 @@
 - [ ] Implement .ctb format (see <https://github.com/cbiffle/catibo/blob/master/doc/cbddlp-ctb.adoc>)
 - [ ] Undo / Redo
 - [x] Close file menu if button clicked
-- [ ] Allow dragging in project to load them?
-- [ ] Compress meshes when stored as a project?
+- [x] Allow dragging in project to load them
 - [ ] Remember the file that was opened for future save operations
 - [ ] Save on remote thread
 - [ ] Printer profiles
