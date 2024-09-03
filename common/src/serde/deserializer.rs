@@ -1,3 +1,5 @@
+use std::mem;
+
 use super::SizedString;
 
 pub struct Deserializer<'a> {
@@ -18,6 +20,18 @@ impl<'a> Deserializer<'a> {
         self.offset
     }
 
+    pub fn advance_by(&mut self, amount: usize) {
+        self.offset += amount;
+    }
+
+    pub fn advance<T>(&mut self) {
+        self.advance_by(mem::size_of::<T>());
+    }
+
+    pub fn jump_to(&mut self, pos: usize) {
+        self.offset = pos;
+    }
+
     pub fn read_bool(&mut self) -> bool {
         self.read_u8() != 0
     }
@@ -28,13 +42,19 @@ impl<'a> Deserializer<'a> {
         value
     }
 
-    pub fn read_u16(&mut self) -> u16 {
+    pub fn read_u16_be(&mut self) -> u16 {
         let value = u16::from_be_bytes([self.buffer[self.offset], self.buffer[self.offset + 1]]);
         self.offset += 2;
         value
     }
 
-    pub fn read_u32(&mut self) -> u32 {
+    pub fn read_u16_le(&mut self) -> u16 {
+        let value = u16::from_le_bytes([self.buffer[self.offset], self.buffer[self.offset + 1]]);
+        self.offset += 2;
+        value
+    }
+
+    pub fn read_u32_be(&mut self) -> u32 {
         let value = u32::from_be_bytes([
             self.buffer[self.offset],
             self.buffer[self.offset + 1],
@@ -45,7 +65,18 @@ impl<'a> Deserializer<'a> {
         value
     }
 
-    pub fn read_u64(&mut self) -> u64 {
+    pub fn read_u32_le(&mut self) -> u32 {
+        let value = u32::from_le_bytes([
+            self.buffer[self.offset],
+            self.buffer[self.offset + 1],
+            self.buffer[self.offset + 2],
+            self.buffer[self.offset + 3],
+        ]);
+        self.offset += 4;
+        value
+    }
+
+    pub fn read_u64_be(&mut self) -> u64 {
         let value = u64::from_be_bytes([
             self.buffer[self.offset],
             self.buffer[self.offset + 1],
@@ -60,8 +91,34 @@ impl<'a> Deserializer<'a> {
         value
     }
 
-    pub fn read_f32(&mut self) -> f32 {
+    pub fn read_u64_le(&mut self) -> u64 {
+        let value = u64::from_le_bytes([
+            self.buffer[self.offset],
+            self.buffer[self.offset + 1],
+            self.buffer[self.offset + 2],
+            self.buffer[self.offset + 3],
+            self.buffer[self.offset + 4],
+            self.buffer[self.offset + 5],
+            self.buffer[self.offset + 6],
+            self.buffer[self.offset + 7],
+        ]);
+        self.offset += 8;
+        value
+    }
+
+    pub fn read_f32_be(&mut self) -> f32 {
         let value = f32::from_be_bytes([
+            self.buffer[self.offset],
+            self.buffer[self.offset + 1],
+            self.buffer[self.offset + 2],
+            self.buffer[self.offset + 3],
+        ]);
+        self.offset += 4;
+        value
+    }
+
+    pub fn read_f32_le(&mut self) -> f32 {
+        let value = f32::from_le_bytes([
             self.buffer[self.offset],
             self.buffer[self.offset + 1],
             self.buffer[self.offset + 2],

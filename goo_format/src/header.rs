@@ -7,7 +7,7 @@ use common::serde::{Deserializer, Serializer, SizedString};
 use crate::{PreviewImage, DELIMITER, MAGIC_TAG};
 
 /// The header section of a `.goo` file.
-pub struct HeaderInfo {
+pub struct Header {
     /// Format version, should be "V3.0".
     pub version: SizedString<4>,
     /// Name of software that generated the file.
@@ -142,12 +142,12 @@ pub enum ExposureDelayMode {
     StaticTime,
 }
 
-impl HeaderInfo {
+impl Header {
     pub const SIZE: usize = 0x2FB95;
 }
 
 // this is fine
-impl HeaderInfo {
+impl Header {
     pub fn serialize<T: Serializer>(&self, ser: &mut T) {
         ser.write_sized_string(&self.version);
         ser.write_bytes(MAGIC_TAG);
@@ -157,60 +157,60 @@ impl HeaderInfo {
         ser.write_sized_string(&self.printer_name);
         ser.write_sized_string(&self.printer_type);
         ser.write_sized_string(&self.profile_name);
-        ser.write_u16(self.anti_aliasing_level);
-        ser.write_u16(self.grey_level);
-        ser.write_u16(self.blur_level);
+        ser.write_u16_be(self.anti_aliasing_level);
+        ser.write_u16_be(self.grey_level);
+        ser.write_u16_be(self.blur_level);
         self.small_preview.serializes(ser);
         ser.write_bytes(DELIMITER);
         self.big_preview.serializes(ser);
         ser.write_bytes(DELIMITER);
-        ser.write_u32(self.layer_count);
-        ser.write_u16(self.x_resolution);
-        ser.write_u16(self.y_resolution);
+        ser.write_u32_be(self.layer_count);
+        ser.write_u16_be(self.x_resolution);
+        ser.write_u16_be(self.y_resolution);
         ser.write_bool(self.x_mirror);
         ser.write_bool(self.y_mirror);
-        ser.write_f32(self.x_size);
-        ser.write_f32(self.y_size);
-        ser.write_f32(self.z_size);
-        ser.write_f32(self.layer_thickness);
-        ser.write_f32(self.exposure_time);
+        ser.write_f32_be(self.x_size);
+        ser.write_f32_be(self.y_size);
+        ser.write_f32_be(self.z_size);
+        ser.write_f32_be(self.layer_thickness);
+        ser.write_f32_be(self.exposure_time);
         ser.write_u8(self.exposure_delay_mode as u8);
-        ser.write_f32(self.turn_off_time);
-        ser.write_f32(self.bottom_before_lift_time);
-        ser.write_f32(self.bottom_after_lift_time);
-        ser.write_f32(self.bottom_after_retract_time);
-        ser.write_f32(self.before_lift_time);
-        ser.write_f32(self.after_lift_time);
-        ser.write_f32(self.after_retract_time);
-        ser.write_f32(self.bottom_exposure_time);
-        ser.write_u32(self.bottom_layers);
-        ser.write_f32(self.bottom_lift_distance);
-        ser.write_f32(self.bottom_lift_speed);
-        ser.write_f32(self.lift_distance);
-        ser.write_f32(self.lift_speed);
-        ser.write_f32(self.bottom_retract_distance);
-        ser.write_f32(self.bottom_retract_speed);
-        ser.write_f32(self.retract_distance);
-        ser.write_f32(self.retract_speed);
-        ser.write_f32(self.bottom_second_lift_distance);
-        ser.write_f32(self.bottom_second_lift_speed);
-        ser.write_f32(self.second_lift_distance);
-        ser.write_f32(self.second_lift_speed);
-        ser.write_f32(self.bottom_second_retract_distance);
-        ser.write_f32(self.bottom_second_retract_speed);
-        ser.write_f32(self.second_retract_distance);
-        ser.write_f32(self.second_retract_speed);
-        ser.write_u16(self.bottom_light_pwm as u16);
-        ser.write_u16(self.light_pwm as u16);
+        ser.write_f32_be(self.turn_off_time);
+        ser.write_f32_be(self.bottom_before_lift_time);
+        ser.write_f32_be(self.bottom_after_lift_time);
+        ser.write_f32_be(self.bottom_after_retract_time);
+        ser.write_f32_be(self.before_lift_time);
+        ser.write_f32_be(self.after_lift_time);
+        ser.write_f32_be(self.after_retract_time);
+        ser.write_f32_be(self.bottom_exposure_time);
+        ser.write_u32_be(self.bottom_layers);
+        ser.write_f32_be(self.bottom_lift_distance);
+        ser.write_f32_be(self.bottom_lift_speed);
+        ser.write_f32_be(self.lift_distance);
+        ser.write_f32_be(self.lift_speed);
+        ser.write_f32_be(self.bottom_retract_distance);
+        ser.write_f32_be(self.bottom_retract_speed);
+        ser.write_f32_be(self.retract_distance);
+        ser.write_f32_be(self.retract_speed);
+        ser.write_f32_be(self.bottom_second_lift_distance);
+        ser.write_f32_be(self.bottom_second_lift_speed);
+        ser.write_f32_be(self.second_lift_distance);
+        ser.write_f32_be(self.second_lift_speed);
+        ser.write_f32_be(self.bottom_second_retract_distance);
+        ser.write_f32_be(self.bottom_second_retract_speed);
+        ser.write_f32_be(self.second_retract_distance);
+        ser.write_f32_be(self.second_retract_speed);
+        ser.write_u16_be(self.bottom_light_pwm as u16);
+        ser.write_u16_be(self.light_pwm as u16);
         ser.write_bool(self.per_layer_settings);
-        ser.write_u32(self.printing_time);
-        ser.write_f32(self.total_volume);
-        ser.write_f32(self.total_weight);
-        ser.write_f32(self.total_price);
+        ser.write_u32_be(self.printing_time);
+        ser.write_f32_be(self.total_volume);
+        ser.write_f32_be(self.total_weight);
+        ser.write_f32_be(self.total_price);
         ser.write_sized_string(&self.price_unit);
-        ser.write_u32(Self::SIZE as u32);
+        ser.write_u32_be(Self::SIZE as u32);
         ser.write_bool(self.grey_scale_level);
-        ser.write_u16(self.transition_layers);
+        ser.write_u16_be(self.transition_layers);
     }
 
     pub fn deserialize(des: &mut Deserializer) -> Result<Self> {
@@ -222,60 +222,60 @@ impl HeaderInfo {
         let printer_name = des.read_sized_string();
         let printer_type = des.read_sized_string();
         let profile_name = des.read_sized_string();
-        let anti_aliasing_level = des.read_u16();
-        let grey_level = des.read_u16();
-        let blur_level = des.read_u16();
+        let anti_aliasing_level = des.read_u16_be();
+        let grey_level = des.read_u16_be();
+        let blur_level = des.read_u16_be();
         let small_preview = PreviewImage::deserializes(des);
         ensure!(des.read_bytes(2) == [0xd, 0xa]);
         let big_preview = PreviewImage::deserializes(des);
         ensure!(des.read_bytes(2) == [0xd, 0xa]);
-        let layer_count = des.read_u32();
-        let x_resolution = des.read_u16();
-        let y_resolution = des.read_u16();
+        let layer_count = des.read_u32_be();
+        let x_resolution = des.read_u16_be();
+        let y_resolution = des.read_u16_be();
         let x_mirror = des.read_bool();
         let y_mirror = des.read_bool();
-        let x_size = des.read_f32();
-        let y_size = des.read_f32();
-        let z_size = des.read_f32();
-        let layer_thickness = des.read_f32();
-        let exposure_time = des.read_f32();
+        let x_size = des.read_f32_be();
+        let y_size = des.read_f32_be();
+        let z_size = des.read_f32_be();
+        let layer_thickness = des.read_f32_be();
+        let exposure_time = des.read_f32_be();
         let exposure_delay_mode = ExposureDelayMode::from_bool(des.read_bool());
-        let turn_off_time = des.read_f32();
-        let bottom_before_lift_time = des.read_f32();
-        let bottom_after_lift_time = des.read_f32();
-        let bottom_after_retract_time = des.read_f32();
-        let before_lift_time = des.read_f32();
-        let after_lift_time = des.read_f32();
-        let after_retract_time = des.read_f32();
-        let bottom_exposure_time = des.read_f32();
-        let bottom_layers = des.read_u32();
-        let bottom_lift_distance = des.read_f32();
-        let bottom_lift_speed = des.read_f32();
-        let lift_distance = des.read_f32();
-        let lift_speed = des.read_f32();
-        let bottom_retract_distance = des.read_f32();
-        let bottom_retract_speed = des.read_f32();
-        let retract_distance = des.read_f32();
-        let retract_speed = des.read_f32();
-        let bottom_second_lift_distance = des.read_f32();
-        let bottom_second_lift_speed = des.read_f32();
-        let second_lift_distance = des.read_f32();
-        let second_lift_speed = des.read_f32();
-        let bottom_second_retract_distance = des.read_f32();
-        let bottom_second_retract_speed = des.read_f32();
-        let second_retract_distance = des.read_f32();
-        let second_retract_speed = des.read_f32();
-        let bottom_light_pwm = des.read_u16().min(255) as u8;
-        let light_pwm = des.read_u16().min(255) as u8;
+        let turn_off_time = des.read_f32_be();
+        let bottom_before_lift_time = des.read_f32_be();
+        let bottom_after_lift_time = des.read_f32_be();
+        let bottom_after_retract_time = des.read_f32_be();
+        let before_lift_time = des.read_f32_be();
+        let after_lift_time = des.read_f32_be();
+        let after_retract_time = des.read_f32_be();
+        let bottom_exposure_time = des.read_f32_be();
+        let bottom_layers = des.read_u32_be();
+        let bottom_lift_distance = des.read_f32_be();
+        let bottom_lift_speed = des.read_f32_be();
+        let lift_distance = des.read_f32_be();
+        let lift_speed = des.read_f32_be();
+        let bottom_retract_distance = des.read_f32_be();
+        let bottom_retract_speed = des.read_f32_be();
+        let retract_distance = des.read_f32_be();
+        let retract_speed = des.read_f32_be();
+        let bottom_second_lift_distance = des.read_f32_be();
+        let bottom_second_lift_speed = des.read_f32_be();
+        let second_lift_distance = des.read_f32_be();
+        let second_lift_speed = des.read_f32_be();
+        let bottom_second_retract_distance = des.read_f32_be();
+        let bottom_second_retract_speed = des.read_f32_be();
+        let second_retract_distance = des.read_f32_be();
+        let second_retract_speed = des.read_f32_be();
+        let bottom_light_pwm = des.read_u16_be().min(255) as u8;
+        let light_pwm = des.read_u16_be().min(255) as u8;
         let advance_mode = des.read_bool();
-        let printing_time = des.read_u32();
-        let total_volume = des.read_f32();
-        let total_weight = des.read_f32();
-        let total_price = des.read_f32();
+        let printing_time = des.read_u32_be();
+        let total_volume = des.read_f32_be();
+        let total_weight = des.read_f32_be();
+        let total_price = des.read_f32_be();
         let price_unit = des.read_sized_string();
-        ensure!(des.read_u32() == Self::SIZE as u32);
+        ensure!(des.read_u32_be() == Self::SIZE as u32);
         let grey_scale_level = des.read_bool();
-        let transition_layers = des.read_u16();
+        let transition_layers = des.read_u16_be();
 
         Ok(Self {
             version,
@@ -349,7 +349,7 @@ impl ExposureDelayMode {
     }
 }
 
-impl Debug for HeaderInfo {
+impl Debug for Header {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("HeaderInfo")
             .field("version", &self.version)

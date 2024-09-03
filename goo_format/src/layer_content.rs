@@ -48,25 +48,25 @@ pub struct LayerContent {
 
 impl LayerContent {
     pub fn serialize<T: Serializer>(&self, ser: &mut T) {
-        ser.write_u16(self.pause as u16);
-        ser.write_f32(self.pause_position_z);
-        ser.write_f32(self.layer_position_z);
-        ser.write_f32(self.layer_exposure_time);
-        ser.write_f32(self.layer_off_time);
-        ser.write_f32(self.before_lift_time);
-        ser.write_f32(self.after_lift_time);
-        ser.write_f32(self.after_retract_time);
-        ser.write_f32(self.lift_distance);
-        ser.write_f32(self.lift_speed);
-        ser.write_f32(self.second_lift_distance);
-        ser.write_f32(self.second_lift_speed);
-        ser.write_f32(self.retract_distance);
-        ser.write_f32(self.retract_speed);
-        ser.write_f32(self.second_retract_distance);
-        ser.write_f32(self.second_retract_speed);
-        ser.write_u16(self.light_pwm as u16);
+        ser.write_u16_be(self.pause as u16);
+        ser.write_f32_be(self.pause_position_z);
+        ser.write_f32_be(self.layer_position_z);
+        ser.write_f32_be(self.layer_exposure_time);
+        ser.write_f32_be(self.layer_off_time);
+        ser.write_f32_be(self.before_lift_time);
+        ser.write_f32_be(self.after_lift_time);
+        ser.write_f32_be(self.after_retract_time);
+        ser.write_f32_be(self.lift_distance);
+        ser.write_f32_be(self.lift_speed);
+        ser.write_f32_be(self.second_lift_distance);
+        ser.write_f32_be(self.second_lift_speed);
+        ser.write_f32_be(self.retract_distance);
+        ser.write_f32_be(self.retract_speed);
+        ser.write_f32_be(self.second_retract_distance);
+        ser.write_f32_be(self.second_retract_speed);
+        ser.write_u16_be(self.light_pwm as u16);
         ser.write_bytes(DELIMITER);
-        ser.write_u32(self.data.len() as u32 + 2);
+        ser.write_u32_be(self.data.len() as u32 + 2);
         ser.write_bytes(&[0x55]);
         ser.write_bytes(&self.data);
         ser.write_u8(calculate_checksum(&self.data));
@@ -74,25 +74,25 @@ impl LayerContent {
     }
 
     pub fn deserialize(des: &mut Deserializer) -> Result<Self> {
-        let pause_flag = des.read_u16();
-        let pause_position_z = des.read_f32();
-        let layer_position_z = des.read_f32();
-        let layer_exposure_time = des.read_f32();
-        let layer_off_time = des.read_f32();
-        let before_lift_time = des.read_f32();
-        let after_lift_time = des.read_f32();
-        let after_retract_time = des.read_f32();
-        let lift_distance = des.read_f32();
-        let lift_speed = des.read_f32();
-        let second_lift_distance = des.read_f32();
-        let second_lift_speed = des.read_f32();
-        let retract_distance = des.read_f32();
-        let retract_speed = des.read_f32();
-        let second_retract_distance = des.read_f32();
-        let second_retract_speed = des.read_f32();
-        let light_pwm = des.read_u16().min(255) as u8;
+        let pause_flag = des.read_u16_be();
+        let pause_position_z = des.read_f32_be();
+        let layer_position_z = des.read_f32_be();
+        let layer_exposure_time = des.read_f32_be();
+        let layer_off_time = des.read_f32_be();
+        let before_lift_time = des.read_f32_be();
+        let after_lift_time = des.read_f32_be();
+        let after_retract_time = des.read_f32_be();
+        let lift_distance = des.read_f32_be();
+        let lift_speed = des.read_f32_be();
+        let second_lift_distance = des.read_f32_be();
+        let second_lift_speed = des.read_f32_be();
+        let retract_distance = des.read_f32_be();
+        let retract_speed = des.read_f32_be();
+        let second_retract_distance = des.read_f32_be();
+        let second_retract_speed = des.read_f32_be();
+        let light_pwm = des.read_u16_be().min(255) as u8;
         ensure!(des.read_bytes(2) == DELIMITER);
-        let data_len = des.read_u32() as usize - 2;
+        let data_len = des.read_u32_be() as usize - 2;
         ensure!(des.read_u8() == 0x55);
         let data = des.read_bytes(data_len);
         let checksum = des.read_u8();

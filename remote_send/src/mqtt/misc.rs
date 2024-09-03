@@ -15,7 +15,7 @@ pub trait MqttSerializer {
 
 impl<'a> MqttDeserialize<'a> for Deserializer<'a> {
     fn read_string(&mut self) -> Cow<'a, str> {
-        let len = self.read_u16();
+        let len = self.read_u16_be();
         let buf = self.read_bytes(len as usize);
         String::from_utf8_lossy(buf)
     }
@@ -28,7 +28,7 @@ where
     fn write_string(&mut self, data: &str) {
         assert!(data.len() <= u16::MAX as usize);
         let len = data.len() as u16;
-        self.write_u16(len);
+        self.write_u16_be(len);
         self.write_bytes(data.as_bytes());
     }
 }

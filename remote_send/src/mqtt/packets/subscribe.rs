@@ -17,7 +17,7 @@ impl SubscribePacket {
     pub fn from_packet(packet: &Packet) -> Result<Self> {
         let mut des = Deserializer::new(&packet.remaining_bytes);
 
-        let packet_id = des.read_u16();
+        let packet_id = des.read_u16_be();
         let mut filters = Vec::new();
         while !des.is_empty() {
             let topic = des.read_string().into_owned();

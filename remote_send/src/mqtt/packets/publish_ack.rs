@@ -13,7 +13,7 @@ impl PublishAckPacket {
 
     pub fn to_packet(&self) -> Packet {
         let mut ser = DynamicSerializer::new();
-        ser.write_u16(self.packet_id);
+        ser.write_u16_be(self.packet_id);
 
         let data = ser.into_inner();
         Packet {
@@ -28,7 +28,7 @@ impl PublishAckPacket {
         assert_eq!(packet.packet_type, Self::PACKET_TYPE);
         let mut des = Deserializer::new(&packet.remaining_bytes);
 
-        let packet_id = des.read_u16();
+        let packet_id = des.read_u16_be();
 
         Ok(Self { packet_id })
     }

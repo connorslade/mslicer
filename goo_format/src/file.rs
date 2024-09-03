@@ -6,15 +6,15 @@ use common::{
     serde::{Deserializer, Serializer, SizedString},
 };
 
-use crate::{HeaderInfo, LayerContent, ENDING_STRING};
+use crate::{Header, LayerContent, ENDING_STRING};
 
 pub struct File {
-    pub header: HeaderInfo,
+    pub header: Header,
     pub layers: Vec<LayerContent>,
 }
 
 impl File {
-    pub fn new(header: HeaderInfo, layers: Vec<LayerContent>) -> Self {
+    pub fn new(header: Header, layers: Vec<LayerContent>) -> Self {
         Self { header, layers }
     }
 
@@ -37,7 +37,7 @@ impl File {
             + slice_config.first_layers as f32 * bottom_layer_time;
 
         Self::new(
-            HeaderInfo {
+            Header {
                 x_resolution: slice_config.platform_resolution.x as u16,
                 y_resolution: slice_config.platform_resolution.y as u16,
                 x_size: slice_config.platform_size.x,
@@ -87,7 +87,7 @@ impl File {
     pub fn deserialize(buf: &[u8]) -> Result<Self> {
         let mut des = Deserializer::new(buf);
 
-        let header = HeaderInfo::deserialize(&mut des)?;
+        let header = Header::deserialize(&mut des)?;
         let mut layers = Vec::with_capacity(header.layer_count as usize);
 
         for _ in 0..header.layer_count {

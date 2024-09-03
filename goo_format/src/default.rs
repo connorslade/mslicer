@@ -1,8 +1,8 @@
 use common::serde::SizedString;
 
-use crate::{header_info::ExposureDelayMode, HeaderInfo, LayerContent, PreviewImage};
+use crate::{header::ExposureDelayMode, Header, LayerContent, PreviewImage};
 
-impl Default for HeaderInfo {
+impl Default for Header {
     fn default() -> Self {
         Self {
             version: SizedString::new(b"V3.0"),

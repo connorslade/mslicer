@@ -20,7 +20,9 @@ use tracing::{info, warn};
 
 use crate::{
     plugins::{
-        anti_alias, elephant_foot_fixer::{self}, PluginManager
+        anti_alias,
+        elephant_foot_fixer::{self},
+        PluginManager,
     },
     render::{camera::Camera, rendered_mesh::RenderedMesh},
     ui::{

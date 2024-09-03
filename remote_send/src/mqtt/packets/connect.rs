@@ -43,7 +43,7 @@ impl ConnectPacket {
         let protocol_name = des.read_string().into_owned();
         let protocol_level = des.read_u8();
         let connect_flags = ConnectFlags::from_bits(des.read_u8()).unwrap();
-        let keep_alive = des.read_u16();
+        let keep_alive = des.read_u16_be();
 
         let client_id = des.read_string().into_owned();
         let will_topic = connect_flags

@@ -20,7 +20,7 @@ impl SubscribeAckPacket {
 
     pub fn to_packet(&self) -> Packet {
         let mut ser = DynamicSerializer::new();
-        ser.write_u16(self.packet_id);
+        ser.write_u16_be(self.packet_id);
         for return_code in &self.return_codes {
             match return_code {
                 SubscribeReturnCode::Failure => ser.write_u8(0x80),

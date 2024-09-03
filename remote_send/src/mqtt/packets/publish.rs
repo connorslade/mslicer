@@ -36,7 +36,7 @@ impl PublishPacket {
         let topic = des.read_string().into_owned();
 
         let packet_id = (flags.contains(PublishFlags::QOS1) || flags.contains(PublishFlags::QOS2))
-            .then(|| des.read_u16());
+            .then(|| des.read_u16_be());
         let data = des
             .read_bytes(packet.remaining_length as usize - des.pos())
             .to_vec();
@@ -53,7 +53,7 @@ impl PublishPacket {
         let mut ser = DynamicSerializer::new();
         ser.write_string(&self.topic);
         if self.flags.contains(PublishFlags::QOS1) || self.flags.contains(PublishFlags::QOS2) {
-            ser.write_u16(self.packet_id.unwrap());
+            ser.write_u16_be(self.packet_id.unwrap());
         }
         ser.write_bytes(&self.data);
 

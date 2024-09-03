@@ -48,7 +48,7 @@ impl<const WIDTH: usize, const HEIGHT: usize> PreviewImage<WIDTH, HEIGHT> {
 
     pub fn serializes<T: Serializer>(&self, serializer: &mut T) {
         for pixel in self.data.iter() {
-            serializer.write_u16(*pixel);
+            serializer.write_u16_be(*pixel);
         }
     }
 
@@ -56,7 +56,7 @@ impl<const WIDTH: usize, const HEIGHT: usize> PreviewImage<WIDTH, HEIGHT> {
         let mut out = Self::empty();
 
         for pixel in out.data.iter_mut() {
-            *pixel = deserializer.read_u16();
+            *pixel = deserializer.read_u16_be();
         }
 
         out
