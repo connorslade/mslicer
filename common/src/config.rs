@@ -1,8 +1,12 @@
 use nalgebra::{Vector2, Vector3};
 use serde::{Deserialize, Serialize};
 
+use crate::format::Format;
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct SliceConfig {
+    pub format: Format,
+
     pub platform_resolution: Vector2<u32>,
     pub platform_size: Vector3<f32>,
     pub slice_height: f32,
@@ -25,6 +29,8 @@ pub struct ExposureConfig {
 impl Default for SliceConfig {
     fn default() -> Self {
         Self {
+            format: Format::Goo,
+
             platform_resolution: Vector2::new(11_520, 5_120),
             platform_size: Vector3::new(218.88, 122.904, 260.0),
             slice_height: 0.05,

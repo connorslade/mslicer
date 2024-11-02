@@ -5,9 +5,11 @@ edition = "2021"
 
 [dependencies]
 anyhow.workspace = true
+image.workspace = true
 nalgebra.workspace = true
 obj-rs.workspace = true
 ordered-float.workspace = true
+parking_lot.workspace = true
 rayon.workspace = true
 stl_io.workspace = true
 tracing.workspace = true

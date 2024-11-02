@@ -13,7 +13,6 @@ use egui::Visuals;
 use egui_dock::{DockState, NodeIndex};
 use egui_phosphor::regular::CARET_RIGHT;
 use egui_tracing::EventCollector;
-use image::imageops::FilterType;
 use nalgebra::Vector2;
 use parking_lot::RwLock;
 use tracing::{info, warn};
@@ -33,8 +32,7 @@ use crate::{
     windows::{self, Tab},
 };
 use common::config::SliceConfig;
-use goo_format::{File as GooFile, LayerEncoder, PreviewImage};
-use slicer::{slicer::Slicer, Pos};
+use slicer::{format::FormatSliceFile, slicer::Slicer, Pos};
 
 pub mod config;
 pub mod project;
@@ -174,19 +172,12 @@ impl App {
             [{ self.slice_operation } as slice_operation],
             move || {
                 let slice_operation = slice_operation.as_ref().unwrap();
-                let mut goo = GooFile::from_slice_result(slicer.slice::<LayerEncoder>());
+                let preview_image = slice_operation.preview_image();
+                let file = FormatSliceFile::from_slice_result(preview_image, slicer.slice_format());
 
-                {
-                    let preview_image = slice_operation.preview_image();
-                    goo.header.big_preview =
-                        PreviewImage::from_image_scaled(&preview_image, FilterType::Nearest);
-                    goo.header.small_preview =
-                        PreviewImage::from_image_scaled(&preview_image, FilterType::Nearest);
-                }
-
-                let layers = goo.layers.len();
+                let layers = file.info().layers as usize;
                 slice_operation.add_result(SliceResult {
-                    goo,
+                    file,
                     slice_preview_layer: 0,
                     last_preview_layer: 0,
                     preview_offset: Vector2::new(0.0, 0.0),

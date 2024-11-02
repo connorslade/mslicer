@@ -7,11 +7,10 @@ use std::{
 };
 
 use common::misc::human_duration;
-use goo_format::File as GooFile;
 use image::RgbaImage;
 use nalgebra::Vector2;
 use parking_lot::{Condvar, MappedMutexGuard, Mutex, MutexGuard};
-use slicer::slicer::Progress as SliceProgress;
+use slicer::{format::FormatSliceFile, slicer::Progress as SliceProgress};
 use tracing::info;
 
 use crate::app::App;
@@ -30,7 +29,7 @@ pub struct SliceOperation {
 }
 
 pub struct SliceResult {
-    pub goo: GooFile,
+    pub file: FormatSliceFile,
 
     pub slice_preview_layer: usize,
     pub last_preview_layer: usize,
@@ -95,7 +94,7 @@ impl SliceOperation {
             return;
         }
 
-        let goo = &mut result.as_mut().unwrap().goo;
+        let goo = &mut result.as_mut().unwrap().file;
         app.plugin_manager.post_slice(app, goo);
         self.has_post_processed = true;
     }

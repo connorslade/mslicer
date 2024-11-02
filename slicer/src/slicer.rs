@@ -8,12 +8,13 @@ use std::{
 
 use common::{
     config::SliceConfig,
+    format::Format,
     misc::{EncodableLayer, SliceResult},
 };
 use ordered_float::OrderedFloat;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
-use crate::{mesh::Mesh, segments::Segments1D, Pos};
+use crate::{format::FormatSliceResult, mesh::Mesh, segments::Segments1D, Pos};
 
 /// Used to slice a mesh.
 pub struct Slicer {
@@ -66,6 +67,12 @@ impl Slicer {
     /// Gets an instance of the slicing [`Progress`] struct.
     pub fn progress(&self) -> Progress {
         self.progress.clone()
+    }
+
+    pub fn slice_format(&self) -> FormatSliceResult {
+        match self.slice_config.format {
+            Format::Goo => FormatSliceResult::Goo(self.slice::<goo_format::LayerEncoder>()),
+        }
     }
 
     /// Actually runs the slicing operation, it is multithreaded.

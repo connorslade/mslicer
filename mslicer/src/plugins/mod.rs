@@ -1,4 +1,5 @@
 use egui::{Context, Ui};
+use slicer::format::FormatSliceFile;
 
 use crate::app::App;
 use goo_format::File as GooFile;
@@ -18,9 +19,10 @@ pub struct PluginManager {
 }
 
 impl PluginManager {
-    pub fn post_slice(&self, app: &App, goo: &mut GooFile) {
+    pub fn post_slice(&self, app: &App, goo: &mut FormatSliceFile) {
         for plugin in &self.plugins {
-            plugin.post_slice(app, goo);
+            // TODO: FIX PLUGINS
+            // plugin.post_slice(app, goo);
         }
     }
 }

@@ -7,7 +7,6 @@ use egui::{
 };
 use egui_phosphor::regular::{FLOPPY_DISK_BACK, PAPER_PLANE_TILT};
 use egui_wgpu::Callback;
-use goo_format::LayerDecoder;
 use nalgebra::Vector2;
 use rfd::FileDialog;
 
@@ -82,7 +81,7 @@ pub fn ui(app: &mut App, ctx: &Context) {
                                             let result = result.as_ref().unwrap();
 
                                             let mut serializer = DynamicSerializer::new();
-                                            result.goo.serialize(&mut serializer);
+                                            result.file.serialize(&mut serializer);
                                             let data = Arc::new(serializer.into_inner());
 
                                             let mainboard_id = printer.mainboard_id.clone();
@@ -101,7 +100,7 @@ pub fn ui(app: &mut App, ctx: &Context) {
                                 if let Some(path) = FileDialog::new().save_file() {
                                     let mut file = File::create(path).unwrap();
                                     let mut serializer = DynamicSerializer::new();
-                                    result.goo.serialize(&mut serializer);
+                                    result.file.serialize(&mut serializer);
                                     file.write_all(&serializer.into_inner()).unwrap();
                                 }
                             }
@@ -120,7 +119,7 @@ pub fn ui(app: &mut App, ctx: &Context) {
                     let layer_digits = result.layer_count.1 as usize;
                     ui.add(
                         DragValue::new(&mut result.slice_preview_layer)
-                            .clamp_range(1..=result.goo.layers.len())
+                            .clamp_range(1..=result.file.info().layers)
                             .custom_formatter(|n, _| {
                                 format!("{:0>layer_digits$}/{}", n, result.layer_count.0)
                             }),
@@ -152,38 +151,27 @@ pub fn ui(app: &mut App, ctx: &Context) {
 }
 
 fn slice_preview(ui: &mut egui::Ui, result: &mut SliceResult) {
+    let info = result.file.info();
+
     ui.horizontal(|ui| {
-        ui.spacing_mut().slider_width = ui.available_size().x
-            / result.goo.header.x_resolution as f32
-            * result.goo.header.y_resolution as f32
-            - 10.0;
+        ui.spacing_mut().slider_width =
+            ui.available_size().x / info.resolution.x as f32 * info.resolution.y as f32 - 10.0;
         ui.add(
-            Slider::new(&mut result.slice_preview_layer, 1..=result.goo.layers.len())
+            Slider::new(&mut result.slice_preview_layer, 1..=info.layers as usize)
                 .vertical()
                 .handle_shape(HandleShape::Rect { aspect_ratio: 1.0 })
                 .show_value(false),
         );
 
-        let (width, height) = (
-            result.goo.header.x_resolution as u32,
-            result.goo.header.y_resolution as u32,
-        );
+        let (width, height) = (info.resolution.x as u32, info.resolution.y as u32);
 
-        result.slice_preview_layer = result.slice_preview_layer.clamp(1, result.goo.layers.len());
+        result.slice_preview_layer = result.slice_preview_layer.clamp(1, info.layers as usize);
         let new_preview = if result.last_preview_layer != result.slice_preview_layer {
             result.last_preview_layer = result.slice_preview_layer;
 
-            let layer_data = &result.goo.layers[result.slice_preview_layer - 1].data;
-            let decoder = LayerDecoder::new(layer_data);
-
             let mut image = vec![0; (width * height) as usize];
-            let mut pixel = 0;
-            for run in decoder {
-                for _ in 0..run.length {
-                    image[pixel] = run.value;
-                    pixel += 1;
-                }
-            }
+            let layer = result.slice_preview_layer - 1;
+            result.file.decode_layer(layer, &mut image);
 
             Some(image)
         } else {
@@ -195,8 +183,7 @@ fn slice_preview(ui: &mut egui::Ui, result: &mut SliceResult) {
             let (rect, response) = ui.allocate_exact_size(
                 Vec2::new(
                     available_size.x,
-                    available_size.x / result.goo.header.x_resolution as f32
-                        * result.goo.header.y_resolution as f32,
+                    available_size.x / info.resolution.x as f32 * info.resolution.y as f32,
                 ),
                 Sense::drag(),
             );
@@ -215,10 +202,7 @@ fn slice_preview(ui: &mut egui::Ui, result: &mut SliceResult) {
             let callback = Callback::new_paint_callback(
                 rect,
                 SlicePreviewRenderCallback {
-                    dimensions: Vector2::new(
-                        result.goo.header.x_resolution as u32,
-                        result.goo.header.y_resolution as u32,
-                    ),
+                    dimensions: Vector2::new(info.resolution.x as u32, info.resolution.y as u32),
                     offset: result.preview_offset,
                     scale: preview_scale,
                     new_preview,

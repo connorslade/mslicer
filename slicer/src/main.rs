@@ -10,6 +10,7 @@ use nalgebra::{Vector2, Vector3};
 
 use common::{
     config::{ExposureConfig, SliceConfig},
+    format::Format,
     serde::DynamicSerializer,
 };
 use goo_format::{File as GooFile, LayerEncoder};
@@ -20,6 +21,8 @@ fn main() -> Result<()> {
     const OUTPUT_PATH: &str = "output.goo";
 
     let slice_config = SliceConfig {
+        format: Format::Goo,
+
         platform_resolution: Vector2::new(11_520, 5_120),
         platform_size: Vector3::new(218.88, 122.904, 260.0),
         slice_height: 0.05,
