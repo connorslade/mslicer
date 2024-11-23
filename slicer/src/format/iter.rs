@@ -1,6 +1,7 @@
 // yes, i know this is jank as hell
 
 use std::{
+    marker::PhantomData,
     mem,
     ops::{Deref, DerefMut},
 };
@@ -15,15 +16,17 @@ pub struct SliceLayerIterator<'a> {
     pub(crate) layers: usize,
 }
 
-pub struct SliceLayerElement {
+pub struct SliceLayerElement<'a> {
     image: GrayImage,
 
     file: *mut FormatSliceFile,
     layer: usize,
+
+    _lifetime: PhantomData<&'a ()>,
 }
 
 impl<'a> Iterator for SliceLayerIterator<'a> {
-    type Item = SliceLayerElement;
+    type Item = SliceLayerElement<'a>;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.layer >= self.layers {
@@ -37,24 +40,22 @@ impl<'a> Iterator for SliceLayerIterator<'a> {
             image,
             file: self.file as *mut _,
             layer: self.layer - 1,
+            _lifetime: PhantomData,
         })
     }
 }
 
-impl Drop for SliceLayerElement {
+impl<'a> Drop for SliceLayerElement<'a> {
     fn drop(&mut self) {
         // SAFETY: it's not... But the idea is that each SliceLayerElement will
         // only be writing to one layer each, meaning the same memory will only
         // be mutably borrowed once.
-        //
-        // You could easily keep one of these objects alive after the slice
-        // layer iter is dropped, but don't please.
         let file = unsafe { &mut *self.file };
         file.overwrite_layer(self.layer, mem::take(&mut self.image));
     }
 }
 
-impl Deref for SliceLayerElement {
+impl<'a> Deref for SliceLayerElement<'a> {
     type Target = GrayImage;
 
     fn deref(&self) -> &Self::Target {
@@ -62,10 +63,10 @@ impl Deref for SliceLayerElement {
     }
 }
 
-impl DerefMut for SliceLayerElement {
+impl<'a> DerefMut for SliceLayerElement<'a> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.image
     }
 }
 
-unsafe impl Send for SliceLayerElement {}
+unsafe impl<'a> Send for SliceLayerElement<'a> {}

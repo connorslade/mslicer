@@ -76,7 +76,7 @@
 - [ ] Merge goo_format changes into goo crate
 - [ ] Implement .ctb format (see <https://github.com/cbiffle/catibo/blob/master/doc/cbddlp-ctb.adoc>)
   - [x] Generic format system
-  - [ ] Fix plugins / post processes
+  - [x] Fix plugins / post processes
 - [ ] Undo / Redo
 - [x] Close file menu if button clicked
 - [x] Allow dragging in project to load them
