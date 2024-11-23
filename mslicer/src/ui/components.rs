@@ -38,7 +38,7 @@ pub fn vec2_dragger<Num: Numeric>(
 ) {
     ui.horizontal(|ui| {
         ui.add(func(DragValue::new(&mut val[0])));
-        ui.label("x");
+        ui.label("×");
         ui.add(func(DragValue::new(&mut val[1])));
     });
 }
@@ -50,9 +50,9 @@ pub fn vec3_dragger<Num: Numeric>(
 ) {
     ui.horizontal(|ui| {
         ui.add(func(DragValue::new(&mut val[0])));
-        ui.label("x");
+        ui.label("×");
         ui.add(func(DragValue::new(&mut val[1])));
-        ui.label("x");
+        ui.label("×");
         ui.add(func(DragValue::new(&mut val[2])));
     });
 }
@@ -66,9 +66,9 @@ pub fn vec3_dragger_proportional(
         let (x, y, z) = (val[0], val[1], val[2]);
 
         ui.add(func(DragValue::new(&mut val[0])));
-        ui.label("x");
+        ui.label("×");
         ui.add(func(DragValue::new(&mut val[1])));
-        ui.label("x");
+        ui.label("×");
         ui.add(func(DragValue::new(&mut val[2])));
 
         if x != val[0] {

@@ -10,7 +10,7 @@
 - [x] Optimize slicer (BVH?)
   - [x] ehh just throw rayon on it
   - [x] Actually do the BVH
-- [ ] Allow saving / loading projects
+- [x] Allow saving / loading projects
 - [x] Allow deleting objects
 - [ ] Use instancing both for object mesh storage and rendering
 - [x] Less internal dependence on GOO format
@@ -87,3 +87,4 @@
 - [x] Refactor plugins to post processors
 - [ ] Update readme
 - [ ] Make post processing async
+- [ ] Instance meshes in save files / rendering
