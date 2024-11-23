@@ -163,7 +163,7 @@ fn slice_preview(ui: &mut egui::Ui, result: &mut SliceResult) {
                 .show_value(false),
         );
 
-        let (width, height) = (info.resolution.x as u32, info.resolution.y as u32);
+        let (width, height) = (info.resolution.x, info.resolution.y);
 
         result.slice_preview_layer = result.slice_preview_layer.clamp(1, info.layers as usize);
         let new_preview = if result.last_preview_layer != result.slice_preview_layer {
@@ -202,7 +202,7 @@ fn slice_preview(ui: &mut egui::Ui, result: &mut SliceResult) {
             let callback = Callback::new_paint_callback(
                 rect,
                 SlicePreviewRenderCallback {
-                    dimensions: Vector2::new(info.resolution.x as u32, info.resolution.y as u32),
+                    dimensions: Vector2::new(info.resolution.x, info.resolution.y),
                     offset: result.preview_offset,
                     scale: preview_scale,
                     new_preview,

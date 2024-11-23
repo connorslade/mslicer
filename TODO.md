@@ -86,3 +86,4 @@
 - [x] Save config on quit
 - [x] Refactor plugins to post processors
 - [ ] Update readme
+- [ ] Make post processing async

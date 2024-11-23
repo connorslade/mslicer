@@ -2,18 +2,17 @@ use std::{mem, time::Instant};
 
 use egui::{Align, Context, Layout, Ui};
 use egui_phosphor::regular::{INFO, WARNING};
-use image::{GrayImage, Luma};
+use image::Luma;
 use imageproc::{morphology::Mask, point::Point};
 use itertools::Itertools;
 use rayon::iter::{ParallelBridge, ParallelIterator};
+use slicer::format::FormatSliceFile;
 use tracing::info;
 
 use crate::{
     app::App,
     ui::components::{dragger, dragger_tip},
 };
-use common::image::Image;
-use goo_format::{File as GooFile, LayerDecoder, LayerEncoder};
 
 use super::Plugin;
 
@@ -56,23 +55,21 @@ impl Plugin for ElephantFootFixerPlugin {
         );
     }
 
-    fn post_slice(&self, _app: &App, goo: &mut GooFile) {
+    fn post_slice(&self, _app: &App, file: &mut FormatSliceFile) {
         if !self.enabled {
             return;
         }
 
-        let (width, height) = (
-            goo.header.x_resolution as usize,
-            goo.header.y_resolution as usize,
-        );
+        let info = file.info();
+        let (width, height) = (info.resolution.x as usize, info.resolution.y as usize);
 
         let (x_radius, y_radius) = (
-            (self.inset_distance * (width as f32 / goo.header.x_size)) as usize,
-            (self.inset_distance * (height as f32 / goo.header.y_size)) as usize,
+            (self.inset_distance * (width as f32 / info.size.x)) as usize,
+            (self.inset_distance * (height as f32 / info.size.y)) as usize,
         );
         info!(
             "Eroding {} bottom layers with radius ({}, {})",
-            goo.header.bottom_layers, x_radius, y_radius
+            info.bottom_layers, x_radius, y_radius
         );
 
         let intensity = self.intensity_multiplier / 100.0;
@@ -81,32 +78,16 @@ impl Plugin for ElephantFootFixerPlugin {
         let darken = |value: u8| (value as f32 * intensity).round() as u8;
 
         let start = Instant::now();
-        goo.layers
-            .iter_mut()
-            .take(goo.header.bottom_layers as usize)
+        file.iter_mut_layers()
+            .take(info.bottom_layers as usize)
             .par_bridge()
-            .for_each(|layer| {
-                let decoder = LayerDecoder::new(&layer.data);
-                let raw_image = Image::from_decoder(width, height, decoder).take();
-                let mut image =
-                    GrayImage::from_raw(width as u32, height as u32, raw_image).unwrap();
-
-                let erode = imageproc::morphology::grayscale_erode(&image, &mask);
-                for (x, y, pixel) in image.enumerate_pixels_mut() {
+            .for_each(|mut layer| {
+                let erode = imageproc::morphology::grayscale_erode(&layer, &mask);
+                for (x, y, pixel) in layer.enumerate_pixels_mut() {
                     if erode.get_pixel(x, y)[0] == 0 && pixel[0] != 0 {
                         *pixel = Luma([darken(pixel[0])]);
                     }
                 }
-
-                let mut new_layer = LayerEncoder::new();
-                let raw_image = Image::from_raw(width, height, image.into_raw());
-                for run in raw_image.runs() {
-                    new_layer.add_run(run.length, run.value)
-                }
-
-                let (data, checksum) = new_layer.finish();
-                layer.data = data;
-                layer.checksum = checksum;
             });
 
         info!("Eroded bottom layers in {:?}", start.elapsed());

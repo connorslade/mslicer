@@ -1,10 +1,8 @@
-use common::image::Image;
 use egui::{Context, Ui};
-use image::GrayImage;
-use rayon::iter::{IntoParallelRefMutIterator, ParallelIterator};
+use rayon::iter::{ParallelBridge, ParallelIterator};
+use slicer::format::FormatSliceFile;
 
 use crate::{app::App, ui::components::dragger};
-use goo_format::{File as GooFile, LayerDecoder, LayerEncoder};
 
 use super::Plugin;
 
@@ -28,32 +26,13 @@ impl Plugin for AntiAliasPlugin {
         });
     }
 
-    fn post_slice(&self, _app: &App, goo: &mut GooFile) {
+    fn post_slice(&self, _app: &App, file: &mut FormatSliceFile) {
         if !self.enabled {
             return;
         }
 
-        let (width, height) = (
-            goo.header.x_resolution as usize,
-            goo.header.y_resolution as usize,
-        );
-
-        goo.layers.par_iter_mut().for_each(|layer| {
-            let decoder = LayerDecoder::new(&layer.data);
-            let raw_image = Image::from_decoder(width, height, decoder).take();
-
-            let image = GrayImage::from_raw(width as u32, height as u32, raw_image).unwrap();
-            let image = imageproc::filter::gaussian_blur_f32(&image, self.radius);
-
-            let mut new_layer = LayerEncoder::new();
-            let raw_image = Image::from_raw(width, height, image.into_raw());
-            for run in raw_image.runs() {
-                new_layer.add_run(run.length, run.value)
-            }
-
-            let (data, checksum) = new_layer.finish();
-            layer.data = data;
-            layer.checksum = checksum;
+        file.iter_mut_layers().par_bridge().for_each(|mut layer| {
+            *layer = imageproc::filter::gaussian_blur_f32(&layer, self.radius);
         });
     }
 }
