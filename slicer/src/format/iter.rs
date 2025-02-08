@@ -45,7 +45,7 @@ impl<'a> Iterator for SliceLayerIterator<'a> {
     }
 }
 
-impl<'a> Drop for SliceLayerElement<'a> {
+impl Drop for SliceLayerElement<'_> {
     fn drop(&mut self) {
         // SAFETY: it's not... But the idea is that each SliceLayerElement will
         // only be writing to one layer each, meaning the same memory will only
@@ -55,7 +55,7 @@ impl<'a> Drop for SliceLayerElement<'a> {
     }
 }
 
-impl<'a> Deref for SliceLayerElement<'a> {
+impl Deref for SliceLayerElement<'_> {
     type Target = GrayImage;
 
     fn deref(&self) -> &Self::Target {
@@ -63,10 +63,10 @@ impl<'a> Deref for SliceLayerElement<'a> {
     }
 }
 
-impl<'a> DerefMut for SliceLayerElement<'a> {
+impl DerefMut for SliceLayerElement<'_> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.image
     }
 }
 
-unsafe impl<'a> Send for SliceLayerElement<'a> {}
+unsafe impl Send for SliceLayerElement<'_> {}

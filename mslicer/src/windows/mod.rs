@@ -50,7 +50,7 @@ impl Tab {
     }
 }
 
-impl<'a> TabViewer for Tabs<'a> {
+impl TabViewer for Tabs<'_> {
     type Tab = Tab;
 
     fn title(&mut self, tab: &mut Self::Tab) -> WidgetText {

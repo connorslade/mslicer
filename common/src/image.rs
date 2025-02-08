@@ -93,7 +93,7 @@ impl Image {
     }
 }
 
-impl<'a> Iterator for ImageRuns<'a> {
+impl Iterator for ImageRuns<'_> {
     type Item = Run;
 
     fn next(&mut self) -> Option<Self::Item> {
