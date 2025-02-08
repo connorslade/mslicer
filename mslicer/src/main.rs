@@ -15,7 +15,7 @@ mod plugins;
 mod render;
 mod ui;
 mod windows;
-use app::App;
+use app::{config::Config, App};
 
 const ICON: &[u8] = include_bytes!("assets/icon.png");
 
@@ -34,6 +34,10 @@ fn main() -> Result<()> {
         .with(collector.clone())
         .init();
 
+    let config_dir = dirs::config_dir().unwrap().join("mslicer");
+    let config = Config::load_or_default(&config_dir);
+
+    let max_buffer_size = config.max_buffer_size;
     let icon = image::load_from_memory(ICON)?;
     eframe::run_native(
         "mslicer",
@@ -50,11 +54,11 @@ fn main() -> Result<()> {
             stencil_buffer: 8,
             multisampling: 4,
             wgpu_options: WgpuConfiguration {
-                device_descriptor: Arc::new(|_adapter| DeviceDescriptor {
+                device_descriptor: Arc::new(move |_adapter| DeviceDescriptor {
                     label: None,
                     required_features: Features::POLYGON_MODE_LINE,
                     required_limits: Limits {
-                        max_buffer_size: 512 << 20,
+                        max_buffer_size,
                         ..Limits::default()
                     },
                 }),
@@ -70,7 +74,7 @@ fn main() -> Result<()> {
             egui_phosphor::add_to_fonts(&mut fonts, egui_phosphor::Variant::Regular);
             cc.egui_ctx.set_fonts(fonts);
 
-            Box::new(App::new(collector))
+            Box::new(App::new(config_dir, config, collector))
         }),
     )
     .unwrap();

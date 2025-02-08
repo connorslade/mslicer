@@ -66,22 +66,13 @@ pub struct FpsTracker {
 }
 
 impl App {
-    pub fn new(event_collector: EventCollector) -> Self {
+    pub fn new(config_dir: PathBuf, config: Config, event_collector: EventCollector) -> Self {
         let mut dock_state = DockState::new(vec![Tab::Viewport, Tab::Logs]);
         let surface = dock_state.main_surface_mut();
         let [_old_node, new_node] = surface.split_left(NodeIndex::root(), 0.20, vec![Tab::Models]);
         let [_old_node, new_node] =
             surface.split_below(new_node, 0.5, vec![Tab::SliceConfig, Tab::Supports]);
         surface.split_below(new_node, 0.5, vec![Tab::Workspace, Tab::RemotePrint]);
-
-        let config_dir = dirs::config_dir().unwrap().join("mslicer");
-        let config = match Config::load(&config_dir) {
-            Ok(config) => config,
-            Err(err) => {
-                warn!("Failed to load config, using defaults: {}", err);
-                Config::default()
-            }
-        };
 
         Self {
             dock_state,

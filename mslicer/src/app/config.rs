@@ -7,7 +7,7 @@ use std::{
 use anyhow::Result;
 use eframe::Theme;
 use serde::{Deserialize, Serialize};
-use tracing::info;
+use tracing::{info, warn};
 
 use crate::render::pipelines::model::RenderStyle;
 
@@ -15,7 +15,6 @@ use crate::render::pipelines::model::RenderStyle;
 #[serde(default)]
 pub struct Config {
     pub render_style: RenderStyle,
-    pub show_normals: bool,
     pub grid_size: f32,
     pub theme: Theme,
     pub recent_projects: Vec<PathBuf>,
@@ -26,9 +25,23 @@ pub struct Config {
     pub http_status_proxy: bool,
     pub network_timeout: f32,
     pub network_broadcast_address: IpAddr,
+
+    // Advanced Settings
+    pub show_normals: bool,
+    pub max_buffer_size: u64,
 }
 
 impl Config {
+    pub fn load_or_default(config_dir: &Path) -> Self {
+        match Self::load(config_dir) {
+            Ok(config) => config,
+            Err(err) => {
+                warn!("Failed to load config, using defaults: {}", err);
+                Config::default()
+            }
+        }
+    }
+
     pub fn load(config_dir: &Path) -> Result<Self> {
         let config_file = config_dir.join("config.toml");
         Ok(if config_file.exists() {
@@ -57,7 +70,6 @@ impl Default for Config {
     fn default() -> Self {
         Self {
             render_style: RenderStyle::Rended,
-            show_normals: false,
             grid_size: 12.16,
             theme: Theme::Dark,
 
@@ -68,6 +80,9 @@ impl Default for Config {
             http_status_proxy: false,
             network_timeout: 5.0,
             network_broadcast_address: IpAddr::V4(Ipv4Addr::new(192, 168, 1, 255)),
+
+            max_buffer_size: 512 << 20,
+            show_normals: false,
         }
     }
 }
