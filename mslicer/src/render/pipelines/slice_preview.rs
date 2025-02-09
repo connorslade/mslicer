@@ -105,7 +105,6 @@ impl SlicePreviewPipeline {
             .into_iter()
             .map(|[x, y]| ModelVertex {
                 position: [x, y, 0.0, 1.0],
-                normal: [0.0, 0.0, 1.0],
             })
             .collect::<Vec<_>>();
         let vertex_buffer = device.create_buffer_init(&BufferInitDescriptor {

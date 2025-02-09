@@ -9,34 +9,40 @@ struct Context {
     render_style: u32,
 }
 
+struct VertexInput {
+    @location(0)
+    position: vec4<f32>
+}
+
 struct VertexOutput {
     @builtin(position)
     position: vec4<f32>,
     @location(1)
-    normal: vec3<f32>,
+    world_position: vec3<f32>
 };
 
 @vertex
-fn vert(
-    @location(0) position: vec4<f32>,
-    @location(1) normal: vec3<f32>,
-) -> VertexOutput {
+fn vert(in: VertexInput) -> VertexOutput {
     var out: VertexOutput;
-    out.position = context.transform * position;
-    out.normal = normalize((context.model_transform * vec4(normal, 0.0)).xyz);
+    out.position = context.transform * in.position;
+    out.world_position = (context.model_transform * in.position).xyz;
     return out;
 }
 
 @fragment
 fn frag(in: VertexOutput) -> @location(0) vec4<f32> {
+    let dy = dpdy(in.world_position);
+    let dx = dpdx(in.world_position);
+    let normal = normalize(cross(dy, dx));
+
     if context.render_style == 0 {
-        return vec4<f32>(in.normal, 1.0);
+        return vec4<f32>(normal, 1.0);
     } else {
         let camera_direction = normalize(context.camera_position + context.camera_target);
 
-        let diffuse = max(dot(in.normal, camera_direction), 0.0);
+        let diffuse = max(dot(normal, camera_direction), 0.0);
 
-        let reflect_dir = reflect(-camera_direction, in.normal);
+        let reflect_dir = reflect(-camera_direction, normal);
         let specular = pow(max(dot(camera_direction, reflect_dir), 0.0), 32.0);
 
         let intensity = (diffuse + specular + 0.1) * context.model_color.rgb;

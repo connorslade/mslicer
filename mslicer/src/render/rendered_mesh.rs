@@ -21,6 +21,7 @@ pub struct RenderedMesh {
     pub locked_scale: bool,
 
     vertices: Vec<ModelVertex>,
+    index: Vec<u32>,
     buffers: Option<RenderedMeshBuffers>,
 }
 
@@ -31,32 +32,13 @@ pub struct RenderedMeshBuffers {
 
 impl RenderedMesh {
     pub fn from_mesh(mesh: Mesh) -> Self {
-        let mut out = Vec::new();
+        let (vertices, faces) = (mesh.vertices(), mesh.faces());
 
-        let (vertices, normals) = (mesh.vertices(), mesh.normals());
-        for (i, face) in mesh.faces().iter().enumerate() {
-            let (a, b, c) = (
-                vertices[face[0] as usize],
-                vertices[face[1] as usize],
-                vertices[face[2] as usize],
-            );
-            let normal = normals[i];
-
-            out.extend_from_slice(&[
-                ModelVertex {
-                    position: [a.x, a.y, a.z, 1.0],
-                    normal: normal.into(),
-                },
-                ModelVertex {
-                    position: [b.x, b.y, b.z, 1.0],
-                    normal: normal.into(),
-                },
-                ModelVertex {
-                    position: [c.x, c.y, c.z, 1.0],
-                    normal: normal.into(),
-                },
-            ]);
-        }
+        let index = faces.iter().flatten().copied().collect::<Vec<_>>();
+        let vertices = vertices
+            .iter()
+            .map(|vert| ModelVertex::new(vert.push(1.0)))
+            .collect();
 
         Self {
             name: String::new(),
@@ -65,7 +47,8 @@ impl RenderedMesh {
             color: Color32::WHITE,
             hidden: false,
             locked_scale: true,
-            vertices: out,
+            index,
+            vertices,
             buffers: None,
         }
     }
@@ -121,9 +104,7 @@ impl RenderedMesh {
 
             let index_buffer = device.create_buffer_init(&BufferInitDescriptor {
                 label: None,
-                contents: bytemuck::cast_slice(
-                    &(0..self.mesh.face_count() as u32 * 3).collect::<Vec<u32>>(),
-                ),
+                contents: bytemuck::cast_slice(&self.index),
                 usage: BufferUsages::INDEX | BufferUsages::COPY_DST,
             });
 
@@ -147,6 +128,7 @@ impl Clone for RenderedMesh {
             hidden: self.hidden,
             locked_scale: self.locked_scale,
             vertices: self.vertices.clone(),
+            index: self.index.clone(),
             buffers: None,
         }
     }

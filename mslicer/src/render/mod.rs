@@ -2,6 +2,7 @@ use std::mem;
 
 use dispatch::solid_line::SolidLineDispatch;
 use eframe::CreationContext;
+use nalgebra::Vector4;
 use pipelines::{
     model::ModelPipeline, slice_preview::SlicePreviewPipeline, target_point::TargetPointPipeline,
 };
@@ -20,25 +21,17 @@ pub mod workspace;
 pub const VERTEX_BUFFER_LAYOUT: VertexBufferLayout = VertexBufferLayout {
     array_stride: mem::size_of::<ModelVertex>() as BufferAddress,
     step_mode: VertexStepMode::Vertex,
-    attributes: &[
-        VertexAttribute {
-            format: VertexFormat::Float32x4,
-            offset: 0,
-            shader_location: 0,
-        },
-        VertexAttribute {
-            format: VertexFormat::Float32x3,
-            offset: 4 * 4,
-            shader_location: 1,
-        },
-    ],
+    attributes: &[VertexAttribute {
+        format: VertexFormat::Float32x4,
+        offset: 0,
+        shader_location: 0,
+    }],
 };
 
 #[repr(C)]
 #[derive(Default, Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct ModelVertex {
     pub position: [f32; 4],
-    pub normal: [f32; 3],
 }
 
 pub fn init_wgpu(cc: &CreationContext) {
@@ -54,4 +47,12 @@ pub fn init_wgpu(cc: &CreationContext) {
     resources.insert(SlicePreviewRenderResources {
         slice_preview_pipeline: SlicePreviewPipeline::new(device),
     });
+}
+
+impl ModelVertex {
+    pub fn new(pos: Vector4<f32>) -> Self {
+        Self {
+            position: [pos.x, pos.y, pos.z, pos.w],
+        }
+    }
 }

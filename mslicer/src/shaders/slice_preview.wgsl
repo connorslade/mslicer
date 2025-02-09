@@ -15,10 +15,7 @@ struct VertexOutput {
 };
 
 @vertex
-fn vert(
-    @location(0) position: vec4<f32>,
-    @location(1) normal: vec3<f32>,
-) -> VertexOutput {
+fn vert(@location(0) position: vec4<f32>) -> VertexOutput {
     var out: VertexOutput;
     out.camera_position = position;
     out.position = position;

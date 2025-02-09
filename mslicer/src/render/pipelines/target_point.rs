@@ -176,7 +176,6 @@ fn generate_sphere(precision: usize) -> (Vec<ModelVertex>, Vec<u32>) {
                 x.2.into_inner() as f32,
                 1.0,
             ],
-            normal: [0.0, 0.0, 0.0],
         })
         .collect();
 
