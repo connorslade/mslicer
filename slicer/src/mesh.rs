@@ -6,6 +6,7 @@ use std::{
 use anyhow::Result;
 use nalgebra::{Matrix4, Vector3};
 use obj::{Obj, Vertex};
+use tracing::warn;
 
 use crate::Pos;
 
@@ -33,8 +34,14 @@ struct MeshInner {
 impl Mesh {
     /// Creates a new mesh from the givin vertices and faces. The
     /// transformations are all 0 by default.
-    pub fn new(mut vertices: Vec<Pos>, faces: Vec<[u32; 3]>, normals: Vec<Pos>) -> Self {
+    pub fn new(mut vertices: Vec<Pos>, faces: Vec<[u32; 3]>, mut normals: Vec<Pos>) -> Self {
         center_vertices(&mut vertices);
+
+        if normals.iter().any(|x| x.magnitude_squared() == 0.0) {
+            warn!("Model has invalid normals. Recomputing.");
+            normals = recompute_normals(&vertices, &faces);
+        }
+
         Self::new_uncentred(vertices, faces, normals)
     }
 
@@ -83,17 +90,7 @@ impl Mesh {
     /// Makes a copy of the mesh with normals computed from the triangles
     /// directly. The copy makes this operation kinda expensive.
     pub fn recompute_normals(&mut self) {
-        let vertices = self.vertices();
-        let normals = self
-            .faces()
-            .iter()
-            .map(|f| {
-                let edge1 = vertices[f[2] as usize] - vertices[f[1] as usize];
-                let edge2 = vertices[f[0] as usize] - vertices[f[1] as usize];
-                edge1.cross(&edge2).normalize()
-            })
-            .collect();
-
+        let normals = recompute_normals(self.vertices(), self.faces());
         self.overwrite_normals(normals)
     }
 
@@ -376,4 +373,15 @@ fn center_vertices(vertices: &mut [Pos]) {
     let center = (min + max) / 2.0;
     let center = Pos::new(center.x, center.y, min.z);
     vertices.iter_mut().for_each(|v| *v -= center);
+}
+
+fn recompute_normals(vertices: &[Pos], faces: &[[u32; 3]]) -> Vec<Vector3<f32>> {
+    faces
+        .iter()
+        .map(|f| {
+            let edge1 = vertices[f[2] as usize] - vertices[f[1] as usize];
+            let edge2 = vertices[f[0] as usize] - vertices[f[1] as usize];
+            edge1.cross(&edge2).normalize()
+        })
+        .collect()
 }
