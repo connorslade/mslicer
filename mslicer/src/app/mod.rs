@@ -163,8 +163,9 @@ impl App {
             [{ self.slice_operation } as slice_operation],
             move || {
                 let slice_operation = slice_operation.as_ref().unwrap();
+                let slice_result = slicer.slice_format();
                 let preview_image = slice_operation.preview_image();
-                let file = FormatSliceFile::from_slice_result(preview_image, slicer.slice_format());
+                let file = FormatSliceFile::from_slice_result(preview_image, slice_result);
 
                 let layers = file.info().layers as usize;
                 slice_operation.add_result(SliceResult {
