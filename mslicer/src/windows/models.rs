@@ -1,6 +1,9 @@
 use const_format::concatcp;
 use egui::{Context, Grid, Id, Ui};
-use egui_phosphor::regular::{ARROW_LINE_DOWN, COPY, DICE_THREE, EYE, EYE_SLASH, TRASH};
+use egui_phosphor::regular::{
+    ARROWS_CLOCKWISE, ARROW_LINE_DOWN, COPY, DICE_THREE, EYE, EYE_SLASH, FLIP_HORIZONTAL, TRASH,
+    VECTOR_THREE,
+};
 use slicer::Pos;
 
 use crate::{
@@ -28,6 +31,8 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     let width = ui.available_width();
 
     for (i, mesh) in meshes.iter_mut().enumerate() {
+        mesh.dirty = false;
+
         let id = Id::new(format!("model_show_{}", mesh.id));
         let open = ui.data_mut(|map| *map.get_temp_mut_or_insert_with(id, || false));
 
@@ -53,16 +58,35 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                 .with_row_color(|row, style| (row % 2 == 0).then_some(style.visuals.faint_bg_color))
                 .show(ui, |ui| {
                     ui.label("Actions");
-                    ui.horizontal(|ui| {
-                        ui.button(concatcp!(TRASH, " Delete"))
-                            .clicked()
-                            .then(|| action = Action::Remove(i));
-                        ui.button(concatcp!(COPY, " Duplicate"))
-                            .clicked()
-                            .then(|| action = Action::Duplicate(i));
-                        ui.button(concatcp!(ARROW_LINE_DOWN, " Align to Bed"))
-                            .clicked()
-                            .then(|| mesh.align_to_bed());
+                    ui.vertical(|ui| {
+                        ui.horizontal(|ui| {
+                            ui.button(concatcp!(TRASH, " Delete"))
+                                .clicked()
+                                .then(|| action = Action::Remove(i));
+                            ui.button(concatcp!(COPY, " Duplicate"))
+                                .clicked()
+                                .then(|| action = Action::Duplicate(i));
+                            ui.button(concatcp!(ARROW_LINE_DOWN, " Align to Bed"))
+                                .clicked()
+                                .then(|| mesh.align_to_bed());
+                        });
+
+                        ui.horizontal(|ui| {
+                            ui.menu_button(concatcp!(VECTOR_THREE, " Normals"), |ui| {
+                                if ui
+                                    .button(concatcp!(ARROWS_CLOCKWISE, " Recompute"))
+                                    .clicked()
+                                {
+                                    mesh.recompute_normals();
+                                    ui.close_menu();
+                                }
+
+                                if ui.button(concatcp!(FLIP_HORIZONTAL, " Flip")).clicked() {
+                                    mesh.flip_normals();
+                                    ui.close_menu();
+                                }
+                            });
+                        });
                     });
                     ui.end_row();
 

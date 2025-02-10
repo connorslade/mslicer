@@ -40,6 +40,7 @@ impl LineDispatch for NormalsDispatch {
 
         let models = resources.models.read();
         let ids = models.iter().map(|x| x.id).collect::<Vec<_>>();
+        let dirty = models.iter().any(|x| x.dirty);
         let transforms = models
             .iter()
             .map(|x| *x.mesh.transformation_matrix())
@@ -48,6 +49,7 @@ impl LineDispatch for NormalsDispatch {
         if ids != self.last_models
             || transforms != self.last_transforms
             || show_normals != self.last_normals
+            || dirty
         {
             self.last_models = ids;
             self.last_transforms = transforms;

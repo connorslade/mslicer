@@ -19,6 +19,10 @@ pub struct RenderedMesh {
     pub color: Color32,
     pub hidden: bool,
     pub locked_scale: bool,
+    /// Used when the normals are recomputed / flipped and the solid_line
+    /// normals dispatch needs to know to regenerate the lines. Should only be
+    /// set for one frame.
+    pub dirty: bool,
 
     vertices: Vec<ModelVertex>,
     index: Vec<u32>,
@@ -47,6 +51,7 @@ impl RenderedMesh {
             color: Color32::WHITE,
             hidden: false,
             locked_scale: true,
+            dirty: false,
             index,
             vertices,
             buffers: None,
@@ -90,6 +95,16 @@ impl RenderedMesh {
         self.mesh.set_position(pos);
     }
 
+    pub fn recompute_normals(&mut self) {
+        self.mesh.recompute_normals();
+        self.dirty = true;
+    }
+
+    pub fn flip_normals(&mut self) {
+        self.mesh.flip_normals();
+        self.dirty = true;
+    }
+
     pub fn try_get_buffers(&self) -> Option<&RenderedMeshBuffers> {
         self.buffers.as_ref()
     }
@@ -127,6 +142,7 @@ impl Clone for RenderedMesh {
             color: self.color,
             hidden: self.hidden,
             locked_scale: self.locked_scale,
+            dirty: false,
             vertices: self.vertices.clone(),
             index: self.index.clone(),
             buffers: None,

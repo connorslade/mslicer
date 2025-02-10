@@ -80,6 +80,40 @@ impl Mesh {
         self.faces().len()
     }
 
+    /// Makes a copy of the mesh with normals computed from the triangles
+    /// directly. The copy makes this operation kinda expensive.
+    pub fn recompute_normals(&mut self) {
+        let vertices = self.vertices();
+        let normals = self
+            .faces()
+            .iter()
+            .map(|f| {
+                let edge1 = vertices[f[2] as usize] - vertices[f[1] as usize];
+                let edge2 = vertices[f[0] as usize] - vertices[f[1] as usize];
+                edge1.cross(&edge2).normalize()
+            })
+            .collect();
+
+        self.overwrite_normals(normals)
+    }
+
+    /// Makes a copy of the mesh with normals computed from the triangles
+    /// directly. The copy makes this operation kinda expensive.
+    pub fn flip_normals(&mut self) {
+        let normals = self.normals().iter().map(|f| -f).collect();
+        self.overwrite_normals(normals);
+    }
+
+    // The alternaitve is to put normals in a separate Arc to avoid cloning all
+    // verts and faces here, but its proooobly fine.
+    fn overwrite_normals(&mut self, normals: Vec<Vector3<f32>>) {
+        self.inner = Arc::new(MeshInner {
+            vertices: self.inner.vertices.clone(),
+            faces: self.inner.faces.clone(),
+            normals: normals.into_boxed_slice(),
+        });
+    }
+
     /// Intersect the mesh with a plane with linier time complexity. You
     /// should probably use the [`crate::segments::Segments`] struct as it can
     /// massively accelerate slicing of high face count triangles.
