@@ -89,6 +89,6 @@
 - [ ] Make post processing async
 - [ ] Instance meshes in save files / rendering
 - [x] Allow recalculating normals
-- [ ] Alert when model with invalid normals is loaded
 - [ ] Cleanup self intersection resolution
 - [ ] Dont fail to load an stl without normals
+- [ ] Dont clone all verts and faces to recompute normals. Just add another Arc?

@@ -180,7 +180,7 @@ impl App {
     }
 
     pub fn load_mesh<T: BufRead + Seek>(&mut self, buf: &mut T, format: &str, name: String) {
-        let model = match slicer::mesh::load_mesh(buf, format) {
+        let mut model = match slicer::mesh::load_mesh(buf, format) {
             Ok(model) => model,
             Err(err) => {
                 self.popup.open(Popup::simple(
@@ -193,11 +193,16 @@ impl App {
         };
         info!("Loaded model `{name}` with {} faces", model.face_count());
 
-        self.meshes.write().push(
-            RenderedMesh::from_mesh(model)
-                .with_name(name)
-                .with_random_color(),
-        );
+        if model.normals().iter().any(|x| x.magnitude_squared() == 0.0) {
+            warn!("Model `{name}` has invalid normals. Recomputing.");
+            model.recompute_normals();
+        }
+
+        let rendered_mesh = RenderedMesh::from_mesh(model)
+            .with_name(name.clone())
+            .with_random_color();
+
+        self.meshes.write().push(rendered_mesh);
     }
 }
 
