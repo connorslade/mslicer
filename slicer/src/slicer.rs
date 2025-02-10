@@ -147,30 +147,25 @@ impl Slicer {
                     // another mesh, these intersections are removed. This is
                     // done by looking at the direction each line segment is
                     // facing. For example, <- <- -> -> would be reduced to <- ->.
-                    let mut i = 1;
-                    let mut ignore = 0;
-                    while i < intersections.len() {
-                        let (_, last_facing) = intersections[i - 1];
-                        let (_, facing) = intersections[i];
+                    let mut filtered = Vec::with_capacity(intersections.len());
+                    let mut depth = 0;
 
-                        if facing == last_facing {
-                            intersections.remove(i);
-                            ignore += 1;
-                        } else if ignore > 0 {
-                            intersections.remove(i);
-                            ignore -= 1;
-                        } else {
-                            i += 1;
+                    for (pos, dir) in intersections {
+                        let prev_depth = depth;
+                        depth += (dir as i32) * 2 - 1;
+
+                        if (depth == 0) ^ (prev_depth == 0) {
+                            filtered.push(pos);
                         }
                     }
 
                     // Convert the intersections into runs of white pixels to be
                     // encoded into the layer
-                    for span in intersections.chunks_exact(2) {
+                    for span in filtered.chunks_exact(2) {
                         let y_offset = (self.slice_config.platform_resolution.x * y) as u64;
 
-                        let a = span[0].0.round() as u64;
-                        let b = span[1].0.round() as u64;
+                        let a = span[0].round() as u64;
+                        let b = span[1].round() as u64;
 
                         let start = a + y_offset;
                         let end = b + y_offset;
