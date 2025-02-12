@@ -6,6 +6,7 @@ use crate::{app::App, render::rendered_mesh::RenderedMesh, ui::components::dragg
 
 pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     ui.label("Generate supports to allow printing overhangs in models. You can generate supports for individual meshes or all meshes at once.");
+    ui.strong("This feature is still in development and not expected to work well.");
 
     ui.add_space(8.0);
 
