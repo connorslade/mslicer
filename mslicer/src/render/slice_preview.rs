@@ -11,6 +11,7 @@ pub struct SlicePreviewRenderResources {
 pub struct SlicePreviewRenderCallback {
     pub dimensions: Vector2<u32>,
     pub offset: Vector2<f32>,
+    pub aspect: f32,
     pub scale: f32,
 
     pub new_preview: Option<Vec<u8>>,

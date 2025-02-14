@@ -9,7 +9,7 @@ use std::{
 use clone_macro::clone;
 use const_format::concatcp;
 use eframe::Theme;
-use egui::Visuals;
+use egui::{Vec2, Visuals};
 use egui_dock::{DockState, NodeIndex};
 use egui_phosphor::regular::CARET_RIGHT;
 use egui_tracing::EventCollector;
@@ -158,6 +158,13 @@ impl App {
         let slicer = Slicer::new(slice_config, out);
         self.slice_operation
             .replace(SliceOperation::new(slicer.progress()));
+
+        if self.dock_state.find_tab(&Tab::SliceOperation).is_none() {
+            let window_id = self.dock_state.add_window(vec![Tab::SliceOperation]);
+            let window = self.dock_state.get_window_state_mut(window_id).unwrap();
+            window.set_size(Vec2::new(700.0, 400.0));
+            // todo: or focus it
+        }
 
         thread::spawn(clone!(
             [{ self.slice_operation } as slice_operation],

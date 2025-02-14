@@ -28,6 +28,7 @@ pub enum Tab {
     Models,
     RemotePrint,
     SliceConfig,
+    SliceOperation,
     Stats,
     Supports,
     Viewport,
@@ -42,6 +43,7 @@ impl Tab {
             Tab::Models => "Models",
             Tab::RemotePrint => "Remote Print",
             Tab::SliceConfig => "Slice Config",
+            Tab::SliceOperation => "Slice Operation",
             Tab::Stats => "Stats",
             Tab::Supports => "Supports",
             Tab::Viewport => "Viewport",
@@ -64,6 +66,7 @@ impl TabViewer for Tabs<'_> {
             Tab::Models => models::ui(self.app, ui, self.ctx),
             Tab::RemotePrint => remote_print::ui(self.app, ui, self.ctx),
             Tab::SliceConfig => slice_config::ui(self.app, ui, self.ctx),
+            Tab::SliceOperation => slice_operation::ui(self.app, ui, self.ctx),
             Tab::Stats => stats::ui(self.app, ui, self.ctx),
             Tab::Supports => supports::ui(self.app, ui, self.ctx),
             Tab::Viewport => viewport(self.app, ui, self.ctx),
@@ -81,16 +84,17 @@ impl TabViewer for Tabs<'_> {
             Tab::Models,
             Tab::RemotePrint,
             Tab::SliceConfig,
+            Tab::SliceOperation,
             Tab::Stats,
             Tab::Supports,
             Tab::Workspace,
         ] {
             let already_open = self.app.dock_state.find_tab(&tab).is_some();
-            ui.add_enabled_ui(!already_open, |ui| {
+            if !already_open {
                 ui.button(tab.name())
                     .clicked()
                     .then(|| self.app.dock_state.add_window(vec![tab]));
-            });
+            }
         }
     }
 
@@ -113,7 +117,6 @@ impl TabViewer for Tabs<'_> {
 
 pub fn ui(app: &mut App, ctx: &Context) {
     top_bar::ui(app, ctx);
-    slice_operation::ui(app, ctx);
 
     CentralPanel::default()
         .frame(Frame::none())

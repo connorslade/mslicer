@@ -34,6 +34,7 @@ pub struct SlicePreviewPipeline {
 struct SlicePreviewUniforms {
     dimensions: Vector2<u32>,
     offset: Vector2<f32>,
+    aspect: f32,
     scale: f32,
 }
 
@@ -182,6 +183,7 @@ impl SlicePreviewPipeline {
             .write(&SlicePreviewUniforms {
                 dimensions: resources.dimensions,
                 offset: resources.offset,
+                aspect: resources.aspect,
                 scale: resources.scale.recip(),
             })
             .unwrap();
