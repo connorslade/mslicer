@@ -135,7 +135,7 @@ impl App {
 
             mesh.set_scale_unchecked(mesh.scale().component_mul(&mm_to_px));
 
-            let (min, max) = mesh.minmax_point();
+            let (min, max) = mesh.bounds();
             preview_scale = preview_scale
                 .min(self.slice_config.platform_size.x / (max.x - min.x))
                 .min(self.slice_config.platform_size.y / (max.y - min.y));

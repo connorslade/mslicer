@@ -32,7 +32,7 @@ pub fn render_preview_image(
 
     let (mut min, mut max) = (Vector3::repeat(f32::MAX), Vector3::repeat(f32::MIN));
     for model in workspace.models.read().iter() {
-        let (model_min, model_max) = model.mesh.minmax_point();
+        let (model_min, model_max) = model.mesh.bounds();
         min = min.zip_map(&model_min, f32::min);
         max = max.zip_map(&model_max, f32::max);
     }

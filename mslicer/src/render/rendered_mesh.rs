@@ -89,7 +89,7 @@ impl RenderedMesh {
     }
 
     pub fn align_to_bed(&mut self) {
-        let (bottom, _) = self.mesh.minmax_point();
+        let (bottom, _) = self.mesh.bounds();
 
         let pos = self.mesh.position() - Vector3::new(0.0, 0.0, bottom.z);
         self.mesh.set_position(pos);

@@ -191,8 +191,8 @@ impl Mesh {
 
     /// Get the minimum and maximum of each component of every vertex in the
     /// model. These points define the bounding box of the model.
-    pub fn minmax_point(&self) -> (Pos, Pos) {
-        minmax_vertices(self.vertices(), &self.transformation_matrix)
+    pub fn bounds(&self) -> (Pos, Pos) {
+        vertex_bounds(self.vertices(), &self.transformation_matrix)
     }
 }
 
@@ -350,7 +350,7 @@ impl Default for Mesh {
 // todo: maybe only transform min and max at end
 /// Get the minimum and maximum of each component of every vertex.
 /// These points define the bounding box of the model.
-fn minmax_vertices(vertices: &[Pos], transform: &Matrix4<f32>) -> (Pos, Pos) {
+fn vertex_bounds(vertices: &[Pos], transform: &Matrix4<f32>) -> (Pos, Pos) {
     vertices.iter().fold(
         (
             Pos::new(f32::MAX, f32::MAX, f32::MAX),
@@ -368,7 +368,7 @@ fn minmax_vertices(vertices: &[Pos], transform: &Matrix4<f32>) -> (Pos, Pos) {
 
 /// Moves the model to have its origin at its centerpoint.
 fn center_vertices(vertices: &mut [Pos]) {
-    let (min, max) = minmax_vertices(vertices, &Matrix4::identity());
+    let (min, max) = vertex_bounds(vertices, &Matrix4::identity());
 
     let center = (min + max) / 2.0;
     let center = Pos::new(center.x, center.y, min.z);

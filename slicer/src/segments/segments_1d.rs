@@ -17,7 +17,7 @@ pub struct Segments1D {
 impl Segments1D {
     /// Creates a new Segments structure from a given mesh and segment count.
     pub fn from_mesh(mesh: &Mesh, layer_count: usize) -> Self {
-        let (min, max) = mesh.minmax_point();
+        let (min, max) = mesh.bounds();
 
         // Caching transformed points makes slicing faster.
         let transformed_points = mesh
@@ -32,7 +32,7 @@ impl Segments1D {
 
         // Adds the index of each face into all of the segments it covers.
         for face in 0..mesh.face_count() {
-            let (min_height, max_height) = minmax_triangle_height(mesh, &transformed_points, face);
+            let (min_height, max_height) = triangle_bounds(mesh, &transformed_points, face);
             let (min_layer, max_layer) = (
                 ((min_height - min.z) / layer_height) as usize,
                 ((max_height - min.z) / layer_height).round() as usize,
@@ -74,7 +74,7 @@ impl Segments1D {
 }
 
 /// Gets the min and max heights of the vertices of a face.
-fn minmax_triangle_height(mesh: &Mesh, points: &[Vector3<f32>], triangle: usize) -> (f32, f32) {
+fn triangle_bounds(mesh: &Mesh, points: &[Vector3<f32>], triangle: usize) -> (f32, f32) {
     let triangle = mesh.faces()[triangle];
     let heights = (
         points[triangle[0] as usize].z,

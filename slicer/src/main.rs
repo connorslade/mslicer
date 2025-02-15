@@ -42,7 +42,7 @@ fn main() -> Result<()> {
     let file = File::open(FILE_PATH)?;
     let mut buf = BufReader::new(file);
     let mut mesh = load_mesh(&mut buf, "stl")?;
-    let (min, max) = mesh.minmax_point();
+    let (min, max) = mesh.bounds();
 
     // Scale the model into printer-space (mm => px)
     let real_scale = 1.0;
