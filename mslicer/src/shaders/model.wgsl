@@ -11,15 +11,14 @@ struct Context {
 }
 
 struct VertexInput {
-    @location(0)
-    position: vec4<f32>
+    @builtin(vertex_index) index: u32,
+    @location(0) position: vec4<f32>
 }
 
 struct VertexOutput {
-    @builtin(position)
-    position: vec4<f32>,
-    @location(1)
-    world_position: vec3<f32>
+    @builtin(position) position: vec4<f32>,
+    @location(1) world_position: vec3<f32>,
+    @location(2) vertex_index: u32
 };
 
 @vertex
@@ -27,6 +26,7 @@ fn vert(in: VertexInput) -> VertexOutput {
     var out: VertexOutput;
     out.position = context.transform * in.position;
     out.world_position = (context.model_transform * in.position).xyz;
+    out.vertex_index = in.index;
     return out;
 }
 
@@ -42,6 +42,9 @@ fn frag(in: VertexOutput) -> @location(0) vec4<f32> {
 
     if context.render_style == 0 {
         return vec4<f32>(normal, 1.0);
+    } else if context.render_style == 1 {
+        seed = in.vertex_index;
+        return vec4f(rand(), rand(), rand(), 1.0);
     } else {
         let camera_direction = normalize(context.camera_position + context.camera_target);
 
@@ -60,4 +63,12 @@ fn outside_build_volume(pos: vec3<f32>) -> bool {
     return pos.x < -build.x || pos.x > build.x
         || pos.y < -build.y || pos.y > build.y
         || pos.z < 0.0 || pos.x > context.build_volume.z;
+}
+
+var<private> seed: u32 = 0u;
+
+fn rand() -> f32 {
+    seed = seed * 747796405u + 2891336453u;
+    let f = f32(seed >> 9u) / f32(1u << 23u);
+    return fract(f);
 }

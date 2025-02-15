@@ -94,4 +94,4 @@
 - [x] Fix requiring viewport to be visible to render preview image
 - [x] Visulize mesh outside of bounging box
 - [ ] Save panel layout
-- [ ] Random triangle color render mode
+- [x] Random triangle color render mode

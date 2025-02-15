@@ -35,12 +35,9 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     ComboBox::new("render_style", "Render Style")
         .selected_text(app.config.render_style.name())
         .show_ui(ui, |ui| {
-            ui.selectable_value(
-                &mut app.config.render_style,
-                RenderStyle::Normals,
-                "Normals",
-            );
-            ui.selectable_value(&mut app.config.render_style, RenderStyle::Rended, "Rended");
+            for style in RenderStyle::ALL {
+                ui.selectable_value(&mut app.config.render_style, style, style.name());
+            }
         });
 
     ComboBox::new("theme", "Theme")
