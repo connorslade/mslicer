@@ -26,19 +26,9 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
 
         let (current, total) = (progress.completed(), progress.total());
 
-        let completion = slice_operation.completion();
-
-        if completion.is_none() {
-            ui.add(
-                ProgressBar::new(current as f32 / total as f32)
-                    .text(format!("{:.2}%", current as f32 / total as f32 * 100.0)),
-            );
-
-            ui.label(format!("Slicing... {}/{}", current, total));
-            ctx.request_repaint();
-        } else {
+        if let Some(completion) = slice_operation.completion() {
             ui.horizontal(|ui| {
-                ui.label(format!("Slicing completed in {}!", completion.unwrap()));
+                ui.label(format!("Slicing completed in {}!", completion));
 
                 ui.with_layout(Layout::default().with_cross_align(Align::Max), |ui| {
                     ui.horizontal(|ui| {
@@ -130,7 +120,23 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
 
                 slice_preview(ui, result);
             });
+        } else {
+            ui.add(
+                ProgressBar::new(current as f32 / total as f32)
+                    .text(format!("{:.2}%", current as f32 / total as f32 * 100.0)),
+            );
+
+            ui.label(format!("Slicing... {}/{}", current, total));
+            ctx.request_repaint();
         }
+    } else {
+        ui.horizontal_wrapped(|ui| {
+            ui.label("You can start a slice operation by pressing the");
+            ui.code("Slice");
+            ui.label("button on the top bar, or with the");
+            ui.code("Ctrl+R");
+            ui.label("keyboard shortcut.");
+        });
     }
 }
 
@@ -168,7 +174,8 @@ fn slice_preview(ui: &mut egui::Ui, result: &mut SliceResult) {
 
             let preview_scale = result.preview_scale.exp2();
             let drag = response.drag_delta();
-            result.preview_offset.x -= drag.x / rect.width() * width as f32 / preview_scale;
+            result.preview_offset.x -= drag.x / rect.width() * width as f32 / preview_scale
+                * (info.resolution.x as f32 / info.resolution.y as f32);
             result.preview_offset.y += drag.y / rect.height() * height as f32 / preview_scale;
 
             if response.hovered() {
