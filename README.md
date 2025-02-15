@@ -8,8 +8,11 @@ You can read more about the development of this project on its [project page](ht
 
 ## Getting Started
 
+You can download the latest stable builds for Linux or Windows from the [Releases](https://github.com/connorslade/mslicer/releases) section.
+The latest Linux build is also available as a Flatpak on Flathub.
 You can find the latest development builds for Windows, Linux, and Mac OS on [Github Actions](https://github.com/connorslade/mslicer/actions/workflows/build.yml?query=is%3Asuccess), just open the latest workflow run and download the build artifact for your operating system.
-Then run the downloaded binary and find the import model button in the file menu or drag a obj / stl file onto the window.
+
+[![](https://flathub.org/api/badge?svg&locale=en)](https://flathub.org/apps/com.connorcode.mslicer)
 
 ## Demo Video
 

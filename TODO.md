@@ -28,7 +28,7 @@
 - [x] 0-pad slice preview layer display so its width doesn't change as you move the slider
 - [x] Preload layer 1 in slice preview
 - [x] Better camera movement (left click to orbit, right click to change orbit point)
-- [ ] Don't crash when slicing an object outside of bounds
+- [x] Don't crash when slicing an object outside of bounds
 - [x] Add support for loading .obj files
 - [x] Move call to slicer into app from top_bar
 - [x] Determine which side is the front of the printer
@@ -85,12 +85,12 @@
 - [ ] Printer profiles
 - [x] Save config on quit
 - [x] Refactor plugins to post processors
-- [ ] Update readme
+- [x] Update readme
 - [ ] Make post processing async
-- [ ] Instance meshes in save files / rendering
 - [x] Allow recalculating normals
 - [x] Cleanup self intersection resolution
 - [ ] Dont fail to load an stl without normals
 - [ ] GPU accalration for post processing effect?
 - [ ] Fix requiring viewport to be visible to render preview image
 - [x] Visulize mesh outside of bounging box
+- [ ] Save panel layout
