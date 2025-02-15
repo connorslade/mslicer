@@ -2,6 +2,8 @@ use eframe::Theme;
 use egui::{CentralPanel, Color32, Context, Frame, Id, Sense, Ui, WidgetText};
 use egui_dock::{DockArea, NodeIndex, SurfaceIndex, TabViewer};
 use egui_wgpu::Callback;
+use nalgebra::Matrix4;
+use parking_lot::MappedRwLockWriteGuard;
 
 use crate::{app::App, render::workspace::WorkspaceRenderCallback};
 
@@ -135,24 +137,40 @@ fn viewport(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     };
     ui.painter().rect_filled(rect, 0.0, color);
 
+    let aspect = rect.width() / rect.height();
+    let view_projection = app.camera.view_projection_matrix(aspect);
+
     let callback = Callback::new_paint_callback(
         rect,
-        WorkspaceRenderCallback {
-            camera: app.camera.clone(),
-            transform: app
-                .camera
-                .view_projection_matrix(rect.width() / rect.height()),
-
-            bed_size: app.slice_config.platform_size,
-            grid_size: app.config.grid_size,
-
-            is_moving: response.dragged(),
-            slice_operation: app.slice_operation.clone(),
-
-            models: app.meshes.clone(),
-            config: app.config.clone(),
-            line_support_debug: app.state.line_support_debug.clone(),
-        },
+        app.get_workspace_render_callback(view_projection, response.dragged()),
     );
+
     ui.painter().add(callback);
+}
+
+impl App {
+    pub fn get_workspace_render_callback(
+        &self,
+        view_projection: Matrix4<f32>,
+        is_moving: bool,
+    ) -> WorkspaceRenderCallback {
+        WorkspaceRenderCallback {
+            camera: self.camera.clone(),
+            transform: view_projection,
+
+            bed_size: self.slice_config.platform_size,
+            grid_size: self.config.grid_size,
+
+            is_moving,
+            models: self.meshes.clone(),
+            config: self.config.clone(),
+            line_support_debug: self.state.line_support_debug.clone(),
+        }
+    }
+
+    pub fn get_callback_resource_mut<T: 'static>(&self) -> MappedRwLockWriteGuard<T> {
+        MappedRwLockWriteGuard::map(self.render_state.renderer.write(), |x| {
+            x.callback_resources.get_mut::<T>().unwrap()
+        })
+    }
 }

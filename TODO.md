@@ -91,6 +91,7 @@
 - [x] Cleanup self intersection resolution
 - [ ] Dont fail to load an stl without normals
 - [ ] GPU accalration for post processing effect?
-- [ ] Fix requiring viewport to be visible to render preview image
+- [x] Fix requiring viewport to be visible to render preview image
 - [x] Visulize mesh outside of bounging box
 - [ ] Save panel layout
+- [ ] Random triangle color render mode

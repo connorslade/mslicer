@@ -13,6 +13,7 @@ use egui::{Vec2, Visuals};
 use egui_dock::{DockState, NodeIndex};
 use egui_phosphor::regular::CARET_RIGHT;
 use egui_tracing::EventCollector;
+use egui_wgpu::RenderState;
 use nalgebra::Vector2;
 use parking_lot::RwLock;
 use tracing::{info, warn};
@@ -23,7 +24,7 @@ use crate::{
         elephant_foot_fixer::{self},
         PluginManager,
     },
-    render::{camera::Camera, rendered_mesh::RenderedMesh},
+    render::{camera::Camera, preview, rendered_mesh::RenderedMesh},
     ui::{
         drag_and_drop,
         popup::{Popup, PopupIcon, PopupManager},
@@ -43,6 +44,7 @@ use remote_print::RemotePrint;
 use slice_operation::{SliceOperation, SliceResult};
 
 pub struct App {
+    pub render_state: RenderState,
     // todo: dock state in ui_state?
     pub dock_state: DockState<Tab>,
     pub fps: FpsTracker,
@@ -66,7 +68,12 @@ pub struct FpsTracker {
 }
 
 impl App {
-    pub fn new(config_dir: PathBuf, config: Config, event_collector: EventCollector) -> Self {
+    pub fn new(
+        render_state: RenderState,
+        config_dir: PathBuf,
+        config: Config,
+        event_collector: EventCollector,
+    ) -> Self {
         let mut dock_state = DockState::new(vec![Tab::Viewport]);
         let surface = dock_state.main_surface_mut();
         let [_old_node, new_node] = surface.split_left(NodeIndex::root(), 0.20, vec![Tab::Models]);
@@ -75,6 +82,7 @@ impl App {
         surface.split_below(new_node, 0.5, vec![Tab::Workspace, Tab::RemotePrint]);
 
         Self {
+            render_state,
             dock_state,
             popup: PopupManager::new(),
             state: UiState {
@@ -218,8 +226,8 @@ impl eframe::App for App {
         // todo: probably dont do this
         let app = unsafe { &mut *(self as *mut _) };
         self.popup.render(app, ctx);
-        // only update the visuals if the theme has changed
 
+        // only update the visuals if the theme has changed
         match self.config.theme {
             Theme::Dark => ctx.set_visuals(Visuals::dark()),
             Theme::Light => ctx.set_visuals(Visuals::light()),
@@ -230,6 +238,7 @@ impl eframe::App for App {
         }
 
         self.remote_print.tick(app);
+        preview::process_previews(app);
         drag_and_drop::update(self, ctx);
         windows::ui(self, ctx);
     }

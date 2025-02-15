@@ -68,13 +68,13 @@ fn main() -> Result<()> {
             ..Default::default()
         },
         Box::new(|cc| {
-            render::init_wgpu(cc);
+            let render_state = render::init_wgpu(cc);
 
             let mut fonts = FontDefinitions::default();
             egui_phosphor::add_to_fonts(&mut fonts, egui_phosphor::Variant::Regular);
             cc.egui_ctx.set_fonts(fonts);
 
-            Box::new(App::new(config_dir, config, collector))
+            Box::new(App::new(render_state, config_dir, config, collector))
         }),
     )
     .unwrap();

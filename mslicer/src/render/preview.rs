@@ -1,7 +1,7 @@
 use std::f32::consts::PI;
 
 use image::{Rgba, RgbaImage};
-use nalgebra::{Vector2, Vector3};
+use nalgebra::{Matrix4, Vector2, Vector3};
 use tracing::info;
 use wgpu::{
     BufferAddress, BufferDescriptor, BufferUsages, Color, CommandEncoderDescriptor, Device,
@@ -11,19 +11,32 @@ use wgpu::{
     TextureFormat, TextureUsages, TextureView, TextureViewDescriptor,
 };
 
-use crate::TEXTURE_FORMAT;
+use crate::{app::App, TEXTURE_FORMAT};
 
-use super::{camera::Camera, pipelines::model::ModelPipeline, workspace::WorkspaceRenderCallback};
+use super::{
+    camera::Camera,
+    pipelines::model::ModelPipeline,
+    workspace::{WorkspaceRenderCallback, WorkspaceRenderResources},
+};
+
+pub fn process_previews(app: &App) {
+    match &app.slice_operation {
+        Some(slice_operation) if slice_operation.needs_preview_image() => {
+            let image = render_preview_image(app, (512, 512));
+            slice_operation.add_preview_image(image);
+        }
+        _ => {}
+    }
+}
 
 // TODO: Allow rendering multiple preview images at once
-pub fn render_preview_image(
-    device: &Device,
-    queue: &Queue,
-    size: (u32, u32),
-    model_pipeline: &mut ModelPipeline,
-    workspace: &WorkspaceRenderCallback,
-) -> RgbaImage {
+fn render_preview_image(app: &App, size: (u32, u32)) -> RgbaImage {
     info!("Generating {}x{} preview image", size.0, size.1);
+
+    let mut resources = app.get_callback_resource_mut::<WorkspaceRenderResources>();
+    let (device, queue) = (&app.render_state.device, &app.render_state.queue);
+
+    let mut workspace = app.get_workspace_render_callback(Matrix4::zeros(), false);
 
     let (texture, resolved_texture, depth_texture) = init_textures(device, size);
     let texture_view = texture.create_view(&TextureViewDescriptor::default());
@@ -40,26 +53,22 @@ pub fn render_preview_image(
     let target = (min + max) / 2.0;
     let distance = (min - max).magnitude() / 2.0;
 
-    let mut old_workspace = workspace.clone();
-    old_workspace.camera = Camera {
+    workspace.camera = Camera {
         target,
         distance,
         angle: Vector2::new(0.0, PI / 10.0),
-        ..old_workspace.camera
+        ..workspace.camera
     };
 
-    let workspace = WorkspaceRenderCallback {
-        transform: old_workspace
-            .camera
-            .view_projection_matrix(size.0 as f32 / size.1 as f32),
-        ..old_workspace
-    };
-    model_pipeline.prepare(device, &workspace);
+    let aspect = size.0 as f32 / size.1 as f32;
+    workspace.transform = workspace.camera.view_projection_matrix(aspect);
+
+    resources.model_pipeline.prepare(device, &workspace);
 
     render_preview(
         device,
         queue,
-        model_pipeline,
+        &resources.model_pipeline,
         &workspace,
         &texture_view,
         &resolved_texture_view,

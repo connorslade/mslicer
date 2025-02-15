@@ -6,13 +6,12 @@ use nalgebra::{Matrix4, Vector3};
 use parking_lot::RwLock;
 use wgpu::{CommandBuffer, CommandEncoder, Device, Queue, RenderPass};
 
-use crate::app::{config::Config, slice_operation::SliceOperation};
+use crate::app::config::Config;
 
 use super::{
     camera::Camera,
     dispatch::solid_line::SolidLineDispatch,
     pipelines::{model::ModelPipeline, target_point::TargetPointPipeline},
-    preview::render_preview_image,
     rendered_mesh::RenderedMesh,
 };
 
@@ -27,6 +26,7 @@ pub struct WorkspaceRenderResources {
 pub struct WorkspaceRenderCallback {
     pub camera: Camera,
     pub transform: Matrix4<f32>,
+    pub is_moving: bool,
 
     pub bed_size: Vector3<f32>,
     pub grid_size: f32,
@@ -34,8 +34,6 @@ pub struct WorkspaceRenderCallback {
     pub models: Arc<RwLock<Vec<RenderedMesh>>>,
     pub config: Config,
 
-    pub is_moving: bool,
-    pub slice_operation: Option<SliceOperation>,
     pub line_support_debug: Vec<[Vector3<f32>; 2]>,
 }
 
@@ -49,15 +47,6 @@ impl CallbackTrait for WorkspaceRenderCallback {
         resources: &mut CallbackResources,
     ) -> Vec<CommandBuffer> {
         let resources = resources.get_mut::<WorkspaceRenderResources>().unwrap();
-
-        match &self.slice_operation {
-            Some(slice_operation) if slice_operation.needs_preview_image() => {
-                let pipeline = &mut resources.model_pipeline;
-                let image = render_preview_image(device, queue, (512, 512), pipeline, self);
-                slice_operation.add_preview_image(image);
-            }
-            _ => {}
-        }
 
         resources.solid_line.prepare(device, queue, self);
         resources.model_pipeline.prepare(device, self);

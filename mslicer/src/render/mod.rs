@@ -2,6 +2,7 @@ use std::mem;
 
 use dispatch::solid_line::SolidLineDispatch;
 use eframe::CreationContext;
+use egui_wgpu::RenderState;
 use nalgebra::Vector4;
 use pipelines::{
     model::ModelPipeline, slice_preview::SlicePreviewPipeline, target_point::TargetPointPipeline,
@@ -34,7 +35,7 @@ pub struct ModelVertex {
     pub position: [f32; 4],
 }
 
-pub fn init_wgpu(cc: &CreationContext) {
+pub fn init_wgpu(cc: &CreationContext) -> RenderState {
     let render_state = cc.wgpu_render_state.as_ref().unwrap();
     let device = &render_state.device;
 
@@ -47,6 +48,8 @@ pub fn init_wgpu(cc: &CreationContext) {
     resources.insert(SlicePreviewRenderResources {
         slice_preview_pipeline: SlicePreviewPipeline::new(device),
     });
+
+    render_state.clone()
 }
 
 impl ModelVertex {
