@@ -174,8 +174,9 @@ fn slice_preview(ui: &mut egui::Ui, result: &mut SliceResult) {
 
             let preview_scale = result.preview_scale.exp2();
             let drag = response.drag_delta();
-            result.preview_offset.x -= drag.x / rect.width() * width as f32 / preview_scale
-                * (info.resolution.x as f32 / info.resolution.y as f32);
+            let aspect = rect.width() / rect.height() * height as f32 / width as f32;
+            result.preview_offset.x -=
+                drag.x / rect.width() * width as f32 / preview_scale * aspect;
             result.preview_offset.y += drag.y / rect.height() * height as f32 / preview_scale;
 
             if response.hovered() {

@@ -38,7 +38,7 @@ pub fn ui(app: &mut App, ctx: &Context) {
 
             ui.menu_button("🖹 File", |ui| {
                 ui.style_mut().visuals.button_frame = false;
-                ui.set_width(160.0);
+                ui.set_width(170.0);
 
                 let import_model_button = ui.add(
                     Button::new("Import Model")

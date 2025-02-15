@@ -29,6 +29,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
         ui.label(".");
     });
 
+    ui.add_space(8.0);
     ui.horizontal(|ui| {
         ui.selectable_value(
             &mut app.state.docs_page,
@@ -41,6 +42,8 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
             "Another Page",
         );
     });
+
+    ui.separator();
 
     CompiledMarkdown::compile(include_str!("../../../docs/getting_started.md")).render(ui);
 }

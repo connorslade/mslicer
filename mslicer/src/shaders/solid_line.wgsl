@@ -4,21 +4,21 @@ struct Context {
     transform: mat4x4<f32>,
 }
 
+struct VertexInput {
+    @location(0) position: vec4<f32>,
+    @location(1) color: vec3<f32>
+}
+
 struct VertexOutput {
-    @builtin(position)
-    position: vec4<f32>,
-    @location(0)
-    color: vec3<f32>,
+    @builtin(position) position: vec4<f32>,
+    @location(0) color: vec3<f32>,
 };
 
 @vertex
-fn vert(
-    @location(0) position: vec4<f32>,
-    @location(1) color: vec3<f32>
-) -> VertexOutput {
+fn vert(in: VertexInput) -> VertexOutput {
     var out: VertexOutput;
-    out.position = context.transform * position;
-    out.color = color;
+    out.position = context.transform * in.position;
+    out.color = in.color;
     return out;
 }
 

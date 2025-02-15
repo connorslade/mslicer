@@ -108,7 +108,7 @@ impl App {
             const NO_MODELS_ERROR: &str = concatcp!(
                 "There are no models to slice. Add one by going to File ",
                 CARET_RIGHT,
-                " Open Model or drag and drop a model file into the workspace."
+                " Import Model or drag and drop a model file into the workspace."
             );
             self.popup.open(Popup::simple(
                 "Slicing Error",
