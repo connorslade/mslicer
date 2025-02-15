@@ -32,6 +32,7 @@ pub struct ModelPipeline {
 struct ModelUniforms {
     transform: Matrix4<f32>,
     model_transform: Matrix4<f32>,
+    build_volume: Vector3<f32>,
     model_color: Vector4<f32>,
     camera_position: Vector3<f32>,
     camera_target: Vector3<f32>,
@@ -111,6 +112,7 @@ impl ModelPipeline {
             let uniforms = ModelUniforms {
                 transform: resources.transform * model_transform,
                 model_transform,
+                build_volume: resources.bed_size,
                 model_color: model.color.to_normalized_gamma_f32().into(),
                 camera_position: resources.camera.position(),
                 camera_target: resources.camera.target,

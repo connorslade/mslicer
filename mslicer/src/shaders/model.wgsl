@@ -3,6 +3,7 @@
 struct Context {
     transform: mat4x4<f32>,
     model_transform: mat4x4<f32>,
+    build_volume: vec3<f32>,
     model_color: vec4<f32>,
     camera_position: vec3<f32>,
     camera_target: vec3<f32>,
@@ -35,6 +36,10 @@ fn frag(in: VertexOutput) -> @location(0) vec4<f32> {
     let dx = dpdx(in.world_position);
     let normal = normalize(cross(dy, dx));
 
+    if outside_build_volume(in.world_position) {
+        return vec4<f32>(1.0, 0.0, 0.0, 1.0);
+    }
+
     if context.render_style == 0 {
         return vec4<f32>(normal, 1.0);
     } else {
@@ -48,4 +53,11 @@ fn frag(in: VertexOutput) -> @location(0) vec4<f32> {
         let intensity = (diffuse + specular + 0.1) * context.model_color.rgb;
         return vec4<f32>(intensity, context.model_color.a);
     }
+}
+
+fn outside_build_volume(pos: vec3<f32>) -> bool {
+    let build = context.build_volume / 2.0;
+    return pos.x < -build.x || pos.x > build.x
+        || pos.y < -build.y || pos.y > build.y
+        || pos.z < 0.0 || pos.x > context.build_volume.z;
 }

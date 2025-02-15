@@ -34,7 +34,7 @@ fn index(x: u32, y: u32) -> f32 {
 
 @fragment
 fn frag(in: VertexOutput) -> @location(0) vec4<f32> {
-let aspect = context.aspect * f32(context.dimensions.y) / f32(context.dimensions.x);
+    let aspect = context.aspect * f32(context.dimensions.y) / f32(context.dimensions.x);
     let pos = vec2(
         in.position.x * context.scale * aspect,
         in.position.y * context.scale
