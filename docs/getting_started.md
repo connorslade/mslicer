@@ -1,5 +1,3 @@
-# Getting Started
-
 Welcome to mslicer!
 
 Currently, mslicer can only output `.goo` files, which is a format spsific to [ELEGOO](https://www.elegoo.com) resin printers. In the future I plan to add support for other formats, but in the meantime you can use [UVTools](https://github.com/sn4k3/UVtools) to convert between formats.
