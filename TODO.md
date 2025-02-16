@@ -96,4 +96,4 @@
 - [ ] Save panel layout
 - [x] Random triangle color render mode
 - [ ] Dont clone Config every frame for no reason
-- [ ] Add button to reset UI
+- [x] Add button to reset UI

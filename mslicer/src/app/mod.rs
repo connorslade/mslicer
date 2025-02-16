@@ -81,12 +81,7 @@ impl App {
         if let Some(past_state) = &mut config.panels {
             *surface = mem::take(past_state);
         } else {
-            surface.split_right(NodeIndex::root(), 0.7, vec![Tab::About]);
-            let [_old_node, new_node] =
-                surface.split_left(NodeIndex::root(), 0.2, vec![Tab::Models]);
-            let [_old_node, new_node] =
-                surface.split_below(new_node, 0.5, vec![Tab::SliceConfig, Tab::Supports]);
-            surface.split_below(new_node, 0.5, vec![Tab::Workspace, Tab::RemotePrint]);
+            default_dock_layoyt(surface);
         }
 
         if surface.find_tab(&Tab::Viewport).is_none() {
@@ -228,6 +223,12 @@ impl App {
 
         self.meshes.write().push(rendered_mesh);
     }
+
+    pub fn reset_ui(&mut self) {
+        self.dock_state = DockState::new(vec![Tab::Viewport]);
+        let surface = self.dock_state.main_surface_mut();
+        default_dock_layoyt(surface);
+    }
 }
 
 impl eframe::App for App {
@@ -285,4 +286,12 @@ impl FpsTracker {
     pub fn frame_time(&self) -> f32 {
         self.last_frame_time
     }
+}
+
+fn default_dock_layoyt(surface: &mut Tree<Tab>) {
+    surface.split_right(NodeIndex::root(), 0.7, vec![Tab::About]);
+    let [_old_node, new_node] = surface.split_left(NodeIndex::root(), 0.2, vec![Tab::Models]);
+    let [_old_node, new_node] =
+        surface.split_below(new_node, 0.5, vec![Tab::SliceConfig, Tab::Supports]);
+    surface.split_below(new_node, 0.5, vec![Tab::Workspace, Tab::RemotePrint]);
 }
