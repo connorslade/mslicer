@@ -1,5 +1,9 @@
 @group(0) @binding(0) var<uniform> context: Context;
 
+const STYLE_NORMAL: u32 = 0;
+const STYLE_RANDOM: u32 = 1;
+const STYLE_RENDERD: u32 = 2;
+
 struct Context {
     transform: mat4x4<f32>,
     model_transform: mat4x4<f32>,
@@ -40,21 +44,28 @@ fn frag(in: VertexOutput) -> @location(0) vec4<f32> {
         return vec4<f32>(1.0, 0.0, 0.0, 1.0);
     }
 
-    if context.render_style == 0 {
-        return vec4<f32>(normal, 1.0);
-    } else if context.render_style == 1 {
-        seed = in.vertex_index;
-        return vec4f(rand(), rand(), rand(), 1.0);
-    } else {
-        let camera_direction = normalize(context.camera_position + context.camera_target);
+    switch context.render_style {
+        case STYLE_NORMAL: {
+            return vec4<f32>(normal, 1.0);
+        }
+        case STYLE_RANDOM: {
+            seed = in.vertex_index;
+            return vec4f(rand(), rand(), rand(), 1.0);
+        }
+        case STYLE_RENDERD: {
+            let camera_direction = normalize(context.camera_position + context.camera_target);
 
-        let diffuse = max(dot(normal, camera_direction), 0.0);
+            let diffuse = max(dot(normal, camera_direction), 0.0);
 
-        let reflect_dir = reflect(-camera_direction, normal);
-        let specular = pow(max(dot(camera_direction, reflect_dir), 0.0), 32.0);
+            let reflect_dir = reflect(-camera_direction, normal);
+            let specular = pow(max(dot(camera_direction, reflect_dir), 0.0), 32.0);
 
-        let intensity = (diffuse + specular + 0.1) * context.model_color.rgb;
-        return vec4<f32>(intensity, context.model_color.a);
+            let intensity = (diffuse + specular + 0.1) * context.model_color.rgb;
+            return vec4<f32>(intensity, context.model_color.a);
+        }
+        default: {
+            return vec4<f32>(0.0);
+        }
     }
 }
 
