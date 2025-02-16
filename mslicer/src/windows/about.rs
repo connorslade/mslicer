@@ -30,20 +30,19 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     });
 
     ui.add_space(8.0);
+
+    let last_page = app.state.docs_page;
     ui.horizontal(|ui| {
-        ui.selectable_value(
-            &mut app.state.docs_page,
-            DocsPage::GettingStarted,
-            "Getting Started",
-        );
-        ui.selectable_value(
-            &mut app.state.docs_page,
-            DocsPage::AnotherPage,
-            "Another Page",
-        );
+        for page in DocsPage::ALL {
+            ui.selectable_value(&mut app.state.docs_page, page, page.name());
+        }
     });
+
+    if last_page != app.state.docs_page || app.state.compiled_markdown.is_empty() {
+        app.state.compiled_markdown = CompiledMarkdown::compile(app.state.docs_page.source());
+    }
 
     ui.separator();
 
-    CompiledMarkdown::compile(include_str!("../../../docs/getting_started.md")).render(ui);
+    app.state.compiled_markdown.render(ui);
 }

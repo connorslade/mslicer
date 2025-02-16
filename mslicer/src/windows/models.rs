@@ -1,8 +1,8 @@
 use const_format::concatcp;
 use egui::{Context, Grid, Id, Ui};
 use egui_phosphor::regular::{
-    ARROWS_CLOCKWISE, ARROW_LINE_DOWN, COPY, DICE_THREE, EYE, EYE_SLASH, FLIP_HORIZONTAL, TRASH,
-    VECTOR_THREE,
+    ARROWS_CLOCKWISE, ARROW_LINE_DOWN, COPY, DICE_THREE, EYE, EYE_SLASH, FLIP_HORIZONTAL,
+    LINK_BREAK, LINK_SIMPLE, TRASH, VECTOR_THREE,
 };
 use slicer::Pos;
 
@@ -119,7 +119,11 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                         (mesh.mesh.scale() != scale).then(|| mesh.mesh.set_scale(scale));
 
                         mesh.locked_scale ^= ui
-                            .button(if mesh.locked_scale { "🔒" } else { "🔓" })
+                            .button(if mesh.locked_scale {
+                                LINK_SIMPLE
+                            } else {
+                                LINK_BREAK
+                            })
                             .clicked();
                     });
                     ui.end_row();

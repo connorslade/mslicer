@@ -1,16 +1,18 @@
 use bitflags::bitflags;
-use egui::{Align, Layout, RichText, Sense, TextStyle, Ui, Vec2};
+use egui::{Align, Layout, RichText, Sense, Shape, TextStyle, Ui, Vec2, Visuals};
 use markdown::{Block, Span};
 
 const BODY_SIZE: f32 = 12.5;
 const HEADING_SIZES: [f32; 6] = [18.0, 16.0, 14.0, 12.0, 10.0, 8.0];
 
+#[derive(Default)]
 pub struct CompiledMarkdown {
     nodes: Vec<Node>,
 }
 
 enum Node {
     Body(Vec<BodyNode>),
+    Code(String),
     Break,
 }
 
@@ -37,33 +39,11 @@ bitflags! {
     }
 }
 
-impl TextFlags {
-    pub fn apply(&self, mut text: RichText) -> RichText {
-        if self.contains(TextFlags::HEADER) {
-            text = text.heading();
-        }
-
-        if self.contains(TextFlags::WEAK) {
-            text = text.weak();
-        }
-
-        if self.contains(TextFlags::BOLD) {
-            text = text.strong();
-        }
-
-        if self.contains(TextFlags::ITALIC) {
-            text = text.italics();
-        }
-
-        if self.contains(TextFlags::MONOSPACE) {
-            text = text.monospace();
-        }
-
-        text
-    }
-}
-
 impl CompiledMarkdown {
+    pub fn is_empty(&self) -> bool {
+        self.nodes.is_empty()
+    }
+
     pub fn compile(source: &str) -> Self {
         let mut nodes = Vec::new();
 
@@ -77,14 +57,18 @@ impl CompiledMarkdown {
                     }
 
                     nodes.push(Node::Body(span_text(span, HEADING_SIZES[level - 1], flags)));
-                    nodes.push(Node::Break);
                 }
                 Block::Paragraph(span) => {
-                    nodes.push(Node::Body(span_text(span, BODY_SIZE, TextFlags::empty())));
-                    nodes.push(Node::Break);
+                    nodes.push(Node::Body(span_text(span, BODY_SIZE, TextFlags::empty())))
                 }
+                Block::CodeBlock(_lang, code) => nodes.push(Node::Code(code)),
                 _ => {}
             }
+            nodes.push(Node::Break);
+        }
+
+        if let Some(Node::Break) = nodes.last() {
+            nodes.pop();
         }
 
         Self { nodes }
@@ -105,13 +89,25 @@ impl CompiledMarkdown {
                             for node in body_nodes {
                                 match node {
                                     BodyNode::Text { text, size, flags } => {
-                                        ui.label(flags.apply(RichText::new(text).size(*size)));
+                                        ui.label(
+                                            flags.apply(
+                                                ui.visuals(),
+                                                RichText::new(text).size(*size),
+                                            ),
+                                        );
                                     }
                                     BodyNode::Link { text, url } => {
                                         ui.hyperlink_to(text, url).on_hover_text(url);
                                     }
                                 }
                             }
+                        }
+                        Node::Code(code) => {
+                            let placeholder = ui.painter().add(Shape::Noop);
+                            let mut rect = ui.monospace(code).rect.expand(1.0);
+                            rect.max.x = ui.max_rect().max.x;
+                            let shape = Shape::rect_filled(rect, 2.0, ui.visuals().code_bg_color);
+                            ui.painter().set(placeholder, shape);
                         }
                         Node::Break => {
                             ui.allocate_exact_size(Vec2::new(0.0, row_height), Sense::hover());
@@ -122,6 +118,32 @@ impl CompiledMarkdown {
                 }
             },
         );
+    }
+}
+
+impl TextFlags {
+    pub fn apply(&self, visuals: &Visuals, mut text: RichText) -> RichText {
+        if self.contains(TextFlags::HEADER) {
+            text = text.heading();
+        }
+
+        if self.contains(TextFlags::WEAK) {
+            text = text.weak();
+        }
+
+        if self.contains(TextFlags::BOLD) {
+            text = text.strong();
+        }
+
+        if self.contains(TextFlags::ITALIC) {
+            text = text.italics();
+        }
+
+        if self.contains(TextFlags::MONOSPACE) {
+            text = text.monospace().background_color(visuals.code_bg_color);
+        }
+
+        text
     }
 }
 
