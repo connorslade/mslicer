@@ -6,10 +6,11 @@ use std::{
 
 use anyhow::Result;
 use eframe::Theme;
+use egui_dock::Tree;
 use serde::{Deserialize, Serialize};
 use tracing::{info, warn};
 
-use crate::render::pipelines::model::RenderStyle;
+use crate::{render::pipelines::model::RenderStyle, windows::Tab};
 
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(default)]
@@ -18,6 +19,7 @@ pub struct Config {
     pub grid_size: f32,
     pub theme: Theme,
     pub recent_projects: Vec<PathBuf>,
+    pub panels: Option<Tree<Tab>>,
 
     // Remote print settings
     pub alert_print_completion: bool,
@@ -74,6 +76,7 @@ impl Default for Config {
             theme: Theme::Dark,
 
             recent_projects: Vec::new(),
+            panels: None,
 
             alert_print_completion: false,
             init_remote_print_at_startup: false,

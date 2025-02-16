@@ -18,7 +18,7 @@ eframe = { version = "0.27.2", features = ["wgpu", "serde"] }
 egui = "0.27.2"
 egui-phosphor = { git = "https://github.com/connorslade/egui-phosphor" }
 egui-wgpu = "0.27.2"
-egui_dock = "0.12.0"
+egui_dock = { version = "0.12.0", features = ["serde"] }
 egui_tracing = "0.2.2"
 encase = { version = "0.8.0", features = ["nalgebra"] }
 image = "0.25.1"

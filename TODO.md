@@ -95,3 +95,5 @@
 - [x] Visulize mesh outside of bounging box
 - [ ] Save panel layout
 - [x] Random triangle color render mode
+- [ ] Dont clone Config every frame for no reason
+- [ ] Add button to reset UI

@@ -4,6 +4,7 @@ use egui_dock::{DockArea, NodeIndex, SurfaceIndex, TabViewer};
 use egui_wgpu::Callback;
 use nalgebra::Matrix4;
 use parking_lot::MappedRwLockWriteGuard;
+use serde::{Deserialize, Serialize};
 
 use crate::{app::App, render::workspace::WorkspaceRenderCallback};
 
@@ -22,7 +23,7 @@ struct Tabs<'a> {
     ctx: &'a Context,
 }
 
-#[derive(Hash, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Hash, PartialEq, Eq)]
 pub enum Tab {
     About,
     Logs,

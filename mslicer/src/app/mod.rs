@@ -1,5 +1,6 @@
 use std::{
     io::{BufRead, Seek},
+    mem,
     path::PathBuf,
     sync::Arc,
     thread,
@@ -10,7 +11,7 @@ use clone_macro::clone;
 use const_format::concatcp;
 use eframe::Theme;
 use egui::{Vec2, Visuals};
-use egui_dock::{DockState, NodeIndex};
+use egui_dock::{DockState, NodeIndex, Tree};
 use egui_phosphor::regular::CARET_RIGHT;
 use egui_tracing::EventCollector;
 use egui_wgpu::RenderState;
@@ -71,15 +72,26 @@ impl App {
     pub fn new(
         render_state: RenderState,
         config_dir: PathBuf,
-        config: Config,
+        mut config: Config,
         event_collector: EventCollector,
     ) -> Self {
         let mut dock_state = DockState::new(vec![Tab::Viewport]);
         let surface = dock_state.main_surface_mut();
-        let [_old_node, new_node] = surface.split_left(NodeIndex::root(), 0.20, vec![Tab::Models]);
-        let [_old_node, new_node] =
-            surface.split_below(new_node, 0.5, vec![Tab::SliceConfig, Tab::Supports]);
-        surface.split_below(new_node, 0.5, vec![Tab::Workspace, Tab::RemotePrint]);
+
+        if let Some(past_state) = &mut config.panels {
+            *surface = mem::take(past_state);
+        } else {
+            surface.split_right(NodeIndex::root(), 0.7, vec![Tab::About]);
+            let [_old_node, new_node] =
+                surface.split_left(NodeIndex::root(), 0.2, vec![Tab::Models]);
+            let [_old_node, new_node] =
+                surface.split_below(new_node, 0.5, vec![Tab::SliceConfig, Tab::Supports]);
+            surface.split_below(new_node, 0.5, vec![Tab::Workspace, Tab::RemotePrint]);
+        }
+
+        if surface.find_tab(&Tab::Viewport).is_none() {
+            *surface = Tree::new(vec![Tab::Viewport]);
+        }
 
         Self {
             render_state,
@@ -246,6 +258,7 @@ impl eframe::App for App {
 
 impl Drop for App {
     fn drop(&mut self) {
+        self.config.panels = Some(self.dock_state.main_surface().clone());
         if let Err(err) = self.config.save(&self.config_dir) {
             warn!("Failed to save config: {}", err);
             return;
