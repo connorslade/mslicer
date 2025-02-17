@@ -97,3 +97,5 @@
 - [x] Random triangle color render mode
 - [ ] Dont clone Config every frame for no reason
 - [x] Add button to reset UI
+- [ ] Put all models in the same segments1d to improve slicing times with supports?
+- [ ] Island detection

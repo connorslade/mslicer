@@ -85,11 +85,6 @@ pub fn ui(app: &mut App, ctx: &Context) {
 
                 ui.separator();
 
-                if ui.button("Reset UI").clicked() {
-                    app.reset_ui();
-                    ui.close_menu();
-                }
-
                 let quit_button =
                     ui.add(Button::new("Quit").shortcut_text(ctx.format_shortcut(&QUIT_SHORTCUT)));
                 quit_button.clicked().then(|| quit(ctx));

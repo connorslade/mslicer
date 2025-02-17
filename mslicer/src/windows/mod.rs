@@ -37,6 +37,17 @@ pub enum Tab {
 }
 
 impl Tab {
+    const ALL: [Tab; 8] = [
+        Tab::About,
+        Tab::Logs,
+        Tab::Models,
+        Tab::RemotePrint,
+        Tab::SliceConfig,
+        Tab::SliceOperation,
+        Tab::Supports,
+        Tab::Workspace,
+    ];
+
     pub fn name(&self) -> &'static str {
         match self {
             Tab::About => "About",
@@ -73,25 +84,22 @@ impl TabViewer for Tabs<'_> {
         }
     }
 
-    fn add_popup(&mut self, ui: &mut Ui, _surface: SurfaceIndex, _node: NodeIndex) {
+    fn add_popup(&mut self, ui: &mut Ui, surface: SurfaceIndex, node: NodeIndex) {
         ui.set_min_width(120.0);
         ui.style_mut().visuals.button_frame = false;
 
-        for tab in [
-            Tab::About,
-            Tab::Logs,
-            Tab::Models,
-            Tab::RemotePrint,
-            Tab::SliceConfig,
-            Tab::SliceOperation,
-            Tab::Supports,
-            Tab::Workspace,
-        ] {
-            let already_open = self.app.dock_state.find_tab(&tab).is_some();
-            if !already_open {
-                ui.button(tab.name())
-                    .clicked()
-                    .then(|| self.app.dock_state.add_window(vec![tab]));
+        let dock_state = &mut self.app.dock_state;
+
+        for tab in Tab::ALL {
+            let already_open = dock_state.find_tab(&tab).is_some();
+            if !already_open && ui.button(tab.name()).clicked() {
+                if let Some(surface) = dock_state.get_surface_mut(surface) {
+                    let tree = surface.node_tree_mut().unwrap();
+                    tree.set_focused_node(node);
+                    tree.push_to_focused_leaf(tab);
+                } else {
+                    dock_state.add_window(vec![tab]);
+                }
             }
         }
     }

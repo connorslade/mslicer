@@ -59,7 +59,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                 .show(ui, |ui| {
                     ui.label("Actions");
                     ui.vertical(|ui| {
-                        ui.horizontal(|ui| {
+                        ui.horizontal_wrapped(|ui| {
                             ui.button(concatcp!(TRASH, " Delete"))
                                 .clicked()
                                 .then(|| action = Action::Remove(i));
@@ -69,9 +69,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                             ui.button(concatcp!(ARROW_LINE_DOWN, " Align to Bed"))
                                 .clicked()
                                 .then(|| mesh.align_to_bed());
-                        });
 
-                        ui.horizontal(|ui| {
                             ui.menu_button(concatcp!(VECTOR_THREE, " Normals"), |ui| {
                                 if ui
                                     .button(concatcp!(ARROWS_CLOCKWISE, " Recompute"))

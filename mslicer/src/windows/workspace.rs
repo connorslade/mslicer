@@ -1,7 +1,7 @@
 use const_format::concatcp;
 use eframe::Theme;
 use egui::{ComboBox, Context, DragValue, Grid, Ui};
-use egui_phosphor::regular::{ARROW_COUNTER_CLOCKWISE, FOLDER};
+use egui_phosphor::regular::{ARROW_COUNTER_CLOCKWISE, FOLDER, LAYOUT};
 use tracing::error;
 
 use crate::{
@@ -13,7 +13,7 @@ use crate::{
 pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     ui.heading("Config");
 
-    ui.horizontal(|ui| {
+    ui.horizontal_wrapped(|ui| {
         if ui
             .button(concatcp!(FOLDER, " Open Config Directory"))
             .clicked()
@@ -28,6 +28,10 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
             .clicked()
         {
             app.config = Default::default();
+        }
+
+        if ui.button(concatcp!(LAYOUT, " Reset UI")).clicked() {
+            app.reset_ui();
         }
     });
     ui.add_space(8.0);
