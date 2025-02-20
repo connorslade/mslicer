@@ -7,7 +7,7 @@ impl Default for Header {
         Self {
             version: SizedString::new(b"V3.0"),
             software_info: SizedString::new(b"mslicer by Connor Slade"),
-            software_version: SizedString::new(b"0.1.0"),
+            software_version: SizedString::new(env!("CARGO_PKG_VERSION").as_bytes()),
             file_time: SizedString::new(b""),
             printer_name: SizedString::new(b"standard"),
             printer_type: SizedString::new(b"Default"),

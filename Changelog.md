@@ -1,6 +1,6 @@
 # Changelog
 
-## v0.2.0 &mdash; Coming Soon
+## v0.2.0 &mdash; Feb 19, 2025
 
 - Convert slice operation window to a dockable panel
 - Render parts of models that go beyond the print volume red
