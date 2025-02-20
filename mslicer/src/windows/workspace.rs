@@ -30,9 +30,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
             app.config = Default::default();
         }
 
-        if ui.button(concatcp!(LAYOUT, " Reset UI")).clicked() {
-            app.reset_ui();
-        }
+        app.state.queue_reset_ui |= ui.button(concatcp!(LAYOUT, " Reset UI")).clicked();
     });
     ui.add_space(8.0);
 

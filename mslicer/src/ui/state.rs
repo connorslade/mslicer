@@ -9,6 +9,7 @@ pub struct UiState {
     pub event_collector: EventCollector,
     pub line_support_config: LineSupportConfig,
     pub line_support_debug: Vec<[Vector3<f32>; 2]>,
+    pub queue_reset_ui: bool,
 
     // remote send ui
     pub working_address: String,

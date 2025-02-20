@@ -81,7 +81,7 @@ impl App {
         if let Some(past_state) = &mut config.panels {
             *surface = mem::take(past_state);
         } else {
-            default_dock_layoyt(surface);
+            default_dock_layout(surface);
         }
 
         if surface.find_tab(&Tab::Viewport).is_none() {
@@ -227,7 +227,7 @@ impl App {
     pub fn reset_ui(&mut self) {
         self.dock_state = DockState::new(vec![Tab::Viewport]);
         let surface = self.dock_state.main_surface_mut();
-        default_dock_layoyt(surface);
+        default_dock_layout(surface);
     }
 }
 
@@ -288,7 +288,7 @@ impl FpsTracker {
     }
 }
 
-fn default_dock_layoyt(surface: &mut Tree<Tab>) {
+fn default_dock_layout(surface: &mut Tree<Tab>) {
     surface.split_right(NodeIndex::root(), 0.7, vec![Tab::About]);
     let [_old_node, new_node] = surface.split_left(NodeIndex::root(), 0.2, vec![Tab::Models]);
     let [_old_node, new_node] =

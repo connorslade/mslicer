@@ -1,3 +1,5 @@
+use std::mem;
+
 use eframe::Theme;
 use egui::{CentralPanel, Color32, Context, Frame, Id, Sense, Ui, WidgetText};
 use egui_dock::{DockArea, NodeIndex, SurfaceIndex, TabViewer};
@@ -123,6 +125,10 @@ impl TabViewer for Tabs<'_> {
 
 pub fn ui(app: &mut App, ctx: &Context) {
     top_bar::ui(app, ctx);
+
+    if mem::take(&mut app.state.queue_reset_ui) {
+        app.reset_ui();
+    }
 
     CentralPanel::default()
         .frame(Frame::none())
