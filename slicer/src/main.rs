@@ -8,6 +8,7 @@ use std::{
 
 use anyhow::Result;
 use clap::Parser;
+use log::{debug, warn};
 use nalgebra::{Vector2, Vector3};
 
 use common::{
@@ -27,6 +28,8 @@ struct Args {
 }
 
 fn main() -> Result<()> {
+    env_logger::init();
+
     let args = Args::parse();
 
     let slice_config = SliceConfig {
@@ -69,6 +72,14 @@ fn main() -> Result<()> {
         center.y as f32 - mesh_center.y,
         mesh.position().z - 0.05,
     ));
+
+    let mesh_size = max - min;
+    debug!("mesh_size: {}", mesh_size);
+    debug!("platform_size: {}", slice_config.platform_size);
+
+    if mesh_size.x > slice_config.platform_size.x || mesh_size.y > slice_config.platform_size.y || mesh_size.z > slice_config.platform_size.z {
+        warn!("WARNING: model bounds ({}) exceeds printer bounds ({}); print may be truncated", mesh_size, slice_config.platform_size);
+    }
 
     println!(
         "Loaded mesh. {{ vert: {}, face: {} }}",

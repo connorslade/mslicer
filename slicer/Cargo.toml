@@ -6,7 +6,9 @@ edition = "2021"
 [dependencies]
 anyhow.workspace = true
 clap.workspace = true
+env_logger.workspace = true
 image.workspace = true
+log.workspace = true
 nalgebra.workspace = true
 obj-rs.workspace = true
 ordered-float.workspace = true
