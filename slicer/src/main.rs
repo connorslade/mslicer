@@ -25,6 +25,16 @@ struct Args {
     input_file: PathBuf,
     /// Path to the .goo file
     output_file: PathBuf,
+
+    /// Rotate the model (in degrees, about the z axis) before slicing it
+    #[clap(long)]
+    rotate_xy: Option<f32>,
+    /// Rotate the model (in degrees, about the y axis) before slicing it
+    #[clap(long)]
+    rotate_xz: Option<f32>,
+    /// Rotate the model (in degrees, about the x axis) before slicing it
+    #[clap(long)]
+    rotate_yz: Option<f32>,
 }
 
 fn main() -> Result<()> {
@@ -54,6 +64,19 @@ fn main() -> Result<()> {
     let file = File::open(args.input_file)?;
     let mut buf = BufReader::new(file);
     let mut mesh = load_mesh(&mut buf, "stl")?;
+
+    let mut rotate = mesh.rotation();
+    if let Some(r) = args.rotate_xy {
+        rotate.z += r.to_radians();
+    }
+    if let Some(r) = args.rotate_xz {
+        rotate.y += r.to_radians();
+    }
+    if let Some(r) = args.rotate_yz {
+        rotate.x += r.to_radians();
+    }
+    mesh.set_rotation(rotate);
+
     let (min, max) = mesh.bounds();
 
     // Scale the model into printer-space (mm => px)
