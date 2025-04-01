@@ -1,11 +1,13 @@
 use std::{
     fs::{self, File},
     io::{stdout, BufReader, Write},
+    path::PathBuf,
     thread,
     time::Instant,
 };
 
 use anyhow::Result;
+use clap::Parser;
 use nalgebra::{Vector2, Vector3};
 
 use common::{
@@ -16,9 +18,16 @@ use common::{
 use goo_format::{File as GooFile, LayerEncoder};
 use slicer::{mesh::load_mesh, slicer::Slicer, Pos};
 
+#[derive(Parser)]
+struct Args {
+    /// Path to the .stl file
+    input_file: PathBuf,
+    /// Path to the .goo file
+    output_file: PathBuf,
+}
+
 fn main() -> Result<()> {
-    const FILE_PATH: &str = "teapot.stl";
-    const OUTPUT_PATH: &str = "output.goo";
+    let args = Args::parse();
 
     let slice_config = SliceConfig {
         format: Format::Goo,
@@ -39,7 +48,7 @@ fn main() -> Result<()> {
         transition_layers: 10,
     };
 
-    let file = File::open(FILE_PATH)?;
+    let file = File::open(args.input_file)?;
     let mut buf = BufReader::new(file);
     let mut mesh = load_mesh(&mut buf, "stl")?;
     let (min, max) = mesh.bounds();
@@ -90,7 +99,7 @@ fn main() -> Result<()> {
     // Once slicing is complete write to a .goo file
     let mut serializer = DynamicSerializer::new();
     goo.join().unwrap().serialize(&mut serializer);
-    fs::write(OUTPUT_PATH, serializer.into_inner())?;
+    fs::write(args.output_file, serializer.into_inner())?;
 
     println!("\nDone. Elapsed: {:.1}s", now.elapsed().as_secs_f32());
 
