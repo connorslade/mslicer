@@ -1,11 +1,14 @@
 use std::{
     fs::{self, File},
     io::{stdout, BufReader, Write},
+    path::PathBuf,
     thread,
     time::Instant,
 };
 
 use anyhow::Result;
+use clap::Parser;
+use log::{debug, warn};
 use nalgebra::{Vector2, Vector3};
 
 use common::{
@@ -16,9 +19,28 @@ use common::{
 use goo_format::{File as GooFile, LayerEncoder};
 use slicer::{mesh::load_mesh, slicer::Slicer, Pos};
 
+#[derive(Parser)]
+struct Args {
+    /// Path to the .stl file
+    input_file: PathBuf,
+    /// Path to the .goo file
+    output_file: PathBuf,
+
+    /// Rotate the model (in degrees, about the z axis) before slicing it
+    #[clap(long)]
+    rotate_xy: Option<f32>,
+    /// Rotate the model (in degrees, about the y axis) before slicing it
+    #[clap(long)]
+    rotate_xz: Option<f32>,
+    /// Rotate the model (in degrees, about the x axis) before slicing it
+    #[clap(long)]
+    rotate_yz: Option<f32>,
+}
+
 fn main() -> Result<()> {
-    const FILE_PATH: &str = "teapot.stl";
-    const OUTPUT_PATH: &str = "output.goo";
+    env_logger::init();
+
+    let args = Args::parse();
 
     let slice_config = SliceConfig {
         format: Format::Goo,
@@ -39,9 +61,22 @@ fn main() -> Result<()> {
         transition_layers: 10,
     };
 
-    let file = File::open(FILE_PATH)?;
+    let file = File::open(args.input_file)?;
     let mut buf = BufReader::new(file);
     let mut mesh = load_mesh(&mut buf, "stl")?;
+
+    let mut rotate = mesh.rotation();
+    if let Some(r) = args.rotate_xy {
+        rotate.z += r.to_radians();
+    }
+    if let Some(r) = args.rotate_xz {
+        rotate.y += r.to_radians();
+    }
+    if let Some(r) = args.rotate_yz {
+        rotate.x += r.to_radians();
+    }
+    mesh.set_rotation(rotate);
+
     let (min, max) = mesh.bounds();
 
     // Scale the model into printer-space (mm => px)
@@ -60,6 +95,14 @@ fn main() -> Result<()> {
         center.y as f32 - mesh_center.y,
         mesh.position().z - 0.05,
     ));
+
+    let mesh_size = max - min;
+    debug!("mesh_size: {}", mesh_size);
+    debug!("platform_size: {}", slice_config.platform_size);
+
+    if mesh_size.x > slice_config.platform_size.x || mesh_size.y > slice_config.platform_size.y || mesh_size.z > slice_config.platform_size.z {
+        warn!("WARNING: model bounds ({}) exceeds printer bounds ({}); print may be truncated", mesh_size, slice_config.platform_size);
+    }
 
     println!(
         "Loaded mesh. {{ vert: {}, face: {} }}",
@@ -90,7 +133,7 @@ fn main() -> Result<()> {
     // Once slicing is complete write to a .goo file
     let mut serializer = DynamicSerializer::new();
     goo.join().unwrap().serialize(&mut serializer);
-    fs::write(OUTPUT_PATH, serializer.into_inner())?;
+    fs::write(args.output_file, serializer.into_inner())?;
 
     println!("\nDone. Elapsed: {:.1}s", now.elapsed().as_secs_f32());
 
