@@ -89,7 +89,7 @@ pub struct ModelArgs {
     pub scale: Vec<Vector3<f32>>,
 }
 
-#[derive(Default, Debug)]
+#[derive(Debug)]
 pub struct CliMesh {
     pub path: PathBuf,
     pub position: Vector3<f32>,
@@ -128,7 +128,7 @@ impl CliMesh {
     pub fn from_matches(matches: &ArgMatches) -> Vec<Self> {
         let mut meshes = matches
             .get_many::<PathBuf>("mesh")
-            .unwrap()
+            .expect("No meshes defined")
             .zip(matches.indices_of("mesh").unwrap())
             .map(|x| {
                 (
@@ -152,7 +152,10 @@ impl CliMesh {
             };
 
             for (instance, idx) in instances.zip(matches.indices_of(key).unwrap()) {
-                let mesh = meshes.iter_mut().rfind(|x| idx > x.0).unwrap();
+                let mesh = meshes
+                    .iter_mut()
+                    .rfind(|x| idx > x.0)
+                    .expect("Mesh parameter before mesh");
                 *value(&mut mesh.1) = instance.to_owned();
             }
         }
@@ -162,6 +165,17 @@ impl CliMesh {
         apply_transform(matches, &mut meshes, "position", |mesh| &mut mesh.position);
 
         meshes.into_iter().map(|x| x.1).collect()
+    }
+}
+
+impl Default for CliMesh {
+    fn default() -> Self {
+        Self {
+            path: PathBuf::default(),
+            position: Vector3::zeros(),
+            rotation: Vector3::zeros(),
+            scale: Vector3::repeat(1.0),
+        }
     }
 }
 

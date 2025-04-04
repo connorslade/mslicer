@@ -9,10 +9,9 @@ It also exposes a CLI for slicing models, open the dropdown below to see it's he
 ```plain
 mslicer command line interface
 
-Usage: slicer [OPTIONS] <MESH|--position <POSITION>|--rotation <ROTATION>|--scale <SCALE>> <OUTPUT>
+Usage: slicer [OPTIONS] <--mesh <MESH>|--position <POSITION>|--rotation <ROTATION>|--scale <SCALE>> <OUTPUT>
 
 Arguments:
-  <MESH>    Path to a .stl or .obj file
   <OUTPUT>  File to save sliced result to. Currently only .goo files can be generated
 
 Options:
@@ -42,12 +41,14 @@ Options:
           The speed to lift the platform after exposing each first layer, in mm/min [default: 65]
       --first-retract-speed <FIRST_RETRACT_SPEED>
           The speed to retract (move down) the platform after exposing each first layer, in mm/min [default: 150]
+      --mesh <MESH>
+          Path to a .stl or .obj file
       --position <POSITION>
-          Location of the bottom center of model bounding box. The origin is the center of the build plate [default: "0, 0, 0"]
+          Location of the bottom center of model bounding box. The origin is the center of the build plate
       --rotation <ROTATION>
-          Rotation of the model in degrees, pitch, roll, yaw [default: "0, 0, 0"]
+          Rotation of the model in degrees, pitch, roll, yaw
       --scale <SCALE>
-          Scale of the model along the X, Y, and Z axes [default: "1, 1, 1"]
+          Scale of the model along the X, Y, and Z axes
   -h, --help
           Print help
 ```
