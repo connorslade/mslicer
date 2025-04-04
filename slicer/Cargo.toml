@@ -22,6 +22,10 @@ goo_format = { path = "../goo_format" }
 [dev-dependencies]
 criterion.workspace = true
 
+[[bin]]
+name = "slicer"
+path = "bin/main.rs"
+
 [[bench]]
 name = "benchmark"
 harness = false

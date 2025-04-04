@@ -1,7 +1,7 @@
-use std::{path::PathBuf, str::FromStr};
+use std::{any::Any, path::PathBuf, str::FromStr};
 
 use anyhow::{Context, Ok, Result};
-use clap::Parser;
+use clap::{ArgMatches, Parser};
 use common::{
     config::{ExposureConfig, SliceConfig},
     format::Format,
@@ -71,20 +71,29 @@ pub struct Args {
 #[derive(clap::Args, Debug)]
 #[group(required = true)]
 pub struct ModelArgs {
+    #[arg(long)]
     /// Path to a .stl or .obj file
-    pub mesh: PathBuf,
+    pub mesh: Vec<PathBuf>,
 
-    #[arg(long, default_value = "0, 0, 0", value_parser = vector_value_parser::<f32, 3>)]
+    #[arg(long, value_parser = vector_value_parser::<f32, 3>)]
     /// Location of the bottom center of model bounding box. The origin is the
     /// center of the build plate.
-    pub position: Vector3<f32>,
+    pub position: Vec<Vector3<f32>>,
 
-    #[arg(long, default_value = "0, 0, 0", value_parser = vector_value_parser::<f32, 3>)]
+    #[arg(long, value_parser = vector_value_parser::<f32, 3>)]
     /// Rotation of the model in degrees, pitch, roll, yaw.
-    pub rotation: Vector3<f32>,
+    pub rotation: Vec<Vector3<f32>>,
 
-    #[arg(long, default_value = "1, 1, 1", value_parser = vector_value_parser::<f32, 3>)]
+    #[arg(long, value_parser = vector_value_parser::<f32, 3>)]
     /// Scale of the model along the X, Y, and Z axes.
+    pub scale: Vec<Vector3<f32>>,
+}
+
+#[derive(Default, Debug)]
+pub struct CliMesh {
+    pub path: PathBuf,
+    pub position: Vector3<f32>,
+    pub rotation: Vector3<f32>,
     pub scale: Vector3<f32>,
 }
 
@@ -112,6 +121,47 @@ impl Args {
             first_layers: self.first_layers,
             transition_layers: self.transition_layers,
         }
+    }
+}
+
+impl CliMesh {
+    pub fn from_matches(matches: &ArgMatches) -> Vec<Self> {
+        let mut meshes = matches
+            .get_many::<PathBuf>("mesh")
+            .unwrap()
+            .zip(matches.indices_of("mesh").unwrap())
+            .map(|x| {
+                (
+                    x.1,
+                    CliMesh {
+                        path: x.0.to_owned(),
+                        ..Default::default()
+                    },
+                )
+            })
+            .collect::<Vec<_>>();
+
+        fn apply_transform<T: Any + Clone + Send + Sync + 'static>(
+            matches: &clap::ArgMatches,
+            meshes: &mut [(usize, CliMesh)],
+            key: &str,
+            value: impl Fn(&mut CliMesh) -> &mut T,
+        ) {
+            let Some(instances) = matches.get_many::<T>(key) else {
+                return;
+            };
+
+            for (instance, idx) in instances.zip(matches.indices_of(key).unwrap()) {
+                let mesh = meshes.iter_mut().rfind(|x| idx > x.0).unwrap();
+                *value(&mut mesh.1) = instance.to_owned();
+            }
+        }
+
+        apply_transform(matches, &mut meshes, "scale", |mesh| &mut mesh.scale);
+        apply_transform(matches, &mut meshes, "rotation", |mesh| &mut mesh.rotation);
+        apply_transform(matches, &mut meshes, "position", |mesh| &mut mesh.position);
+
+        meshes.into_iter().map(|x| x.1).collect()
     }
 }
 
