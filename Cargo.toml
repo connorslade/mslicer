@@ -29,6 +29,7 @@ markdown = "0.3.0"
 md5 = "0.7.0"
 nalgebra = { version = "0.32.6", features = ["serde-serialize"] }
 notify-rust = "4.11.0"
+num-traits = "0.2.19"
 obj-rs = "0.7.1"
 open = "5.3.0"
 ordered-float = "4.2.0"

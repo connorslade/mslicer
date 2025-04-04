@@ -4491,11 +4491,13 @@ name = "slicer"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "clap",
  "common",
  "criterion",
  "goo_format",
  "image 0.25.1",
  "nalgebra 0.32.6",
+ "num-traits",
  "obj-rs",
  "ordered-float",
  "parking_lot",

@@ -5,8 +5,10 @@ edition = "2021"
 
 [dependencies]
 anyhow.workspace = true
+clap.workspace = true
 image.workspace = true
 nalgebra.workspace = true
+num-traits.workspace = true
 obj-rs.workspace = true
 ordered-float.workspace = true
 parking_lot.workspace = true
