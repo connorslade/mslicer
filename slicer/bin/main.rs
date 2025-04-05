@@ -6,9 +6,8 @@ use std::{
 };
 
 use anyhow::Result;
-use args::{Args, CliMesh};
+use args::{Args, Model};
 use clap::{CommandFactory, FromArgMatches};
-use nalgebra::Vector3;
 
 use common::serde::DynamicSerializer;
 use goo_format::{File as GooFile, LayerEncoder};
@@ -19,42 +18,35 @@ mod args;
 fn main() -> Result<()> {
     let matches = Args::command().get_matches();
     let args = Args::from_arg_matches(&matches)?;
+    let models = Model::from_matches(&matches);
+
     let slice_config = args.slice_config();
-    let cli_meshes = CliMesh::from_matches(&matches);
+    let mm_to_px = args.mm_to_px();
 
     let mut meshes = Vec::new();
 
-    for cli_mesh in cli_meshes {
-        let ext = cli_mesh.path.extension().unwrap().to_string_lossy();
-        let file = File::open(&cli_mesh.path)?;
+    for model in models {
+        let ext = model.path.extension().unwrap().to_string_lossy();
+        let file = File::open(&model.path)?;
 
         let mut buf = BufReader::new(file);
         let mut mesh = load_mesh(&mut buf, &ext)?;
 
-        // Scale the model into printer-space (mm => px)
-        mesh.set_scale(cli_mesh.scale.component_div(&Vector3::new(
-            slice_config.platform_size.x * slice_config.platform_resolution.x as f32,
-            slice_config.platform_size.y * slice_config.platform_resolution.y as f32,
-            1.0,
-        )));
-
-        mesh.set_rotation(cli_mesh.rotation);
+        mesh.set_scale(model.scale);
+        mesh.set_rotation(model.rotation);
 
         // Center the model
         let (min, max) = mesh.bounds();
-        let center = slice_config.platform_resolution / 2;
         let mesh_center = (min + max) / 2.0;
-        mesh.set_position(
-            Vector3::new(
-                center.x as f32 - mesh_center.x,
-                center.y as f32 - mesh_center.y,
-                mesh.position().z - 0.05,
-            ) + cli_mesh.position,
-        );
+        let center = (slice_config.platform_resolution / 2).map(|x| x as f32);
+        mesh.set_position((center - mesh_center.xy()).to_homogeneous() + model.position);
+
+        // Scale the model into printer-space (mm => px)
+        mesh.set_scale(model.scale.component_mul(&mm_to_px));
 
         println!(
             "Loaded `{}`. {{ vert: {}, face: {} }}",
-            cli_mesh.path.file_name().unwrap().to_string_lossy(),
+            model.path.file_name().unwrap().to_string_lossy(),
             mesh.vertex_count(),
             mesh.face_count()
         );

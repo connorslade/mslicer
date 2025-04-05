@@ -90,7 +90,7 @@ pub struct ModelArgs {
 }
 
 #[derive(Debug)]
-pub struct CliMesh {
+pub struct Model {
     pub path: PathBuf,
     pub position: Vector3<f32>,
     pub rotation: Vector3<f32>,
@@ -122,30 +122,37 @@ impl Args {
             transition_layers: self.transition_layers,
         }
     }
+
+    pub fn mm_to_px(&self) -> Vector3<f32> {
+        Vector3::new(
+            self.platform_resolution.x as f32 / self.platform_size.x,
+            self.platform_resolution.y as f32 / self.platform_size.y,
+            1.0,
+        )
+    }
 }
 
-impl CliMesh {
+impl Model {
+    fn new(path: PathBuf) -> Self {
+        Self {
+            path,
+            ..Default::default()
+        }
+    }
+
     pub fn from_matches(matches: &ArgMatches) -> Vec<Self> {
         let mut meshes = matches
             .get_many::<PathBuf>("mesh")
             .expect("No meshes defined")
             .zip(matches.indices_of("mesh").unwrap())
-            .map(|x| {
-                (
-                    x.1,
-                    CliMesh {
-                        path: x.0.to_owned(),
-                        ..Default::default()
-                    },
-                )
-            })
+            .map(|x| (x.1, Model::new(x.0.to_owned())))
             .collect::<Vec<_>>();
 
-        fn apply_transform<T: Any + Clone + Send + Sync + 'static>(
+        fn model_parameter<T: Any + Clone + Send + Sync + 'static>(
             matches: &clap::ArgMatches,
-            meshes: &mut [(usize, CliMesh)],
+            meshes: &mut [(usize, Model)],
             key: &str,
-            value: impl Fn(&mut CliMesh) -> &mut T,
+            value: impl Fn(&mut Model) -> &mut T,
         ) {
             let Some(instances) = matches.get_many::<T>(key) else {
                 return;
@@ -160,15 +167,15 @@ impl CliMesh {
             }
         }
 
-        apply_transform(matches, &mut meshes, "scale", |mesh| &mut mesh.scale);
-        apply_transform(matches, &mut meshes, "rotation", |mesh| &mut mesh.rotation);
-        apply_transform(matches, &mut meshes, "position", |mesh| &mut mesh.position);
+        model_parameter(matches, &mut meshes, "scale", |mesh| &mut mesh.scale);
+        model_parameter(matches, &mut meshes, "rotation", |mesh| &mut mesh.rotation);
+        model_parameter(matches, &mut meshes, "position", |mesh| &mut mesh.position);
 
         meshes.into_iter().map(|x| x.1).collect()
     }
 }
 
-impl Default for CliMesh {
+impl Default for Model {
     fn default() -> Self {
         Self {
             path: PathBuf::default(),
@@ -179,7 +186,7 @@ impl Default for CliMesh {
     }
 }
 
-pub fn vector_value_parser<T, const N: usize>(
+fn vector_value_parser<T, const N: usize>(
     raw: &str,
 ) -> Result<Matrix<T, Const<N>, U1, ArrayStorage<T, N, 1>>>
 where

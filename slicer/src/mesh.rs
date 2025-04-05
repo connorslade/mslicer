@@ -340,9 +340,9 @@ impl Default for Mesh {
             transformation_matrix: Matrix4::identity(),
             inv_transformation_matrix: Matrix4::identity(),
 
-            position: Pos::new(0.0, 0.0, 0.0),
-            scale: Pos::new(1.0, 1.0, 1.0),
-            rotation: Pos::new(0.0, 0.0, 0.0),
+            position: Pos::repeat(0.0),
+            scale: Pos::repeat(1.0),
+            rotation: Pos::repeat(0.0),
         }
     }
 }
