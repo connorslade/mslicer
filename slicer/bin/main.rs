@@ -8,9 +8,10 @@ use std::{
 use anyhow::Result;
 use args::{Args, Model};
 use clap::{CommandFactory, FromArgMatches};
+use image::{imageops::FilterType, io::Reader as ImageReader};
 
 use common::serde::DynamicSerializer;
-use goo_format::{File as GooFile, LayerEncoder};
+use goo_format::{File as GooFile, LayerEncoder, PreviewImage};
 use slicer::{mesh::load_mesh, slicer::Slicer};
 
 mod args;
@@ -51,6 +52,17 @@ fn main() -> Result<()> {
             mesh.face_count()
         );
 
+        let (min, max) = mesh.bounds();
+        if min.x < 0.0
+            || min.y < 0.0
+            || min.z < 0.0
+            || max.x > slice_config.platform_resolution.x as f32
+            || max.y > slice_config.platform_resolution.y as f32
+            || max.z > slice_config.platform_size.z
+        {
+            println!(" \\ Model extends outsize of print volume and will be cut off.",);
+        }
+
         meshes.push(mesh);
     }
 
@@ -75,8 +87,16 @@ fn main() -> Result<()> {
     }
 
     // Once slicing is complete write to a .goo file
+    let mut goo = goo.join().unwrap();
+
+    if let Some(path) = args.preview {
+        let image = ImageReader::open(path)?.decode()?.to_rgba8();
+        goo.header.small_preview = PreviewImage::from_image_scaled(&image, FilterType::Triangle);
+        goo.header.big_preview = PreviewImage::from_image_scaled(&image, FilterType::Triangle);
+    }
+
     let mut serializer = DynamicSerializer::new();
-    goo.join().unwrap().serialize(&mut serializer);
+    goo.serialize(&mut serializer);
     fs::write(args.output, serializer.into_inner())?;
 
     println!("\nDone. Elapsed: {:.1}s", now.elapsed().as_secs_f32());

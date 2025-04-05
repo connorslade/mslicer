@@ -60,6 +60,10 @@ pub struct Args {
     /// layer, in mm/min.
     pub first_retract_speed: f32,
 
+    #[arg(long)]
+    /// Path to a preview image, will be scaled as needed.
+    pub preview: Option<PathBuf>,
+
     #[command(flatten)]
     pub model: ModelArgs,
 
