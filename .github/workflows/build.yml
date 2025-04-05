@@ -1,5 +1,5 @@
 name: Build
-on: [push]
+on: [push, pull_request]
 
 jobs:
   build:
@@ -23,6 +23,9 @@ jobs:
         with:
           name: mslicer-${{ matrix.os }}
           path: |
+            target/release/goo_format*
             target/release/mslicer*
-            !target/release/mslicer.d
-            !target/release/mslicer.pdb
+            target/release/remote_send*
+            target/release/slicer*
+            !target/release/*.d
+            !target/release/*.pdb
