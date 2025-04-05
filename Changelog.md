@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.2.1 &mdash; Coming Soon?
+
+- Don't produce invalid results when models extend beyond build volume
+
 ## v0.2.0 &mdash; Feb 19, 2025
 
 - Convert slice operation window to a dockable panel

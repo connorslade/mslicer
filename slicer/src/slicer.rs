@@ -14,7 +14,7 @@ use common::{
 use ordered_float::OrderedFloat;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
-use crate::{format::FormatSliceResult, mesh::Mesh, segments::Segments1D, Pos};
+use crate::{format::FormatSliceResult, mesh::Mesh, segments::Segments1D};
 
 /// Used to slice a mesh.
 pub struct Slicer {
@@ -40,14 +40,14 @@ pub struct ProgressInner {
 impl Slicer {
     /// Creates a new slicer given a slice config and list of models.
     pub fn new(slice_config: SliceConfig, models: Vec<Mesh>) -> Self {
-        let max = models.iter().fold(Pos::zeros(), |max, model| {
-            let f = model.vertices().iter().fold(Pos::zeros(), |max, &f| {
-                let f = model.transform(&f);
-                Pos::new(max.x.max(f.x), max.y.max(f.y), max.z.max(f.z))
-            });
-            Pos::new(max.x.max(f.x), max.y.max(f.y), max.z.max(f.z))
+        let max_z = models.iter().fold(0_f32, |max, model| {
+            let verts = model.vertices().iter();
+            let z = verts.fold(0_f32, |max, &f| max.max(model.transform(&f).z));
+            max.max(z)
         });
-        let layers = (max.z / slice_config.slice_height).ceil() as u32;
+
+        let layers = (max_z / slice_config.slice_height).ceil() as u32;
+        let max_layers = (slice_config.platform_size.z / slice_config.slice_height).ceil() as u32;
 
         Self {
             slice_config,
@@ -55,7 +55,7 @@ impl Slicer {
             progress: Progress {
                 inner: Arc::new(ProgressInner {
                     completed: AtomicU32::new(0),
-                    total: layers,
+                    total: layers.min(max_layers),
 
                     notify: Condvar::new(),
                     last_completed: Mutex::new(0),
@@ -77,8 +77,8 @@ impl Slicer {
 
     /// Actually runs the slicing operation, it is multithreaded.
     pub fn slice<Layer: EncodableLayer>(&self) -> SliceResult<Layer::Output> {
-        let pixels = (self.slice_config.platform_resolution.x
-            * self.slice_config.platform_resolution.y) as u64;
+        let platform_resolution = self.slice_config.platform_resolution;
+        let pixels = (platform_resolution.x * platform_resolution.y) as u64;
 
         // A segment contains a reference to all of the triangles it contains. By
         // splitting the mesh into segments, not all triangles need to be tested
@@ -124,7 +124,7 @@ impl Slicer {
                 // across and mark that as an intersection to then be run-length
                 // encoded. There is probably a better polygon filling algo, but
                 // this one works surprisingly fast.
-                for y in 0..self.slice_config.platform_resolution.y {
+                for y in 0..platform_resolution.y {
                     let yf = y as f32;
                     let mut intersections = segments
                         .iter()
@@ -155,14 +155,14 @@ impl Slicer {
                         depth += (dir as i32) * 2 - 1;
 
                         if (depth == 0) ^ (prev_depth == 0) {
-                            filtered.push(pos);
+                            filtered.push(pos.clamp(0.0, platform_resolution.x as f32));
                         }
                     }
 
                     // Convert the intersections into runs of white pixels to be
                     // encoded into the layer
                     for span in filtered.chunks_exact(2) {
-                        let y_offset = (self.slice_config.platform_resolution.x * y) as u64;
+                        let y_offset = (platform_resolution.x * y) as u64;
 
                         let a = span[0].round() as u64;
                         let b = span[1].round() as u64;
