@@ -1,7 +1,19 @@
 # `slicer`
 
 This crate contains the types and algorithms to efficiently slice a mesh and some other stuff for post processing and support generation.
-It also exposes a CLI for slicing models, open the dropdown below to see it's help page.
+
+## Command Line interface
+
+This crate also exposes a CLI for slicing models, open the dropdown below to view the help page.
+
+Multiple meshes can be added by using the `--mesh` argument more than once.
+If you want to change any properties of the mesh like position, rotation, or scale, you can use the flag followed by a 3D vector (`x,y,z`).
+These flags will modify the mesh defined most recently.
+See the example below.
+
+```bash
+$ slicer --mesh teapot.stl --position 0,0,-0.05 --scale 2,2,2 --mesh frog.stl --position 100,0,0 output.goo
+```
 
 <details>
   <summary>CLI Help</summary>
@@ -41,6 +53,8 @@ Options:
           The speed to lift the platform after exposing each first layer, in mm/min [default: 65]
       --first-retract-speed <FIRST_RETRACT_SPEED>
           The speed to retract (move down) the platform after exposing each first layer, in mm/min [default: 150]
+      --preview <PREVIEW>
+          Path to a preview image, will be scaled as needed
       --mesh <MESH>
           Path to a .stl or .obj file
       --position <POSITION>
