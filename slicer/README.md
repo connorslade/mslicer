@@ -60,7 +60,7 @@ Options:
       --position <POSITION>
           Location of the bottom center of model bounding box. The origin is the center of the build plate
       --rotation <ROTATION>
-          Rotation of the model in degrees, pitch, roll, yaw
+          Rotation of the model in degrees, roll, pitch, yaw
       --scale <SCALE>
           Scale of the model along the X, Y, and Z axes
   -h, --help

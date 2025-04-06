@@ -85,7 +85,7 @@ pub struct ModelArgs {
     pub position: Vec<Vector3<f32>>,
 
     #[arg(long, value_parser = vector_value_parser::<f32, 3>)]
-    /// Rotation of the model in degrees, pitch, roll, yaw.
+    /// Rotation of the model in degrees, roll, pitch, yaw.
     pub rotation: Vec<Vector3<f32>>,
 
     #[arg(long, value_parser = vector_value_parser::<f32, 3>)]

@@ -34,7 +34,7 @@ fn main() -> Result<()> {
         let mut mesh = load_mesh(&mut buf, &ext)?;
 
         mesh.set_scale(model.scale);
-        mesh.set_rotation(model.rotation);
+        mesh.set_rotation(model.rotation.map(f32::to_radians));
 
         // Center the model
         let (min, max) = mesh.bounds();
