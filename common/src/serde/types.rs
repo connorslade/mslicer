@@ -24,7 +24,7 @@ impl<const SIZE: usize> SizedString<SIZE> {
     }
 }
 
-impl Display for SizedString<32> {
+impl<const SIZE: usize> Display for SizedString<SIZE> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let null = self.data.iter().position(|&x| x == 0).unwrap_or(32);
         f.write_str(&String::from_utf8_lossy(&self.data[..null]))
@@ -34,9 +34,7 @@ impl Display for SizedString<32> {
 impl<const SIZE: usize> Debug for SizedString<SIZE> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let null = self.data.iter().position(|&x| x == 0).unwrap_or(SIZE);
-        f.write_fmt(format_args!(
-            "\"{}\"",
-            String::from_utf8_lossy(&self.data[..null])
-        ))
+        let str = String::from_utf8_lossy(&self.data[..null]);
+        f.write_fmt(format_args!("{:?}", str))
     }
 }

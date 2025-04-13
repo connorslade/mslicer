@@ -71,10 +71,9 @@ impl FormatSliceFile {
 
                 let mut pixel = 0;
                 for run in decoder {
-                    for _ in 0..run.length {
-                        image[pixel] = run.value;
-                        pixel += 1;
-                    }
+                    let length = run.length as usize;
+                    image[pixel..(pixel + length)].fill(run.value);
+                    pixel += length;
                 }
             }
         }
