@@ -3,6 +3,7 @@
 ## v0.2.1 &mdash; April 13, 2025
 
 - Don't produce invalid results when models extend beyond build volume
+- Made the slicer system usable as a standalone CLI application
 
 ## v0.2.0 &mdash; Feb 19, 2025
 
@@ -17,4 +18,4 @@
 
 First release!
 
-I havent really changed much in the past like six months, but now mslicer is on Flathub.
+I haven't really changed much in the past like six months, but now mslicer is on Flathub.

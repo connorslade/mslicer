@@ -33,18 +33,26 @@
 	</screenshots>
 
 	<releases>
+    	<release version="0.2.1" date="2025-04-13">
+            <description>
+                <ul>
+                    <li>Don't produce invalid results when models extend beyond build volume</li>
+                    <li>Made the slicer system usable as a standalone CLI application</li>
+                </ul>
+            </description>
+       	</release>
 		<release version="0.2.0" date="2025-02-19">
-  		<description>
-        <ul>
-          <li>Convert slice operation window to a dockable panel</li>
-          <li>Render parts of models that go beyond the print volume red</li>
-          <li>Remove the Stats panel and merge it into the Workspace panel</li>
-          <li>Add documentation into the About panel</li>
-          <li>Add random triangle color mesh render mode</li>
-          <li>Persist panel layout between sessions. I also added a button to reset the UI layout in the Workspace panel.</li>
-        </ul>
-  		</description>
-  	</release>
+            <description>
+                <ul>
+                    <li>Convert slice operation window to a dockable panel</li>
+                    <li>Render parts of models that go beyond the print volume red</li>
+                    <li>Remove the Stats panel and merge it into the Workspace panel</li>
+                    <li>Add documentation into the About panel</li>
+                    <li>Add random triangle color mesh render mode</li>
+                    <li>Persist panel layout between sessions. I also added a button to reset the UI layout in the Workspace panel.</li>
+                </ul>
+            </description>
+       	</release>
 		<release version="0.1.0" date="2025-02-12">
 			<description>
 				<p>Initial release.</p>

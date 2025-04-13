@@ -2,6 +2,21 @@
 
 This document covers a variety of topics that don't fit into any other category.
 
+## Command Line Interface
+
+Although the actual slicer system from mslicer is intended to be used through the interface in the `mslicer` binary, you can also use it as a standalone command-line application.
+This allows for automating the slicing of models in bulk or as part of a more complicated build pipeline.
+You can download the `slicer` binary from the [latest GitHub release](https://github.com/connorslade/mslicer/releases/latest).
+
+Multiple meshes can be added by using the `--mesh` argument more than once.
+If you want to change any properties of the mesh, like position, rotation, or scale, you can use the flag followed by a 3D vector (`x,y,z`).
+These flags will modify the mesh defined most recently.
+See the example below.
+
+```bash
+$ slicer --mesh teapot.stl --position 0,0,-0.05 --scale 2,2,2 --mesh frog.stl --position 100,0,0 output.goo
+```
+
 ## Remote Print HTTP Status Proxy
 
 Part of the process to upload a model to a printer with remote print is to serve the .goo file on an HTTP server, then send the download link to the printer over MQTT. Because remote print already has to run an HTTP server, this option exposes an API at `0.0.0.0:<http_port>/status`. Each time remote print starts, all server ports are randomized and printed to the log (check the console or the Log panel).
