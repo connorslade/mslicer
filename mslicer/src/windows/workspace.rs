@@ -52,7 +52,9 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
             ui.selectable_value(&mut app.config.theme, Theme::Light, "Light");
         });
 
-    dragger(ui, "Grid Size", &mut app.config.grid_size, |x| x.speed(0.1));
+    dragger(ui, "Grid Size", &mut app.config.grid_size, |x| {
+        x.speed(0.1).clamp_range(1.0..=f32::MAX)
+    });
 
     ui.add_space(16.0);
     ui.heading("Advanced");

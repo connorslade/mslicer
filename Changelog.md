@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.2.2 &mdash; Coming Soon
+
+- Clamp grid size
+
 ## v0.2.1 &mdash; April 13, 2025
 
 - Don't produce invalid results when models extend beyond build volume
