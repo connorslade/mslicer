@@ -2,7 +2,7 @@ use std::f32::consts::PI;
 
 use image::{Rgba, RgbaImage};
 use nalgebra::{Matrix4, Vector2, Vector3};
-use tracing::info;
+use tracing::{error, info};
 use wgpu::{
     BufferAddress, BufferDescriptor, BufferUsages, Color, CommandEncoderDescriptor, Device,
     Extent3d, ImageCopyBuffer, ImageCopyTexture, ImageDataLayout, LoadOp, Maintain, MapMode,
@@ -11,7 +11,7 @@ use wgpu::{
     TextureFormat, TextureUsages, TextureView, TextureViewDescriptor,
 };
 
-use crate::{app::App, TEXTURE_FORMAT};
+use crate::{app::App, DEPTH_TEXTURE_FORMAT};
 
 use super::{
     camera::Camera,
@@ -38,7 +38,8 @@ fn render_preview_image(app: &App, size: (u32, u32)) -> RgbaImage {
 
     let mut workspace = app.get_workspace_render_callback(Matrix4::zeros(), false);
 
-    let (texture, resolved_texture, depth_texture) = init_textures(device, size);
+    let format = app.render_state.target_format;
+    let (texture, resolved_texture, depth_texture) = init_textures(device, format, size);
     let texture_view = texture.create_view(&TextureViewDescriptor::default());
     let resolved_texture_view = resolved_texture.create_view(&TextureViewDescriptor::default());
     let depth_texture_view = depth_texture.create_view(&TextureViewDescriptor::default());
@@ -75,7 +76,7 @@ fn render_preview_image(app: &App, size: (u32, u32)) -> RgbaImage {
         &depth_texture_view,
     );
 
-    download_preview(device, queue, &resolved_texture)
+    download_preview(device, format, queue, &resolved_texture)
 }
 
 fn render_preview(
@@ -115,7 +116,12 @@ fn render_preview(
     queue.submit(std::iter::once(encoder.finish()));
 }
 
-fn download_preview(device: &Device, queue: &Queue, texture: &Texture) -> RgbaImage {
+fn download_preview(
+    device: &Device,
+    format: TextureFormat,
+    queue: &Queue,
+    texture: &Texture,
+) -> RgbaImage {
     let mut download_encoder =
         device.create_command_encoder(&CommandEncoderDescriptor { label: None });
     let texture_extent = texture.size();
@@ -157,16 +163,26 @@ fn download_preview(device: &Device, queue: &Queue, texture: &Texture) -> RgbaIm
     let mapped_range = slice.get_mapped_range();
     let result = bytemuck::cast_slice::<_, u8>(&mapped_range);
 
-    let mut image =
-        RgbaImage::from_raw(texture_extent.width, texture_extent.height, result.to_vec()).unwrap();
-
-    // Convert BGRA to RGBA
-    for y in 0..image.height() {
-        for x in 0..image.width() {
-            let bgra = image.get_pixel(x, y).0;
-            image.put_pixel(x, y, Rgba([bgra[2], bgra[1], bgra[0], bgra[3]]));
+    // Convert texture to to RGBA image. Format is *not* guaranteed to be be,
+    // but will almost always be Rgba8Unorm or Bgra8Unorm.
+    let Extent3d { width, height, .. } = texture_extent;
+    let image = match format {
+        TextureFormat::Rgba8Unorm => RgbaImage::from_raw(width, height, result.to_vec()).unwrap(),
+        TextureFormat::Bgra8Unorm => {
+            let mut image = RgbaImage::from_raw(width, height, result.to_vec()).unwrap();
+            for y in 0..image.height() {
+                for x in 0..image.width() {
+                    let bgra = image.get_pixel(x, y).0;
+                    image.put_pixel(x, y, Rgba([bgra[2], bgra[1], bgra[0], bgra[3]]));
+                }
+            }
+            image
         }
-    }
+        x => {
+            error!("Can't make preview image due to unsupported framebuffer texture format {x:?}. Please make an issue on Github.");
+            RgbaImage::new(width, height)
+        }
+    };
 
     drop(mapped_range);
     staging_buffer.unmap();
@@ -174,7 +190,11 @@ fn download_preview(device: &Device, queue: &Queue, texture: &Texture) -> RgbaIm
     image
 }
 
-fn init_textures(device: &Device, size: (u32, u32)) -> (Texture, Texture, Texture) {
+fn init_textures(
+    device: &Device,
+    format: TextureFormat,
+    size: (u32, u32),
+) -> (Texture, Texture, Texture) {
     let size = Extent3d {
         width: size.0,
         height: size.1,
@@ -187,7 +207,7 @@ fn init_textures(device: &Device, size: (u32, u32)) -> (Texture, Texture, Textur
         mip_level_count: 1,
         sample_count: 4,
         dimension: TextureDimension::D2,
-        format: TEXTURE_FORMAT,
+        format,
         usage: TextureUsages::RENDER_ATTACHMENT,
         view_formats: &[],
     });
@@ -198,7 +218,7 @@ fn init_textures(device: &Device, size: (u32, u32)) -> (Texture, Texture, Textur
         mip_level_count: 1,
         sample_count: 1,
         dimension: TextureDimension::D2,
-        format: TEXTURE_FORMAT,
+        format,
         usage: TextureUsages::RENDER_ATTACHMENT | TextureUsages::COPY_SRC,
         view_formats: &[],
     });
@@ -209,7 +229,7 @@ fn init_textures(device: &Device, size: (u32, u32)) -> (Texture, Texture, Textur
         mip_level_count: 1,
         sample_count: 4,
         dimension: TextureDimension::D2,
-        format: TextureFormat::Depth24PlusStencil8,
+        format: DEPTH_TEXTURE_FORMAT,
         usage: TextureUsages::RENDER_ATTACHMENT,
         view_formats: &[],
     });

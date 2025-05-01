@@ -16,7 +16,7 @@ use crate::{
         rendered_mesh::RenderedMeshBuffers, workspace::WorkspaceRenderCallback,
         VERTEX_BUFFER_LAYOUT,
     },
-    TEXTURE_FORMAT,
+    DEPTH_TEXTURE_FORMAT,
 };
 
 use super::consts::BASE_BIND_GROUP_LAYOUT_DESCRIPTOR;
@@ -48,7 +48,7 @@ pub enum RenderStyle {
 }
 
 impl ModelPipeline {
-    pub fn new(device: &Device) -> Self {
+    pub fn new(device: &Device, texture: TextureFormat) -> Self {
         let shader = device.create_shader_module(include_shader!("model.wgsl"));
 
         let bind_group_layout = device.create_bind_group_layout(&BASE_BIND_GROUP_LAYOUT_DESCRIPTOR);
@@ -71,14 +71,14 @@ impl ModelPipeline {
                 module: &shader,
                 entry_point: "frag",
                 targets: &[Some(ColorTargetState {
-                    format: TEXTURE_FORMAT,
+                    format: texture,
                     blend: Some(BlendState::ALPHA_BLENDING),
                     write_mask: ColorWrites::all(),
                 })],
             }),
             primitive: PrimitiveState::default(),
             depth_stencil: Some(DepthStencilState {
-                format: TextureFormat::Depth24PlusStencil8,
+                format: DEPTH_TEXTURE_FORMAT,
                 depth_write_enabled: true,
                 depth_compare: CompareFunction::Less,
                 stencil: Default::default(),

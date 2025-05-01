@@ -8,7 +8,7 @@ use tracing::level_filters::LevelFilter;
 use tracing_subscriber::{filter, layer::SubscriberExt, util::SubscriberInitExt};
 use wgpu::{DeviceDescriptor, Features, Limits, TextureFormat};
 
-const TEXTURE_FORMAT: TextureFormat = TextureFormat::Bgra8Unorm;
+const DEPTH_TEXTURE_FORMAT: TextureFormat = TextureFormat::Depth24PlusStencil8;
 
 mod app;
 mod plugins;

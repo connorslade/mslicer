@@ -13,7 +13,7 @@ use wgpu::{
     VertexAttribute, VertexBufferLayout, VertexFormat, VertexState, VertexStepMode,
 };
 
-use crate::{include_shader, render::workspace::WorkspaceRenderCallback, TEXTURE_FORMAT};
+use crate::{include_shader, render::workspace::WorkspaceRenderCallback, DEPTH_TEXTURE_FORMAT};
 
 pub struct SolidLinePipeline {
     render_pipeline: RenderPipeline,
@@ -49,7 +49,7 @@ struct LineVertex {
 }
 
 impl SolidLinePipeline {
-    pub fn new(device: &Device) -> Self {
+    pub fn new(device: &Device, texture: TextureFormat) -> Self {
         let shader = device.create_shader_module(include_shader!("solid_line.wgsl"));
 
         let uniform_buffer = device.create_buffer(&BufferDescriptor {
@@ -119,7 +119,7 @@ impl SolidLinePipeline {
                 module: &shader,
                 entry_point: "frag",
                 targets: &[Some(ColorTargetState {
-                    format: TEXTURE_FORMAT,
+                    format: texture,
                     blend: None,
                     write_mask: ColorWrites::all(),
                 })],
@@ -129,7 +129,7 @@ impl SolidLinePipeline {
                 ..Default::default()
             },
             depth_stencil: Some(DepthStencilState {
-                format: TextureFormat::Depth24PlusStencil8,
+                format: DEPTH_TEXTURE_FORMAT,
                 depth_write_enabled: true,
                 depth_compare: CompareFunction::Less,
                 stencil: Default::default(),

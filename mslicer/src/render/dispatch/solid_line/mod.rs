@@ -1,7 +1,7 @@
 use build_plate::BuildPlateDispatch;
 use line_support_debug::LineSupportDebugDispatch;
 use normals::NormalsDispatch;
-use wgpu::{Device, Queue, RenderPass};
+use wgpu::{Device, Queue, RenderPass, TextureFormat};
 
 use crate::render::{
     pipelines::solid_line::{Line, SolidLinePipeline},
@@ -21,9 +21,9 @@ pub struct SolidLineDispatch {
 }
 
 impl SolidLineDispatch {
-    pub fn new(device: &Device) -> Self {
+    pub fn new(device: &Device, texture: TextureFormat) -> Self {
         Self {
-            render_pipeline: SolidLinePipeline::new(device),
+            render_pipeline: SolidLinePipeline::new(device, texture),
 
             build_plate: BuildPlateDispatch::new(),
             normals: NormalsDispatch::new(),

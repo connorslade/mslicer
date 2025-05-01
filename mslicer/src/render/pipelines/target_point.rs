@@ -17,7 +17,7 @@ use wgpu::{
 use crate::{
     include_shader,
     render::{workspace::WorkspaceRenderCallback, ModelVertex, VERTEX_BUFFER_LAYOUT},
-    TEXTURE_FORMAT,
+    DEPTH_TEXTURE_FORMAT,
 };
 
 use super::consts::{BASE_BIND_GROUP_LAYOUT_DESCRIPTOR, BASE_UNIFORM_DESCRIPTOR};
@@ -40,7 +40,7 @@ struct TargetPointUniforms {
 }
 
 impl TargetPointPipeline {
-    pub fn new(device: &Device) -> Self {
+    pub fn new(device: &Device, texture: TextureFormat) -> Self {
         let shader = device.create_shader_module(include_shader!("solid.wgsl"));
 
         let uniform_buffer = device.create_buffer(&BufferDescriptor {
@@ -81,14 +81,14 @@ impl TargetPointPipeline {
                 module: &shader,
                 entry_point: "frag",
                 targets: &[Some(ColorTargetState {
-                    format: TEXTURE_FORMAT,
+                    format: texture,
                     blend: Some(BlendState::ALPHA_BLENDING),
                     write_mask: ColorWrites::all(),
                 })],
             }),
             primitive: PrimitiveState::default(),
             depth_stencil: Some(DepthStencilState {
-                format: TextureFormat::Depth24PlusStencil8,
+                format: DEPTH_TEXTURE_FORMAT,
                 depth_write_enabled: false,
                 depth_compare: CompareFunction::Always,
                 stencil: Default::default(),

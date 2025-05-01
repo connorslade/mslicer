@@ -38,15 +38,16 @@ pub struct ModelVertex {
 pub fn init_wgpu(cc: &CreationContext) -> RenderState {
     let render_state = cc.wgpu_render_state.as_ref().unwrap();
     let device = &render_state.device;
+    let texture = render_state.target_format;
 
     let resources = &mut render_state.renderer.write().callback_resources;
     resources.insert(WorkspaceRenderResources {
-        solid_line: SolidLineDispatch::new(device),
-        model_pipeline: ModelPipeline::new(device),
-        target_point_pipeline: TargetPointPipeline::new(device),
+        solid_line: SolidLineDispatch::new(device, texture),
+        model_pipeline: ModelPipeline::new(device, texture),
+        target_point_pipeline: TargetPointPipeline::new(device, texture),
     });
     resources.insert(SlicePreviewRenderResources {
-        slice_preview_pipeline: SlicePreviewPipeline::new(device),
+        slice_preview_pipeline: SlicePreviewPipeline::new(device, texture),
     });
 
     render_state.clone()
