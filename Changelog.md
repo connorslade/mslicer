@@ -1,6 +1,6 @@
 # Changelog
 
-## v0.2.2 &mdash; Coming Soon
+## v0.2.2 &mdash; June 14th, 2025
 
 - Clamp grid size
 - Fix intermittent crash due to mismatched texture formats between egui and renderer pipelines

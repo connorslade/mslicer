@@ -33,6 +33,15 @@
 	</screenshots>
 
 	<releases>
+	    <release version="0.2.1" date="2025-04-13">
+			<description>
+			    <ul>
+					<li>Clamp grid size</li>
+					<li>Fix intermittent crash due to mismatched texture formats between egui and renderer pipelines</li>
+				</ul>
+			</description>
+		</release>
+	
     	<release version="0.2.1" date="2025-04-13">
             <description>
                 <ul>
