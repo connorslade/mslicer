@@ -4,13 +4,20 @@ use iter::SliceLayerIterator;
 use nalgebra::{Vector2, Vector3};
 use parking_lot::MappedMutexGuard;
 
-use common::{image::Image, misc::SliceResult, serde::Serializer};
+use common::{
+    image::Image,
+    misc::{SliceResult, VectorSliceResult},
+    serde::Serializer,
+};
+
+use crate::format::svg::SvgFile;
 
 pub mod iter;
 pub mod svg;
 
 pub enum FormatSliceResult<'a> {
     Goo(SliceResult<'a, goo_format::LayerContent>),
+    Svg(VectorSliceResult<'a>),
 }
 
 // todo: replace with trait obj?
@@ -41,6 +48,7 @@ impl FormatSliceFile {
                     PreviewImage::from_image_scaled(&preview_image, FilterType::Nearest);
                 Self::Goo(file)
             }
+            FormatSliceResult::Svg(result) => Self::Svg(SvgFile::new(result)),
         }
     }
 
@@ -67,7 +75,7 @@ impl FormatSliceFile {
                 layers: file.layer_count(),
 
                 // todo: actually implement
-                resolution: Vector2::zeros(),
+                resolution: Vector2::repeat(1),
                 size: Vector3::zeros(),
                 bottom_layers: 0,
             },
@@ -87,7 +95,7 @@ impl FormatSliceFile {
                     pixel += length;
                 }
             }
-            FormatSliceFile::Svg(file) => {
+            FormatSliceFile::Svg(_file) => {
                 // todo: rasterize svg??
             }
         }
@@ -130,9 +138,7 @@ impl FormatSliceFile {
                 layer.data = data;
                 layer.checksum = checksum;
             }
-            FormatSliceFile::Svg(file) => {
-                unimplemented!()
-            }
+            FormatSliceFile::Svg(_file) => {}
         }
     }
 }

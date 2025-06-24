@@ -9,6 +9,7 @@ use egui_phosphor::regular::{FLOPPY_DISK_BACK, PAPER_PLANE_TILT};
 use egui_wgpu::Callback;
 use nalgebra::Vector2;
 use rfd::FileDialog;
+use wgpu::COPY_BUFFER_ALIGNMENT;
 
 use crate::{
     app::{slice_operation::SliceResult, App},
@@ -159,7 +160,8 @@ fn slice_preview(ui: &mut egui::Ui, result: &mut SliceResult) {
         let new_preview = if result.last_preview_layer != result.slice_preview_layer {
             result.last_preview_layer = result.slice_preview_layer;
 
-            let mut image = vec![0; (width * height) as usize];
+            let mut image =
+                vec![0; ((width * height) as u64).next_multiple_of(COPY_BUFFER_ALIGNMENT) as usize];
             let layer = result.slice_preview_layer - 1;
             result.file.decode_layer(layer, &mut image);
 

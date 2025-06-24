@@ -8,7 +8,7 @@ use wgpu::{
     DepthStencilState, Device, FragmentState, IndexFormat, MultisampleState,
     PipelineLayoutDescriptor, PrimitiveState, Queue, RenderPass, RenderPipeline,
     RenderPipelineDescriptor, ShaderModuleDescriptor, ShaderSource, ShaderStages, TextureFormat,
-    VertexState,
+    VertexState, COPY_BUFFER_ALIGNMENT,
 };
 
 use crate::{
@@ -144,7 +144,8 @@ impl SlicePreviewPipeline {
         let slice_buffer = self.slice_buffer.take().unwrap_or_else(|| {
             device.create_buffer(&BufferDescriptor {
                 label: None,
-                size: resources.dimensions.x as u64 * resources.dimensions.y as u64,
+                size: (resources.dimensions.x as u64 * resources.dimensions.y as u64)
+                    .next_multiple_of(COPY_BUFFER_ALIGNMENT),
                 usage: BufferUsages::STORAGE | BufferUsages::COPY_DST,
                 mapped_at_creation: false,
             })

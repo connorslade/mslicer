@@ -1,5 +1,6 @@
 use std::time::Duration;
 
+use nalgebra::Vector2;
 use rand::{distributions::Alphanumeric, Rng};
 
 use crate::config::SliceConfig;
@@ -7,6 +8,15 @@ use crate::config::SliceConfig;
 pub struct SliceResult<'a, Layer> {
     pub layers: Vec<Layer>,
     pub slice_config: &'a SliceConfig,
+}
+
+pub struct VectorSliceResult<'a> {
+    pub layers: Vec<VectorLayer>,
+    pub slice_config: &'a SliceConfig,
+}
+
+pub struct VectorLayer {
+    pub points: Vec<Vector2<f32>>,
 }
 
 #[derive(Debug)]

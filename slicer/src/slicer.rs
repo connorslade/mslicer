@@ -9,12 +9,14 @@ use std::{
 use common::{
     config::SliceConfig,
     format::Format,
-    misc::{EncodableLayer, SliceResult},
+    misc::{EncodableLayer, SliceResult, VectorLayer, VectorSliceResult},
 };
 use ordered_float::OrderedFloat;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
 use crate::{format::FormatSliceResult, mesh::Mesh, segments::Segments1D};
+
+const SEGMENT_LAYERS: usize = 100;
 
 /// Used to slice a mesh.
 pub struct Slicer {
@@ -69,14 +71,15 @@ impl Slicer {
         self.progress.clone()
     }
 
-    pub fn slice_format(&self) -> FormatSliceResult {
+    pub fn slice_format(&self) -> FormatSliceResult<'_> {
         match self.slice_config.format {
             Format::Goo => FormatSliceResult::Goo(self.slice::<goo_format::LayerEncoder>()),
+            Format::Svg => FormatSliceResult::Svg(self.slice_vector()),
         }
     }
 
     /// Actually runs the slicing operation, it is multithreaded.
-    pub fn slice<Layer: EncodableLayer>(&self) -> SliceResult<Layer::Output> {
+    pub fn slice<Layer: EncodableLayer>(&self) -> SliceResult<'_, Layer::Output> {
         let platform_resolution = self.slice_config.platform_resolution;
         let pixels = (platform_resolution.x * platform_resolution.y) as u64;
 
@@ -87,7 +90,7 @@ impl Slicer {
         let segments = self
             .models
             .iter()
-            .map(|x| Segments1D::from_mesh(x, 100))
+            .map(|x| Segments1D::from_mesh(x, SEGMENT_LAYERS))
             .collect::<Vec<_>>();
 
         let layers = (0..self.progress.total)
@@ -196,6 +199,47 @@ impl Slicer {
         self.progress.notify.notify_all();
 
         SliceResult {
+            layers,
+            slice_config: &self.slice_config,
+        }
+    }
+
+    pub fn slice_vector(&self) -> VectorSliceResult<'_> {
+        let segments = self
+            .models
+            .iter()
+            .map(|x| Segments1D::from_mesh(x, SEGMENT_LAYERS))
+            .collect::<Vec<_>>();
+
+        let layers = (0..self.progress.total)
+            .into_par_iter()
+            .inspect(|_| {
+                self.progress.completed.fetch_add(1, Ordering::Relaxed);
+                self.progress.notify.notify_all();
+            })
+            .map(|layer| {
+                let height = layer as f32 * self.slice_config.slice_height;
+
+                let segments = self
+                    .models
+                    .iter()
+                    .enumerate()
+                    .flat_map(|(idx, mesh)| segments[idx].intersect_plane(mesh, height))
+                    .collect::<Vec<_>>();
+
+                VectorLayer {
+                    points: segments
+                        .into_iter()
+                        // todo: skipping 2nd point
+                        .map(|(points, _side)| points[0].xy())
+                        .collect(),
+                }
+            })
+            .collect::<Vec<_>>();
+
+        self.progress.notify.notify_all();
+
+        VectorSliceResult {
             layers,
             slice_config: &self.slice_config,
         }
