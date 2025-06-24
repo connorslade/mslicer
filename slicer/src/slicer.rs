@@ -230,8 +230,7 @@ impl Slicer {
                 VectorLayer {
                     points: segments
                         .into_iter()
-                        // todo: skipping 2nd point
-                        .map(|(points, _side)| points[0].xy())
+                        .flat_map(|(points, _side)| points.map(|x| x.xy()))
                         .collect(),
                 }
             })
