@@ -43,6 +43,7 @@ serde_json = "1.0.120"
 serde_repr = "0.1.19"
 soon = { git = "https://github.com/connorslade/misc" }
 stl_io = "0.7.0"
+svg = "0.18.0"
 toml = "0.8.16"
 tracing = "0.1.40"
 tracing-subscriber = "0.3.18"

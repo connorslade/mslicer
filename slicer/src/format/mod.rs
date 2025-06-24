@@ -7,6 +7,7 @@ use parking_lot::MappedMutexGuard;
 use common::{image::Image, misc::SliceResult, serde::Serializer};
 
 pub mod iter;
+pub mod svg;
 
 pub enum FormatSliceResult<'a> {
     Goo(SliceResult<'a, goo_format::LayerContent>),
@@ -15,6 +16,7 @@ pub enum FormatSliceResult<'a> {
 // todo: replace with trait obj?
 pub enum FormatSliceFile {
     Goo(goo_format::File),
+    Svg(svg::SvgFile),
 }
 
 pub struct SliceInfo {
@@ -45,6 +47,7 @@ impl FormatSliceFile {
     pub fn serialize<T: Serializer>(&self, ser: &mut T) {
         match self {
             FormatSliceFile::Goo(file) => file.serialize(ser),
+            FormatSliceFile::Svg(file) => file.serialize(ser),
         }
     }
 
@@ -59,6 +62,14 @@ impl FormatSliceFile {
                 size: Vector3::new(file.header.x_size, file.header.y_size, file.header.x_size),
 
                 bottom_layers: file.header.bottom_layers,
+            },
+            FormatSliceFile::Svg(file) => SliceInfo {
+                layers: file.layer_count(),
+
+                // todo: actually implement
+                resolution: Vector2::zeros(),
+                size: Vector3::zeros(),
+                bottom_layers: 0,
             },
         }
     }
@@ -75,6 +86,9 @@ impl FormatSliceFile {
                     image[pixel..(pixel + length)].fill(run.value);
                     pixel += length;
                 }
+            }
+            FormatSliceFile::Svg(file) => {
+                // todo: rasterize svg??
             }
         }
     }
@@ -115,6 +129,9 @@ impl FormatSliceFile {
                 let layer = &mut file.layers[layer];
                 layer.data = data;
                 layer.checksum = checksum;
+            }
+            FormatSliceFile::Svg(file) => {
+                unimplemented!()
             }
         }
     }
