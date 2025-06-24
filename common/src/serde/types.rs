@@ -35,6 +35,6 @@ impl<const SIZE: usize> Debug for SizedString<SIZE> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let null = self.data.iter().position(|&x| x == 0).unwrap_or(SIZE);
         let str = String::from_utf8_lossy(&self.data[..null]);
-        f.write_fmt(format_args!("{:?}", str))
+        f.write_fmt(format_args!("{str:?}"))
     }
 }

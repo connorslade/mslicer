@@ -183,7 +183,7 @@ impl App {
         }
     }
 
-    pub fn get_callback_resource_mut<T: 'static>(&self) -> MappedRwLockWriteGuard<T> {
+    pub fn get_callback_resource_mut<T: 'static>(&self) -> MappedRwLockWriteGuard<'_, T> {
         MappedRwLockWriteGuard::map(self.render_state.renderer.write(), |x| {
             x.callback_resources.get_mut::<T>().unwrap()
         })

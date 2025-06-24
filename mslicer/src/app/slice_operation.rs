@@ -99,7 +99,7 @@ impl SliceOperation {
         self.has_post_processed = true;
     }
 
-    pub fn result(&self) -> MutexGuard<Option<SliceResult>> {
+    pub fn result(&self) -> MutexGuard<'_, Option<SliceResult>> {
         self.result.lock()
     }
 }

@@ -115,7 +115,7 @@ impl<H: MqttHandler + Send + Sync + 'static> MqttServer<H> {
         Ok(())
     }
 
-    fn get_client_mut(&self, client_id: u64) -> MappedMutexGuard<TcpStream> {
+    fn get_client_mut(&self, client_id: u64) -> MappedMutexGuard<'_, TcpStream> {
         MutexGuard::map(self.clients.lock(), |x| x.get_mut(&client_id).unwrap())
     }
 

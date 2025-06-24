@@ -56,7 +56,7 @@ impl Image {
         self.data[idx] = val;
     }
 
-    pub fn runs(&self) -> ImageRuns {
+    pub fn runs(&self) -> ImageRuns<'_> {
         ImageRuns {
             inner: &self.data,
             size: (self.size.x * self.size.y) as u64,

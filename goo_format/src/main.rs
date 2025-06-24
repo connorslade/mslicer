@@ -65,10 +65,10 @@ fn main() -> Result<()> {
             let mut pixel = 0;
 
             if layer.checksum != decoder.checksum() {
-                eprintln!("WARN: Checksum mismatch for layer {}", i);
+                eprintln!("WARN: Checksum mismatch for layer {i}");
             }
 
-            let path = layers.join(format!("layer_{:03}.png", i));
+            let path = layers.join(format!("layer_{i:03}.png"));
             let mut image = RgbImage::new(
                 goo.header.x_resolution as u32,
                 goo.header.y_resolution as u32,

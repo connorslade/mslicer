@@ -70,7 +70,7 @@ impl RemotePrint {
         self.services.is_some()
     }
 
-    pub fn printers(&self) -> MutexGuard<Vec<Printer>> {
+    pub fn printers(&self) -> MutexGuard<'_, Vec<Printer>> {
         self.printers.lock()
     }
 

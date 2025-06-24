@@ -159,7 +159,7 @@ impl Mqtt {
         self.server.upgrade().unwrap().shutdown();
     }
 
-    pub fn get_client(&self, mainboard_id: &str) -> MappedRwLockReadGuard<MqttClient> {
+    pub fn get_client(&self, mainboard_id: &str) -> MappedRwLockReadGuard<'_, MqttClient> {
         RwLockReadGuard::map(self.clients.read(), |clients| {
             clients.get(mainboard_id).unwrap()
         })

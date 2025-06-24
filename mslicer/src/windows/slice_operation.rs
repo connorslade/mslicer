@@ -29,7 +29,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
 
         if let Some(completion) = slice_operation.completion() {
             ui.horizontal(|ui| {
-                ui.label(format!("Slicing completed in {}!", completion));
+                ui.label(format!("Slicing completed in {completion}!"));
 
                 ui.with_layout(Layout::default().with_cross_align(Align::Max), |ui| {
                     ui.horizontal(|ui| {
@@ -127,7 +127,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
                     .text(format!("{:.2}%", current as f32 / total as f32 * 100.0)),
             );
 
-            ui.label(format!("Slicing... {}/{}", current, total));
+            ui.label(format!("Slicing... {current}/{total}"));
             ctx.request_repaint();
         }
     } else {

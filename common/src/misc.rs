@@ -36,7 +36,7 @@ pub trait EncodableLayer {
 pub fn human_duration(duration: Duration) -> String {
     let ms = duration.as_millis() as f32;
     if ms < 1000.0 {
-        format!("{:}ms", ms)
+        format!("{ms}ms")
     } else if ms < 60_000.0 {
         format!("{:.2}s", ms / 1000.0)
     } else if ms < 3_600_000.0 {
