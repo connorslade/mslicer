@@ -2,6 +2,8 @@
 
 ## v0.3.0 &mdash; Coming Soon
 
+- Added support for SVGs as an output format
+
 ## v0.2.2 &mdash; June 14th, 2025
 
 - Clamp grid size
