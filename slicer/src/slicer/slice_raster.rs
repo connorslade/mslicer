@@ -1,83 +1,15 @@
-use std::{
-    ops::Deref,
-    sync::{
-        atomic::{AtomicU32, Ordering},
-        Arc, Condvar, Mutex,
-    },
-};
+use std::sync::atomic::Ordering;
 
-use common::{
-    config::SliceConfig,
-    format::Format,
-    misc::{EncodableLayer, SliceResult, VectorLayer, VectorSliceResult},
-};
+use common::misc::{EncodableLayer, SliceResult};
 use ordered_float::OrderedFloat;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
-use crate::{format::FormatSliceResult, mesh::Mesh, segments::Segments1D};
-
-const SEGMENT_LAYERS: usize = 100;
-
-/// Used to slice a mesh.
-pub struct Slicer {
-    slice_config: SliceConfig,
-    models: Vec<Mesh>,
-    progress: Progress,
-}
-
-/// Allows checking the progress of a slicing operation.
-#[derive(Clone)]
-pub struct Progress {
-    inner: Arc<ProgressInner>,
-}
-
-pub struct ProgressInner {
-    completed: AtomicU32,
-    total: u32,
-
-    notify: Condvar,
-    last_completed: Mutex<u32>,
-}
+use crate::{
+    segments::Segments1D,
+    slicer::{Slicer, SEGMENT_LAYERS},
+};
 
 impl Slicer {
-    /// Creates a new slicer given a slice config and list of models.
-    pub fn new(slice_config: SliceConfig, models: Vec<Mesh>) -> Self {
-        let max_z = models.iter().fold(0_f32, |max, model| {
-            let verts = model.vertices().iter();
-            let z = verts.fold(0_f32, |max, &f| max.max(model.transform(&f).z));
-            max.max(z)
-        });
-
-        let layers = (max_z / slice_config.slice_height).ceil() as u32;
-        let max_layers = (slice_config.platform_size.z / slice_config.slice_height).ceil() as u32;
-
-        Self {
-            slice_config,
-            models,
-            progress: Progress {
-                inner: Arc::new(ProgressInner {
-                    completed: AtomicU32::new(0),
-                    total: layers.min(max_layers),
-
-                    notify: Condvar::new(),
-                    last_completed: Mutex::new(0),
-                }),
-            },
-        }
-    }
-
-    /// Gets an instance of the slicing [`Progress`] struct.
-    pub fn progress(&self) -> Progress {
-        self.progress.clone()
-    }
-
-    pub fn slice_format(&self) -> FormatSliceResult<'_> {
-        match self.slice_config.format {
-            Format::Goo => FormatSliceResult::Goo(self.slice::<goo_format::LayerEncoder>()),
-            Format::Svg => FormatSliceResult::Svg(self.slice_vector()),
-        }
-    }
-
     /// Actually runs the slicing operation, it is multithreaded.
     pub fn slice<Layer: EncodableLayer>(&self) -> SliceResult<'_, Layer::Output> {
         let platform_resolution = self.slice_config.platform_resolution;
@@ -202,81 +134,5 @@ impl Slicer {
             layers,
             slice_config: &self.slice_config,
         }
-    }
-
-    pub fn slice_vector(&self) -> VectorSliceResult<'_> {
-        let segments = self
-            .models
-            .iter()
-            .map(|x| Segments1D::from_mesh(x, SEGMENT_LAYERS))
-            .collect::<Vec<_>>();
-
-        let layers = (0..self.progress.total)
-            .into_par_iter()
-            .inspect(|_| {
-                self.progress.completed.fetch_add(1, Ordering::Relaxed);
-                self.progress.notify.notify_all();
-            })
-            .map(|layer| {
-                let height = layer as f32 * self.slice_config.slice_height;
-
-                let segments = self
-                    .models
-                    .iter()
-                    .enumerate()
-                    .flat_map(|(idx, mesh)| segments[idx].intersect_plane(mesh, height))
-                    .collect::<Vec<_>>();
-
-                VectorLayer {
-                    points: segments
-                        .into_iter()
-                        .flat_map(|(points, _side)| points.map(|x| x.xy()))
-                        .collect(),
-                }
-            })
-            .collect::<Vec<_>>();
-
-        self.progress.notify.notify_all();
-
-        VectorSliceResult {
-            layers,
-            slice_config: &self.slice_config,
-        }
-    }
-}
-
-impl Deref for Progress {
-    type Target = ProgressInner;
-
-    fn deref(&self) -> &Self::Target {
-        &self.inner
-    }
-}
-
-impl Progress {
-    /// Waits until the next layer is complete, returning the current count of
-    /// sliced layers.
-    pub fn wait(&self) -> u32 {
-        let mut last_completed = self
-            .notify
-            .wait(self.last_completed.lock().unwrap())
-            .unwrap();
-
-        let current = self.completed.load(Ordering::Relaxed);
-        if *last_completed < current {
-            *last_completed = current;
-        }
-
-        current
-    }
-
-    /// Returns the count of sliced layers.
-    pub fn completed(&self) -> u32 {
-        self.completed.load(Ordering::Relaxed)
-    }
-
-    /// Returns the count of layers in the current slicing operation.
-    pub fn total(&self) -> u32 {
-        self.total
     }
 }

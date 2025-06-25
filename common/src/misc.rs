@@ -16,7 +16,7 @@ pub struct VectorSliceResult<'a> {
 }
 
 pub struct VectorLayer {
-    pub points: Vec<Vector2<f32>>,
+    pub polygons: Vec<Vec<Vector2<f32>>>,
 }
 
 #[derive(Debug)]
