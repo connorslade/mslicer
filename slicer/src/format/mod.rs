@@ -5,6 +5,7 @@ use nalgebra::{Vector2, Vector3};
 use parking_lot::MappedMutexGuard;
 
 use common::{
+    format::Format,
     image::Image,
     misc::{SliceResult, VectorSliceResult},
     serde::Serializer,
@@ -79,6 +80,13 @@ impl FormatSliceFile {
                 size: Vector3::zeros(),
                 bottom_layers: 0,
             },
+        }
+    }
+
+    pub fn as_format(&self) -> Format {
+        match self {
+            FormatSliceFile::Goo(_) => Format::Goo,
+            FormatSliceFile::Svg(_) => Format::Svg,
         }
     }
 

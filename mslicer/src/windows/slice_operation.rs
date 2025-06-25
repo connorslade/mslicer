@@ -91,36 +91,45 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
                 return;
             };
 
-            ui.with_layout(Layout::bottom_up(Align::Min), |ui| {
-                ui.horizontal(|ui| {
-                    let layer_digits = result.layer_count.1 as usize;
-                    ui.add(
-                        DragValue::new(&mut result.slice_preview_layer)
-                            .clamp_range(1..=result.file.info().layers)
-                            .custom_formatter(|n, _| {
-                                format!("{:0>layer_digits$}/{}", n, result.layer_count.0)
-                            }),
-                    );
-                    result.slice_preview_layer +=
-                        ui.button(RichText::new("+").monospace()).clicked() as usize;
-                    result.slice_preview_layer -=
-                        ui.button(RichText::new("-").monospace()).clicked() as usize;
+            let format = result.file.as_format();
+            if !format.supports_preview() {
+                ui.add_space(8.0);
+                ui.label(format!(
+                    "The {} format doesn't yet support previews...",
+                    format.name()
+                ));
+            } else {
+                ui.with_layout(Layout::bottom_up(Align::Min), |ui| {
+                    ui.horizontal(|ui| {
+                        let layer_digits = result.layer_count.1 as usize;
+                        ui.add(
+                            DragValue::new(&mut result.slice_preview_layer)
+                                .clamp_range(1..=result.file.info().layers)
+                                .custom_formatter(|n, _| {
+                                    format!("{:0>layer_digits$}/{}", n, result.layer_count.0)
+                                }),
+                        );
+                        result.slice_preview_layer +=
+                            ui.button(RichText::new("+").monospace()).clicked() as usize;
+                        result.slice_preview_layer -=
+                            ui.button(RichText::new("-").monospace()).clicked() as usize;
 
-                    ui.separator();
-                    ui.label("Offset");
-                    vec2_dragger(ui, result.preview_offset.as_mut(), |x| x);
+                        ui.separator();
+                        ui.label("Offset");
+                        vec2_dragger(ui, result.preview_offset.as_mut(), |x| x);
 
-                    ui.separator();
-                    ui.label("Scale");
-                    ui.add(
-                        DragValue::new(&mut result.preview_scale)
-                            .clamp_range(0.1..=f32::MAX)
-                            .speed(0.1),
-                    );
+                        ui.separator();
+                        ui.label("Scale");
+                        ui.add(
+                            DragValue::new(&mut result.preview_scale)
+                                .clamp_range(0.1..=f32::MAX)
+                                .speed(0.1),
+                        );
+                    });
+
+                    slice_preview(ui, result);
                 });
-
-                slice_preview(ui, result);
-            });
+            }
         } else {
             ui.add(
                 ProgressBar::new(current as f32 / total as f32)

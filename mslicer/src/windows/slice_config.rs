@@ -1,13 +1,14 @@
-use egui::{Context, DragValue, Grid, Ui};
+use egui::{ComboBox, Context, DragValue, Grid, Ui};
 use egui_phosphor::regular::INFO;
 
 use crate::{
     app::App,
     ui::components::{vec2_dragger, vec3_dragger},
 };
-use common::config::ExposureConfig;
+use common::{config::ExposureConfig, format::Format};
 
 const TRANSITION_LAYER_TOOLTIP: &str = "Transition layers interpolate between the first exposure settings and the normal exposure settings.";
+const SLICE_FORMAT_TOOLTIP: &str = "Only Goo files can be sent with the 'Remote Print' module.";
 
 pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     Grid::new("slice_config")
@@ -15,6 +16,19 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
         .spacing([40.0, 4.0])
         .striped(true)
         .show(ui, |ui| {
+            ui.horizontal(|ui| {
+                ui.label("Slice Format");
+                ui.label(INFO).on_hover_text(SLICE_FORMAT_TOOLTIP);
+            });
+            ComboBox::new("slice_format", "")
+                .selected_text(app.slice_config.format.name())
+                .show_ui(ui, |ui| {
+                    for format in Format::ALL {
+                        ui.selectable_value(&mut app.slice_config.format, format, format.name());
+                    }
+                });
+            ui.end_row();
+
             ui.label("Platform Resolution");
             ui.horizontal(|ui| {
                 vec2_dragger(ui, app.slice_config.platform_resolution.as_mut(), |x| x);
