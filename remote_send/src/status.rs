@@ -96,6 +96,7 @@ pub enum PrintInfoStatus {
     Exposure = 3,
     Retracting = 4,
     FinalRetract = 12,
+    Canceled = 13, // maybe?
     Complete = 16,
 }
 

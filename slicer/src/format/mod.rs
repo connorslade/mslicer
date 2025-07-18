@@ -23,7 +23,7 @@ pub enum FormatSliceResult<'a> {
 
 // todo: replace with trait obj?
 pub enum FormatSliceFile {
-    Goo(goo_format::File),
+    Goo(Box<goo_format::File>),
     Svg(svg::SvgFile),
 }
 
@@ -47,7 +47,7 @@ impl FormatSliceFile {
                     PreviewImage::from_image_scaled(&preview_image, FilterType::Nearest);
                 file.header.small_preview =
                     PreviewImage::from_image_scaled(&preview_image, FilterType::Nearest);
-                Self::Goo(file)
+                Self::Goo(Box::new(file))
             }
             FormatSliceResult::Svg(result) => Self::Svg(SvgFile::new(result)),
         }

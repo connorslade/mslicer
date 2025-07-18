@@ -99,3 +99,12 @@
 - [x] Add button to reset UI
 - [ ] Put all models in the same segments1d to improve slicing times with supports?
 - [ ] Island detection
+- [ ] Require `.mslicer` extension when saving
+- [ ] Alignment tools
+- [ ] Tools for working with lots of models
+- [ ] Bounds checking in slice preview
+- [ ] Allow loading .goo files to use with the preview and remote send
+- [ ] Allow inspecting / manually editing goo files?
+- [ ] Systematic testing to fix bad slicing / polygon filling
+- [ ] Recompute normals by default...
+- [ ] Dont show normals for hidden models
