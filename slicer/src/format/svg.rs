@@ -8,6 +8,7 @@ use svg::{
     Document,
 };
 
+#[derive(Clone)]
 pub struct SvgFile {
     layers: Vec<VectorLayer>,
     area: Vector2<u32>,

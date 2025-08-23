@@ -1,5 +1,6 @@
 use std::fmt::{self, Debug, Display};
 
+#[derive(Clone)]
 pub struct SizedString<const SIZE: usize> {
     pub(crate) data: [u8; SIZE],
 }

@@ -6,6 +6,7 @@ use common::serde::{Deserializer, Serializer, SizedString};
 
 use crate::{PreviewImage, DELIMITER, MAGIC_TAG};
 
+#[derive(Clone)]
 /// The header section of a `.goo` file.
 pub struct Header {
     /// Format version, should be "V3.0".

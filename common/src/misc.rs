@@ -15,6 +15,7 @@ pub struct VectorSliceResult<'a> {
     pub slice_config: &'a SliceConfig,
 }
 
+#[derive(Clone)]
 pub struct VectorLayer {
     pub polygons: Vec<Vec<Vector2<f32>>>,
 }
