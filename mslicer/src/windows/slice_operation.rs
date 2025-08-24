@@ -16,7 +16,7 @@ use crate::{
     render::slice_preview::SlicePreviewRenderCallback,
     ui::{components::vec2_dragger, popup::Popup},
 };
-use common::serde::DynamicSerializer;
+use common::{annotations::AnnotationLevelFlags, serde::DynamicSerializer};
 
 const FILENAME_POPUP_TEXT: &str =
     "To ensure the file name is unique, some extra random characters will be added on the end.";
@@ -196,6 +196,14 @@ fn slice_preview(ui: &mut egui::Ui, result: &mut SliceResult) {
                 result.preview_scale = result.preview_scale.max(0.1);
             }
 
+            let mut ann_image = vec![
+                0_u8;
+                ((width * height) as u64).next_multiple_of(COPY_BUFFER_ALIGNMENT)
+                    as usize
+            ];
+
+            // show all kinds of annotations (for now)
+            let mut show_hide = 0b1111_u32;
             let callback = Callback::new_paint_callback(
                 rect,
                 SlicePreviewRenderCallback {
@@ -204,6 +212,8 @@ fn slice_preview(ui: &mut egui::Ui, result: &mut SliceResult) {
                     aspect: rect.width() / rect.height(),
                     scale: preview_scale,
                     new_preview,
+                    new_annotations: Some(ann_image),
+                    show_hide,
                 },
             );
             ui.painter().add(callback);

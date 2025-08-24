@@ -8,6 +8,7 @@ use std::{
 };
 
 use clone_macro::clone;
+use common::annotations::Annotations;
 use const_format::concatcp;
 use eframe::Theme;
 use egui::{Vec2, Visuals};
@@ -198,6 +199,7 @@ impl App {
                     preview_offset: Vector2::new(0.0, 0.0),
                     preview_scale: preview_scale.max(1.0).log2(),
                     layer_count: (layers, layers.to_string().len() as u8),
+                    annotations: Annotations::default(),
                 });
             }
         ));
