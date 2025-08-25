@@ -42,6 +42,23 @@ pub struct SliceResult {
     pub layer_count: (usize, u8),
 
     pub annotations: Annotations,
+    pub show_error_annotations: bool,
+    pub show_warning_annotations: bool,
+    pub show_info_annotations: bool,
+    pub show_debug_annotations: bool,
+}
+
+impl SliceResult {
+    pub fn center_on(&mut self, pos: &[i64; 2]) {
+        let width = self.file.info().resolution.x as f32;
+        let height = self.file.info().resolution.y as f32;
+        self.preview_offset =
+            Vector2::new(-width / 2.0 + pos[0] as f32, -height / 2.0 + pos[1] as f32);
+    }
+
+    pub fn set_layer_idx(&mut self, layer_idx: SliceIdx) {
+        self.slice_preview_layer = layer_idx;
+    }
 }
 
 impl SliceOperation {

@@ -2,8 +2,8 @@ use std::{fs::File, io::Write, mem, sync::Arc};
 
 use const_format::concatcp;
 use egui::{
-    style::HandleShape, text::LayoutJob, Align, Button, Context, DragValue, FontSelection, Grid,
-    Id, Layout, ProgressBar, RichText, Sense, Slider, Style, Ui, Vec2,
+    style::HandleShape, text::LayoutJob, Align, Button, Color32, Context, DragValue, FontSelection,
+    Grid, Id, Layout, ProgressBar, RichText, Sense, Slider, Style, Ui, Vec2,
 };
 use egui_phosphor::regular::{FLOPPY_DISK_BACK, PAPER_PLANE_TILT};
 use egui_wgpu::Callback;
@@ -26,6 +26,8 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
         let progress = &slice_operation.progress;
 
         let (current, total) = (progress.completed(), progress.total());
+
+        let mut show_pp: bool = false;
 
         if let Some(completion) = slice_operation.completion() {
             ui.horizontal(|ui| {
@@ -70,6 +72,8 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
                                 }
                             });
                         });
+
+                        show_pp = ui.button("Post Processing").clicked();
 
                         if ui.button(concatcp!(FLOPPY_DISK_BACK, " Save")).clicked() {
                             let result = app.slice_operation.as_ref().unwrap().result();
@@ -125,6 +129,24 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
                                 .clamp_range(0.1..=f32::MAX)
                                 .speed(0.1),
                         );
+                        ui.separator();
+                        ui.label("Show:");
+                        ui.checkbox(
+                            &mut result.show_error_annotations,
+                            RichText::new("Errors").color(Color32::LIGHT_RED),
+                        );
+                        ui.checkbox(
+                            &mut result.show_warning_annotations,
+                            RichText::new("Warnings").color(Color32::LIGHT_YELLOW),
+                        );
+                        ui.checkbox(
+                            &mut result.show_info_annotations,
+                            RichText::new("Info").color(Color32::LIGHT_BLUE),
+                        );
+                        ui.checkbox(
+                            &mut result.show_debug_annotations,
+                            RichText::new("Debug").color(Color32::GRAY),
+                        );
                     });
 
                     slice_preview(ui, result);
@@ -138,6 +160,9 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
 
             ui.label(format!("Slicing... {current}/{total}"));
             ctx.request_repaint();
+        }
+        if show_pp {
+            app.show_post_processing();
         }
     } else {
         ui.horizontal_wrapped(|ui| {
@@ -202,8 +227,33 @@ fn slice_preview(ui: &mut egui::Ui, result: &mut SliceResult) {
                     as usize
             ];
 
+            for a in result.annotations.iter().filter(|&a| {
+                a.slice_idx()
+                    .map(|idx| idx == result.slice_preview_layer)
+                    .unwrap_or(false)
+            }) {
+                if let Some(coords) = a.slice_pos() {
+                    ann_image[width as usize * coords[1] as usize + coords[0] as usize] =
+                        a.to_byte();
+                }
+            }
+
             // show all kinds of annotations (for now)
             let mut show_hide = 0b1111_u32;
+            // show only selected levels
+            if result.show_debug_annotations {
+                show_hide |= AnnotationLevelFlags::Debug as u32;
+            }
+            if result.show_info_annotations {
+                show_hide |= AnnotationLevelFlags::Info as u32;
+            }
+            if result.show_warning_annotations {
+                show_hide |= AnnotationLevelFlags::Warn as u32;
+            }
+            if result.show_error_annotations {
+                show_hide |= AnnotationLevelFlags::Error as u32;
+            }
+
             let callback = Callback::new_paint_callback(
                 rect,
                 SlicePreviewRenderCallback {

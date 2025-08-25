@@ -38,10 +38,12 @@ use common::config::SliceConfig;
 use slicer::{format::FormatSliceFile, slicer::Slicer, Pos};
 
 pub mod config;
+pub mod post_processing_operation;
 pub mod project;
 pub mod remote_print;
 pub mod slice_operation;
 use config::Config;
+use post_processing_operation::PostProcessingOperation;
 use remote_print::RemotePrint;
 use slice_operation::{SliceOperation, SliceResult};
 
@@ -60,6 +62,7 @@ pub struct App {
     pub camera: Camera,
     pub meshes: Arc<RwLock<Vec<RenderedMesh>>>,
     pub slice_operation: Option<SliceOperation>,
+    pub post_processing_operation: Option<PostProcessingOperation>,
     pub remote_print: RemotePrint,
     pub config_dir: PathBuf,
 }
@@ -106,6 +109,7 @@ impl App {
             fps: FpsTracker::new(),
             meshes: Arc::new(RwLock::new(Vec::new())),
             slice_operation: None,
+            post_processing_operation: Some(PostProcessingOperation::new(vec![])),
             remote_print: RemotePrint::uninitialized(),
             config_dir,
         }
@@ -200,6 +204,10 @@ impl App {
                     preview_scale: preview_scale.max(1.0).log2(),
                     layer_count: (layers, layers.to_string().len() as u8),
                     annotations: Annotations::default(),
+                    show_error_annotations: true,
+                    show_warning_annotations: true,
+                    show_info_annotations: true,
+                    show_debug_annotations: false,
                 });
             }
         ));
@@ -230,6 +238,16 @@ impl App {
         self.dock_state = DockState::new(vec![Tab::Viewport]);
         let surface = self.dock_state.main_surface_mut();
         default_dock_layout(surface);
+    }
+
+    pub fn show_post_processing(&mut self) {
+        if let Some(panel) = self.dock_state.find_tab(&Tab::PostProcessing) {
+            self.dock_state.set_active_tab(panel);
+        } else {
+            let window_id = self.dock_state.add_window(vec![Tab::PostProcessing]);
+            let window = self.dock_state.get_window_state_mut(window_id).unwrap();
+            window.set_size(Vec2::new(700.0, 400.0));
+        }
     }
 }
 
