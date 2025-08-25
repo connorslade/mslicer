@@ -12,6 +12,7 @@ const DEPTH_TEXTURE_FORMAT: TextureFormat = TextureFormat::Depth24PlusStencil8;
 
 mod app;
 mod plugins;
+mod post_processing;
 mod render;
 mod ui;
 mod windows;
