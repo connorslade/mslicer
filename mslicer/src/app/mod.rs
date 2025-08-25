@@ -26,6 +26,7 @@ use crate::{
         elephant_foot_fixer::{self},
         PluginManager,
     },
+    post_processing::IslandDetectionPass,
     render::{camera::Camera, preview, rendered_mesh::RenderedMesh},
     ui::{
         drag_and_drop,
@@ -109,7 +110,9 @@ impl App {
             fps: FpsTracker::new(),
             meshes: Arc::new(RwLock::new(Vec::new())),
             slice_operation: None,
-            post_processing_operation: Some(PostProcessingOperation::new(vec![])),
+            post_processing_operation: Some(PostProcessingOperation::new(vec![Box::new(
+                IslandDetectionPass::default(),
+            )])),
             remote_print: RemotePrint::uninitialized(),
             config_dir,
         }

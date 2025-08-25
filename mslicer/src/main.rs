@@ -4,6 +4,7 @@ use anyhow::Result;
 use eframe::NativeOptions;
 use egui::{FontDefinitions, IconData, Vec2, ViewportBuilder};
 use egui_wgpu::WgpuConfiguration;
+use rayon::ThreadPoolBuilder;
 use tracing::level_filters::LevelFilter;
 use tracing_subscriber::{filter, layer::SubscriberExt, util::SubscriberInitExt};
 use wgpu::{DeviceDescriptor, Features, Limits, TextureFormat};
@@ -40,6 +41,11 @@ fn main() -> Result<()> {
 
     let max_buffer_size = config.max_buffer_size;
     let icon = image::load_from_memory(ICON)?;
+
+    ThreadPoolBuilder::new()
+        .num_threads(std::thread::available_parallelism().unwrap().get() - 1)
+        .build_global()
+        .unwrap();
     eframe::run_native(
         "mslicer",
         NativeOptions {
