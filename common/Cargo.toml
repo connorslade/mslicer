@@ -9,3 +9,6 @@ nalgebra.workspace = true
 rand.workspace = true
 rayon.workspace = true
 serde.workspace = true
+
+[dev-dependencies]
+proptest = "1.7.0"
