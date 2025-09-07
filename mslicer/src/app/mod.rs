@@ -8,7 +8,7 @@ use std::{
 };
 
 use clone_macro::clone;
-use common::annotations::Annotations;
+use common::annotations::{AnnotationLevelFlags, Annotations};
 use const_format::concatcp;
 use eframe::Theme;
 use egui::{Vec2, Visuals};
@@ -207,10 +207,7 @@ impl App {
                     preview_scale: preview_scale.max(1.0).log2(),
                     layer_count: (layers, layers.to_string().len() as u8),
                     annotations: Annotations::default(),
-                    show_error_annotations: true,
-                    show_warning_annotations: true,
-                    show_info_annotations: true,
-                    show_debug_annotations: false,
+                    show_annotations: AnnotationLevelFlags::all(),
                 });
             }
         ));

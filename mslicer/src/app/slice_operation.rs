@@ -7,7 +7,7 @@ use std::{
 };
 
 use common::{
-    annotations::{Annotations, SliceIdx},
+    annotations::{AnnotationLevelFlags, Annotations, SliceIdx},
     misc::human_duration,
 };
 use image::RgbaImage;
@@ -42,10 +42,7 @@ pub struct SliceResult {
     pub layer_count: (usize, u8),
 
     pub annotations: Annotations,
-    pub show_error_annotations: bool,
-    pub show_warning_annotations: bool,
-    pub show_info_annotations: bool,
-    pub show_debug_annotations: bool,
+    pub show_annotations: AnnotationLevelFlags,
 }
 
 impl SliceResult {

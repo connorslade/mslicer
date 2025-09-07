@@ -3,7 +3,7 @@ use std::{fs::File, io::Write, mem, sync::Arc};
 use const_format::concatcp;
 use egui::{
     style::HandleShape, text::LayoutJob, Align, Button, Color32, Context, DragValue, FontSelection,
-    Grid, Id, Layout, ProgressBar, RichText, Sense, Slider, Style, Ui, Vec2,
+    Grid, Id, Layout, ProgressBar, RichText, Sense, Slider, Style, Ui, Vec2, WidgetText,
 };
 use egui_phosphor::regular::{FLOPPY_DISK_BACK, PAPER_PLANE_TILT};
 use egui_wgpu::Callback;
@@ -20,6 +20,23 @@ use common::{annotations::AnnotationLevelFlags, serde::DynamicSerializer};
 
 const FILENAME_POPUP_TEXT: &str =
     "To ensure the file name is unique, some extra random characters will be added on the end.";
+
+fn show_annotation_cb(
+    ui: &mut Ui,
+    flags: &mut AnnotationLevelFlags,
+    flag: AnnotationLevelFlags,
+    text: impl Into<WidgetText>,
+) {
+    let mut is_set = flags.contains(flag);
+
+    if ui.checkbox(&mut is_set, text).changed() {
+        if is_set {
+            flags.insert(flag);
+        } else {
+            flags.remove(flag);
+        }
+    }
+}
 
 pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
     if let Some(slice_operation) = &app.slice_operation {
@@ -131,20 +148,28 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
                         );
                         ui.separator();
                         ui.label("Show:");
-                        ui.checkbox(
-                            &mut result.show_error_annotations,
+                        show_annotation_cb(
+                            ui,
+                            &mut result.show_annotations,
+                            AnnotationLevelFlags::ERROR,
                             RichText::new("Errors").color(Color32::LIGHT_RED),
                         );
-                        ui.checkbox(
-                            &mut result.show_warning_annotations,
+                        show_annotation_cb(
+                            ui,
+                            &mut result.show_annotations,
+                            AnnotationLevelFlags::WARN,
                             RichText::new("Warnings").color(Color32::LIGHT_YELLOW),
                         );
-                        ui.checkbox(
-                            &mut result.show_info_annotations,
+                        show_annotation_cb(
+                            ui,
+                            &mut result.show_annotations,
+                            AnnotationLevelFlags::INFO,
                             RichText::new("Info").color(Color32::LIGHT_BLUE),
                         );
-                        ui.checkbox(
-                            &mut result.show_debug_annotations,
+                        show_annotation_cb(
+                            ui,
+                            &mut result.show_annotations,
+                            AnnotationLevelFlags::DEBUG,
                             RichText::new("Debug").color(Color32::GRAY),
                         );
                     });
@@ -191,6 +216,29 @@ fn slice_preview(ui: &mut egui::Ui, result: &mut SliceResult) {
         let (width, height) = (info.resolution.x, info.resolution.y);
 
         result.slice_preview_layer = result.slice_preview_layer.clamp(1, info.layers as usize);
+
+        let new_ann_image = if result.last_preview_layer != result.slice_preview_layer {
+            let mut ann_image = vec![
+                0_u8;
+                ((width * height) as u64).next_multiple_of(COPY_BUFFER_ALIGNMENT)
+                    as usize
+            ];
+
+            for a in result.annotations.iter().filter(|&a| {
+                a.slice_idx()
+                    .map(|idx| idx == result.slice_preview_layer)
+                    .unwrap_or(false)
+            }) {
+                if let Some(coords) = a.slice_pos() {
+                    ann_image[width as usize * coords[1] as usize + coords[0] as usize] =
+                        a.to_byte();
+                }
+            }
+            Some(ann_image)
+        } else {
+            None
+        };
+
         let new_preview = if result.last_preview_layer != result.slice_preview_layer {
             result.last_preview_layer = result.slice_preview_layer;
 
@@ -221,38 +269,6 @@ fn slice_preview(ui: &mut egui::Ui, result: &mut SliceResult) {
                 result.preview_scale = result.preview_scale.max(0.1);
             }
 
-            let mut ann_image = vec![
-                0_u8;
-                ((width * height) as u64).next_multiple_of(COPY_BUFFER_ALIGNMENT)
-                    as usize
-            ];
-
-            for a in result.annotations.iter().filter(|&a| {
-                a.slice_idx()
-                    .map(|idx| idx == result.slice_preview_layer)
-                    .unwrap_or(false)
-            }) {
-                if let Some(coords) = a.slice_pos() {
-                    ann_image[width as usize * coords[1] as usize + coords[0] as usize] =
-                        a.to_byte();
-                }
-            }
-
-            // show all kinds of annotations (for now)
-            let mut show_hide = 0b1111_u32;
-            // show only selected levels
-            if result.show_debug_annotations {
-                show_hide |= AnnotationLevelFlags::Debug as u32;
-            }
-            if result.show_info_annotations {
-                show_hide |= AnnotationLevelFlags::Info as u32;
-            }
-            if result.show_warning_annotations {
-                show_hide |= AnnotationLevelFlags::Warn as u32;
-            }
-            if result.show_error_annotations {
-                show_hide |= AnnotationLevelFlags::Error as u32;
-            }
 
             let callback = Callback::new_paint_callback(
                 rect,
@@ -262,8 +278,8 @@ fn slice_preview(ui: &mut egui::Ui, result: &mut SliceResult) {
                     aspect: rect.width() / rect.height(),
                     scale: preview_scale,
                     new_preview,
-                    new_annotations: Some(ann_image),
-                    show_hide,
+                    new_annotations: new_ann_image,
+                    show_hide: result.show_annotations.bits() as u32,
                 },
             );
             ui.painter().add(callback);

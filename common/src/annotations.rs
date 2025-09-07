@@ -3,6 +3,7 @@
 //! They shouldn't typically be stored since they can be reproduced at any
 //! time by running the passes. But they need to be accessible for the
 //! renderer.
+use bitflags::bitflags;
 use rayon::prelude::*;
 use std::{
     collections::HashMap,
@@ -56,28 +57,31 @@ impl AnnotationLevel {
     pub fn flags(&self) -> AnnotationLevelFlags {
         use AnnotationLevel::*;
         match self {
-            Debug(_) => AnnotationLevelFlags::Debug,
-            Info(_) => AnnotationLevelFlags::Info,
-            Warn(_) => AnnotationLevelFlags::Warn,
-            Error(_) => AnnotationLevelFlags::Error,
+            Debug(_) => AnnotationLevelFlags::DEBUG,
+            Info(_) => AnnotationLevelFlags::INFO,
+            Warn(_) => AnnotationLevelFlags::WARN,
+            Error(_) => AnnotationLevelFlags::ERROR,
         }
     }
 
     /// Returns byte representation using [AnnotationLevelFlags].
     #[inline]
     pub fn to_byte(&self) -> u8 {
-        self.flags() as u8 | self.kind() as u8
+        self.flags().0 | self.kind() as u8
     }
 }
 
 /// Bit flags for annotation levels.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, PartialOrd, Ord, Hash)]
-#[repr(u8)]
-pub enum AnnotationLevelFlags {
-    Error = 0b1000_0000,
-    Warn = 0b0100_0000,
-    Info = 0b0010_0000,
-    Debug = 0b0001_0000,
+pub struct AnnotationLevelFlags(u8);
+
+bitflags! {
+    impl AnnotationLevelFlags: u8 {
+        const ERROR = 0b1000_0000;
+        const WARN  = 0b0100_0000;
+        const INFO  = 0b0010_0000;
+        const DEBUG = 0b0001_0000;
+    }
 }
 
 /// Annotation kinds are the semantic type of the annotation.
@@ -186,7 +190,7 @@ impl Display for Annotation {
     }
 }
 
-/// Groups islands into clusters of neighboring pixels. 
+/// Groups islands into clusters of neighboring pixels.
 /// References an underlying shared [Annotations] object.
 #[derive(Debug, derive_more::Deref, Eq, Hash, PartialEq)]
 pub struct ClusterView {
