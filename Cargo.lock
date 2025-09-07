@@ -1229,6 +1229,7 @@ dependencies = [
 name = "common"
 version = "0.1.0"
 dependencies = [
+ "bitflags 2.9.3",
  "derive_more",
  "nalgebra 0.32.6",
  "proptest",
