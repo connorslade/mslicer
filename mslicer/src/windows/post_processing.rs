@@ -33,7 +33,6 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                                 tracing::debug!("starting pass...");
                                 pass.run(&app.slice_config, sop.result.clone(), progress.clone());
                                 tracing::debug!("started pass");
-                                ui.ctx().request_repaint();
                             }
                         }
                         PassState::Completed { run_time } => {

@@ -226,7 +226,7 @@ fn slice_preview(ui: &mut egui::Ui, result: &mut SliceResult) {
 
             for a in result.annotations.iter().filter(|&a| {
                 a.slice_idx()
-                    .map(|idx| idx == result.slice_preview_layer)
+                    .map(|idx| *idx == result.slice_preview_layer)
                     .unwrap_or(false)
             }) {
                 if let Some(coords) = a.slice_pos() {

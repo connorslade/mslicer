@@ -4,6 +4,7 @@
 //! time by running the passes. But they need to be accessible for the
 //! renderer.
 use bitflags::bitflags;
+use derive_more::{Deref, Display, From};
 use rayon::prelude::*;
 use std::{
     collections::HashMap,
@@ -13,7 +14,10 @@ use std::{
 };
 
 /// Vertical layer index (bottom-up).
-pub type SliceIdx = usize;
+#[derive(Copy, Clone, Debug, Default, Deref, Display, Eq, From, Hash, PartialEq, PartialOrd, Ord)]
+#[repr(transparent)]
+pub struct SliceIdx(usize);
+
 /// Pixel position within slice.
 pub type Coord = [i64; 2];
 
@@ -121,7 +125,7 @@ impl Annotation {
     }
 
     #[inline]
-    pub fn slice_idx(&self) -> Option<usize> {
+    pub fn slice_idx(&self) -> Option<SliceIdx> {
         match self {
             Annotation::Island { slice_idx, .. } => Some(*slice_idx),
         }
@@ -357,17 +361,17 @@ mod tests {
         let example: Arc<Annotations> = Arc::new(
             vec![
                 Annotation::Island {
-                    slice_idx: 0,
+                    slice_idx: 0.into(),
                     coord: [1, 1],
                 }
                 .as_debug(),
                 Annotation::Island {
-                    slice_idx: 0,
+                    slice_idx: 0.into(),
                     coord: [2, 2],
                 }
                 .as_debug(),
                 Annotation::Island {
-                    slice_idx: 0,
+                    slice_idx: 0.into(),
                     coord: [1, 2],
                 }
                 .as_debug(),
@@ -398,17 +402,17 @@ mod tests {
         let example: Arc<Annotations> = Arc::new(
             vec![
                 Annotation::Island {
-                    slice_idx: 0,
+                    slice_idx: 0.into(),
                     coord: [4, 4],
                 }
                 .as_debug(),
                 Annotation::Island {
-                    slice_idx: 0,
+                    slice_idx: 0.into(),
                     coord: [2, 2],
                 }
                 .as_debug(),
                 Annotation::Island {
-                    slice_idx: 0,
+                    slice_idx: 0.into(),
                     coord: [0, 0],
                 }
                 .as_debug(),
@@ -430,32 +434,32 @@ mod tests {
         let example: Arc<Annotations> = Arc::new(
             vec![
                 Annotation::Island {
-                    slice_idx: 0,
+                    slice_idx: 0.into(),
                     coord: [1, 1],
                 }
                 .as_debug(),
                 Annotation::Island {
-                    slice_idx: 0,
+                    slice_idx: 0.into(),
                     coord: [2, 2],
                 }
                 .as_debug(),
                 Annotation::Island {
-                    slice_idx: 0,
+                    slice_idx: 0.into(),
                     coord: [1, 2],
                 }
                 .as_debug(),
                 Annotation::Island {
-                    slice_idx: 0,
+                    slice_idx: 0.into(),
                     coord: [2, 3],
                 }
                 .as_debug(),
                 Annotation::Island {
-                    slice_idx: 0,
+                    slice_idx: 0.into(),
                     coord: [2, 4],
                 }
                 .as_debug(),
                 Annotation::Island {
-                    slice_idx: 0,
+                    slice_idx: 0.into(),
                     coord: [2, 5],
                 }
                 .as_debug(),
@@ -485,7 +489,7 @@ mod tests {
         fn arb_island()(args in (any::<usize>(), -100000i64..100000, -100000i64..100000)) -> Annotation {
             let (slice_idx, x, y) = args;
             Annotation::Island {
-                slice_idx,
+                slice_idx: slice_idx.into(),
                 coord: [x, y],
             }
         }
@@ -534,7 +538,7 @@ mod tests {
             (0..s)
                 .map(|y| (0..s)
                     .map(move |x| Annotation::Island {
-                        slice_idx: 0,
+                        slice_idx: 0.into(),
                         coord: [x as i64 * (radius + 1), y as i64 * (radius + 1)]
                     }.as_debug()))
                 .flatten()

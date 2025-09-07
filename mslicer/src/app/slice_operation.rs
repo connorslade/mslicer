@@ -53,8 +53,8 @@ impl SliceResult {
             Vector2::new(-width / 2.0 + pos[0] as f32, -height / 2.0 + pos[1] as f32);
     }
 
-    pub fn set_layer_idx(&mut self, layer_idx: SliceIdx) {
-        self.slice_preview_layer = layer_idx;
+    pub fn set_slice_idx(&mut self, layer_idx: SliceIdx) {
+        self.slice_preview_layer = *layer_idx;
     }
 }
 
