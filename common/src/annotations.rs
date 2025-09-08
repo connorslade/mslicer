@@ -14,12 +14,14 @@ use std::{
 };
 
 /// Vertical layer index (bottom-up).
-#[derive(Copy, Clone, Debug, Default, Deref, Display, Eq, From, Hash, PartialEq, PartialOrd, Ord)]
+#[derive(
+    Copy, Clone, Debug, Default, Deref, Display, Eq, From, Hash, PartialEq, PartialOrd, Ord,
+)]
 #[repr(transparent)]
 pub struct SliceIdx(usize);
 
 /// Pixel position within slice.
-pub type Coord = [i64; 2];
+pub type Coord = nalgebra::Vector2<i64>;
 
 /// Level-wrapped annotations.
 #[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
@@ -236,16 +238,17 @@ impl Cluster {
 
     /// Computes the "center" of a cluster by averaging the coordinates.
     pub fn center(&self) -> Option<Coord> {
-        let locs = self
+        let annotation_locs = self
             .annotation_indices
             .iter()
             .filter_map(|&idx| self.annotations[idx].slice_pos())
             .collect::<Vec<_>>();
-        let num = locs.len() as i64;
-        locs.into_iter()
-            .cloned()
-            .reduce(|[x1, y1], [x2, y2]| [x1 + x2, y1 + y2])
-            .map(|[x, y]| [x / num, y / num])
+        let count = annotation_locs.len();
+        if count > 0 {
+            Some(annotation_locs.into_iter().sum::<nalgebra::Vector2<i64>>() / count as i64)
+        } else {
+            None
+        }
     }
 }
 

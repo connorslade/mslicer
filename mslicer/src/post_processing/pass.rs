@@ -2,10 +2,7 @@
 //! here it specifically provides a framework to run passes in `mslicer` and display
 //! the results within the UI.
 
-use std::{
-    sync::Arc,
-    thread::JoinHandle,
-};
+use std::{sync::Arc, thread::JoinHandle};
 
 use common::{annotations::Annotations, config::SliceConfig};
 use egui::Ui;

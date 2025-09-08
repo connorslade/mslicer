@@ -153,7 +153,7 @@ impl IslandDetectionPass {
                             let is_connected = coord.neighborhood(radius)
                                 .any(|c| l0.contains(&(coord.cfg, c).into()));
                             if !is_connected {
-                                let island = Annotation::Island { slice_idx: (*idx1 + 1).into(), coord: [coord.x() as i64, coord.y() as i64], };
+                                let island = Annotation::Island { slice_idx: (*idx1 + 1).into(), coord: [coord.x() as i64, coord.y() as i64].into(), };
                                 annotations.lock().push(island.as_error());
                                 tracing::trace!("island found on layer #{idx1}: {coord} not connected to layer #{idx0} within a radius of {}", radius);
                             }

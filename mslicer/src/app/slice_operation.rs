@@ -46,7 +46,7 @@ pub struct SliceResult {
 }
 
 impl SliceResult {
-    pub fn center_on(&mut self, pos: &[i64; 2]) {
+    pub fn center_on(&mut self, pos: &Vector2<i64>) {
         let width = self.file.info().resolution.x as f32;
         let height = self.file.info().resolution.y as f32;
         self.preview_offset =

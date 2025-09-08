@@ -269,7 +269,6 @@ fn slice_preview(ui: &mut egui::Ui, result: &mut SliceResult) {
                 result.preview_scale = result.preview_scale.max(0.1);
             }
 
-
             let callback = Callback::new_paint_callback(
                 rect,
                 SlicePreviewRenderCallback {
