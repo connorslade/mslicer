@@ -12,10 +12,7 @@ use rayon::prelude::*;
 use slicer::format::FormatSliceFile;
 use std::f32::consts::PI;
 use std::thread::JoinHandle;
-use std::{
-    collections::HashSet,
-    sync::Arc,
-};
+use std::{collections::HashSet, sync::Arc};
 
 use super::{AnalysisReport, PassOutput, PassRunningGuard, PassState};
 
@@ -37,6 +34,10 @@ impl IslandDetectionPass {
         let r = radius as f32 * pixel_length.max(pixel_width);
         (r / (r * r + pixel_height * pixel_height).sqrt()).asin() * 180.0_f32 / PI
     }
+
+    pub fn boxed(self) -> Box<dyn Pass> {
+        Box::new(self)
+    }
 }
 
 impl Pass for IslandDetectionPass {
@@ -52,7 +53,6 @@ impl Pass for IslandDetectionPass {
         ui.label(RichText::new("Island Detection").size(32.0));
         ui.add_space(8.0);
         ui.label(RichText::new(self.description()).italics());
-        ui.label("Detects islands in the sliced model.");
         Grid::new("knobs")
             .num_columns(2)
             .striped(true)

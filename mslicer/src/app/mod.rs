@@ -110,9 +110,9 @@ impl App {
             fps: FpsTracker::new(),
             meshes: Arc::new(RwLock::new(Vec::new())),
             slice_operation: None,
-            post_processing_operation: Some(PostProcessingOperation::new(vec![Box::new(
-                IslandDetectionPass::default(),
-            )])),
+            post_processing_operation: Some(PostProcessingOperation::new(
+                [IslandDetectionPass::default().boxed()].into_iter(),
+            )),
             remote_print: RemotePrint::uninitialized(),
             config_dir,
         }
