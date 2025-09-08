@@ -7,14 +7,14 @@ use egui::{Color32, Grid, RichText};
 use egui_phosphor::regular::{CHECK_FAT, ISLAND};
 use goo_format::LayerDecoder;
 use itertools::Itertools;
-use parking_lot::Mutex;
+use parking_lot::{Mutex, RwLock};
 use rayon::prelude::*;
 use slicer::format::FormatSliceFile;
 use std::f32::consts::PI;
 use std::thread::JoinHandle;
 use std::{
     collections::HashSet,
-    sync::{Arc, RwLock},
+    sync::Arc,
 };
 
 use super::{AnalysisReport, PassOutput, PassRunningGuard, PassState};

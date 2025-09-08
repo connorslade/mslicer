@@ -3,13 +3,13 @@
 //! the results within the UI.
 
 use std::{
-    sync::{Arc, RwLock},
+    sync::Arc,
     thread::JoinHandle,
 };
 
 use common::{annotations::Annotations, config::SliceConfig};
 use egui::Ui;
-use parking_lot::Mutex;
+use parking_lot::{Mutex, RwLock};
 
 use crate::app::slice_operation::SliceResult;
 
@@ -84,7 +84,7 @@ pub struct PassRunningGuard {
 
 impl PassRunningGuard {
     pub fn new(state: Arc<RwLock<PassState>>) -> Self {
-        *state.write().unwrap() = PassState::Running {
+        *state.write() = PassState::Running {
             start_time: std::time::Instant::now(),
         };
         Self { state }
@@ -93,14 +93,14 @@ impl PassRunningGuard {
 
 impl Drop for PassRunningGuard {
     fn drop(&mut self) {
-        let start_time = match *self.state.read().unwrap() {
+        let start_time = match *self.state.read() {
             PassState::Running { start_time } => start_time,
             _ => {
                 tracing::error!("Pass has completed without being in Running state!");
                 std::time::Instant::now()
             }
         };
-        *self.state.write().unwrap() = PassState::Completed {
+        *self.state.write() = PassState::Completed {
             run_time: std::time::Instant::now() - start_time,
         };
     }

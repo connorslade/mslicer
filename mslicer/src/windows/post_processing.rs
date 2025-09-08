@@ -18,7 +18,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                         .entry(pass.name().into())
                         .or_insert_with(|| Arc::new(Mutex::new(PassProgress::default())));
                     pass.ui(ui, &app.slice_config);
-                    let state = *pass.state().read().unwrap();
+                    let state = *pass.state().read();
                     match state {
                         PassState::Running { .. } => {
                             let (progress, message) = {
