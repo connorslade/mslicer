@@ -1,6 +1,7 @@
 use std::{fmt::Display, hash::Hash, ops::Add};
 
 use common::config::SliceConfig;
+use itertools::Itertools;
 
 fn neighborhood(
     width: i64,
@@ -11,20 +12,16 @@ fn neighborhood(
 ) -> impl Iterator<Item = usize> {
     let r = radius as i64;
     (-r..=r)
-        .flat_map(move |y| {
-            if py + y >= 0 && py + y < height {
-                Some((-r..=r).flat_map(move |x| {
-                    if px + x >= 0 && px + x < width {
-                        Some(((py + y) * width + px + x) as usize)
-                    } else {
-                        None
-                    }
-                }))
+        .cartesian_product(-r..=r)
+        .filter_map(move |(y, x)| {
+            let nx = px + x;
+            let ny = py + y;
+            if nx >= 0 && nx < width && ny >= 0 && ny < height {
+                Some((ny * width + px) as usize)
             } else {
                 None
             }
         })
-        .flatten()
 }
 
 #[derive(Clone, Copy, Debug)]
