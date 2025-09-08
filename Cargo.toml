@@ -13,6 +13,7 @@ clap = { version = "4.5.7", features = ["derive"] }
 clone-macro = "0.1.0"
 const_format = "0.2.32"
 criterion = "0.5.1"
+derive_more = { version = "2.0.1", features = ["full"] }
 dirs = "5.0.1"
 eframe = { version = "0.27.2", features = ["wgpu", "serde"] }
 egui = "0.27.2"
@@ -35,6 +36,7 @@ open = "5.3.0"
 ordered-float = "4.2.0"
 parking_lot = "0.12.3"
 plexus = "0.0.11"
+proptest = "1.7.0"
 rand = "0.8.5"
 rayon = "1.10.0"
 rfd = "0.14.1"

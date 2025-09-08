@@ -4,6 +4,12 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+bitflags.workspace = true
+derive_more.workspace = true
 nalgebra.workspace = true
 rand.workspace = true
+rayon.workspace = true
 serde.workspace = true
+
+[dev-dependencies]
+proptest.workspace = true

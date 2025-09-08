@@ -1,6 +1,7 @@
 use common::serde::{Deserializer, Serializer};
 use image::{imageops::FilterType, RgbaImage};
 
+#[derive(Clone)]
 pub struct PreviewImage<const WIDTH: usize, const HEIGHT: usize> {
     // 0brrrrrggggggbbbbb
     data: Box<[u16]>,

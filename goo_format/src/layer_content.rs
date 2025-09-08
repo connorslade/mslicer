@@ -4,6 +4,7 @@ use common::serde::{Deserializer, Serializer};
 
 use crate::DELIMITER;
 
+#[derive(Clone)]
 pub struct LayerContent {
     /// If printing should be paused on current layer.
     pub pause: bool,

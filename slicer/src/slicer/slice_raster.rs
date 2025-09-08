@@ -1,6 +1,9 @@
 use std::sync::atomic::Ordering;
 
-use common::misc::{EncodableLayer, SliceResult};
+use common::{
+    annotations::Annotations,
+    misc::{EncodableLayer, SliceResult},
+};
 use ordered_float::OrderedFloat;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
@@ -133,6 +136,7 @@ impl Slicer {
         SliceResult {
             layers,
             slice_config: &self.slice_config,
+            annotations: Annotations::default(),
         }
     }
 }

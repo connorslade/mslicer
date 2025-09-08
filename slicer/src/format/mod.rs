@@ -21,6 +21,7 @@ pub enum FormatSliceResult<'a> {
     Svg(VectorSliceResult<'a>),
 }
 
+#[derive(Clone)]
 // todo: replace with trait obj?
 pub enum FormatSliceFile {
     Goo(Box<goo_format::File>),

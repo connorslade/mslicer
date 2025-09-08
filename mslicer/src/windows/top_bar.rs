@@ -16,6 +16,7 @@ const SAVE_PROJECT_SHORTCUT: KeyboardShortcut = KeyboardShortcut::new(Modifiers:
 const LOAD_PROJECT_SHORTCUT: KeyboardShortcut = KeyboardShortcut::new(Modifiers::CTRL, Key::O);
 const QUIT_SHORTCUT: KeyboardShortcut = KeyboardShortcut::new(Modifiers::CTRL, Key::Q);
 const SLICE_SHORTCUT: KeyboardShortcut = KeyboardShortcut::new(Modifiers::CTRL, Key::R);
+const POST_PROCESSING_SHORTCUT: KeyboardShortcut = KeyboardShortcut::new(Modifiers::CTRL, Key::P);
 
 pub fn ui(app: &mut App, ctx: &Context) {
     ctx.input_mut(|x| x.consume_shortcut(&IMPORT_MODEL_SHORTCUT))
@@ -30,6 +31,8 @@ pub fn ui(app: &mut App, ctx: &Context) {
         .then(|| quit(ctx));
     ctx.input_mut(|x| x.consume_shortcut(&SLICE_SHORTCUT))
         .then(|| app.slice());
+    ctx.input_mut(|x| x.consume_shortcut(&POST_PROCESSING_SHORTCUT))
+        .then(|| app.show_post_processing());
 
     TopBottomPanel::top("top_panel").show(ctx, |ui| {
         ui.horizontal(|ui| {
@@ -51,6 +54,16 @@ pub fn ui(app: &mut App, ctx: &Context) {
                         .shortcut_text(ctx.format_shortcut(&LOAD_TEAPOT_SHORTCUT)),
                 );
                 import_teapot_button.clicked().then(|| import_teapot(app));
+
+                ui.separator();
+
+                let post_processing_button = ui.add(
+                    Button::new("Post-Processing")
+                        .shortcut_text(ctx.format_shortcut(&POST_PROCESSING_SHORTCUT)),
+                );
+                post_processing_button
+                    .clicked()
+                    .then(|| app.show_post_processing());
 
                 ui.separator();
 

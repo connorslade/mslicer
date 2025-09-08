@@ -1,6 +1,11 @@
+use std::{collections::HashMap, sync::Arc};
+
 use egui_tracing::EventCollector;
 use nalgebra::Vector3;
+use parking_lot::Mutex;
 use slicer::supports::line::LineSupportConfig;
+
+use crate::post_processing::PassProgress;
 
 use super::markdown::CompiledMarkdown;
 
@@ -20,6 +25,9 @@ pub struct UiState {
     // documentation
     pub docs_page: DocsPage,
     pub compiled_markdown: CompiledMarkdown,
+
+    // post-processing progress
+    pub progress_bars: HashMap<String, Arc<Mutex<PassProgress>>>,
 }
 
 #[derive(Default, PartialEq, Eq)]

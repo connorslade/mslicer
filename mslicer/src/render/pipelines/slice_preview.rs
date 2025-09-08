@@ -28,6 +28,7 @@ pub struct SlicePreviewPipeline {
     index_buffer: Buffer,
     uniform_buffer: Buffer,
     slice_buffer: Option<Buffer>,
+    annotations: Option<Buffer>,
 }
 
 #[derive(ShaderType)]
@@ -36,6 +37,7 @@ struct SlicePreviewUniforms {
     offset: Vector2<f32>,
     aspect: f32,
     scale: f32,
+    show_hide: u32,
 }
 
 impl SlicePreviewPipeline {
@@ -53,6 +55,16 @@ impl SlicePreviewPipeline {
                 UNIFORM_BIND_GROUP_LAYOUT_ENTRY,
                 BindGroupLayoutEntry {
                     binding: 1,
+                    visibility: ShaderStages::VERTEX | ShaderStages::FRAGMENT,
+                    ty: BindingType::Buffer {
+                        ty: BufferBindingType::Storage { read_only: true },
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                },
+                BindGroupLayoutEntry {
+                    binding: 2,
                     visibility: ShaderStages::VERTEX | ShaderStages::FRAGMENT,
                     ty: BindingType::Buffer {
                         ty: BufferBindingType::Storage { read_only: true },
@@ -130,6 +142,7 @@ impl SlicePreviewPipeline {
             uniform_buffer,
 
             slice_buffer: None,
+            annotations: None,
         }
     }
 }
@@ -156,6 +169,24 @@ impl SlicePreviewPipeline {
             queue.write_buffer(self.slice_buffer.as_ref().unwrap(), 0, new_preview);
         }
 
+        self.annotations = Some(self.annotations.take().unwrap_or_else(|| {
+            device.create_buffer(&BufferDescriptor {
+                label: None,
+                size: (resources.dimensions.x as u64 * resources.dimensions.y as u64)
+                    .next_multiple_of(COPY_BUFFER_ALIGNMENT),
+                usage: BufferUsages::STORAGE | BufferUsages::COPY_DST,
+                mapped_at_creation: false,
+            })
+        }));
+
+        if let Some(new_annotations) = &resources.new_annotations {
+            queue.write_buffer(
+                self.annotations.as_ref().unwrap(),
+                0,
+                bytemuck::cast_slice(new_annotations),
+            );
+        }
+
         self.bind_group = Some(device.create_bind_group(&BindGroupDescriptor {
             label: None,
             layout: &self.bind_group_layout,
@@ -176,6 +207,14 @@ impl SlicePreviewPipeline {
                         size: None,
                     }),
                 },
+                BindGroupEntry {
+                    binding: 2,
+                    resource: BindingResource::Buffer(BufferBinding {
+                        buffer: self.annotations.as_ref().unwrap(),
+                        offset: 0,
+                        size: None,
+                    }),
+                },
             ],
         }));
 
@@ -186,6 +225,7 @@ impl SlicePreviewPipeline {
                 offset: resources.offset,
                 aspect: resources.aspect,
                 scale: resources.scale.recip(),
+                show_hide: resources.show_hide,
             })
             .unwrap();
         queue.write_buffer(&self.uniform_buffer, 0, &buffer.into_inner());

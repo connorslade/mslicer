@@ -8,6 +8,7 @@ use common::{
 
 use crate::{Header, LayerContent, ENDING_STRING};
 
+#[derive(Clone)]
 pub struct File {
     pub header: Header,
     pub layers: Vec<LayerContent>,
@@ -22,6 +23,7 @@ impl File {
         let SliceResult {
             layers,
             slice_config,
+            ..
         } = result;
 
         let layer_time = slice_config.exposure_config.exposure_time

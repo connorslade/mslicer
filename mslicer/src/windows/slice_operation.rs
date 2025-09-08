@@ -2,8 +2,8 @@ use std::{fs::File, io::Write, mem, sync::Arc};
 
 use const_format::concatcp;
 use egui::{
-    style::HandleShape, text::LayoutJob, Align, Button, Context, DragValue, FontSelection, Grid,
-    Id, Layout, ProgressBar, RichText, Sense, Slider, Style, Ui, Vec2,
+    style::HandleShape, text::LayoutJob, Align, Button, Color32, Context, DragValue, FontSelection,
+    Grid, Id, Layout, ProgressBar, RichText, Sense, Slider, Style, Ui, Vec2, WidgetText,
 };
 use egui_phosphor::regular::{FLOPPY_DISK_BACK, PAPER_PLANE_TILT};
 use egui_wgpu::Callback;
@@ -16,16 +16,35 @@ use crate::{
     render::slice_preview::SlicePreviewRenderCallback,
     ui::{components::vec2_dragger, popup::Popup},
 };
-use common::serde::DynamicSerializer;
+use common::{annotations::AnnotationLevelFlags, serde::DynamicSerializer};
 
 const FILENAME_POPUP_TEXT: &str =
     "To ensure the file name is unique, some extra random characters will be added on the end.";
+
+fn show_annotation_cb(
+    ui: &mut Ui,
+    flags: &mut AnnotationLevelFlags,
+    flag: AnnotationLevelFlags,
+    text: impl Into<WidgetText>,
+) {
+    let mut is_set = flags.contains(flag);
+
+    if ui.checkbox(&mut is_set, text).changed() {
+        if is_set {
+            flags.insert(flag);
+        } else {
+            flags.remove(flag);
+        }
+    }
+}
 
 pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
     if let Some(slice_operation) = &app.slice_operation {
         let progress = &slice_operation.progress;
 
         let (current, total) = (progress.completed(), progress.total());
+
+        let mut show_pp: bool = false;
 
         if let Some(completion) = slice_operation.completion() {
             ui.horizontal(|ui| {
@@ -70,6 +89,8 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
                                 }
                             });
                         });
+
+                        show_pp = ui.button("Post Processing").clicked();
 
                         if ui.button(concatcp!(FLOPPY_DISK_BACK, " Save")).clicked() {
                             let result = app.slice_operation.as_ref().unwrap().result();
@@ -125,6 +146,32 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
                                 .clamp_range(0.1..=f32::MAX)
                                 .speed(0.1),
                         );
+                        ui.separator();
+                        ui.label("Show:");
+                        show_annotation_cb(
+                            ui,
+                            &mut result.show_annotations,
+                            AnnotationLevelFlags::ERROR,
+                            RichText::new("Errors").color(Color32::LIGHT_RED),
+                        );
+                        show_annotation_cb(
+                            ui,
+                            &mut result.show_annotations,
+                            AnnotationLevelFlags::WARN,
+                            RichText::new("Warnings").color(Color32::LIGHT_YELLOW),
+                        );
+                        show_annotation_cb(
+                            ui,
+                            &mut result.show_annotations,
+                            AnnotationLevelFlags::INFO,
+                            RichText::new("Info").color(Color32::LIGHT_BLUE),
+                        );
+                        show_annotation_cb(
+                            ui,
+                            &mut result.show_annotations,
+                            AnnotationLevelFlags::DEBUG,
+                            RichText::new("Debug").color(Color32::GRAY),
+                        );
                     });
 
                     slice_preview(ui, result);
@@ -138,6 +185,9 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
 
             ui.label(format!("Slicing... {current}/{total}"));
             ctx.request_repaint();
+        }
+        if show_pp {
+            app.show_post_processing();
         }
     } else {
         ui.horizontal_wrapped(|ui| {
@@ -166,6 +216,29 @@ fn slice_preview(ui: &mut egui::Ui, result: &mut SliceResult) {
         let (width, height) = (info.resolution.x, info.resolution.y);
 
         result.slice_preview_layer = result.slice_preview_layer.clamp(1, info.layers as usize);
+
+        let new_ann_image = if result.last_preview_layer != result.slice_preview_layer {
+            let mut ann_image = vec![
+                0_u8;
+                ((width * height) as u64).next_multiple_of(COPY_BUFFER_ALIGNMENT)
+                    as usize
+            ];
+
+            for a in result.annotations.iter().filter(|&a| {
+                a.slice_idx()
+                    .map(|idx| *idx == result.slice_preview_layer)
+                    .unwrap_or(false)
+            }) {
+                if let Some(coords) = a.slice_pos() {
+                    ann_image[width as usize * coords[1] as usize + coords[0] as usize] =
+                        a.to_byte();
+                }
+            }
+            Some(ann_image)
+        } else {
+            None
+        };
+
         let new_preview = if result.last_preview_layer != result.slice_preview_layer {
             result.last_preview_layer = result.slice_preview_layer;
 
@@ -204,6 +277,8 @@ fn slice_preview(ui: &mut egui::Ui, result: &mut SliceResult) {
                     aspect: rect.width() / rect.height(),
                     scale: preview_scale,
                     new_preview,
+                    new_annotations: new_ann_image,
+                    show_hide: result.show_annotations.bits() as u32,
                 },
             );
             ui.painter().add(callback);

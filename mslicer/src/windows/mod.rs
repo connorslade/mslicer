@@ -13,6 +13,7 @@ use crate::{app::App, render::workspace::WorkspaceRenderCallback};
 mod about;
 mod logs;
 mod models;
+pub mod post_processing;
 mod remote_print;
 mod slice_config;
 mod slice_operation;
@@ -30,6 +31,7 @@ pub enum Tab {
     About,
     Logs,
     Models,
+    PostProcessing,
     RemotePrint,
     SliceConfig,
     SliceOperation,
@@ -39,10 +41,11 @@ pub enum Tab {
 }
 
 impl Tab {
-    const ALL: [Tab; 8] = [
+    const ALL: [Tab; 9] = [
         Tab::About,
         Tab::Logs,
         Tab::Models,
+        Tab::PostProcessing,
         Tab::RemotePrint,
         Tab::SliceConfig,
         Tab::SliceOperation,
@@ -61,6 +64,7 @@ impl Tab {
             Tab::Supports => "Supports",
             Tab::Viewport => "Viewport",
             Tab::Workspace => "Workspace",
+            Tab::PostProcessing => "Post-Processing",
         }
     }
 }
@@ -77,6 +81,7 @@ impl TabViewer for Tabs<'_> {
             Tab::About => about::ui(self.app, ui, self.ctx),
             Tab::Logs => logs::ui(self.app, ui, self.ctx),
             Tab::Models => models::ui(self.app, ui, self.ctx),
+            Tab::PostProcessing => post_processing::ui(self.app, ui, self.ctx),
             Tab::RemotePrint => remote_print::ui(self.app, ui, self.ctx),
             Tab::SliceConfig => slice_config::ui(self.app, ui, self.ctx),
             Tab::SliceOperation => slice_operation::ui(self.app, ui, self.ctx),

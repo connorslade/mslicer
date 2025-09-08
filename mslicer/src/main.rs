@@ -4,6 +4,7 @@ use anyhow::Result;
 use eframe::NativeOptions;
 use egui::{FontDefinitions, IconData, Vec2, ViewportBuilder};
 use egui_wgpu::WgpuConfiguration;
+use rayon::ThreadPoolBuilder;
 use tracing::level_filters::LevelFilter;
 use tracing_subscriber::{filter, layer::SubscriberExt, util::SubscriberInitExt};
 use wgpu::{DeviceDescriptor, Features, Limits, TextureFormat};
@@ -12,6 +13,7 @@ const DEPTH_TEXTURE_FORMAT: TextureFormat = TextureFormat::Depth24PlusStencil8;
 
 mod app;
 mod plugins;
+mod post_processing;
 mod render;
 mod ui;
 mod windows;
@@ -22,7 +24,7 @@ const ICON: &[u8] = include_bytes!("assets/icon.png");
 fn main() -> Result<()> {
     let filter = filter::Targets::new()
         .with_default(LevelFilter::OFF)
-        .with_target("mslicer", LevelFilter::TRACE)
+        .with_target("mslicer", LevelFilter::DEBUG)
         .with_target("slicer", LevelFilter::TRACE)
         .with_target("remote_send", LevelFilter::TRACE);
     let format = tracing_subscriber::fmt::layer();
@@ -39,6 +41,11 @@ fn main() -> Result<()> {
 
     let max_buffer_size = config.max_buffer_size;
     let icon = image::load_from_memory(ICON)?;
+
+    ThreadPoolBuilder::new()
+        .num_threads(std::thread::available_parallelism().unwrap().get() - 1)
+        .build_global()
+        .unwrap();
     eframe::run_native(
         "mslicer",
         NativeOptions {

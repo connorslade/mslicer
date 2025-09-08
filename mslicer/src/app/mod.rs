@@ -8,6 +8,7 @@ use std::{
 };
 
 use clone_macro::clone;
+use common::annotations::{AnnotationLevelFlags, Annotations};
 use const_format::concatcp;
 use eframe::Theme;
 use egui::{Vec2, Visuals};
@@ -25,6 +26,7 @@ use crate::{
         elephant_foot_fixer::{self},
         PluginManager,
     },
+    post_processing::IslandDetectionPass,
     render::{camera::Camera, preview, rendered_mesh::RenderedMesh},
     ui::{
         drag_and_drop,
@@ -37,10 +39,12 @@ use common::config::SliceConfig;
 use slicer::{format::FormatSliceFile, slicer::Slicer, Pos};
 
 pub mod config;
+pub mod post_processing_operation;
 pub mod project;
 pub mod remote_print;
 pub mod slice_operation;
 use config::Config;
+use post_processing_operation::PostProcessingOperation;
 use remote_print::RemotePrint;
 use slice_operation::{SliceOperation, SliceResult};
 
@@ -59,6 +63,7 @@ pub struct App {
     pub camera: Camera,
     pub meshes: Arc<RwLock<Vec<RenderedMesh>>>,
     pub slice_operation: Option<SliceOperation>,
+    pub post_processing_operation: Option<PostProcessingOperation>,
     pub remote_print: RemotePrint,
     pub config_dir: PathBuf,
 }
@@ -105,6 +110,9 @@ impl App {
             fps: FpsTracker::new(),
             meshes: Arc::new(RwLock::new(Vec::new())),
             slice_operation: None,
+            post_processing_operation: Some(PostProcessingOperation::new(
+                [IslandDetectionPass::default().boxed()].into_iter(),
+            )),
             remote_print: RemotePrint::uninitialized(),
             config_dir,
         }
@@ -198,6 +206,8 @@ impl App {
                     preview_offset: Vector2::new(0.0, 0.0),
                     preview_scale: preview_scale.max(1.0).log2(),
                     layer_count: (layers, layers.to_string().len() as u8),
+                    annotations: Annotations::default(),
+                    show_annotations: AnnotationLevelFlags::all(),
                 });
             }
         ));
@@ -228,6 +238,16 @@ impl App {
         self.dock_state = DockState::new(vec![Tab::Viewport]);
         let surface = self.dock_state.main_surface_mut();
         default_dock_layout(surface);
+    }
+
+    pub fn show_post_processing(&mut self) {
+        if let Some(panel) = self.dock_state.find_tab(&Tab::PostProcessing) {
+            self.dock_state.set_active_tab(panel);
+        } else {
+            let window_id = self.dock_state.add_window(vec![Tab::PostProcessing]);
+            let window = self.dock_state.get_window_state_mut(window_id).unwrap();
+            window.set_size(Vec2::new(700.0, 400.0));
+        }
     }
 }
 

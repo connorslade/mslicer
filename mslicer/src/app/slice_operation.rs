@@ -6,7 +6,10 @@ use std::{
     time::{Duration, Instant},
 };
 
-use common::misc::human_duration;
+use common::{
+    annotations::{AnnotationLevelFlags, Annotations, SliceIdx},
+    misc::human_duration,
+};
 use image::RgbaImage;
 use nalgebra::Vector2;
 use parking_lot::{Condvar, MappedMutexGuard, Mutex, MutexGuard};
@@ -28,6 +31,7 @@ pub struct SliceOperation {
     preview_condvar: Arc<Condvar>,
 }
 
+#[derive(Clone)]
 pub struct SliceResult {
     pub file: FormatSliceFile,
 
@@ -36,6 +40,22 @@ pub struct SliceResult {
     pub preview_offset: Vector2<f32>,
     pub preview_scale: f32,
     pub layer_count: (usize, u8),
+
+    pub annotations: Annotations,
+    pub show_annotations: AnnotationLevelFlags,
+}
+
+impl SliceResult {
+    pub fn center_on(&mut self, pos: &Vector2<i64>) {
+        let width = self.file.info().resolution.x as f32;
+        let height = self.file.info().resolution.y as f32;
+        self.preview_offset =
+            Vector2::new(-width / 2.0 + pos[0] as f32, -height / 2.0 + pos[1] as f32);
+    }
+
+    pub fn set_slice_idx(&mut self, layer_idx: SliceIdx) {
+        self.slice_preview_layer = *layer_idx;
+    }
 }
 
 impl SliceOperation {
