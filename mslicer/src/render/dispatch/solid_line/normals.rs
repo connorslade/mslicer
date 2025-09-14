@@ -39,7 +39,11 @@ impl LineDispatch for NormalsDispatch {
         }
 
         let models = resources.models.read();
-        let ids = models.iter().map(|x| x.id).collect::<Vec<_>>();
+        let ids = models
+            .iter()
+            .filter(|x| x.hidden)
+            .map(|x| x.id)
+            .collect::<Vec<_>>();
         let dirty = models.iter().any(|x| x.dirty);
         let transforms = models
             .iter()
@@ -76,7 +80,7 @@ fn generate_normals(models: Models) -> Vec<Line> {
     let color = Vector3::new(0.5, 0.5, 1.0);
     let mut lines = Vec::new();
 
-    for model in models.read().iter() {
+    for model in models.read().iter().filter(|x| !x.hidden) {
         let (face, vertices, normals) = (
             model.mesh.faces(),
             model.mesh.vertices(),

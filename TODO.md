@@ -107,4 +107,4 @@
 - [ ] Allow inspecting / manually editing goo files?
 - [ ] Systematic testing to fix bad slicing / polygon filling
 - [ ] Recompute normals by default...
-- [ ] Dont show normals for hidden models
+- [x] Dont show normals for hidden models

@@ -3,6 +3,7 @@
 ## v0.3.0 &mdash; Coming Soon™
 
 - Added support for SVGs as an output format
+- Don't show normals for hidden models
 
 ## v0.2.2 &mdash; June 14th, 2025
 
