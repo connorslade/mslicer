@@ -1,6 +1,6 @@
 # Changelog
 
-## v0.3.0 &mdash; Coming Soon
+## v0.3.0 &mdash; Coming Soon™
 
 - Added support for SVGs as an output format
 

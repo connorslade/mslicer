@@ -66,7 +66,7 @@ impl Slicer {
                         .map(|x| (x.0[0], x.0[1], x.1))
                         // Filtering to only consider segments with one point
                         // above the current row and one point below.
-                        .filter(|&(a, b, _)| ((a.y > yf) ^ (b.y > yf)))
+                        .filter(|&(a, b, _)| (a.y > yf) ^ (b.y > yf))
                         .map(|(a, b, facing)| {
                             // Get the x position of the line segment at this y
                             let t = (yf - a.y) / (b.y - a.y);

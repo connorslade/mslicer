@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use nalgebra::Vector2;
-use rand::{distributions::Alphanumeric, Rng};
+use rand::{distr::Alphanumeric, Rng};
 
 use crate::config::SliceConfig;
 
@@ -57,7 +57,7 @@ pub fn human_duration(duration: Duration) -> String {
 }
 
 pub fn random_string(len: usize) -> String {
-    rand::thread_rng()
+    rand::rng()
         .sample_iter(&Alphanumeric)
         .take(len)
         .map(char::from)

@@ -8,7 +8,7 @@ use std::{
 use anyhow::Result;
 use args::{Args, Model};
 use clap::{CommandFactory, FromArgMatches};
-use image::{imageops::FilterType, io::Reader as ImageReader};
+use image::{imageops::FilterType, ImageReader};
 
 use common::serde::DynamicSerializer;
 use goo_format::{File as GooFile, LayerEncoder, PreviewImage};
