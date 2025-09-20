@@ -84,8 +84,9 @@ impl App {
             default_dock_layout(surface);
         }
 
-        if surface.find_tab(&Tab::Viewport).is_none() {
-            *surface = Tree::new(vec![Tab::Viewport]);
+        match surface.find_tab(&Tab::Viewport) {
+            Some((ni, ti)) => surface.set_active_tab(ni, ti),
+            None => *surface = Tree::new(vec![Tab::Viewport]),
         }
 
         Self {

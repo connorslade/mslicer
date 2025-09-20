@@ -122,7 +122,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
                         ui.label("Scale");
                         ui.add(
                             DragValue::new(&mut result.preview_scale)
-                                .clamp_range(0.1..=f32::MAX)
+                                .clamp_range(0.1..=10.0)
                                 .speed(0.1),
                         );
                     });

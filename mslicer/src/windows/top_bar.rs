@@ -142,7 +142,7 @@ fn save(app: &mut App) {
         .add_filter("mslicer project", &["mslicer"])
         .save_file()
     {
-        app.save_project(&path);
+        app.save_project(&path.with_extension("mslicer"));
     }
 }
 
