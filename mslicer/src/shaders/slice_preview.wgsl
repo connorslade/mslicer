@@ -2,29 +2,27 @@
 @group(0) @binding(1) var<storage, read> layer: array<u32>;
 
 struct Context {
-    dimensions: vec2<u32>,
-    offset: vec2<f32>,
+    dimensions: vec2u,
+    offset: vec2f,
     aspect: f32, // width / height
     scale: f32,
 }
 
 struct VertexOutput {
-    @builtin(position)
-    camera_position: vec4<f32>,
-    @location(0)
-    position: vec4<f32>,
-};
+    @builtin(position)camera_position: vec4f,
+    @location(0) position: vec4f,
+}
 
 @vertex
-fn vert(@location(0) position: vec4<f32>) -> VertexOutput {
+fn vert(@location(0) position: vec4f) -> VertexOutput {
     var out: VertexOutput;
     out.camera_position = position;
     out.position = position;
     return out;
 }
 
-fn index(x: u32, y: u32) -> f32 {
-    let byte_idx = (y * context.dimensions.x + x);
+fn index(pos: vec2u) -> f32 {
+    let byte_idx = (pos.y * context.dimensions.x + pos.x);
     let array_idx = byte_idx / 4;
     let shift = (byte_idx % 4) * 8;
 
@@ -33,16 +31,11 @@ fn index(x: u32, y: u32) -> f32 {
 }
 
 @fragment
-fn frag(in: VertexOutput) -> @location(0) vec4<f32> {
+fn frag(in: VertexOutput) -> @location(0) vec4f {
     let aspect = context.aspect * f32(context.dimensions.y) / f32(context.dimensions.x);
-    let pos = vec2(
-        in.position.x * context.scale * aspect,
-        in.position.y * context.scale
-    ) / 2.0 + 0.5;
+    let pos = vec2(in.position.x * aspect, in.position.y) * context.scale / 2.0 + 0.5;
+    let pixel = pos * vec2f(context.dimensions) + context.offset;
 
-    let value = index(
-        u32(pos.x * f32(context.dimensions.x) + context.offset.x),
-        u32(pos.y * f32(context.dimensions.y) + context.offset.y)
-    );
-    return vec4<f32>(value, value, value, 1.0);
+    let value = index(vec2u(pixel));
+    return vec4f(vec3f(value), 1.0);
 }

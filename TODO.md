@@ -107,4 +107,13 @@
 - [ ] Allow inspecting / manually editing goo files?
 - [ ] Systematic testing to fix bad slicing / polygon filling
 - [ ] Recompute normals by default...
-- [x] Dont show normals for hidden models
+- [x] Don't show normals for hidden models
+- [ ] Fix low overall fps when scrubbing through layers, upload async?
+- [ ] Show little breaks between pixels at high scales
+- [ ] Slice preview zoom around cursor position
+
+---
+
+skull (layer ~596)
+- rot: ⟨0°, 0°, 90°⟩
+- scale: 0.5

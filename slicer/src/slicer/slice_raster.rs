@@ -89,9 +89,8 @@ impl Slicer {
                         let prev_depth = depth;
                         depth += (dir as i32) * 2 - 1;
 
-                        if (depth == 0) ^ (prev_depth == 0) {
-                            filtered.push(pos.clamp(0.0, platform_resolution.x as f32));
-                        }
+                        ((depth == 0) ^ (prev_depth == 0))
+                            .then(|| filtered.push(pos.clamp(0.0, platform_resolution.x as f32)));
                     }
 
                     // Convert the intersections into runs of white pixels to be

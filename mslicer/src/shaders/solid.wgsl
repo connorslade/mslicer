@@ -1,14 +1,13 @@
 @group(0) @binding(0) var<uniform> context: Context;
 
 struct Context {
-    transform: mat4x4<f32>,
-    color: vec4<f32>
+    transform: mat4x4f,
+    color: vec4f
 }
 
 struct VertexOutput {
-    @builtin(position)
-    position: vec4<f32>,
-};
+    @builtin(position) position: vec4f
+}
 
 @vertex
 fn vert(@location(0) position: vec4<f32>) -> VertexOutput {
