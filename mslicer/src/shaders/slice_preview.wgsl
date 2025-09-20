@@ -1,6 +1,8 @@
 @group(0) @binding(0) var<uniform> context: Context;
 @group(0) @binding(1) var<storage, read> layer: array<u32>;
 
+const GRID_WIDTH: f32 = 2.0;
+
 struct Context {
     dimensions: vec2u,
     offset: vec2f,
@@ -30,12 +32,27 @@ fn index(pos: vec2u) -> f32 {
     return f32(value) / 255.0;
 }
 
+fn invMix(a: f32, b: f32, value: f32) -> f32 {
+    return (value - a) / (b - a);
+}
+
 @fragment
 fn frag(in: VertexOutput) -> @location(0) vec4f {
     let aspect = context.aspect * f32(context.dimensions.y) / f32(context.dimensions.x);
-    let pos = vec2(in.position.x * aspect, in.position.y) * context.scale / 2.0 + 0.5;
-    let pixel = pos * vec2f(context.dimensions) + context.offset;
+    let uv = vec2(in.position.x * aspect, in.position.y) * context.scale / 2.0 + 0.5;
+    let pos = uv * vec2f(context.dimensions) + context.offset;
 
-    let value = index(vec2u(pixel));
-    return vec4f(vec3f(value), 1.0);
+    let pixel = fwidth(pos) / 2;
+    let dist = min(fract(pos), 1.0 - fract(pos));
+
+    let outer_edge = pixel * (GRID_WIDTH + 1);
+    let inner_edge = pixel * (GRID_WIDTH - 1);
+    let grid = max(
+        smoothstep(outer_edge.x, inner_edge.x, dist.x),
+        smoothstep(outer_edge.y, inner_edge.y, dist.y)
+    ) * saturate(invMix(0.0221, 0.0156, context. scale));
+
+    let value = index(vec2u(pos));
+    let out = mix(value, 0.5, grid);
+    return vec4f(vec3f(out), 1.0);
 }

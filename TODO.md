@@ -109,7 +109,7 @@
 - [ ] Recompute normals by default...
 - [x] Don't show normals for hidden models
 - [ ] Fix low overall fps when scrubbing through layers, upload async?
-- [ ] Show little breaks between pixels at high scales
+- [x] Show little breaks between pixels at high scales
 - [ ] Slice preview zoom around cursor position
 - [ ] Multiple workspaces per project
 - [ ] Built-in mesh subdivision
@@ -120,16 +120,3 @@
 skull (layer ~596)
 - rot: ⟨0°, 0°, 90°⟩
 - scale: 0.5
-
-```wgsl
-let aa_width_tex = fwidth(pixel);
-let to_edge = min(fract(pixel), 1.0 - fract(pixel));
-let edge = (LINE_WIDTH / 2.0) * aa_width_tex;
-let grid_intensity = max(
-    smoothstep(edge.x + 0.5 * aa_width_tex.x, edge.x - 0.5 * aa_width_tex.x, to_edge.x),
-    smoothstep(edge.y + 0.5 * aa_width_tex.y, edge.y - 0.5 * aa_width_tex.y, to_edge.y)
-);
-
-let value = index(vec2u(pixel));
-return mix(vec4f(vec3f(value), 1.0), vec4f(vec3f(0.5), 1.0), grid_intensity);
-```
