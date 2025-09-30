@@ -28,7 +28,6 @@ nalgebra.workspace = true
 notify-rust.workspace = true
 open.workspace = true
 parking_lot.workspace = true
-plexus.workspace = true
 rand.workspace = true
 rayon.workspace = true
 rfd.workspace = true

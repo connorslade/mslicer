@@ -114,6 +114,7 @@
 - [ ] Multiple workspaces per project
 - [ ] Built-in mesh subdivision
 - [x] Require Viewport tab to be active on startup
+- [ ] Cleanup slice preview scaling function like what is 1/2^x
 
 ---
 

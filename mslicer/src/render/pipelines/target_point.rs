@@ -1,10 +1,7 @@
+use std::f32::consts::{PI, TAU};
+
 use encase::{ShaderSize, ShaderType, UniformBuffer};
-use nalgebra::{Matrix4, Vector4};
-use plexus::primitive::{
-    decompose::{Triangulate, Vertices},
-    generate::{IndicesForPosition, VerticesWithPosition},
-    sphere::UvSphere,
-};
+use nalgebra::{Matrix4, Vector3, Vector4};
 use wgpu::{
     util::{BufferInitDescriptor, DeviceExt},
     BindGroup, BindGroupDescriptor, BindGroupEntry, BindingResource, BlendState, Buffer,
@@ -164,27 +161,25 @@ impl TargetPointPipeline {
     }
 }
 
-fn generate_sphere(precision: usize) -> (Vec<ModelVertex>, Vec<u32>) {
-    let sphere = UvSphere::new(precision, precision);
+fn generate_sphere(precision: u32) -> (Vec<ModelVertex>, Vec<u32>) {
+    let (mut vertices, mut indices) = (Vec::new(), Vec::new());
+    for i_theta in 0..=precision {
+        let theta = i_theta as f32 / precision as f32 * TAU;
+        for i_phi in 0..=precision {
+            let phi = i_phi as f32 / precision as f32 * PI;
 
-    let vertices = sphere
-        .vertices_with_position()
-        .map(|x| ModelVertex {
-            position: [
-                x.0.into_inner() as f32,
-                x.1.into_inner() as f32,
-                x.2.into_inner() as f32,
-                1.0,
-            ],
-        })
-        .collect();
+            let idx = vertices.len() as u32;
+            let rect = Vector3::new(phi.sin() * theta.cos(), phi.sin() * theta.sin(), phi.cos());
+            vertices.push(ModelVertex {
+                position: rect.push(1.0).into(),
+            });
 
-    let indices = sphere
-        .indices_for_position()
-        .triangulate()
-        .vertices()
-        .map(|x| x as u32)
-        .collect();
+            if i_theta < precision && i_phi < precision {
+                indices.extend([idx, idx + 1, idx + precision + 1]);
+                indices.extend([idx + 1, idx + precision + 2, idx + precision + 1]);
+            }
+        }
+    }
 
     (vertices, indices)
 }
