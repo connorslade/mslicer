@@ -1,8 +1,7 @@
 use const_format::concatcp;
 use egui::{Context, Grid, Id, Ui};
 use egui_phosphor::regular::{
-    ARROWS_CLOCKWISE, ARROW_LINE_DOWN, COPY, DICE_THREE, EYE, EYE_SLASH, FLIP_HORIZONTAL,
-    LINK_BREAK, LINK_SIMPLE, TRASH, VECTOR_THREE,
+    ARROW_LINE_DOWN, COPY, DICE_THREE, EYE, EYE_SLASH, LINK_BREAK, LINK_SIMPLE, TRASH,
 };
 use slicer::Pos;
 
@@ -31,8 +30,6 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     let width = ui.available_width();
 
     for (i, mesh) in meshes.iter_mut().enumerate() {
-        mesh.dirty = false;
-
         let id = Id::new(format!("model_show_{}", mesh.id));
         let open = ui.data_mut(|map| *map.get_temp_mut_or_insert_with(id, || false));
 
@@ -69,21 +66,6 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                             ui.button(concatcp!(ARROW_LINE_DOWN, " Align to Bed"))
                                 .clicked()
                                 .then(|| mesh.align_to_bed());
-
-                            ui.menu_button(concatcp!(VECTOR_THREE, " Normals"), |ui| {
-                                if ui
-                                    .button(concatcp!(ARROWS_CLOCKWISE, " Recompute"))
-                                    .clicked()
-                                {
-                                    mesh.recompute_normals();
-                                    ui.close_menu();
-                                }
-
-                                if ui.button(concatcp!(FLIP_HORIZONTAL, " Flip")).clicked() {
-                                    mesh.flip_normals();
-                                    ui.close_menu();
-                                }
-                            });
                         });
                     });
                     ui.end_row();

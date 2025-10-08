@@ -16,8 +16,6 @@ To move around the viewport, scroll to move towards or away from the target poin
 
 Each model in your project is listed in the `Models` panel. By clicking the arrow button next to a model, you can access all its properties, including size, position, and rotation, as well as run actions like deleting the model or aligning it to the bed.
 
-If you're unfamiliar with normals, they are vectors at each vertex of a model that are perpendicular to the surface and point outward. Normals are crucial for the slicer to determine whether it is entering or exiting a model, especially when models intersect with themselves or other models. Incorrect normals from imported `.stl` or `.obj` files can result in artifacts in the output. For this reason, under the `Normals` action, you can either flip or recalculate the normals of a model.
-
 ## Slicing
 
 After starting a slice operation, a new panel will open showing the operation progress. However, it shouldn't be open for long because (as far as I know) mslicer is the fastest MSLA slicer currently available (:p). You will then be presented with a slice preview. You can drag to pan, scroll to zoom, and scrub through the slider on the left to look through each layer.

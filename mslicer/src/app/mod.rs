@@ -205,7 +205,7 @@ impl App {
     }
 
     pub fn load_mesh<T: BufRead + Seek>(&mut self, buf: &mut T, format: &str, name: String) {
-        let model = match slicer::mesh::load_mesh(buf, format) {
+        let mut mesh = match slicer::mesh::load_mesh(buf, format) {
             Ok(model) => model,
             Err(err) => {
                 self.popup.open(Popup::simple(
@@ -216,9 +216,10 @@ impl App {
                 return;
             }
         };
-        info!("Loaded model `{name}` with {} faces", model.face_count());
+        info!("Loaded model `{name}` with {} faces", mesh.face_count());
 
-        let rendered_mesh = RenderedMesh::from_mesh(model)
+        mesh.recompute_normals();
+        let rendered_mesh = RenderedMesh::from_mesh(mesh)
             .with_name(name.clone())
             .with_random_color();
 

@@ -106,7 +106,7 @@
 - [ ] Allow loading .goo files to use with the preview and remote send
 - [ ] Allow inspecting / manually editing goo files?
 - [ ] Systematic testing to fix bad slicing / polygon filling
-- [ ] Recompute normals by default...
+- [x] Recompute normals by default...
 - [x] Don't show normals for hidden models
 - [ ] Fix low overall fps when scrubbing through layers, upload async?
 - [x] Show little breaks between pixels at high scales

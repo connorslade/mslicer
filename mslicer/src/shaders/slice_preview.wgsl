@@ -50,7 +50,7 @@ fn frag(in: VertexOutput) -> @location(0) vec4f {
     let grid = max(
         smoothstep(outer_edge.x, inner_edge.x, dist.x),
         smoothstep(outer_edge.y, inner_edge.y, dist.y)
-    ) * saturate(invMix(0.0221, 0.0156, context. scale));
+    ) * saturate(invMix(0.0221, 0.0156, context.scale));
 
     let value = index(vec2u(pos));
     let out = mix(value, 0.5, grid);
