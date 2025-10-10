@@ -112,10 +112,7 @@ impl App {
     }
 
     pub fn slice(&mut self) {
-        let meshes = self
-            .meshes
-            .read()
-            .iter()
+        let meshes = (self.meshes.read().iter())
             .filter(|x| !x.hidden)
             .cloned()
             .collect::<Vec<_>>();

@@ -27,11 +27,6 @@ impl Slicer {
 
         let layers = (0..self.progress.total)
             .into_par_iter()
-            .inspect(|_| {
-                // Updates the slice progress
-                self.progress.completed.fetch_add(1, Ordering::Relaxed);
-                self.progress.notify.notify_all();
-            })
             .map(|layer| {
                 let height = layer as f32 * self.slice_config.slice_height;
 
@@ -39,10 +34,7 @@ impl Slicer {
                 // model. Because all the faces are triangles, every triangle
                 // intersection will return two points. These can then be
                 // interpreted as line segments making up a polygon.
-                let segments = self
-                    .models
-                    .iter()
-                    .enumerate()
+                let segments = (self.models.iter().enumerate())
                     .flat_map(|(idx, mesh)| segments[idx].intersect_plane(mesh, height))
                     .collect::<Vec<_>>();
 
@@ -124,6 +116,11 @@ impl Slicer {
 
                 // Finished encoding the layer
                 encoder.finish(layer as usize, &self.slice_config)
+            })
+            .inspect(|_| {
+                // Updates the slice progress
+                self.progress.completed.fetch_add(1, Ordering::Relaxed);
+                self.progress.notify.notify_all();
             })
             .collect::<Vec<_>>();
 
