@@ -35,7 +35,7 @@
 - [x] Render orbit target point
 - [x] Factor out common descriptors from pipelines
 - [x] Improve include_shader macro
-- [ ] Don't store rended mesh after sending to GPU
+- [x] Don't store rended mesh after sending to GPU
 - [x] Fix orbit speed slowing with increasing height
 - [x] Use bumpalo or something for allocation of bvhs
 - [x] Optimize bvh more (benchmarking with criterion)
@@ -93,7 +93,7 @@
 - [ ] GPU accalration for post processing effect?
 - [x] Fix requiring viewport to be visible to render preview image
 - [x] Visulize mesh outside of bounging box
-- [ ] Save panel layout
+- [x] Save panel layout
 - [x] Random triangle color render mode
 - [ ] Dont clone Config every frame for no reason
 - [x] Add button to reset UI

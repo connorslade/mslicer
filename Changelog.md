@@ -4,6 +4,9 @@
 
 - Added support for SVGs as an output format
 - Don't show normals for hidden models
+- Always open Viewport window on startup
+- Show outlines around the pixels when zoomed into the slice preview
+- Recompute mesh normals by default (also removed the normal operations button)
 
 ## v0.2.2 &mdash; June 14th, 2025
 

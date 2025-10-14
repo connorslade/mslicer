@@ -10,7 +10,7 @@ use wgpu::{
 
 use slicer::mesh::Mesh;
 
-use super::ModelVertex;
+use crate::render::ModelVertex;
 
 pub struct RenderedMesh {
     pub name: String,
@@ -20,8 +20,6 @@ pub struct RenderedMesh {
     pub hidden: bool,
     pub locked_scale: bool,
 
-    vertices: Vec<ModelVertex>,
-    index: Vec<u32>,
     buffers: Option<RenderedMeshBuffers>,
 }
 
@@ -32,14 +30,6 @@ pub struct RenderedMeshBuffers {
 
 impl RenderedMesh {
     pub fn from_mesh(mesh: Mesh) -> Self {
-        let (vertices, faces) = (mesh.vertices(), mesh.faces());
-
-        let index = faces.iter().flatten().copied().collect::<Vec<_>>();
-        let vertices = vertices
-            .iter()
-            .map(|vert| ModelVertex::new(vert.push(1.0)))
-            .collect();
-
         Self {
             name: String::new(),
             id: next_id(),
@@ -47,8 +37,6 @@ impl RenderedMesh {
             color: Color32::WHITE,
             hidden: false,
             locked_scale: true,
-            index,
-            vertices,
             buffers: None,
         }
     }
@@ -96,16 +84,23 @@ impl RenderedMesh {
 
     pub fn get_buffers(&mut self, device: &Device) -> &RenderedMeshBuffers {
         if self.buffers.is_none() {
+            let (vertices, faces) = (self.mesh.vertices(), self.mesh.faces());
+
+            let index = faces.iter().flatten().copied().collect::<Vec<_>>();
+            let vertices = (vertices.iter())
+                .map(|vert| ModelVertex::new(vert.push(1.0)))
+                .collect::<Vec<_>>();
+
             let vertex_buffer = device.create_buffer_init(&BufferInitDescriptor {
                 label: None,
-                contents: bytemuck::cast_slice(&self.vertices),
-                usage: BufferUsages::VERTEX | BufferUsages::COPY_DST,
+                contents: bytemuck::cast_slice(&vertices),
+                usage: BufferUsages::VERTEX,
             });
 
             let index_buffer = device.create_buffer_init(&BufferInitDescriptor {
                 label: None,
-                contents: bytemuck::cast_slice(&self.index),
-                usage: BufferUsages::INDEX | BufferUsages::COPY_DST,
+                contents: bytemuck::cast_slice(&index),
+                usage: BufferUsages::INDEX,
             });
 
             self.buffers = Some(RenderedMeshBuffers {
@@ -127,8 +122,6 @@ impl Clone for RenderedMesh {
             color: self.color,
             hidden: self.hidden,
             locked_scale: self.locked_scale,
-            vertices: self.vertices.clone(),
-            index: self.index.clone(),
             buffers: None,
         }
     }
