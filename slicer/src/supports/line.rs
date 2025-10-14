@@ -4,7 +4,10 @@ use nalgebra::{Vector2, Vector3};
 use ordered_float::OrderedFloat;
 use tracing::info;
 
-use crate::{builder::MeshBuilder, half_edge::HalfEdgeMesh, mesh::Mesh};
+use crate::{
+    builder::MeshBuilder, half_edge::HalfEdgeMesh, intersection::ray_triangle_intersection,
+    mesh::Mesh,
+};
 
 pub struct LineSupportGenerator<'a> {
     config: &'a LineSupportConfig,
@@ -167,45 +170,6 @@ impl<'a> LineSupportGenerator<'a> {
 
         out
     }
-}
-
-// https://www.scratchapixel.com/lessons/3d-basic-rendering/ray-tracing-rendering-a-triangle/ray-triangle-intersection-geometric-solution.html
-// https://math.stackexchange.com/questions/4322/check-whether-a-point-is-within-a-3d-triangle
-fn ray_triangle_intersection(
-    face: [Vector3<f32>; 3],
-    face_normal: Vector3<f32>,
-    start: Vector3<f32>,
-    direction: Vector3<f32>,
-) -> Option<Vector3<f32>> {
-    let distance = -face_normal.dot(&face[0]);
-
-    // Check if plane and direction are parallel
-    let denominator = face_normal.dot(&direction);
-    if denominator == 0.0 {
-        return None;
-    }
-
-    let t = -(face_normal.dot(&start) + distance) / denominator;
-    if t < 0.0 {
-        return None;
-    }
-
-    let intersection = start + t * direction;
-
-    // Check if intersection is inside triangle
-    let two_area = (face[1] - face[0]).cross(&(face[2] - face[0])).norm();
-
-    let calc = |a: Vector3<f32>, b: Vector3<f32>| {
-        (a - intersection).cross(&(b - intersection)).norm() / two_area
-    };
-    let alpha = calc(face[1], face[2]);
-    let beta = calc(face[2], face[0]);
-    let gamma = 1.0 - alpha - beta;
-
-    let inside_triangle =
-        alpha >= 0.0 && beta >= 0.0 && gamma >= 0.0 && alpha <= 1.0 && beta <= 1.0 && gamma <= 1.0;
-
-    inside_triangle.then_some(intersection)
 }
 
 impl Default for LineSupportConfig {

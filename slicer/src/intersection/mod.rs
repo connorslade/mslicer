@@ -46,3 +46,37 @@ pub fn intersect_triangle(
 
     (n == 2).then_some(out)
 }
+
+// https://www.scratchapixel.com/lessons/3d-basic-rendering/ray-tracing-rendering-a-triangle/ray-triangle-intersection-geometric-solution.html
+// https://math.stackexchange.com/questions/4322/check-whether-a-point-is-within-a-3d-triangle
+pub fn ray_triangle_intersection(
+    face: [Vector3<f32>; 3],
+    face_normal: Vector3<f32>,
+    start: Vector3<f32>,
+    direction: Vector3<f32>,
+) -> Option<Vector3<f32>> {
+    let distance = -face_normal.dot(&face[0]);
+
+    // Check if plane and direction are parallel
+    let denominator = face_normal.dot(&direction);
+    if denominator == 0.0 {
+        return None;
+    }
+
+    let t = -(face_normal.dot(&start) + distance) / denominator;
+    if t < 0.0 {
+        return None;
+    }
+
+    let intersection = start + t * direction;
+
+    // Check if intersection is inside triangle
+    let c0 = (face[1] - face[0]).cross(&(intersection - face[0]));
+    let c1 = (face[2] - face[1]).cross(&(intersection - face[1]));
+    let c2 = (face[0] - face[2]).cross(&(intersection - face[2]));
+
+    let inside_triangle =
+        face_normal.dot(&c0) >= 0.0 && face_normal.dot(&c1) >= 0.0 && face_normal.dot(&c2) >= 0.0;
+
+    inside_triangle.then_some(intersection)
+}

@@ -7,6 +7,7 @@
 - Always open Viewport window on startup
 - Show outlines around the pixels when zoomed into the slice preview
 - Recompute mesh normals by default (also removed the normal operations button)
+- Generated meshes (supports) now have correct normals and face winding order
 
 ## v0.2.2 &mdash; June 14th, 2025
 
