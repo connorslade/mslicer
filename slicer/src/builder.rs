@@ -33,7 +33,7 @@ impl MeshBuilder {
 
     pub fn add_quad(&mut self, quad: [u32; 4], normal: Vector3<f32>) {
         self.add_face([quad[0], quad[1], quad[2]], normal);
-        self.add_face([quad[1], quad[2], quad[3]], normal);
+        self.add_face([quad[2], quad[1], quad[3]], normal);
     }
 
     pub fn build(self) -> Mesh {
@@ -79,7 +79,7 @@ impl MeshBuilder {
         let mut fist = None;
         for i in 0..precision {
             let angle = 2.0 * PI * (i as f32) / (precision as f32);
-            let normal = Vector3::new(angle.cos(), angle.sin(), 0.0);
+            let normal = Vector3::new(angle.sin(), angle.cos(), 0.0);
             let offset = normal * radius;
 
             let top = self.add_vertex(top + offset);

@@ -5,7 +5,7 @@ use ordered_float::OrderedFloat;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
 use crate::{
-    segments::Segments1D,
+    intersection::Segments1D,
     slicer::{Slicer, SEGMENT_LAYERS},
 };
 

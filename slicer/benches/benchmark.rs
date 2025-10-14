@@ -2,7 +2,7 @@ use std::{fs::File, io::BufReader, path::Path};
 
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 
-use slicer::{mesh::load_mesh, segments::Segments1D};
+use slicer::{intersection::Segments1D, mesh::load_mesh};
 
 pub fn bench(c: &mut Criterion) {
     let mut group = c.benchmark_group("Mesh Intersections");
@@ -14,7 +14,7 @@ pub fn bench(c: &mut Criterion) {
         mesh.recompute_normals();
         let segments = Segments1D::from_mesh(&mesh, 100);
 
-        group.bench_with_input(BenchmarkId::new("Linier", mesh_name), &mesh, |b, i| {
+        group.bench_with_input(BenchmarkId::new("Linear", mesh_name), &mesh, |b, i| {
             b.iter(|| i.intersect_plane(0.0))
         });
 

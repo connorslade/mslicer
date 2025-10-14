@@ -3,7 +3,7 @@ use std::{
     sync::Arc,
 };
 
-use anyhow::Result;
+use anyhow::{bail, Result};
 use nalgebra::{Matrix4, Vector3};
 use obj::{Obj, Vertex};
 use tracing::warn;
@@ -101,7 +101,7 @@ impl Mesh {
         self.overwrite_normals(normals);
     }
 
-    // The alternaitve is to put normals in a separate Arc to avoid cloning all
+    // The alternate is to put normals in a separate Arc to avoid cloning all
     // verts and faces here, but its proooobly fine.
     fn overwrite_normals(&mut self, normals: Vec<Vector3<f32>>) {
         self.inner = Arc::new(MeshInner {
@@ -111,19 +111,19 @@ impl Mesh {
         });
     }
 
-    /// Intersect the mesh with a plane with linier time complexity. You
+    /// Intersect the mesh with a plane with linear time complexity. You
     /// should probably use the [`crate::segments::Segments`] struct as it can
     /// massively accelerate slicing of high face count triangles.
-    pub fn intersect_plane(&self, height: f32) -> Vec<Pos> {
+    pub fn intersect_plane(&self, height: f32) -> Vec<([Pos; 2], bool)> {
         // Point is the position of the plane and normal is the direction /
         // rotation of the plane.
         let point = self.inv_transform(&Vector3::new(0.0, 0.0, height));
         let normal = (self.inv_transformation_matrix * Vector3::z_axis().to_homogeneous()).xyz();
 
-        let mut out = Vec::new();
+        let mut intersections = Vec::new();
 
         let vertices = self.vertices();
-        for face in self.faces() {
+        for (idx, face) in self.faces().iter().enumerate() {
             // Get the vertices of the face
             let v0 = vertices[face[0] as usize];
             let v1 = vertices[face[1] as usize];
@@ -142,6 +142,9 @@ impl Mesh {
             );
             let (a_pos, b_pos, c_pos) = (a > 0.0, b > 0.0, c > 0.0);
 
+            let mut out = [Vector3::zeros(); 2];
+            let mut n = 0;
+
             // Closure called when the line segment from v0 to v1 is intersecting the
             // plane. t is how far along the line the intersection is and intersection,
             // it well the point that is intersecting with the plane.
@@ -149,15 +152,21 @@ impl Mesh {
                 let (v0, v1) = (self.transform(&v0), self.transform(&v1));
                 let t = a / (a - b);
                 let intersection = v0 + t * (v1 - v0);
-                out.push(intersection);
+                out[n] = intersection;
+                n += 1;
             };
 
             (a_pos ^ b_pos).then(|| push_intersection(a, b, v0, v1));
             (b_pos ^ c_pos).then(|| push_intersection(b, c, v1, v2));
             (c_pos ^ a_pos).then(|| push_intersection(c, a, v2, v0));
+
+            if n == 2 {
+                let entering = self.transform_normal(self.normal(idx)).x > 0.0;
+                intersections.push((out, entering));
+            }
         }
 
-        out
+        intersections
     }
 
     /// Updates the internal transformation matrices. This is called
@@ -324,7 +333,7 @@ pub fn load_mesh<T: BufRead + Seek>(reader: &mut T, format: &str) -> Result<Mesh
                 .collect();
             Mesh::new(vertices, faces, normals)
         }
-        _ => return Err(anyhow::anyhow!("Unsupported format: {}", format)),
+        _ => bail!("Unsupported format: {}", format),
     })
 }
 
