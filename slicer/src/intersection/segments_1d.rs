@@ -1,6 +1,6 @@
 use nalgebra::Vector3;
 
-use crate::{intersection::intersect_triangle, mesh::Mesh};
+use crate::{intersection::triangle::plane_triangle_intersection, mesh::Mesh};
 
 /// Acceleration structure for mesh slicing. By spiting the mesh into segments
 /// along the slicing axis and adding references to all the triangles that
@@ -63,7 +63,7 @@ impl Segments1D {
         }
 
         for &face in self.layers[layer as usize].iter() {
-            let segment = intersect_triangle(mesh, &self.transformed_points, face, height);
+            let segment = plane_triangle_intersection(mesh, &self.transformed_points, face, height);
             if let Some(segment) = segment {
                 out.push((segment, mesh.transform_normal(mesh.normal(face)).x > 0.0));
             }

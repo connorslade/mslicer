@@ -5,8 +5,8 @@ use ordered_float::OrderedFloat;
 use tracing::info;
 
 use crate::{
-    builder::MeshBuilder, half_edge::HalfEdgeMesh, intersection::ray_triangle_intersection,
-    mesh::Mesh,
+    builder::MeshBuilder, half_edge::HalfEdgeMesh,
+    intersection::triangle::ray_triangle_intersection, mesh::Mesh,
 };
 
 pub struct LineSupportGenerator<'a> {
@@ -64,6 +64,12 @@ impl<'a> LineSupportGenerator<'a> {
                 bottom,
                 origin.z + 0.1,
                 self.config.support_radius,
+                self.config.support_precision,
+            );
+            mesh.add_vertical_cylinder(
+                bottom,
+                0.1,
+                self.config.base_radius,
                 self.config.support_precision,
             );
             debug_points.push([origin, -Vector3::z()]);
