@@ -33,6 +33,19 @@
 	</screenshots>
 
 	<releases>
+        <release version="0.3.0" date="2025-11-15">
+            <description>
+                <ul>
+                    <li>Added support for SVGs as an output format</li>
+                    <li>Don't show normals for hidden models</li>
+                    <li>Always open Viewport window on startup</li>
+                    <li>Show outlines around the pixels when zoomed into the slice preview</li>
+                    <li>Recompute mesh normals by default (also removed the normal operations button)</li>
+                    <li>Generated meshes (supports) now have correct normals and face winding order</li>
+                </ul>
+            </description>
+        </release>
+
 	    <release version="0.2.1" date="2025-04-13">
 			<description>
 			    <ul>
