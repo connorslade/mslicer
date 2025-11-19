@@ -4,9 +4,15 @@ pub trait Serializer {
     fn write_bool(&mut self, data: bool);
     fn write_u8(&mut self, data: u8);
     fn write_u16_be(&mut self, data: u16);
+    fn write_u16_le(&mut self, data: u16);
     fn write_u32_be(&mut self, data: u32);
+    fn write_u32_le(&mut self, data: u32);
     fn write_u64_be(&mut self, data: u64);
+    fn write_u64_le(&mut self, data: u64);
     fn write_f32_be(&mut self, data: f32);
+    fn write_f32_le(&mut self, data: f32);
+    fn write_f64_be(&mut self, data: f64);
+    fn write_f64_le(&mut self, data: f64);
     fn write_bytes(&mut self, data: &[u8]);
     fn write_sized_string<const SIZE: usize>(&mut self, data: &SizedString<SIZE>);
 }
@@ -51,8 +57,18 @@ impl Serializer for SizedSerializer<'_> {
         self.offset += 2;
     }
 
+    fn write_u16_le(&mut self, data: u16) {
+        self.buffer[self.offset..self.offset + 2].copy_from_slice(&data.to_le_bytes());
+        self.offset += 2;
+    }
+
     fn write_u32_be(&mut self, data: u32) {
         self.buffer[self.offset..self.offset + 4].copy_from_slice(&data.to_be_bytes());
+        self.offset += 4;
+    }
+
+    fn write_u32_le(&mut self, data: u32) {
+        self.buffer[self.offset..self.offset + 4].copy_from_slice(&data.to_le_bytes());
         self.offset += 4;
     }
 
@@ -61,9 +77,29 @@ impl Serializer for SizedSerializer<'_> {
         self.offset += 8;
     }
 
+    fn write_u64_le(&mut self, data: u64) {
+        self.buffer[self.offset..self.offset + 8].copy_from_slice(&data.to_le_bytes());
+        self.offset += 8;
+    }
+
     fn write_f32_be(&mut self, data: f32) {
         self.buffer[self.offset..self.offset + 4].copy_from_slice(&data.to_be_bytes());
         self.offset += 4;
+    }
+
+    fn write_f32_le(&mut self, data: f32) {
+        self.buffer[self.offset..self.offset + 4].copy_from_slice(&data.to_le_bytes());
+        self.offset += 4;
+    }
+
+    fn write_f64_be(&mut self, data: f64) {
+        self.buffer[self.offset..self.offset + 8].copy_from_slice(&data.to_be_bytes());
+        self.offset += 8;
+    }
+
+    fn write_f64_le(&mut self, data: f64) {
+        self.buffer[self.offset..self.offset + 8].copy_from_slice(&data.to_le_bytes());
+        self.offset += 8;
     }
 
     fn write_bytes(&mut self, data: &[u8]) {
@@ -91,16 +127,40 @@ impl Serializer for DynamicSerializer {
         self.buffer.extend_from_slice(&data.to_be_bytes());
     }
 
+    fn write_u16_le(&mut self, data: u16) {
+        self.buffer.extend_from_slice(&data.to_le_bytes());
+    }
+
     fn write_u32_be(&mut self, data: u32) {
         self.buffer.extend_from_slice(&data.to_be_bytes());
+    }
+
+    fn write_u32_le(&mut self, data: u32) {
+        self.buffer.extend_from_slice(&data.to_le_bytes());
     }
 
     fn write_u64_be(&mut self, data: u64) {
         self.buffer.extend_from_slice(&data.to_be_bytes());
     }
 
+    fn write_u64_le(&mut self, data: u64) {
+        self.buffer.extend_from_slice(&data.to_le_bytes());
+    }
+
     fn write_f32_be(&mut self, data: f32) {
         self.buffer.extend_from_slice(&data.to_be_bytes());
+    }
+
+    fn write_f32_le(&mut self, data: f32) {
+        self.buffer.extend_from_slice(&data.to_le_bytes());
+    }
+
+    fn write_f64_be(&mut self, data: f64) {
+        self.buffer.extend_from_slice(&data.to_be_bytes());
+    }
+
+    fn write_f64_le(&mut self, data: f64) {
+        self.buffer.extend_from_slice(&data.to_le_bytes());
     }
 
     fn write_bytes(&mut self, data: &[u8]) {

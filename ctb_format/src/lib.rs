@@ -19,15 +19,15 @@ pub struct Section {
 impl Section {
     pub fn deserialize(des: &mut Deserializer) -> Result<Self> {
         Ok(Self {
-            size: des.read_u32_le(),
             offset: des.read_u32_le(),
+            size: des.read_u32_le(),
         })
     }
 
     pub fn deserialize_rev(des: &mut Deserializer) -> Result<Self> {
         Ok(Self {
-            offset: des.read_u32_le(),
             size: des.read_u32_le(),
+            offset: des.read_u32_le(),
         })
     }
 }

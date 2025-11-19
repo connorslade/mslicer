@@ -56,7 +56,7 @@ impl Layer {
 
         let layer_size = des.read_u32_le();
         des.advance_by(4);
-        let encrypted_data = Section::deserialize_rev(des)?;
+        let encrypted_data = Section::deserialize(des)?;
 
         let mut data = des.execute_at(layer_offset as usize, |des| {
             des.read_bytes(layer_size as usize).to_vec()

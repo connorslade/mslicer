@@ -20,14 +20,14 @@ impl File {
     pub fn deserialize(des: &mut Deserializer) -> Result<Self> {
         assert_eq!(des.read_u32_le(), 0x12FD0107);
 
-        let settings = Section::deserialize(des)?;
+        let settings = Section::deserialize_rev(des)?;
         let settings = des.execute_at(settings.offset as usize, |des| {
             Settings::deserialize(des, settings.size as usize)
         })?;
 
         des.advance_by(4);
         let version = des.read_u32_le();
-        let signature = Section::deserialize(des)?;
+        let signature = Section::deserialize_rev(des)?;
 
         let hash = Sha256::digest(settings.checksum_value.to_le_bytes());
         let signature = des.execute_at(signature.offset as usize, |des| {

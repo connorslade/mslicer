@@ -78,7 +78,7 @@ impl Preview {
         Ok(Self {
             width: des.read_u32_le(),
             height: des.read_u32_le(),
-            section: Section::deserialize_rev(des)?,
+            section: Section::deserialize(des)?,
         })
     }
 }

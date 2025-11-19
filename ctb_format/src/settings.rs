@@ -128,7 +128,7 @@ impl Settings {
             retract_speed_2: des.read_f32_le(),
             rest_time_after_lift: des.read_f32_le(),
             machine_name: {
-                let section = Section::deserialize_rev(&mut des)?;
+                let section = Section::deserialize(&mut des)?;
                 let machine_name = main_des.execute_at(section.offset as usize, |des| {
                     String::from_utf8_lossy(des.read_bytes(section.size as usize))
                 });
@@ -159,7 +159,7 @@ impl Settings {
             },
             disclaimer: {
                 des.advance_by(4 * 4);
-                Section::deserialize_rev(&mut des)?
+                Section::deserialize(&mut des)?
             },
             resin_parameters_address: {
                 des.advance_by(4);

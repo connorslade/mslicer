@@ -24,8 +24,8 @@ impl ResinParameters {
         let color_a = des.read_u8();
 
         let machine_name_address = des.read_u32_le();
-        let resin_type = Section::deserialize(des)?;
-        let resin_name = Section::deserialize(des)?;
+        let resin_type = Section::deserialize_rev(des)?;
+        let resin_name = Section::deserialize_rev(des)?;
         let machine_name = Section {
             size: des.read_u32_le(),
             offset: machine_name_address,

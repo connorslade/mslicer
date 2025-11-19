@@ -57,3 +57,33 @@ impl Iterator for LayerDecoder<'_> {
         Some(Run { length, value })
     }
 }
+
+#[derive(Default)]
+pub struct LayerEncoder {
+    data: Vec<u8>,
+}
+
+impl LayerEncoder {
+    pub fn add_run(&mut self, length: u64, mut value: u8) {
+        if length >= 1 {
+            value |= 0x80;
+        }
+        self.data.push(value);
+
+        if length <= 0x7F {
+            self.data.push(length as u8);
+        } else if length <= 0x3FFF {
+            self.data.push((length >> 8) as u8 | 0x80);
+            self.data.push(length as u8);
+        } else if length <= 0x1FFFFF {
+            self.data.push((length >> 16) as u8 | 0xc0);
+            self.data.push((length >> 8) as u8);
+            self.data.push(length as u8);
+        } else if length <= 0xFFFFFFF {
+            self.data.push((length >> 24) as u8 | 0xe0);
+            self.data.push((length >> 16) as u8);
+            self.data.push((length >> 8) as u8);
+            self.data.push(length as u8);
+        }
+    }
+}
