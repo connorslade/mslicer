@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["common", "goo_format", "mslicer", "remote_send", "slicer"]
+members = [ "common", "ctb_format", "goo_format", "mslicer", "remote_send", "slicer" ]
 
 [workspace.dependencies]
 afire = "3.0.0-alpha.3"
