@@ -1365,6 +1365,8 @@ dependencies = [
  "anyhow",
  "cbc",
  "common",
+ "image 0.25.6",
+ "nalgebra 0.33.2",
  "sha2",
 ]
 

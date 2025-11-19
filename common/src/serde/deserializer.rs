@@ -32,6 +32,14 @@ impl<'a> Deserializer<'a> {
         self.offset = pos;
     }
 
+    pub fn execute_at<T>(&mut self, pos: usize, func: impl FnOnce(&mut Self) -> T) -> T {
+        let offset = self.offset;
+        self.jump_to(pos);
+        let result = func(self);
+        self.offset = offset;
+        result
+    }
+
     pub fn read_bool(&mut self) -> bool {
         self.read_u8() != 0
     }

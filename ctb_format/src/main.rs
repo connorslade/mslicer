@@ -2,29 +2,39 @@ use std::fs;
 
 use anyhow::{Ok, Result};
 
-use common::serde::Deserializer;
-use ctb_format::{decrypt, encrypt, header::Header, settings::Settings};
-use sha2::{Digest, Sha256};
+use common::{misc::Run, serde::Deserializer};
+use ctb_format::{file::File, layer::Layer, layer_coding::LayerDecoder};
+use image::RgbImage;
 
 fn main() -> Result<()> {
-    let file = fs::read("output-enc-5.ctb")?;
+    let file = fs::read("Skull_v1.stl_0.05_2.5_2025_11_18_19_44_00.ctb")?;
     let mut des = Deserializer::new(&file);
 
-    let header = Header::deserialize(&mut des)?;
-    assert_eq!(header.magic, 0x12FD0107);
-    dbg!(&header);
+    let file = File::deserialize(&mut des)?;
+    dbg!(&file);
 
-    des.jump_to(header.settings.offset as usize);
-    let bytes = decrypt(des.read_bytes(header.settings.size as usize));
-    let settings = Settings::deserialize(&mut Deserializer::new(&bytes))?;
-    dbg!(&settings);
+    const PAGE_SIZE: u64 = 1 << 32;
+    for (i, layer) in file.layers.iter().skip(100).take(1).enumerate() {
+        des.jump_to(layer.page_number as usize * PAGE_SIZE as usize + layer.layer_offset as usize);
+        let layer = Layer::deserialize(&mut des, file.settings.layer_xor_key, i as u32)?;
 
-    let hash = Sha256::digest(settings.checksum_value.to_le_bytes());
-    let encrypted = encrypt(&hash);
+        let path = format!("layer_{i:03}.png");
+        let mut image = RgbImage::new(file.settings.resolution.x, file.settings.resolution.y);
 
-    des.jump_to(header.signature.offset as usize);
-    let signature = des.read_bytes(header.signature.size as usize);
-    assert_eq!(encrypted, signature);
+        let mut pixel = 0;
+        for Run { length, value } in LayerDecoder::new(&layer.data) {
+            let color = image::Rgb([value, value, value]);
+            for _ in 0..length {
+                let x = pixel % file.settings.resolution.x;
+                let y = pixel / file.settings.resolution.y;
+
+                image.put_pixel(x, y, color);
+                pixel += 1;
+            }
+        }
+
+        image.save(path)?;
+    }
 
     Ok(())
 }
