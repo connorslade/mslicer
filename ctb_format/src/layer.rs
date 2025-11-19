@@ -94,8 +94,11 @@ impl Layer {
 }
 
 fn xor_cypher(data: &mut [u8], seed: u32, layer: u32) {
-    let init = seed * 0x2D83CDAC + 0xD8A83423;
-    let mut key = (layer * 0x1E1530CD + 0xEC3D47CD) * init;
+    let init = seed.wrapping_mul(0x2D83CDAC).wrapping_add(0xD8A83423);
+    let mut key = layer
+        .wrapping_mul(0x1E1530CD)
+        .wrapping_add(0xEC3D47CD)
+        .wrapping_mul(init);
 
     let mut index = 0;
     for byte in data.iter_mut() {
@@ -103,7 +106,7 @@ fn xor_cypher(data: &mut [u8], seed: u32, layer: u32) {
         index += 1;
 
         if index & 3 == 0 {
-            key += init;
+            key = key.wrapping_add(init);
             index = 0;
         }
 

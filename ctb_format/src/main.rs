@@ -14,11 +14,11 @@ fn main() -> Result<()> {
     dbg!(&file);
 
     const PAGE_SIZE: u64 = 1 << 32;
-    for (i, layer) in file.layers.iter().skip(100).take(1).enumerate() {
+    for (i, layer) in file.layers.iter().enumerate() {
+        dbg!(i as f32 / file.layers.len() as f32 * 100.0);
         des.jump_to(layer.page_number as usize * PAGE_SIZE as usize + layer.layer_offset as usize);
         let layer = Layer::deserialize(&mut des, file.settings.layer_xor_key, i as u32)?;
 
-        let path = format!("layer_{i:03}.png");
         let mut image = RgbImage::new(file.settings.resolution.x, file.settings.resolution.y);
 
         let mut pixel = 0;
@@ -26,14 +26,14 @@ fn main() -> Result<()> {
             let color = image::Rgb([value, value, value]);
             for _ in 0..length {
                 let x = pixel % file.settings.resolution.x;
-                let y = pixel / file.settings.resolution.y;
+                let y = pixel / file.settings.resolution.x;
 
                 image.put_pixel(x, y, color);
                 pixel += 1;
             }
         }
 
-        image.save(path)?;
+        image.save(format!("layer_{i:03}.png"))?;
     }
 
     Ok(())
