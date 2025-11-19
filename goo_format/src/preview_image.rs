@@ -1,3 +1,5 @@
+use std::fmt::Debug;
+
 use common::serde::{Deserializer, Serializer};
 use image::{imageops::FilterType, RgbaImage};
 
@@ -75,5 +77,11 @@ impl<const WIDTH: usize, const HEIGHT: usize> PreviewImage<WIDTH, HEIGHT> {
         let green = ((pixel >> 5) & 0x3F) as f32 / 63.0;
         let blue = (pixel & 0x1F) as f32 / 31.0;
         (red, green, blue)
+    }
+}
+
+impl<const WIDTH: usize, const HEIGHT: usize> Debug for PreviewImage<WIDTH, HEIGHT> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("PreviewImage").finish()
     }
 }

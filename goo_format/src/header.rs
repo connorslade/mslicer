@@ -1,4 +1,4 @@
-use std::fmt::{self, Debug};
+use std::fmt::Debug;
 
 use anyhow::{ensure, Result};
 
@@ -7,6 +7,7 @@ use common::serde::{Deserializer, Serializer, SizedString};
 use crate::{PreviewImage, DELIMITER, MAGIC_TAG};
 
 /// The header section of a `.goo` file.
+#[derive(Debug)]
 pub struct Header {
     /// Format version, should be "V3.0".
     pub version: SizedString<4>,
@@ -214,128 +215,77 @@ impl Header {
     }
 
     pub fn deserialize(des: &mut Deserializer) -> Result<Self> {
-        let version = des.read_sized_string();
-        ensure!(des.read_bytes(8) == [0x07, 0x00, 0x00, 0x00, 0x44, 0x4C, 0x50, 0x00]);
-        let software_info = des.read_sized_string();
-        let software_version = des.read_sized_string();
-        let file_time = des.read_sized_string();
-        let printer_name = des.read_sized_string();
-        let printer_type = des.read_sized_string();
-        let profile_name = des.read_sized_string();
-        let anti_aliasing_level = des.read_u16_be();
-        let grey_level = des.read_u16_be();
-        let blur_level = des.read_u16_be();
-        let small_preview = PreviewImage::deserializes(des);
-        ensure!(des.read_bytes(2) == [0xd, 0xa]);
-        let big_preview = PreviewImage::deserializes(des);
-        ensure!(des.read_bytes(2) == [0xd, 0xa]);
-        let layer_count = des.read_u32_be();
-        let x_resolution = des.read_u16_be();
-        let y_resolution = des.read_u16_be();
-        let x_mirror = des.read_bool();
-        let y_mirror = des.read_bool();
-        let x_size = des.read_f32_be();
-        let y_size = des.read_f32_be();
-        let z_size = des.read_f32_be();
-        let layer_thickness = des.read_f32_be();
-        let exposure_time = des.read_f32_be();
-        let exposure_delay_mode = ExposureDelayMode::from_bool(des.read_bool());
-        let turn_off_time = des.read_f32_be();
-        let bottom_before_lift_time = des.read_f32_be();
-        let bottom_after_lift_time = des.read_f32_be();
-        let bottom_after_retract_time = des.read_f32_be();
-        let before_lift_time = des.read_f32_be();
-        let after_lift_time = des.read_f32_be();
-        let after_retract_time = des.read_f32_be();
-        let bottom_exposure_time = des.read_f32_be();
-        let bottom_layers = des.read_u32_be();
-        let bottom_lift_distance = des.read_f32_be();
-        let bottom_lift_speed = des.read_f32_be();
-        let lift_distance = des.read_f32_be();
-        let lift_speed = des.read_f32_be();
-        let bottom_retract_distance = des.read_f32_be();
-        let bottom_retract_speed = des.read_f32_be();
-        let retract_distance = des.read_f32_be();
-        let retract_speed = des.read_f32_be();
-        let bottom_second_lift_distance = des.read_f32_be();
-        let bottom_second_lift_speed = des.read_f32_be();
-        let second_lift_distance = des.read_f32_be();
-        let second_lift_speed = des.read_f32_be();
-        let bottom_second_retract_distance = des.read_f32_be();
-        let bottom_second_retract_speed = des.read_f32_be();
-        let second_retract_distance = des.read_f32_be();
-        let second_retract_speed = des.read_f32_be();
-        let bottom_light_pwm = des.read_u16_be().min(255) as u8;
-        let light_pwm = des.read_u16_be().min(255) as u8;
-        let advance_mode = des.read_bool();
-        let printing_time = des.read_u32_be();
-        let total_volume = des.read_f32_be();
-        let total_weight = des.read_f32_be();
-        let total_price = des.read_f32_be();
-        let price_unit = des.read_sized_string();
-        ensure!(des.read_u32_be() == Self::SIZE as u32);
-        let grey_scale_level = des.read_bool();
-        let transition_layers = des.read_u16_be();
-
         Ok(Self {
-            version,
-            software_info,
-            software_version,
-            file_time,
-            printer_name,
-            printer_type,
-            profile_name,
-            anti_aliasing_level,
-            grey_level,
-            blur_level,
-            small_preview,
-            big_preview,
-            layer_count,
-            x_resolution,
-            y_resolution,
-            x_mirror,
-            y_mirror,
-            x_size,
-            y_size,
-            z_size,
-            layer_thickness,
-            exposure_time,
-            exposure_delay_mode,
-            turn_off_time,
-            bottom_before_lift_time,
-            bottom_after_lift_time,
-            bottom_after_retract_time,
-            before_lift_time,
-            after_lift_time,
-            after_retract_time,
-            bottom_exposure_time,
-            bottom_layers,
-            bottom_lift_distance,
-            bottom_lift_speed,
-            lift_distance,
-            lift_speed,
-            bottom_retract_distance,
-            bottom_retract_speed,
-            retract_distance,
-            retract_speed,
-            bottom_second_lift_distance,
-            bottom_second_lift_speed,
-            second_lift_distance,
-            second_lift_speed,
-            bottom_second_retract_distance,
-            bottom_second_retract_speed,
-            second_retract_distance,
-            second_retract_speed,
-            bottom_light_pwm,
-            light_pwm,
-            per_layer_settings: advance_mode,
-            printing_time,
-            total_volume,
-            total_weight,
-            total_price,
-            price_unit,
-            grey_scale_level,
-            transition_layers,
+            version: des.read_sized_string(),
+            software_info: {
+                ensure!(des.read_bytes(8) == [0x07, 0x00, 0x00, 0x00, 0x44, 0x4C, 0x50, 0x00]);
+                des.read_sized_string()
+            },
+            software_version: des.read_sized_string(),
+            file_time: des.read_sized_string(),
+            printer_name: des.read_sized_string(),
+            printer_type: des.read_sized_string(),
+            profile_name: des.read_sized_string(),
+            anti_aliasing_level: des.read_u16_be(),
+            grey_level: des.read_u16_be(),
+            blur_level: des.read_u16_be(),
+            small_preview: PreviewImage::deserializes(des),
+            big_preview: {
+                ensure!(des.read_bytes(2) == [0xd, 0xa]);
+                PreviewImage::deserializes(des)
+            },
+            layer_count: {
+                ensure!(des.read_bytes(2) == [0xd, 0xa]);
+                des.read_u32_be()
+            },
+            x_resolution: des.read_u16_be(),
+            y_resolution: des.read_u16_be(),
+            x_mirror: des.read_bool(),
+            y_mirror: des.read_bool(),
+            x_size: des.read_f32_be(),
+            y_size: des.read_f32_be(),
+            z_size: des.read_f32_be(),
+            layer_thickness: des.read_f32_be(),
+            exposure_time: des.read_f32_be(),
+            exposure_delay_mode: ExposureDelayMode::from_bool(des.read_bool()),
+            turn_off_time: des.read_f32_be(),
+            bottom_before_lift_time: des.read_f32_be(),
+            bottom_after_lift_time: des.read_f32_be(),
+            bottom_after_retract_time: des.read_f32_be(),
+            before_lift_time: des.read_f32_be(),
+            after_lift_time: des.read_f32_be(),
+            after_retract_time: des.read_f32_be(),
+            bottom_exposure_time: des.read_f32_be(),
+            bottom_layers: des.read_u32_be(),
+            bottom_lift_distance: des.read_f32_be(),
+            bottom_lift_speed: des.read_f32_be(),
+            lift_distance: des.read_f32_be(),
+            lift_speed: des.read_f32_be(),
+            bottom_retract_distance: des.read_f32_be(),
+            bottom_retract_speed: des.read_f32_be(),
+            retract_distance: des.read_f32_be(),
+            retract_speed: des.read_f32_be(),
+            bottom_second_lift_distance: des.read_f32_be(),
+            bottom_second_lift_speed: des.read_f32_be(),
+            second_lift_distance: des.read_f32_be(),
+            second_lift_speed: des.read_f32_be(),
+            bottom_second_retract_distance: des.read_f32_be(),
+            bottom_second_retract_speed: des.read_f32_be(),
+            second_retract_distance: des.read_f32_be(),
+            second_retract_speed: des.read_f32_be(),
+            bottom_light_pwm: des.read_u16_be().min(255) as u8,
+            light_pwm: des.read_u16_be().min(255) as u8,
+            per_layer_settings: des.read_bool(),
+            printing_time: des.read_u32_be(),
+            total_volume: des.read_f32_be(),
+            total_weight: des.read_f32_be(),
+            total_price: des.read_f32_be(),
+            price_unit: des.read_sized_string(),
+            grey_scale_level: {
+                ensure!(des.read_u32_be() == Self::SIZE as u32);
+                des.read_bool()
+            },
+            transition_layers: des.read_u16_be(),
         })
     }
 }
@@ -346,77 +296,5 @@ impl ExposureDelayMode {
             false => ExposureDelayMode::TurnOffTime,
             true => ExposureDelayMode::StaticTime,
         }
-    }
-}
-
-impl Debug for Header {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("HeaderInfo")
-            .field("version", &self.version)
-            .field("software_info", &self.software_info)
-            .field("software_version", &self.software_version)
-            .field("file_time", &self.file_time)
-            .field("printer_name", &self.printer_name)
-            .field("printer_type", &self.printer_type)
-            .field("profile_name", &self.profile_name)
-            .field("anti_aliasing_level", &self.anti_aliasing_level)
-            .field("grey_level", &self.grey_level)
-            .field("blur_level", &self.blur_level)
-            .field("layer_count", &self.layer_count)
-            .field("x_resolution", &self.x_resolution)
-            .field("y_resolution", &self.y_resolution)
-            .field("x_mirror", &self.x_mirror)
-            .field("y_mirror", &self.y_mirror)
-            .field("x_size", &self.x_size)
-            .field("y_size", &self.y_size)
-            .field("z_size", &self.z_size)
-            .field("layer_thickness", &self.layer_thickness)
-            .field("exposure_time", &self.exposure_time)
-            .field("exposure_delay_mode", &self.exposure_delay_mode)
-            .field("turn_off_time", &self.turn_off_time)
-            .field("bottom_before_lift_time", &self.bottom_before_lift_time)
-            .field("bottom_after_lift_time", &self.bottom_after_lift_time)
-            .field("bottom_after_retract_time", &self.bottom_after_retract_time)
-            .field("before_lift_time", &self.before_lift_time)
-            .field("after_lift_time", &self.after_lift_time)
-            .field("after_retract_time", &self.after_retract_time)
-            .field("bottom_exposure_time", &self.bottom_exposure_time)
-            .field("bottom_layers", &self.bottom_layers)
-            .field("bottom_lift_distance", &self.bottom_lift_distance)
-            .field("bottom_lift_speed", &self.bottom_lift_speed)
-            .field("lift_distance", &self.lift_distance)
-            .field("lift_speed", &self.lift_speed)
-            .field("bottom_retract_distance", &self.bottom_retract_distance)
-            .field("bottom_retract_speed", &self.bottom_retract_speed)
-            .field("retract_distance", &self.retract_distance)
-            .field("retract_speed", &self.retract_speed)
-            .field(
-                "bottom_second_lift_distance",
-                &self.bottom_second_lift_distance,
-            )
-            .field("bottom_second_lift_speed", &self.bottom_second_lift_speed)
-            .field("second_lift_distance", &self.second_lift_distance)
-            .field("second_lift_speed", &self.second_lift_speed)
-            .field(
-                "bottom_second_retract_distance",
-                &self.bottom_second_retract_distance,
-            )
-            .field(
-                "bottom_second_retract_speed",
-                &self.bottom_second_retract_speed,
-            )
-            .field("second_retract_distance", &self.second_retract_distance)
-            .field("second_retract_speed", &self.second_retract_speed)
-            .field("bottom_light_pwm", &self.bottom_light_pwm)
-            .field("light_pwm", &self.light_pwm)
-            .field("advance_mode", &self.per_layer_settings)
-            .field("printing_time", &self.printing_time)
-            .field("total_volume", &self.total_volume)
-            .field("total_weight", &self.total_weight)
-            .field("total_price", &self.total_price)
-            .field("price_unit", &self.price_unit)
-            .field("grey_scale_level", &self.grey_scale_level)
-            .field("transition_layers", &self.transition_layers)
-            .finish()
     }
 }
