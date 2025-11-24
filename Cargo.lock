@@ -1364,6 +1364,7 @@ dependencies = [
  "aes",
  "anyhow",
  "cbc",
+ "clap",
  "common",
  "image 0.25.6",
  "nalgebra 0.33.2",

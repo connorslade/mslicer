@@ -8,7 +8,6 @@ pub mod layer;
 pub mod layer_coding;
 pub mod preview;
 pub mod resin;
-pub mod settings;
 
 #[derive(Debug)]
 pub struct Section {

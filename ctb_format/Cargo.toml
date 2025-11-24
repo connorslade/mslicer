@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 anyhow.workspace = true
+clap.workspace = true
 image.workspace = true
 nalgebra.workspace = true
 

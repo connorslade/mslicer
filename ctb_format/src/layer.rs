@@ -2,7 +2,7 @@ use std::fmt::Debug;
 
 use anyhow::Result;
 
-use common::serde::Deserializer;
+use common::serde::{Deserializer, Serializer};
 
 use crate::{Section, crypto::decrypt_in_place};
 
@@ -10,7 +10,7 @@ use crate::{Section, crypto::decrypt_in_place};
 pub struct LayerRef {
     pub layer_offset: u32,
     pub page_number: u32,
-    pub layer_table_size: u32,
+    pub layer_table_size: u32, // Should alys be 0x58
 }
 
 pub struct Layer {
@@ -42,6 +42,13 @@ impl LayerRef {
         };
         des.advance_by(4);
         Ok(this)
+    }
+
+    pub fn serialize<T: Serializer>(&self, ser: &mut T) {
+        ser.write_u32_le(self.layer_offset);
+        ser.write_u32_le(self.page_number);
+        ser.write_u32_le(self.layer_table_size);
+        ser.write_u32_le(0);
     }
 }
 
