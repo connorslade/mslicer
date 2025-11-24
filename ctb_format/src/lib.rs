@@ -31,8 +31,8 @@ impl Section {
     }
 
     pub fn serialize<T: Serializer>(&self, ser: &mut T) {
-        ser.write_u32_le(self.size);
         ser.write_u32_le(self.offset);
+        ser.write_u32_le(self.size);
     }
 
     pub fn deserialize_rev(des: &mut Deserializer) -> Result<Self> {
@@ -43,8 +43,8 @@ impl Section {
     }
 
     pub fn serialize_rev<T: Serializer>(&self, ser: &mut T) {
-        ser.write_u32_le(self.offset);
         ser.write_u32_le(self.size);
+        ser.write_u32_le(self.offset);
     }
 }
 

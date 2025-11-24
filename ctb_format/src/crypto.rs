@@ -1,6 +1,9 @@
 use aes::{
     Aes256,
-    cipher::{BlockDecryptMut, BlockEncryptMut, KeyIvInit, block_padding::NoPadding},
+    cipher::{
+        BlockDecryptMut, BlockEncryptMut, KeyIvInit,
+        block_padding::{NoPadding, ZeroPadding},
+    },
 };
 
 // thank u uv tools :pray:
@@ -31,10 +34,11 @@ pub fn encrypt(bytes: &[u8]) -> Vec<u8> {
     bytes
 }
 
-pub fn encrypt_in_place(bytes: &mut [u8]) {
+pub fn encrypt_in_place(bytes: &mut Vec<u8>) {
+    bytes.resize(bytes.len().next_multiple_of(32), 0);
     let length = bytes.len();
 
     cbc::Encryptor::<Aes256>::new(ENCRYPT_KEY.into(), ENCRYPT_IV.into())
-        .encrypt_padded_mut::<NoPadding>(bytes, length)
+        .encrypt_padded_mut::<ZeroPadding>(bytes, length)
         .unwrap();
 }

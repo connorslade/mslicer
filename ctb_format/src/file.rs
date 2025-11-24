@@ -9,19 +9,20 @@ use sha2::{Digest, Sha256};
 use crate::{
     Section,
     crypto::{decrypt, encrypt, encrypt_in_place},
-    layer::LayerRef,
+    layer::{Layer, LayerRef},
     preview::PreviewImage,
     resin::ResinParameters,
 };
 
-#[derive(Debug)]
+const PAGE_SIZE: u64 = 1 << 32;
+const DEFAULT_XOR_KEY: u32 = 0x67;
+
 pub struct File {
     pub version: u32,
-    pub layers: Vec<LayerRef>,
+    pub layers: Vec<Layer>,
 
     // Misc
     pub checksum: u64,
-    pub layer_xor_key: u32,
     pub disclaimer: String,
     pub modified: u32, // Timestamp in minutes
 
@@ -102,6 +103,7 @@ impl File {
         ensure!(encrypt(&hash) == signature);
 
         let layer_offset = des.read_u32_le();
+        let layer_count;
 
         Ok(Self {
             version,
@@ -117,14 +119,8 @@ impl File {
             light_off_delay: des.read_f32_le(),
             bottom_layer_count: des.read_u32_le(),
             resolution: Vector2::new(des.read_u32_le(), des.read_u32_le()),
-            layers: {
-                main_des.jump_to(layer_offset as usize);
-                let layer_count = des.read_u32_le();
-                (0..layer_count)
-                    .map(|_| LayerRef::deserialize(main_des))
-                    .collect::<Result<Vec<_>>>()?
-            },
             large_preview: {
+                layer_count = des.read_u32_le();
                 main_des.jump_to(des.read_u32_le() as usize);
                 PreviewImage::deserialize(main_des)?
             },
@@ -148,7 +144,24 @@ impl File {
                 des.read_u16_le()
             },
             bottom_light_pwm: des.read_u16_le(),
-            layer_xor_key: des.read_u32_le(),
+            layers: {
+                let xor_key = des.read_u32_le();
+                let mut layers = Vec::with_capacity(layer_count as usize);
+
+                main_des.jump_to(layer_offset as usize);
+
+                for i in 0..layer_count {
+                    let refrence = LayerRef::deserialize(main_des)?;
+                    let position = refrence.page_number as usize * PAGE_SIZE as usize
+                        + refrence.layer_offset as usize;
+
+                    let layer =
+                        main_des.execute_at(position, |des| Layer::deserialize(des, xor_key, i))?;
+                    layers.push(layer);
+                }
+
+                layers
+            },
             bottom_lift_height_2: des.read_f32_le(),
             bottom_lift_speed_2: des.read_f32_le(),
             lift_height_2: des.read_f32_le(),
@@ -203,7 +216,7 @@ impl File {
 
     pub fn serialize<T: Serializer>(&self, main_ser: &mut T) {
         main_ser.write_u32_le(0x12FD0107);
-        let settings_offset = main_ser.reserve(8);
+        let settings_section = main_ser.reserve(8);
         main_ser.write_u32_le(0);
         main_ser.write_u32_le(self.version);
         let signature = main_ser.reserve(8);
@@ -249,7 +262,7 @@ impl File {
         ser.write_u32_le(1);
         ser.write_u16_le(self.light_pwm);
         ser.write_u16_le(self.bottom_light_pwm);
-        ser.write_u32_le(self.layer_xor_key);
+        ser.write_u32_le(DEFAULT_XOR_KEY);
         ser.write_f32_le(self.bottom_lift_height_2);
         ser.write_f32_le(self.bottom_lift_speed_2);
         ser.write_f32_le(self.lift_height_2);
@@ -282,7 +295,7 @@ impl File {
         ser.reserve(4 * 4);
         Section::new(0, 0).serialize(&mut ser);
         ser.write_u32_le(0);
-        let resin_parameters = ser.reserve(4);
+        let resin = ser.reserve(4);
         ser.reserve(4 * 2);
 
         let settings = main_ser.reserve(ser.pos());
@@ -294,7 +307,8 @@ impl File {
             Section::new(machine_name_pos, machine_name_bytes.len()).serialize(ser);
         });
 
-        ser.execute_at(resin_parameters, |ser| self.resin_parameters.serialize(ser));
+        ser.execute_at(resin, |ser| ser.write_u32_le(main_ser.pos() as u32));
+        self.resin_parameters.serialize(main_ser);
 
         ser.execute_at(large_preview, |ser| ser.write_u32_le(main_ser.pos() as u32));
         self.large_preview.serialize(main_ser);
@@ -303,9 +317,7 @@ impl File {
         self.small_preview.serialize(main_ser);
 
         ser.execute_at(layer_offset, |ser| ser.write_u32_le(main_ser.pos() as u32));
-        for layer in self.layers.iter() {
-            layer.serialize(main_ser);
-        }
+        let layer_refs = main_ser.reserve(16 * self.layers.len());
 
         let mut settings_bytes = ser.into_inner();
         encrypt_in_place(&mut settings_bytes);
@@ -313,7 +325,7 @@ impl File {
             ser.write_bytes(&settings_bytes);
         });
 
-        main_ser.execute_at(settings_offset, |ser| {
+        main_ser.execute_at(settings_section, |ser| {
             Section::new(pos, settings_bytes.len()).serialize_rev(ser)
         });
 
@@ -325,5 +337,74 @@ impl File {
         main_ser.execute_at(signature, |ser| {
             Section::new(pos, bytes.len()).serialize_rev(ser);
         });
+
+        for (i, layer) in self.layers.iter().enumerate() {
+            let cursor = main_ser.pos() as u64;
+
+            let refrence = LayerRef {
+                layer_offset: (cursor % PAGE_SIZE) as u32,
+                page_number: (cursor / PAGE_SIZE) as u32,
+                layer_table_size: 0x58,
+            };
+            main_ser.execute_at(layer_refs + i * 16, |ser| refrence.serialize(ser));
+
+            layer.serialize(main_ser, DEFAULT_XOR_KEY, i as u32);
+        }
+    }
+}
+
+impl Debug for File {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("File")
+            .field("version", &self.version)
+            .field("checksum", &self.checksum)
+            .field("disclaimer", &self.disclaimer)
+            .field("modified", &self.modified)
+            .field("size", &self.size)
+            .field("resolution", &self.resolution)
+            .field("machine_name", &self.machine_name)
+            .field("projector_type", &self.projector_type)
+            .field("resin_parameters", &self.resin_parameters)
+            .field("total_height", &self.total_height)
+            .field("layer_height", &self.layer_height)
+            .field("last_layer_index", &self.last_layer_index)
+            .field("transition_layer_count", &self.transition_layer_count)
+            .field("anti_alias_flag", &self.anti_alias_flag)
+            .field("anti_alias_level", &self.anti_alias_level)
+            .field("per_layer_settings", &self.per_layer_settings)
+            .field("print_time", &self.print_time)
+            .field("material_milliliters", &self.material_milliliters)
+            .field("material_grams", &self.material_grams)
+            .field("material_cost", &self.material_cost)
+            .field("large_preview", &self.large_preview)
+            .field("small_preview", &self.small_preview)
+            .field("exposure_time", &self.exposure_time)
+            .field("bottom_exposure_time", &self.bottom_exposure_time)
+            .field("light_off_delay", &self.light_off_delay)
+            .field("bottom_layer_count", &self.bottom_layer_count)
+            .field("bottom_lift_height", &self.bottom_lift_height)
+            .field("bottom_lift_speed", &self.bottom_lift_speed)
+            .field("lift_height", &self.lift_height)
+            .field("lift_speed", &self.lift_speed)
+            .field("retract_speed", &self.retract_speed)
+            .field("bottom_light_off_delay", &self.bottom_light_off_delay)
+            .field("light_pwm", &self.light_pwm)
+            .field("bottom_light_pwm", &self.bottom_light_pwm)
+            .field("bottom_lift_height_2", &self.bottom_lift_height_2)
+            .field("bottom_lift_speed_2", &self.bottom_lift_speed_2)
+            .field("lift_height_2", &self.lift_height_2)
+            .field("lift_speed_2", &self.lift_speed_2)
+            .field("retract_height_2", &self.retract_height_2)
+            .field("retract_speed_2", &self.retract_speed_2)
+            .field("rest_time_after_lift", &self.rest_time_after_lift)
+            .field("bottom_retract_speed", &self.bottom_retract_speed)
+            .field("bottom_retract_speed_2", &self.bottom_retract_speed_2)
+            .field("rest_time_after_retract_2", &self.rest_time_after_retract_2)
+            .field("rest_time_after_lift_3", &self.rest_time_after_lift_3)
+            .field("rest_time_before_lift", &self.rest_time_before_lift)
+            .field("bottom_retract_height_2", &self.bottom_retract_height_2)
+            .field("rest_time_after_retract", &self.rest_time_after_retract)
+            .field("rest_time_after_lift_2", &self.rest_time_after_lift_2)
+            .finish()
     }
 }

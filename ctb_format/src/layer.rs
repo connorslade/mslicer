@@ -69,12 +69,12 @@ impl Layer {
             des.read_bytes(layer_size as usize).to_vec()
         });
 
-        if encrypted_data.size > 0 {
+        if encrypted_data.size != 0 {
             let (offset, length) = (encrypted_data.offset as usize, encrypted_data.size as usize);
             decrypt_in_place(&mut data[offset..offset + length]);
         }
 
-        if xor_key > 0 {
+        if xor_key != 0 {
             xor_cypher(&mut data, xor_key, layer);
         }
 
@@ -97,6 +97,39 @@ impl Layer {
             light_pwm: des.read_f32_le(),
             data,
         })
+    }
+
+    pub fn serialize<T: Serializer>(&self, ser: &mut T, xor_key: u32, layer: u32) {
+        ser.write_u32_le(self.table_size);
+        ser.write_f32_le(self.position_z);
+        ser.write_f32_le(self.exposure_time);
+        ser.write_f32_le(self.light_off_delay);
+        let layer_offset = ser.reserve(4);
+        ser.write_u32_le(self.page_number);
+        ser.write_u32_le(self.data.len() as u32);
+        ser.write_u32_le(0);
+        Section::new(0, 0).serialize(ser); // TODO: Not sure if the data can always just be left unencrypted
+        ser.write_f32_le(self.lift_height);
+        ser.write_f32_le(self.lift_speed);
+        ser.write_f32_le(self.lift_height_2);
+        ser.write_f32_le(self.lift_speed_2);
+        ser.write_f32_le(self.retract_speed);
+        ser.write_f32_le(self.retract_height_2);
+        ser.write_f32_le(self.retract_speed_2);
+        ser.write_f32_le(self.rest_time_before_lift);
+        ser.write_f32_le(self.rest_time_after_lift);
+        ser.write_f32_le(self.rest_time_after_retract);
+        ser.write_f32_le(self.light_pwm);
+        ser.write_u32_le(0);
+
+        let position = ser.pos();
+        ser.execute_at(layer_offset, |ser| ser.write_u32_le(position as u32));
+        ser.write_bytes(&self.data);
+
+        if xor_key != 0 {
+            let buffer = ser.view_mut(position, self.data.len());
+            xor_cypher(buffer, xor_key, layer);
+        }
     }
 }
 

@@ -8,12 +8,16 @@ use common::{
     misc::Run,
     serde::{Deserializer, DynamicSerializer},
 };
-use ctb_format::{file::File, layer::Layer, layer_coding::LayerDecoder};
+use ctb_format::{file::File, layer_coding::LayerDecoder};
 
 #[derive(Parser)]
 struct Args {
     path: PathBuf,
+
+    #[clap(short, long)]
     layers: Option<PathBuf>,
+
+    #[clap(short, long)]
     export: Option<PathBuf>,
 }
 
@@ -33,14 +37,7 @@ fn main() -> Result<()> {
     }
 
     if let Some(layers) = args.layers {
-        const PAGE_SIZE: u64 = 1 << 32;
         for (i, layer) in file.layers.iter().enumerate() {
-            dbg!(i as f32 / file.layers.len() as f32 * 100.0);
-            des.jump_to(
-                layer.page_number as usize * PAGE_SIZE as usize + layer.layer_offset as usize,
-            );
-            let layer = Layer::deserialize(&mut des, file.layer_xor_key, i as u32)?;
-
             let mut image = RgbImage::new(file.resolution.x, file.resolution.y);
 
             let mut pixel = 0;
