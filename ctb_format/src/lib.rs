@@ -1,6 +1,6 @@
 use anyhow::Result;
 
-use common::serde::Deserializer;
+use common::serde::{Deserializer, Serializer};
 
 mod crypto;
 pub mod file;
@@ -17,6 +17,13 @@ pub struct Section {
 }
 
 impl Section {
+    pub fn new(offset: usize, size: usize) -> Self {
+        Self {
+            size: size as u32,
+            offset: offset as u32,
+        }
+    }
+
     pub fn deserialize(des: &mut Deserializer) -> Result<Self> {
         Ok(Self {
             offset: des.read_u32_le(),
@@ -24,11 +31,21 @@ impl Section {
         })
     }
 
+    pub fn serialize<T: Serializer>(&self, ser: &mut T) {
+        ser.write_u32_le(self.size);
+        ser.write_u32_le(self.offset);
+    }
+
     pub fn deserialize_rev(des: &mut Deserializer) -> Result<Self> {
         Ok(Self {
             size: des.read_u32_le(),
             offset: des.read_u32_le(),
         })
+    }
+
+    pub fn serialize_rev<T: Serializer>(&self, ser: &mut T) {
+        ser.write_u32_le(self.offset);
+        ser.write_u32_le(self.size);
     }
 }
 

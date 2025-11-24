@@ -1,27 +1,30 @@
 use anyhow::Result;
 
-use common::serde::Deserializer;
+use common::serde::{Deserializer, DynamicSerializer, Serializer};
 use nalgebra::{Vector2, Vector3};
 
-use crate::{Section, crypto::decrypt, preview::PreviewImage};
+use crate::{
+    Section,
+    crypto::{decrypt, encrypt_in_place},
+    preview::PreviewImage,
+    resin::ResinParameters,
+};
 
 #[derive(Debug)]
 pub struct Settings {
     // Misc
     pub checksum_value: u64,
     pub layer_xor_key: u32,
-    pub modified_timestamp_minutes: u32,
     pub disclaimer: Section,
-
-    // Offsets
+    pub modified_timestamp_minutes: u32,
     pub layer_pointers_offset: u32,
-    pub resin_parameters_address: u32,
 
     // Printer properties
     pub size: Vector3<f32>,
     pub resolution: Vector2<u32>,
     pub machine_name: String,
     pub projector_type: u32,
+    pub resin_parameters: ResinParameters,
 
     // Operation properties
     pub total_height: f32,
@@ -161,10 +164,109 @@ impl Settings {
                 des.advance_by(4 * 4);
                 Section::deserialize(&mut des)?
             },
-            resin_parameters_address: {
+            resin_parameters: {
                 des.advance_by(4);
-                des.read_u32_le()
+                let address = des.read_u32_le();
+                main_des.execute_at(address as usize, |des| ResinParameters::deserialize(des))?
             },
         })
+    }
+
+    pub fn serialize<T: Serializer>(&self, main_ser: &mut T) -> usize {
+        let mut ser = DynamicSerializer::new();
+        ser.write_u64_le(self.checksum_value);
+        ser.write_u32_le(self.layer_pointers_offset);
+        ser.write_f32_le(self.size.x);
+        ser.write_f32_le(self.size.y);
+        ser.write_f32_le(self.size.z);
+        ser.write_u32_le(0);
+        ser.write_u32_le(0);
+        ser.write_f32_le(self.total_height);
+        ser.write_f32_le(self.layer_height);
+        ser.write_f32_le(self.exposure_time);
+        ser.write_f32_le(self.bottom_exposure_time);
+        ser.write_f32_le(self.light_off_delay);
+        ser.write_u32_le(self.bottom_layer_count);
+        ser.write_u32_le(self.resolution.x);
+        ser.write_u32_le(self.resolution.y);
+        ser.write_u32_le(self.layer_count);
+        let large_preview = ser.reserve(4);
+        let small_preview = ser.reserve(4);
+        ser.write_u32_le(self.print_time);
+        ser.write_u32_le(self.projector_type);
+        ser.write_f32_le(self.bottom_lift_height);
+        ser.write_f32_le(self.bottom_lift_speed);
+        ser.write_f32_le(self.lift_height);
+        ser.write_f32_le(self.lift_speed);
+        ser.write_f32_le(self.retract_speed);
+        ser.write_f32_le(self.material_milliliters);
+        ser.write_f32_le(self.material_grams);
+        ser.write_f32_le(self.material_cost);
+        ser.write_f32_le(self.bottom_light_off_delay);
+        ser.write_u32_le(1);
+        ser.write_u16_le(self.light_pwm);
+        ser.write_u16_le(self.bottom_light_pwm);
+        ser.write_u32_le(self.layer_xor_key);
+        ser.write_f32_le(self.bottom_lift_height_2);
+        ser.write_f32_le(self.bottom_lift_speed_2);
+        ser.write_f32_le(self.lift_height_2);
+        ser.write_f32_le(self.lift_speed_2);
+        ser.write_f32_le(self.retract_height_2);
+        ser.write_f32_le(self.retract_speed_2);
+        ser.write_f32_le(self.rest_time_after_lift);
+        let machine_name = ser.reserve(4);
+        ser.write_u8(self.anti_alias_flag);
+        ser.write_u16_le(0);
+        ser.write_u8(self.per_layer_settings);
+        ser.write_u32_le(self.modified_timestamp_minutes);
+        ser.write_u32_le(self.anti_alias_level);
+        ser.write_f32_le(self.rest_time_after_retract);
+        ser.write_f32_le(self.rest_time_after_lift_2);
+        ser.write_u32_le(self.transition_layer_count);
+        ser.write_f32_le(self.bottom_retract_speed);
+        ser.write_f32_le(self.bottom_retract_speed_2);
+        ser.write_u32_le(0);
+        ser.write_f32_le(4.0);
+        ser.write_u32_le(0);
+        ser.write_f32_le(4.0);
+        ser.write_f32_le(self.rest_time_after_retract_2);
+        ser.write_f32_le(self.rest_time_after_lift_3);
+        ser.write_f32_le(self.rest_time_before_lift);
+        ser.write_f32_le(self.bottom_retract_height_2);
+        ser.reserve(4 * 2);
+        ser.write_u32_le(4);
+        ser.write_u32_le(self.last_layer_index);
+        ser.reserve(4 * 4);
+        Section::new(0, 0).serialize(&mut ser);
+        ser.write_u32_le(0);
+        let resin_parameters = ser.reserve(4);
+        ser.reserve(4 * 2);
+
+        let settings = main_ser.reserve(ser.pos());
+
+        let machine_name_bytes = self.machine_name.as_bytes();
+        let machine_name_pos = main_ser.pos();
+        main_ser.write_bytes(machine_name_bytes);
+        main_ser.execute_at(machine_name, |ser| {
+            Section::new(machine_name_pos, machine_name_bytes.len()).serialize(ser);
+        });
+
+        main_ser.execute_at(resin_parameters, |ser| self.resin_parameters.serialize(ser));
+
+        let pos = main_ser.pos();
+        self.large_preview.serialize(main_ser);
+        main_ser.execute_at(large_preview, |ser| ser.write_u32_le(pos as u32));
+
+        let pos = main_ser.pos();
+        self.small_preview.serialize(main_ser);
+        main_ser.execute_at(small_preview, |ser| ser.write_u32_le(pos as u32));
+
+        let mut settings_bytes = ser.into_inner();
+        encrypt_in_place(&mut settings_bytes);
+        main_ser.execute_at(settings, |ser| {
+            ser.write_bytes(&settings_bytes);
+        });
+
+        settings_bytes.len()
     }
 }

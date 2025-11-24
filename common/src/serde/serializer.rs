@@ -1,6 +1,9 @@
+use std::iter::repeat_n;
+
 use super::SizedString;
 
 pub trait Serializer {
+    fn pos(&self) -> usize;
     fn write_bool(&mut self, data: bool);
     fn write_u8(&mut self, data: u8);
     fn write_u16_be(&mut self, data: u16);
@@ -14,6 +17,8 @@ pub trait Serializer {
     fn write_f64_be(&mut self, data: f64);
     fn write_f64_le(&mut self, data: f64);
     fn write_bytes(&mut self, data: &[u8]);
+    fn reserve(&mut self, length: usize) -> usize;
+    fn execute_at(&mut self, offset: usize, f: impl FnOnce(&mut SizedSerializer));
     fn write_sized_string<const SIZE: usize>(&mut self, data: &SizedString<SIZE>);
 }
 
@@ -43,6 +48,10 @@ impl DynamicSerializer {
 }
 
 impl Serializer for SizedSerializer<'_> {
+    fn pos(&self) -> usize {
+        self.offset
+    }
+
     fn write_bool(&mut self, data: bool) {
         self.write_u8(data as u8);
     }
@@ -107,6 +116,17 @@ impl Serializer for SizedSerializer<'_> {
         self.offset += data.len();
     }
 
+    fn reserve(&mut self, length: usize) -> usize {
+        let out = self.offset;
+        self.offset += length;
+        out
+    }
+
+    fn execute_at(&mut self, offset: usize, f: impl FnOnce(&mut SizedSerializer)) {
+        let mut ser = SizedSerializer::new(&mut self.buffer[offset..]);
+        f(&mut ser);
+    }
+
     fn write_sized_string<const SIZE: usize>(&mut self, data: &SizedString<SIZE>) {
         let len = data.data.len();
         self.buffer[self.offset..self.offset + len].copy_from_slice(&data.data);
@@ -115,6 +135,10 @@ impl Serializer for SizedSerializer<'_> {
 }
 
 impl Serializer for DynamicSerializer {
+    fn pos(&self) -> usize {
+        self.buffer.len()
+    }
+
     fn write_bool(&mut self, data: bool) {
         self.write_u8(data as u8);
     }
@@ -165,6 +189,17 @@ impl Serializer for DynamicSerializer {
 
     fn write_bytes(&mut self, data: &[u8]) {
         self.buffer.extend_from_slice(data);
+    }
+
+    fn reserve(&mut self, length: usize) -> usize {
+        let start = self.buffer.len();
+        self.buffer.extend(repeat_n(0, length));
+        start
+    }
+
+    fn execute_at(&mut self, offset: usize, f: impl FnOnce(&mut SizedSerializer)) {
+        let mut ser = SizedSerializer::new(&mut self.buffer[offset..]);
+        f(&mut ser);
     }
 
     fn write_sized_string<const SIZE: usize>(&mut self, data: &SizedString<SIZE>) {

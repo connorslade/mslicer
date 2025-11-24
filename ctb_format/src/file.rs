@@ -2,17 +2,14 @@ use std::fmt::Debug;
 
 use anyhow::{Result, ensure};
 
-use common::serde::Deserializer;
+use common::serde::{Deserializer, Serializer};
 use sha2::{Digest, Sha256};
 
-use crate::{
-    Section, crypto::encrypt, layer::LayerRef, resin::ResinParameters, settings::Settings,
-};
+use crate::{Section, crypto::encrypt, layer::LayerRef, settings::Settings};
 
 pub struct File {
     pub version: u32,
     pub settings: Settings,
-    pub resin: ResinParameters,
     pub layers: Vec<LayerRef>,
 }
 
@@ -35,10 +32,6 @@ impl File {
         });
         ensure!(encrypt(&hash) == signature);
 
-        let resin = des.execute_at(settings.resin_parameters_address as usize, |des| {
-            ResinParameters::deserialize(des)
-        })?;
-
         des.jump_to(settings.layer_pointers_offset as usize);
         let layers = (0..settings.layer_count)
             .map(|_| LayerRef::deserialize(des))
@@ -47,9 +40,35 @@ impl File {
         Ok(Self {
             version,
             settings,
-            resin,
             layers,
         })
+    }
+
+    pub fn serialize<T: Serializer>(&self, ser: &mut T) {
+        ser.write_u32_le(0x12FD0107);
+        let settings = ser.reserve(8);
+        ser.write_u32_le(0);
+        ser.write_u32_le(self.version);
+        let signature = ser.reserve(8);
+        ser.write_u32_le(0);
+        ser.write_u16_le(1);
+        ser.write_u16_le(1);
+        ser.write_u32_le(0);
+        ser.write_u32_le(0x2A);
+        ser.write_u32_le(0);
+
+        let pos = ser.pos();
+        let size = self.settings.serialize(ser);
+        ser.execute_at(settings, |ser| Section::new(pos, size).serialize_rev(ser));
+
+        let hash = Sha256::digest(self.settings.checksum_value.to_le_bytes());
+        let bytes = encrypt(&hash);
+
+        let pos = ser.pos();
+        ser.write_bytes(&bytes);
+        ser.execute_at(signature, |ser| {
+            Section::new(pos, bytes.len()).serialize_rev(ser);
+        });
     }
 }
 
@@ -58,7 +77,6 @@ impl Debug for File {
         f.debug_struct("File")
             .field("version", &self.version)
             .field("settings", &self.settings)
-            .field("resin", &self.resin)
             .finish()
     }
 }

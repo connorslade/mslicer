@@ -1,7 +1,7 @@
 use anyhow::Result;
 use nalgebra::Vector4;
 
-use common::serde::Deserializer;
+use common::serde::{Deserializer, Serializer};
 
 use crate::{Section, read_string};
 
@@ -33,11 +33,47 @@ impl ResinParameters {
         let resin_density = des.read_f32_le();
 
         Ok(Self {
-            resin_color: Vector4::new(color_b, color_g, color_r, color_a),
+            resin_color: Vector4::new(color_r, color_g, color_b, color_a),
             machine_name: read_string(des, machine_name),
             resin_type: read_string(des, resin_type),
             resin_name: read_string(des, resin_name),
             resin_density,
         })
     }
+
+    pub fn serialize<T: Serializer>(&self, ser: &mut T) {
+        ser.write_u32_be(0);
+        ser.write_u8(self.resin_color.z);
+        ser.write_u8(self.resin_color.y);
+        ser.write_u8(self.resin_color.x);
+        ser.write_u8(self.resin_color.w);
+        let machine_name_address = ser.reserve(4);
+        let resin_type = ser.reserve(8);
+        let resin_name = ser.reserve(8);
+        let machine_name_size = ser.reserve(4);
+        ser.write_f32_le(self.resin_density);
+        ser.write_u32_le(0);
+
+        let machine_name_bytes = self.machine_name.as_bytes();
+        let machine_name_offset = ser.pos();
+        ser.write_bytes(machine_name_bytes);
+        ser.execute_at(machine_name_address, |ser| {
+            ser.write_u32_le(machine_name_offset as u32);
+        });
+        ser.execute_at(machine_name_size, |ser| {
+            ser.write_u32_le(machine_name_bytes.len() as u32)
+        });
+
+        serialize_string(ser, resin_type, &self.resin_type);
+        serialize_string(ser, resin_name, &self.resin_name);
+    }
+}
+
+fn serialize_string<T: Serializer>(ser: &mut T, offset: usize, string: &str) {
+    let string_bytes = string.as_bytes();
+    let string_offset = ser.pos();
+    ser.write_bytes(string_bytes);
+    ser.execute_at(offset, |ser| {
+        Section::new(string_offset, string_bytes.len()).serialize_rev(ser);
+    });
 }

@@ -27,11 +27,14 @@ pub fn decrypt_in_place(bytes: &mut [u8]) {
 
 pub fn encrypt(bytes: &[u8]) -> Vec<u8> {
     let mut bytes = bytes.to_vec();
+    encrypt_in_place(&mut bytes);
+    bytes
+}
+
+pub fn encrypt_in_place(bytes: &mut [u8]) {
     let length = bytes.len();
 
     cbc::Encryptor::<Aes256>::new(ENCRYPT_KEY.into(), ENCRYPT_IV.into())
-        .encrypt_padded_mut::<NoPadding>(&mut bytes, length)
+        .encrypt_padded_mut::<NoPadding>(bytes, length)
         .unwrap();
-
-    bytes
 }

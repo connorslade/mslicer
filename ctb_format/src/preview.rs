@@ -5,7 +5,7 @@ use std::{
 
 use anyhow::Result;
 
-use common::serde::Deserializer;
+use common::serde::{Deserializer, Serializer};
 use nalgebra::{Vector2, Vector3};
 
 use crate::Section;
@@ -15,20 +15,31 @@ pub struct PreviewImage {
     data: Vec<Vector3<u8>>,
 }
 
-struct Preview {
-    width: u32,
-    height: u32,
-    section: Section,
-}
-
 impl PreviewImage {
     pub fn deserialize(des: &mut Deserializer) -> Result<Self> {
-        let preview = Preview::deserialize(des)?;
-        des.jump_to(preview.section.offset as usize);
+        let width = des.read_u32_le();
+        let height = des.read_u32_le();
+        let image = Section::deserialize(des)?;
+
+        des.jump_to(image.offset as usize);
         PreviewImage::from_bytes(
-            des.read_bytes(preview.section.size as usize),
-            Vector2::new(preview.width, preview.height),
+            des.read_bytes(image.size as usize),
+            Vector2::new(width, height),
         )
+    }
+
+    pub fn serialize<T: Serializer>(&self, ser: &mut T) {
+        let size = self.size();
+        ser.write_u32_le(size.x);
+        ser.write_u32_le(size.y);
+        let section = ser.reserve(8);
+
+        let data = self.to_bytes();
+        let offset = ser.pos();
+        ser.write_bytes(&data);
+        ser.execute_at(section, |ser| {
+            Section::new(offset, data.len()).serialize(ser)
+        });
     }
 
     pub fn from_bytes(bytes: &[u8], size: Vector2<u32>) -> Result<Self> {
@@ -63,6 +74,50 @@ impl PreviewImage {
         })
     }
 
+    pub fn to_bytes(&self) -> Vec<u8> {
+        let mut out = Vec::new();
+        let mut last_color = self.data[0];
+        let mut length = 0;
+
+        let mut add_run = |length: u32, color: Vector3<u8>| {
+            let color = ((color.z >> 3) as u16)
+                | ((color.y >> 2) as u16) << 5
+                | ((color.x >> 3) as u16) << 11;
+
+            match length {
+                0 => {}
+                x @ 1..=2 => {
+                    let value = color & !0x20;
+                    out.extend(repeat_n([value as u8, (value >> 8) as u8], x as usize).flatten());
+                }
+                x => {
+                    let value = color | 0x20;
+                    out.extend([value as u8, (value >> 8) as u8]);
+                    let value = (x - 1) | 0x3000;
+                    out.extend([value as u8, (value >> 8) as u8]);
+                }
+            }
+        };
+
+        for pixel in self.data.iter() {
+            if *pixel == last_color {
+                length += 1;
+                if length == 0xFFF {
+                    add_run(length, last_color);
+                    length = 0;
+                }
+            } else {
+                add_run(length, last_color);
+                last_color = *pixel;
+                length = 1;
+            }
+        }
+
+        add_run(length, last_color);
+
+        out
+    }
+
     pub fn size(&self) -> Vector2<u32> {
         Vector2::new(self.width as u32, (self.data.len() / self.width) as u32)
     }
@@ -70,16 +125,6 @@ impl PreviewImage {
     pub fn get_pixel(&self, x: usize, y: usize) -> Vector3<u8> {
         let index = y * self.width + x;
         self.data[index]
-    }
-}
-
-impl Preview {
-    fn deserialize(des: &mut Deserializer) -> Result<Self> {
-        Ok(Self {
-            width: des.read_u32_le(),
-            height: des.read_u32_le(),
-            section: Section::deserialize(des)?,
-        })
     }
 }
 
