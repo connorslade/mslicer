@@ -1,7 +1,6 @@
 # mslicer [![Build](https://github.com/connorslade/mslicer/actions/workflows/build.yml/badge.svg)](https://github.com/connorslade/mslicer/actions/workflows/build.yml)
 
 An experimental open source slicer for masked stereolithography (resin) printers.
-Currently only [ELEGOO](https://www.elegoo.com) `.goo` files can be generated.
 You can read more about the development of this project on its [project page](https://connorcode.com/projects/mslicer).
 
 ![mslicer_74wLyEB9RA](https://github.com/user-attachments/assets/ca282fea-680d-4825-aca1-36d9e29fc1fe)

@@ -23,6 +23,7 @@ use crate::{
 const FORMAT_VERSION: u32 = 5;
 const PAGE_SIZE: u64 = 1 << 32;
 const DEFAULT_XOR_KEY: u32 = 0x67;
+const DISCLAIMER: &str = "Layout and record format for the ctb and cbddlp file types are the copyrighted programs or codes of CBD Technology (China) Inc..The Customer or User shall not in any manner reproduce, distribute, modify, decompile, disassemble, decrypt, extract, reverse engineer, lease, assign, or sublicense the said programs or codes.";
 
 pub struct File {
     pub layers: Vec<Layer>,
@@ -385,7 +386,7 @@ impl File {
         Self {
             layers: result.layers,
             checksum: 0,
-            disclaimer: String::new(),
+            disclaimer: DISCLAIMER.into(),
             modified: (epoch / 60) as u32,
             size: config.platform_size,
             resolution: config.platform_resolution,
@@ -394,13 +395,13 @@ impl File {
             resin_parameters: ResinParameters {
                 resin_color: Vector4::zeros(),
                 machine_name: "Unknown".into(),
-                resin_type: "normal".into(),
+                resin_type: "Normal".into(),
                 resin_name: "Standard".into(),
                 resin_density: 1.1,
             },
             total_height: layer_count as f32 * config.slice_height,
             layer_height: config.slice_height,
-            last_layer_index: layer_count as u32,
+            last_layer_index: layer_count.saturating_sub(1) as u32,
             transition_layer_count: config.transition_layers,
             anti_alias_flag: 7,
             anti_alias_level: 0,

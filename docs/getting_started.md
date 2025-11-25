@@ -2,8 +2,6 @@
 
 Welcome to mslicer!
 
-Currently, mslicer can only output `.goo` files, which is a format specific to [ELEGOO](https://www.elegoo.com) resin printers. In the future I plan to add support for other formats, but in the meantime you can use [UVTools](https://github.com/sn4k3/UVtools) to convert between formats.
-
 ## Setup
 
 In order for the sliced output to be loadable by your printer, you will first need to configure the platform resolution and build volume in the `Slice Config` panel on the left. The defaults are for the [ElEGOO Saturn 3 Ultra](https://us.elegoo.com/products/elegoo-saturn-3-ultra-resin-3d-printer-12k). If these values are wrong, your printer may fail to load the output without even showing an error message.

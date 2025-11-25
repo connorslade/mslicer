@@ -39,7 +39,7 @@ impl SliceConfig {
 impl Default for SliceConfig {
     fn default() -> Self {
         Self {
-            format: Format::Goo,
+            format: Format::Ctb,
 
             platform_resolution: Vector2::new(11_520, 5_120),
             platform_size: Vector3::new(218.88, 122.904, 260.0),

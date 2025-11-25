@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.4.0 &mdash; Comming Soon
+
+- Added support for the encrypted Chitu format (.ctb)
+
 ## v0.3.0 &mdash; November 15th, 2025
 
 - Added support for SVGs as an output format
