@@ -1,4 +1,9 @@
-use common::misc::Run;
+use common::{
+    config::SliceConfig,
+    misc::{EncodableLayer, Run},
+};
+
+use crate::layer::Layer;
 
 pub struct LayerDecoder<'a> {
     data: &'a [u8],
@@ -84,6 +89,41 @@ impl LayerEncoder {
             self.data.push((length >> 16) as u8);
             self.data.push((length >> 8) as u8);
             self.data.push(length as u8);
+        }
+    }
+
+    pub fn into_inner(self) -> Vec<u8> {
+        self.data
+    }
+}
+
+impl EncodableLayer for LayerEncoder {
+    type Output = Layer;
+
+    fn add_run(&mut self, length: u64, value: u8) {
+        self.add_run(length, value);
+    }
+
+    fn finish(self, layer: u64, config: &SliceConfig) -> Self::Output {
+        let layer_exposure = config.exposure_config(layer);
+        // note that retract_distnace is not used...
+
+        Layer {
+            position_z: config.slice_height * (layer + 1) as f32,
+            exposure_time: layer_exposure.exposure_time,
+            light_off_delay: 0.0,
+            lift_height: layer_exposure.lift_distance,
+            lift_speed: layer_exposure.lift_speed,
+            lift_height_2: 0.0,
+            lift_speed_2: 0.0,
+            retract_speed: layer_exposure.retract_speed,
+            retract_height_2: 0.0,
+            retract_speed_2: 0.0,
+            rest_time_before_lift: 0.0,
+            rest_time_after_lift: 0.0,
+            rest_time_after_retract: 1.0,
+            light_pwm: 255.0,
+            data: self.data,
         }
     }
 }

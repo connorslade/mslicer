@@ -18,6 +18,7 @@ svg.workspace = true
 tracing.workspace = true
 
 common = { path = "../common" }
+ctb_format = { path = "../ctb_format" }
 goo_format = { path = "../goo_format" }
 
 [dev-dependencies]

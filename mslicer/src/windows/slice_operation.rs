@@ -75,7 +75,11 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
                             let result = app.slice_operation.as_ref().unwrap().result();
                             let result = result.as_ref().unwrap();
 
-                            if let Some(path) = FileDialog::new().save_file() {
+                            let format = result.file.as_format();
+                            if let Some(path) = FileDialog::new()
+                                .add_filter(format.name(), &[format.extention()])
+                                .save_file()
+                            {
                                 let mut file = File::create(path).unwrap();
                                 let mut serializer = DynamicSerializer::new();
                                 result.file.serialize(&mut serializer);

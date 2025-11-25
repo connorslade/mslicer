@@ -71,6 +71,7 @@ impl Slicer {
     pub fn slice_format(&self) -> FormatSliceResult<'_> {
         match self.slice_config.format {
             Format::Goo => FormatSliceResult::Goo(self.slice::<goo_format::LayerEncoder>()),
+            Format::Ctb => FormatSliceResult::Ctb(self.slice::<ctb_format::LayerEncoder>()),
             Format::Svg => FormatSliceResult::Svg(self.slice_vector()),
         }
     }

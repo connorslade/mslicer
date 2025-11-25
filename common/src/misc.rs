@@ -25,12 +25,11 @@ pub struct Run {
     pub value: u8,
 }
 
-pub trait EncodableLayer {
+pub trait EncodableLayer: Default {
     type Output: Send;
 
-    fn new() -> Self;
     fn add_run(&mut self, length: u64, value: u8);
-    fn finish(self, layer: usize, config: &SliceConfig) -> Self::Output;
+    fn finish(self, layer: u64, config: &SliceConfig) -> Self::Output;
 }
 
 pub fn human_duration(duration: Duration) -> String {

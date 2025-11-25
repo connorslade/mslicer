@@ -1,9 +1,15 @@
-use std::fmt::Debug;
+use std::{
+    fmt::Debug,
+    time::{SystemTime, UNIX_EPOCH},
+};
 
 use anyhow::{Result, ensure};
 
-use common::serde::{Deserializer, DynamicSerializer, Serializer};
-use nalgebra::{Vector2, Vector3};
+use common::{
+    misc::SliceResult,
+    serde::{Deserializer, DynamicSerializer, Serializer},
+};
+use nalgebra::{Vector2, Vector3, Vector4};
 use sha2::{Digest, Sha256};
 
 use crate::{
@@ -14,6 +20,7 @@ use crate::{
     resin::ResinParameters,
 };
 
+const FORMAT_VERSION: u32 = 5;
 const PAGE_SIZE: u64 = 1 << 32;
 const DEFAULT_XOR_KEY: u32 = 0x67;
 
@@ -88,7 +95,7 @@ impl File {
 
         main_des.advance_by(4);
         let version = main_des.read_u32_le();
-        ensure!(version == 5);
+        ensure!(version == FORMAT_VERSION);
         let signature = Section::deserialize_rev(main_des)?;
 
         main_des.jump_to(settings.offset as usize);
@@ -217,7 +224,7 @@ impl File {
         main_ser.write_u32_le(0x12FD0107);
         let settings_section = main_ser.reserve(8);
         main_ser.write_u32_le(0);
-        main_ser.write_u32_le(5); // Format version 5
+        main_ser.write_u32_le(FORMAT_VERSION);
         let signature = main_ser.reserve(8);
         main_ser.write_u32_le(0);
         main_ser.write_u16_le(1);
@@ -353,14 +360,84 @@ impl File {
         for (i, layer) in self.layers.iter().enumerate() {
             let cursor = main_ser.pos() as u64;
 
+            let page_number = (cursor / PAGE_SIZE) as u32;
             let refrence = LayerRef {
                 layer_offset: (cursor % PAGE_SIZE) as u32,
-                page_number: (cursor / PAGE_SIZE) as u32,
-                layer_table_size: 0x58,
+                page_number,
             };
             main_ser.execute_at(layer_refs + i * 16, |ser| refrence.serialize(ser));
 
-            layer.serialize(main_ser, DEFAULT_XOR_KEY, i as u32);
+            layer.serialize(main_ser, DEFAULT_XOR_KEY, page_number, i as u32);
+        }
+    }
+}
+
+impl File {
+    pub fn from_slice_result(result: SliceResult<Layer>) -> Self {
+        let config = result.slice_config;
+        let layer_count = result.layers.len();
+
+        let epoch = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs();
+
+        Self {
+            layers: result.layers,
+            checksum: 0,
+            disclaimer: String::new(),
+            modified: (epoch / 60) as u32,
+            size: config.platform_size,
+            resolution: config.platform_resolution,
+            machine_name: "Unknown".into(),
+            projector_type: 1,
+            resin_parameters: ResinParameters {
+                resin_color: Vector4::zeros(),
+                machine_name: "Unknown".into(),
+                resin_type: "normal".into(),
+                resin_name: "Standard".into(),
+                resin_density: 1.1,
+            },
+            total_height: layer_count as f32 * config.slice_height,
+            layer_height: config.slice_height,
+            last_layer_index: layer_count as u32,
+            transition_layer_count: config.transition_layers,
+            anti_alias_flag: 7,
+            anti_alias_level: 0,
+            per_layer_settings: 0,
+            print_time: 0,
+            material_milliliters: 0.0,
+            material_grams: 0.0,
+            material_cost: 0.0,
+            large_preview: PreviewImage::default(),
+            small_preview: PreviewImage::default(),
+            exposure_time: config.exposure_config.exposure_time,
+            bottom_exposure_time: config.first_exposure_config.exposure_time,
+            light_off_delay: 0.0,
+            bottom_layer_count: config.first_layers,
+            bottom_lift_height: config.first_exposure_config.lift_distance,
+            bottom_lift_speed: config.first_exposure_config.lift_speed,
+            lift_height: config.exposure_config.lift_distance,
+            lift_speed: config.exposure_config.lift_speed,
+            retract_speed: config.exposure_config.retract_speed,
+            bottom_light_off_delay: 0.0,
+            light_pwm: 255,
+            bottom_light_pwm: 255,
+            bottom_lift_height_2: 4.0,  // make a setting
+            bottom_lift_speed_2: 320.0, // make a setting
+            lift_height_2: 0.0,
+            lift_speed_2: 0.0,
+            retract_height_2: 0.0,
+            retract_speed_2: 0.0,
+            rest_time_after_lift: 0.0,
+            bottom_retract_speed: config.first_exposure_config.retract_speed,
+            bottom_retract_speed_2: 90.0, // make a setting
+            rest_time_after_retract_2: 1.0,
+            rest_time_after_lift_3: 0.0,
+            rest_time_before_lift: 0.0,
+            bottom_retract_height_2: 1.5,
+            rest_time_after_retract: 1.0,
+            rest_time_after_lift_2: 0.0,
         }
     }
 }

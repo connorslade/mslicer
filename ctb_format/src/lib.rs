@@ -3,11 +3,19 @@ use anyhow::Result;
 use common::serde::{Deserializer, Serializer};
 
 mod crypto;
-pub mod file;
-pub mod layer;
-pub mod layer_coding;
-pub mod preview;
-pub mod resin;
+mod file;
+mod layer;
+mod layer_coding;
+mod preview;
+mod resin;
+
+pub use crate::{
+    file::File,
+    layer::Layer,
+    layer_coding::{LayerDecoder, LayerEncoder},
+    preview::PreviewImage,
+    resin::ResinParameters,
+};
 
 #[derive(Debug)]
 pub struct Section {

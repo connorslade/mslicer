@@ -20,8 +20,9 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                 ui.label("Slice Format");
                 ui.label(INFO).on_hover_text(SLICE_FORMAT_TOOLTIP);
             });
+            let format = app.slice_config.format;
             ComboBox::new("slice_format", "")
-                .selected_text(app.slice_config.format.name())
+                .selected_text(format!("{} (.{})", format.name(), format.extention()))
                 .show_ui(ui, |ui| {
                     for format in Format::ALL {
                         ui.selectable_value(&mut app.slice_config.format, format, format.name());

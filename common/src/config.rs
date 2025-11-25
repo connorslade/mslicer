@@ -26,6 +26,16 @@ pub struct ExposureConfig {
     pub retract_speed: f32,
 }
 
+impl SliceConfig {
+    pub fn exposure_config(&self, layer: u64) -> &ExposureConfig {
+        if (layer as u32) < self.first_layers {
+            &self.first_exposure_config
+        } else {
+            &self.exposure_config
+        }
+    }
+}
+
 impl Default for SliceConfig {
     fn default() -> Self {
         Self {

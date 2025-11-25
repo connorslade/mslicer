@@ -44,7 +44,7 @@ impl Slicer {
                 // use some sort of compression scheme to resolve this issue, so
                 // to use a little memory as needed, the layers are compressed
                 // as they are made.
-                let mut encoder = Layer::new();
+                let mut encoder = Layer::default();
                 let mut last = 0;
 
                 // For each row of pixels, we find all line segments that go
@@ -115,7 +115,7 @@ impl Slicer {
                 }
 
                 // Finished encoding the layer
-                encoder.finish(layer as usize, &self.slice_config)
+                encoder.finish(layer as u64, &self.slice_config)
             })
             .inspect(|_| {
                 // Updates the slice progress

@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 
-use anyhow::Result;
+use anyhow::{Result, ensure};
 
 use common::serde::{Deserializer, Serializer};
 
@@ -10,15 +10,12 @@ use crate::{Section, crypto::decrypt_in_place};
 pub struct LayerRef {
     pub layer_offset: u32,
     pub page_number: u32,
-    pub layer_table_size: u32, // Should alys be 0x58
 }
 
 pub struct Layer {
-    pub table_size: u32,
     pub position_z: f32,
     pub exposure_time: f32,
     pub light_off_delay: f32,
-    pub page_number: u32,
     pub lift_height: f32,
     pub lift_speed: f32,
     pub lift_height_2: f32,
@@ -38,8 +35,8 @@ impl LayerRef {
         let this = Self {
             layer_offset: des.read_u32_le(),
             page_number: des.read_u32_le(),
-            layer_table_size: des.read_u32_le(),
         };
+        ensure!(des.read_u32_le() == 0x58);
         des.advance_by(4);
         Ok(this)
     }
@@ -47,7 +44,7 @@ impl LayerRef {
     pub fn serialize<T: Serializer>(&self, ser: &mut T) {
         ser.write_u32_le(self.layer_offset);
         ser.write_u32_le(self.page_number);
-        ser.write_u32_le(self.layer_table_size);
+        ser.write_u32_le(0x58);
         ser.write_u32_le(0);
     }
 }
@@ -55,11 +52,13 @@ impl LayerRef {
 impl Layer {
     pub fn deserialize(des: &mut Deserializer, xor_key: u32, layer: u32) -> Result<Self> {
         let table_size = des.read_u32_le();
+        ensure!(table_size == 0x58);
+
         let position_z = des.read_f32_le();
         let exposure_time = des.read_f32_le();
         let light_off_delay = des.read_f32_le();
         let layer_offset = des.read_u32_le();
-        let page_number = des.read_u32_le();
+        let _page_number = des.read_u32_le();
 
         let layer_size = des.read_u32_le();
         des.advance_by(4);
@@ -79,11 +78,9 @@ impl Layer {
         }
 
         Ok(Self {
-            table_size,
             position_z,
             exposure_time,
             light_off_delay,
-            page_number,
             lift_height: des.read_f32_le(),
             lift_speed: des.read_f32_le(),
             lift_height_2: des.read_f32_le(),
@@ -99,13 +96,19 @@ impl Layer {
         })
     }
 
-    pub fn serialize<T: Serializer>(&self, ser: &mut T, xor_key: u32, layer: u32) {
-        ser.write_u32_le(self.table_size);
+    pub fn serialize<T: Serializer>(
+        &self,
+        ser: &mut T,
+        xor_key: u32,
+        page_number: u32,
+        layer: u32,
+    ) {
+        ser.write_u32_le(0x58);
         ser.write_f32_le(self.position_z);
         ser.write_f32_le(self.exposure_time);
         ser.write_f32_le(self.light_off_delay);
         let layer_offset = ser.reserve(4);
-        ser.write_u32_le(self.page_number);
+        ser.write_u32_le(page_number);
         ser.write_u32_le(self.data.len() as u32);
         ser.write_u32_le(0);
         Section::new(0, 0).serialize(ser); // TODO: Not sure if the data can always just be left unencrypted
@@ -157,11 +160,9 @@ fn xor_cypher(data: &mut [u8], seed: u32, layer: u32) {
 impl Debug for Layer {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Layer")
-            .field("table_size", &self.table_size)
             .field("position_z", &self.position_z)
             .field("exposure_time", &self.exposure_time)
             .field("light_off_delay", &self.light_off_delay)
-            .field("page_number", &self.page_number)
             .field("lift_height", &self.lift_height)
             .field("lift_speed", &self.lift_speed)
             .field("lift_height_2", &self.lift_height_2)

@@ -6,16 +6,30 @@ use std::{
 use anyhow::Result;
 
 use common::serde::{Deserializer, Serializer};
+use image::RgbaImage;
 use nalgebra::{Vector2, Vector3};
 
 use crate::Section;
 
+#[derive(Default)]
 pub struct PreviewImage {
     width: usize,
     data: Vec<Vector3<u8>>,
 }
 
 impl PreviewImage {
+    pub fn from_image(image: &RgbaImage) -> Self {
+        let mut data = Vec::with_capacity((image.width() * image.height()) as usize);
+        for color in image.chunks(4) {
+            data.push(Vector3::new(color[0], color[1], color[2]));
+        }
+
+        Self {
+            width: image.width() as usize,
+            data,
+        }
+    }
+
     pub fn deserialize(des: &mut Deserializer) -> Result<Self> {
         let width = des.read_u32_le();
         let height = des.read_u32_le();

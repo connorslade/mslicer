@@ -108,21 +108,13 @@ impl LayerEncoder {
 impl EncodableLayer for LayerEncoder {
     type Output = LayerContent;
 
-    fn new() -> Self {
-        Self::new()
-    }
-
     fn add_run(&mut self, length: u64, value: u8) {
         self.add_run(length, value);
     }
 
-    fn finish(self, layer: usize, slice_config: &SliceConfig) -> Self::Output {
+    fn finish(self, layer: u64, slice_config: &SliceConfig) -> Self::Output {
         let (data, checksum) = self.finish();
-        let layer_exposure = if (layer as u32) < slice_config.first_layers {
-            &slice_config.first_exposure_config
-        } else {
-            &slice_config.exposure_config
-        };
+        let layer_exposure = slice_config.exposure_config(layer);
 
         LayerContent {
             data,

@@ -8,7 +8,7 @@ use common::{
     misc::Run,
     serde::{Deserializer, DynamicSerializer},
 };
-use ctb_format::{file::File, layer_coding::LayerDecoder};
+use ctb_format::{File, LayerDecoder};
 
 #[derive(Parser)]
 struct Args {
