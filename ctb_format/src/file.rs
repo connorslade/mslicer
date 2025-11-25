@@ -18,7 +18,6 @@ const PAGE_SIZE: u64 = 1 << 32;
 const DEFAULT_XOR_KEY: u32 = 0x67;
 
 pub struct File {
-    pub version: u32,
     pub layers: Vec<Layer>,
 
     // Misc
@@ -89,6 +88,7 @@ impl File {
 
         main_des.advance_by(4);
         let version = main_des.read_u32_le();
+        ensure!(version == 5);
         let signature = Section::deserialize_rev(main_des)?;
 
         main_des.jump_to(settings.offset as usize);
@@ -106,7 +106,6 @@ impl File {
         let layer_count;
 
         Ok(Self {
-            version,
             checksum,
             size: Vector3::new(des.read_f32_le(), des.read_f32_le(), des.read_f32_le()),
             total_height: {
@@ -218,7 +217,7 @@ impl File {
         main_ser.write_u32_le(0x12FD0107);
         let settings_section = main_ser.reserve(8);
         main_ser.write_u32_le(0);
-        main_ser.write_u32_le(self.version);
+        main_ser.write_u32_le(5); // Format version 5
         let signature = main_ser.reserve(8);
         main_ser.write_u32_le(0);
         main_ser.write_u16_le(1);
@@ -270,7 +269,7 @@ impl File {
         ser.write_f32_le(self.retract_height_2);
         ser.write_f32_le(self.retract_speed_2);
         ser.write_f32_le(self.rest_time_after_lift);
-        let machine_name = ser.reserve(4);
+        let machine_name = ser.reserve(8);
         ser.write_u8(self.anti_alias_flag);
         ser.write_u16_le(0);
         ser.write_u8(self.per_layer_settings);
@@ -293,19 +292,27 @@ impl File {
         ser.write_u32_le(4);
         ser.write_u32_le(self.last_layer_index);
         ser.reserve(4 * 4);
-        Section::new(0, 0).serialize(&mut ser);
+        let disclaimer = ser.reserve(8);
         ser.write_u32_le(0);
         let resin = ser.reserve(4);
         ser.reserve(4 * 2);
 
-        let settings = main_ser.reserve(ser.pos());
+        let settings = main_ser.reserve(ser.pos().next_multiple_of(32));
 
-        let machine_name_bytes = self.machine_name.as_bytes();
+        let mut machine_name_bytes = self.machine_name.as_bytes().to_vec();
+        machine_name_bytes.push(0);
+
         let machine_name_pos = main_ser.pos();
-        main_ser.write_bytes(machine_name_bytes);
+        main_ser.write_bytes(&machine_name_bytes);
         ser.execute_at(machine_name, |ser| {
             Section::new(machine_name_pos, machine_name_bytes.len()).serialize(ser);
         });
+
+        let disclaimer_bytes = self.disclaimer.as_bytes();
+        ser.execute_at(disclaimer, |ser| {
+            Section::new(main_ser.pos(), disclaimer_bytes.len()).serialize(ser);
+        });
+        main_ser.write_bytes(disclaimer_bytes);
 
         ser.execute_at(resin, |ser| ser.write_u32_le(main_ser.pos() as u32));
         self.resin_parameters.serialize(main_ser);
@@ -332,11 +339,16 @@ impl File {
         let hash = Sha256::digest(self.checksum.to_le_bytes());
         let bytes = encrypt(&hash);
 
+        main_ser.write_u32_le(0x422052FA);
+        main_ser.write_u32_le(0);
+
         let pos = main_ser.pos();
         main_ser.write_bytes(&bytes);
         main_ser.execute_at(signature, |ser| {
             Section::new(pos, bytes.len()).serialize_rev(ser);
         });
+
+        main_ser.write_u32_le(0x6D4232B3);
 
         for (i, layer) in self.layers.iter().enumerate() {
             let cursor = main_ser.pos() as u64;
@@ -356,7 +368,6 @@ impl File {
 impl Debug for File {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("File")
-            .field("version", &self.version)
             .field("checksum", &self.checksum)
             .field("disclaimer", &self.disclaimer)
             .field("modified", &self.modified)
