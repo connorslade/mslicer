@@ -44,7 +44,7 @@ struct ModelUniforms {
 pub enum RenderStyle {
     Normals,
     RandomTriangle,
-    Rended,
+    Rendered,
 }
 
 impl ModelPipeline {
@@ -191,14 +191,14 @@ impl RenderStyle {
     pub const ALL: [RenderStyle; 3] = [
         RenderStyle::Normals,
         RenderStyle::RandomTriangle,
-        RenderStyle::Rended,
+        RenderStyle::Rendered,
     ];
 
     pub fn name(&self) -> &'static str {
         match self {
             RenderStyle::Normals => "Normals",
             RenderStyle::RandomTriangle => "Triangles",
-            RenderStyle::Rended => "Rended",
+            RenderStyle::Rendered => "Rendered",
         }
     }
 }

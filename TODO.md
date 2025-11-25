@@ -114,7 +114,7 @@
 - [ ] Multiple workspaces per project
 - [ ] Built-in mesh subdivision
 - [x] Require Viewport tab to be active on startup
-- [ ] Support uploading pre-sliced .cbt files (windows::remote_print::upload_file)
+- [x] Support uploading pre-sliced .cbt files (windows::remote_print::upload_file)
 
 ---
 

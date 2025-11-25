@@ -11,11 +11,10 @@ use egui::{
     vec2, Align, Context, DragValue, Grid, Layout, ProgressBar, Separator, Spinner, TextEdit, Ui,
 };
 use egui_phosphor::regular::{NETWORK, PLUGS, PRINTER, STOP, TRASH_SIMPLE, UPLOAD_SIMPLE};
-use goo_format::File as GooFile;
 use notify_rust::Notification;
 use remote_send::status::{FileTransferStatus, PrintInfoStatus};
 use rfd::FileDialog;
-use tracing::{info, warn};
+use tracing::info;
 
 use crate::{
     app::App,
@@ -24,8 +23,6 @@ use crate::{
         state::RemotePrintConnectStatus,
     },
 };
-
-const FAILED_TO_READ_GOO: &str = "Failed to read goo file, it may have been corrupted.";
 
 enum Action {
     None,
@@ -344,27 +341,31 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     }
 }
 
-// TODO: support ctb files too!!
 fn upload_file(app: &mut App, mainboard_id: String) {
     if let Some(file) = FileDialog::new()
-        .add_filter("Sliced Model", &["goo"])
+        .add_filter("Sliced Model", &["goo", "ctb"])
         .pick_file()
     {
-        info!("Uploading local file {file:?} to printer `{mainboard_id}`");
-        let data = Arc::new(fs::read(&file).unwrap());
-        if let Err(err) = GooFile::deserialize(&data) {
-            warn!("Failed to read goo file: {err}");
+        let Some(format) = file
+            .extension()
+            .and_then(|x| x.to_str())
+            .and_then(Format::from_extention)
+        else {
             app.popup.open(Popup::simple(
                 "Invalid File",
                 PopupIcon::Error,
-                format!("{FAILED_TO_READ_GOO}\n{err}"),
+                "Unreconized file format. Only .goo and .ctb are supported.",
             ));
-        } else {
-            let file_name = file.file_name().unwrap().to_string_lossy();
-            let file_name = file_name.rsplit_once('.').map(|x| x.0).unwrap_or_default();
-            app.remote_print
-                .upload(&mainboard_id, data, file_name.to_owned(), Format::Goo)
-                .unwrap();
-        }
+            return;
+        };
+
+        info!("Uploading local file {file:?} to printer `{mainboard_id}`");
+        let data = Arc::new(fs::read(&file).unwrap());
+
+        let file_name = file.file_name().unwrap().to_string_lossy();
+        let file_name = file_name.rsplit_once('.').map(|x| x.0).unwrap_or_default();
+        app.remote_print
+            .upload(&mainboard_id, data, file_name.to_owned(), format)
+            .unwrap();
     }
 }

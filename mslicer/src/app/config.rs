@@ -71,7 +71,7 @@ impl Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
-            render_style: RenderStyle::Rended,
+            render_style: RenderStyle::Rendered,
             grid_size: 12.16,
             theme: Theme::Dark,
 
