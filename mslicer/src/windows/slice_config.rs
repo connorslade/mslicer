@@ -8,7 +8,8 @@ use crate::{
 use common::{config::ExposureConfig, format::Format};
 
 const TRANSITION_LAYER_TOOLTIP: &str = "Transition layers interpolate between the first exposure settings and the normal exposure settings.";
-const SLICE_FORMAT_TOOLTIP: &str = "Only Goo files can be sent with the 'Remote Print' module.";
+const SLICE_FORMAT_TOOLTIP: &str =
+    "Only .goo and .ctb files can be sent with the 'Remote Print' module.";
 
 pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     Grid::new("slice_config")

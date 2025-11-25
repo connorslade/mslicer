@@ -17,3 +17,8 @@ Each model in your project is listed in the `Models` panel. By clicking the arro
 ## Slicing
 
 After starting a slice operation, a new panel will open showing the operation progress. However, it shouldn't be open for long because (as far as I know) mslicer is the fastest MSLA slicer currently available (:p). You will then be presented with a slice preview. You can drag to pan, scroll to zoom, and scrub through the slider on the left to look through each layer.
+
+## Supports
+
+The automatic support generator in mslicer is still very unfinished and not usable for most models.
+For now, I would recommend using [Runebrace](https://www.tarabella.it/Runebrace) to place supports before slicing.

@@ -1,6 +1,7 @@
 # mslicer [![Build](https://github.com/connorslade/mslicer/actions/workflows/build.yml/badge.svg)](https://github.com/connorslade/mslicer/actions/workflows/build.yml)
 
-An experimental open source slicer for masked stereolithography (resin) printers.
+An experimental open-source slicer for masked stereolithography (resin) printers.
+Supports the following output formats: Chitu (.ctb), Elegoo (.goo), and Vector (.svg).
 You can read more about the development of this project on its [project page](https://connorcode.com/projects/mslicer).
 
 ![mslicer_74wLyEB9RA](https://github.com/user-attachments/assets/ca282fea-680d-4825-aca1-36d9e29fc1fe)

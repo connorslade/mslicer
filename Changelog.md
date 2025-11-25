@@ -1,6 +1,6 @@
 # Changelog
 
-## v0.4.0 &mdash; Comming Soon
+## v0.4.0 &mdash; November 25th, 2025
 
 - Added support for the encrypted Chitu format (.ctb)
 

@@ -18,8 +18,8 @@
 	<summary>Masked stereolithography slicer</summary>
 	<description>
 		<p>
-			An experimental open source slicer for masked stereolithography (resin) printers.
-			Currently only ELEGOO <code>.goo</code> files can be generated.
+			An experimental open-source slicer for masked stereolithography (resin) printers.
+			Supports the following output formats: Chitu (.ctb), Elegoo (.goo), and Vector (.svg).
 		</p>
 	</description>
 	<keywords>
@@ -33,6 +33,13 @@
 	</screenshots>
 
 	<releases>
+        <release version="0.4.0" date="2025-11-25">
+            <description>
+                <ul>
+                    <li>Added support for the encrypted Chitu format (.ctb)</li>
+                </ul>
+            </description>
+        </release>
         <release version="0.3.0" date="2025-11-15">
             <description>
                 <ul>
@@ -45,7 +52,6 @@
                 </ul>
             </description>
         </release>
-
 	    <release version="0.2.1" date="2025-04-13">
 			<description>
 			    <ul>
@@ -54,7 +60,6 @@
 				</ul>
 			</description>
 		</release>
-	
     	<release version="0.2.1" date="2025-04-13">
             <description>
                 <ul>

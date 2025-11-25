@@ -221,6 +221,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
 
         ui.add_space(16.0);
         ui.heading("Add Printer");
+        ui.label("Only Chitu mainboard printers are supported.");
 
         if app.state.remote_print_connecting != RemotePrintConnectStatus::None {
             ui.horizontal(|ui| {
