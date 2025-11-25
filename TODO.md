@@ -74,7 +74,7 @@
 - [x] Fix rotation on Z axis
 - [x] Fix Z translation being doubled
 - [ ] Merge goo_format changes into goo crate
-- [ ] Implement .ctb format (see <https://github.com/cbiffle/catibo/blob/master/doc/cbddlp-ctb.adoc>)
+- [x] Implement .ctb format (see <https://github.com/cbiffle/catibo/blob/master/doc/cbddlp-ctb.adoc>)
   - [x] Generic format system
   - [x] Fix plugins / post processes
 - [ ] Undo / Redo
@@ -114,6 +114,7 @@
 - [ ] Multiple workspaces per project
 - [ ] Built-in mesh subdivision
 - [x] Require Viewport tab to be active on startup
+- [ ] Support uploading pre-sliced .cbt files (windows::remote_print::upload_file)
 
 ---
 

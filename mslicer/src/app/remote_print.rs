@@ -9,7 +9,7 @@ use std::{
 
 use anyhow::{Context, Result};
 use clone_macro::clone;
-use common::misc::random_string;
+use common::{format::Format, misc::random_string};
 use parking_lot::{Mutex, MutexGuard};
 use tracing::{info, warn};
 
@@ -216,6 +216,7 @@ impl RemotePrint {
         mainboard_id: &str,
         data: Arc<Vec<u8>>,
         mut filename: String,
+        format: Format,
     ) -> Result<()> {
         let services = self.services.as_ref().unwrap();
 
@@ -223,7 +224,8 @@ impl RemotePrint {
             filename.push('_');
         }
         filename.push_str(&random_string(8));
-        filename.push_str(".goo");
+        filename.push('.');
+        filename.push_str(format.extention());
 
         services.http.add_file(&filename, data.clone());
 

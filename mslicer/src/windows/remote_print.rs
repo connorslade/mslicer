@@ -5,7 +5,7 @@ use std::{
 };
 
 use chrono::DateTime;
-use common::misc::human_duration;
+use common::{format::Format, misc::human_duration};
 use const_format::concatcp;
 use egui::{
     vec2, Align, Context, DragValue, Grid, Layout, ProgressBar, Separator, Spinner, TextEdit, Ui,
@@ -344,6 +344,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     }
 }
 
+// TODO: support ctb files too!!
 fn upload_file(app: &mut App, mainboard_id: String) {
     if let Some(file) = FileDialog::new()
         .add_filter("Sliced Model", &["goo"])
@@ -362,7 +363,7 @@ fn upload_file(app: &mut App, mainboard_id: String) {
             let file_name = file.file_name().unwrap().to_string_lossy();
             let file_name = file_name.rsplit_once('.').map(|x| x.0).unwrap_or_default();
             app.remote_print
-                .upload(&mainboard_id, data, file_name.to_owned())
+                .upload(&mainboard_id, data, file_name.to_owned(), Format::Goo)
                 .unwrap();
         }
     }

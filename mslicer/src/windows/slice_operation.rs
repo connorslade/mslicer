@@ -16,7 +16,7 @@ use crate::{
     render::slice_preview::SlicePreviewRenderCallback,
     ui::{components::vec2_dragger, popup::Popup},
 };
-use common::serde::DynamicSerializer;
+use common::{format::Format, serde::DynamicSerializer};
 
 const FILENAME_POPUP_TEXT: &str =
     "To ensure the file name is unique, some extra random characters will be added on the end.";
@@ -65,7 +65,8 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
 
                                     let mainboard_id = printer.mainboard_id.clone();
                                     if ui.button(layout_job).clicked() {
-                                        app.popup.open(name_popup(mainboard_id, data));
+                                        let format = result.file.as_format();
+                                        app.popup.open(name_popup(mainboard_id, data, format));
                                     }
                                 }
                             });
@@ -215,7 +216,7 @@ fn slice_preview(ui: &mut egui::Ui, result: &mut SliceResult) {
     });
 }
 
-fn name_popup(mainboard_id: String, data: Arc<Vec<u8>>) -> Popup {
+fn name_popup(mainboard_id: String, data: Arc<Vec<u8>>, format: Format) -> Popup {
     Popup::new("Remote Send", move |app, ui| {
         ui.horizontal(|ui| {
             ui.label("File Name:");
@@ -244,7 +245,7 @@ fn name_popup(mainboard_id: String, data: Arc<Vec<u8>>) -> Popup {
                             .replace([' ', '/'], "_")
                             .replace("..", "");
                         app.remote_print
-                            .upload(&mainboard_id, data.clone(), name)
+                            .upload(&mainboard_id, data.clone(), name, format)
                             .unwrap();
                     }
                 });
