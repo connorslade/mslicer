@@ -50,36 +50,26 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     CollapsingHeader::new("Overhang Detection")
         .default_open(true)
         .show(ui, |ui| {
-            dragger(
-                ui,
-                "Max Origin Normal Z",
-                &mut support.max_origin_normal_z,
-                |x| x.speed(0.01),
-            );
-
-            dragger(
-                ui,
-                "Max Neighbor Z Diff",
-                &mut support.max_neighbor_z_diff,
-                |x| x.speed(0.01),
-            );
-
             dragger(ui, "Min Angle", &mut support.min_angle, |x| x.speed(0.01));
+            dragger(
+                ui,
+                "Face Support Spacing",
+                &mut support.face_support_spacing,
+                |x| x,
+            );
         });
 
     CollapsingHeader::new("Support Generation")
         .default_open(true)
         .show(ui, |ui| {
-            dragger(
-                ui,
-                "Face Support Spacing",
-                &mut support.face_support_spacing,
-                |x| x.speed(0.1),
-            );
-
-            dragger(ui, "Support Radius", &mut support.support_radius, |x| {
-                x.speed(0.1)
-            });
+            for (name, value) in [
+                ("Support Radius", &mut support.support_radius),
+                ("Arm Height", &mut support.arm_height),
+                ("Base Radius", &mut support.base_radius),
+                ("Base Height", &mut support.base_height),
+            ] {
+                dragger(ui, name, value, |x| x.speed(0.1));
+            }
 
             dragger(
                 ui,

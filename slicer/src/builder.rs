@@ -68,7 +68,7 @@ impl MeshBuilder {
         &mut self,
         bottom: Vector3<f32>,
         height: f32,
-        radius: f32,
+        (bottom_radius, top_radius): (f32, f32),
         precision: u32,
     ) {
         let top = bottom + Vector3::new(0.0, 0.0, height);
@@ -80,10 +80,9 @@ impl MeshBuilder {
         for i in 0..precision {
             let angle = 2.0 * PI * (i as f32) / (precision as f32);
             let normal = Vector3::new(angle.sin(), angle.cos(), 0.0);
-            let offset = normal * radius;
 
-            let top = self.add_vertex(top + offset);
-            let bottom = self.add_vertex(bottom + offset);
+            let top = self.add_vertex(top + normal * top_radius);
+            let bottom = self.add_vertex(bottom + normal * bottom_radius);
 
             if let Some((last_top, last_bottom)) = last {
                 self.add_quad([last_top, last_bottom, top, bottom], normal);

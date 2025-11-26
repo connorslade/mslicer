@@ -23,12 +23,12 @@ pub struct LineSupport {
 pub struct LineSupportConfig {
     /// Support generation
     pub support_radius: f32,
+    pub arm_height: f32,
     pub base_radius: f32,
+    pub base_height: f32,
     pub support_precision: u32,
 
     /// Overhang detection
-    pub max_origin_normal_z: f32,
-    pub max_neighbor_z_diff: f32,
     pub min_angle: f32,
     pub face_support_spacing: f32,
 }
@@ -58,20 +58,21 @@ impl<'a> LineSupportGenerator<'a> {
         let mut mesh = MeshBuilder::new();
         let mut debug_points = Vec::new();
 
+        let LineSupportConfig {
+            support_radius: sr,
+            arm_height: ah,
+            base_radius: br,
+            base_height: bh,
+            support_precision: sp,
+            ..
+        } = *self.config;
+
         for [origin, _normal] in overhangs {
             let bottom = origin.xy().to_homogeneous();
-            mesh.add_vertical_cylinder(
-                bottom,
-                origin.z + 0.1,
-                self.config.support_radius,
-                self.config.support_precision,
-            );
-            mesh.add_vertical_cylinder(
-                bottom,
-                0.1,
-                self.config.base_radius,
-                self.config.support_precision,
-            );
+            let arm_bottom = bottom + Vector3::z() * (origin.z - ah);
+            mesh.add_vertical_cylinder(arm_bottom, ah + 0.1, (sr, sr * 0.3), sp);
+            mesh.add_vertical_cylinder(bottom, origin.z - ah, (sr, sr), sp);
+            mesh.add_vertical_cylinder(bottom, bh, (br, sr), sp);
             debug_points.push([origin, -Vector3::z()]);
         }
 
@@ -98,17 +99,17 @@ impl<'a> LineSupportGenerator<'a> {
 
             // Ignore points that are not on the bottom of the mesh
             let origin_normal = mesh.transform_normal(&normals[origin.face as usize]);
-            if origin_normal.z >= self.config.max_origin_normal_z {
+            if origin_normal.z >= 0.0 {
                 continue;
             }
 
             // Only add to overhangs if the original point is lower than all connected points by one layer
             let origin_pos = mesh.transform(&vertices[origin.origin_vertex as usize]);
             let neighbors = half_edge.connected_vertices(edge as u32);
-            if neighbors.iter().all(|connected| {
-                (origin_pos.z - mesh.transform(&vertices[*connected as usize]).z)
-                    <= self.config.max_neighbor_z_diff
-            }) {
+            if neighbors
+                .iter()
+                .all(|connected| origin_pos.z < mesh.transform(&vertices[*connected as usize]).z)
+            {
                 overhangs.push([origin_pos, origin_normal]);
             }
         }
@@ -125,7 +126,7 @@ impl<'a> LineSupportGenerator<'a> {
 
         for (face, normal) in normals.iter().enumerate() {
             let normal = mesh.transform_normal(normal);
-            if normal.z >= self.config.max_origin_normal_z {
+            if normal.z >= 0.0 {
                 continue;
             }
 
@@ -181,12 +182,12 @@ impl<'a> LineSupportGenerator<'a> {
 impl Default for LineSupportConfig {
     fn default() -> Self {
         Self {
-            support_radius: 0.1,
+            support_radius: 0.3,
+            arm_height: 1.0,
             base_radius: 1.0,
+            base_height: 0.5,
             support_precision: 15,
 
-            max_origin_normal_z: 0.0,
-            max_neighbor_z_diff: -0.01,
             min_angle: 3.0,
             face_support_spacing: 1.0,
         }
