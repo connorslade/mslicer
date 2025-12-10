@@ -214,6 +214,7 @@ impl App {
             }
         };
         info!("Loaded model `{name}` with {} faces", mesh.face_count());
+        info!("manifold = {}", mesh.is_manifold());
 
         mesh.recompute_normals();
         let rendered_mesh = RenderedMesh::from_mesh(mesh)

@@ -1,14 +1,18 @@
 use const_format::concatcp;
 use egui::{Context, Grid, Id, Ui};
 use egui_phosphor::regular::{
-    ARROW_LINE_DOWN, COPY, DICE_THREE, EYE, EYE_SLASH, LINK_BREAK, LINK_SIMPLE, TRASH,
+    ARROW_LINE_DOWN, CIRCLES_THREE, COPY, DICE_THREE, EYE, EYE_SLASH, LINK_BREAK, LINK_SIMPLE,
+    TRASH, TRIANGLE, WARNING,
 };
 use slicer::Pos;
 
 use crate::{
     app::App,
+    render::rendered_mesh::MeshWarnings,
     ui::components::{vec3_dragger, vec3_dragger_proportional},
 };
+
+const WARN_NON_MANIFOLD: &str = "This is a non-manifold mesh, it may produce unexpected results when sliced.\nConsider running it through a mesh repair tool.";
 
 enum Action {
     None,
@@ -42,6 +46,17 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                 .on_hover_text(if mesh.hidden { "Show" } else { "Hide" })
                 .clicked();
 
+            if !mesh.warnings.is_empty() {
+                let mut warn = ui.label(WARNING);
+                for warning in mesh.warnings.iter() {
+                    let desc = match warning {
+                        MeshWarnings::NonManifold => WARN_NON_MANIFOLD,
+                        _ => unreachable!(),
+                    };
+                    warn = warn.on_hover_text(desc);
+                }
+            }
+
             if open {
                 ui.text_edit_singleline(&mut mesh.name);
             } else {
@@ -54,6 +69,18 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                 .num_columns(2)
                 .with_row_color(|row, style| (row % 2 == 0).then_some(style.visuals.faint_bg_color))
                 .show(ui, |ui| {
+                    ui.label("Info");
+                    ui.horizontal(|ui| {
+                        ui.label(TRIANGLE);
+                        ui.monospace(mesh.mesh.face_count().to_string());
+
+                        ui.separator();
+
+                        ui.label(CIRCLES_THREE);
+                        ui.monospace(mesh.mesh.vertex_count().to_string());
+                    });
+                    ui.end_row();
+
                     ui.label("Actions");
                     ui.vertical(|ui| {
                         ui.horizontal_wrapped(|ui| {
@@ -126,14 +153,6 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
 
                     ui.label("Name");
                     ui.text_edit_singleline(&mut mesh.name);
-                    ui.end_row();
-
-                    ui.label("Vertices");
-                    ui.monospace(mesh.mesh.vertex_count().to_string());
-                    ui.end_row();
-
-                    ui.label("Triangles");
-                    ui.monospace(mesh.mesh.face_count().to_string());
                     ui.end_row();
                 });
         }

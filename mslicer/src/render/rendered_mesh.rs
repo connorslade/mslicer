@@ -1,5 +1,6 @@
 use std::sync::atomic::{AtomicU32, Ordering};
 
+use bitflags::bitflags;
 use common::oklab::START_COLOR;
 use egui::Color32;
 use nalgebra::Vector3;
@@ -19,8 +20,16 @@ pub struct RenderedMesh {
     pub color: Color32,
     pub hidden: bool,
     pub locked_scale: bool,
+    pub warnings: MeshWarnings,
 
     buffers: Option<RenderedMeshBuffers>,
+}
+
+bitflags! {
+    #[derive(Clone, Copy, PartialEq, Eq)]
+    pub struct MeshWarnings: u8 {
+        const NonManifold = 1;
+    }
 }
 
 pub struct RenderedMeshBuffers {
@@ -30,6 +39,9 @@ pub struct RenderedMeshBuffers {
 
 impl RenderedMesh {
     pub fn from_mesh(mesh: Mesh) -> Self {
+        let mut warnings = MeshWarnings::empty();
+        (!mesh.is_manifold()).then(|| warnings.insert(MeshWarnings::NonManifold));
+
         Self {
             name: String::new(),
             id: next_id(),
@@ -37,6 +49,7 @@ impl RenderedMesh {
             color: Color32::WHITE,
             hidden: false,
             locked_scale: true,
+            warnings,
             buffers: None,
         }
     }
@@ -122,6 +135,7 @@ impl Clone for RenderedMesh {
             color: self.color,
             hidden: self.hidden,
             locked_scale: self.locked_scale,
+            warnings: self.warnings,
             buffers: None,
         }
     }
