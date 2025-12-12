@@ -1,3 +1,4 @@
+use common::misc::subscript_number;
 use const_format::concatcp;
 use egui::{Context, Grid, Id, Ui};
 use egui_phosphor::regular::{
@@ -13,6 +14,7 @@ use crate::{
 };
 
 const WARN_NON_MANIFOLD: &str = "This mesh is non-manifold, it may produce unexpected results when sliced.\nConsider running it through a mesh repair tool.";
+const WARN_OUT_OF_BOUNDS: &str = "This mesh extends beyond the printer volume and will be cut off.";
 
 enum Action {
     None,
@@ -47,10 +49,12 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                 .clicked();
 
             if !mesh.warnings.is_empty() {
-                let mut warn = ui.label(WARNING);
+                let count = mesh.warnings.bits().count_ones();
+                let mut warn = ui.label(format!("{WARNING}{}", subscript_number(count)));
                 for warning in mesh.warnings.iter() {
                     let desc = match warning {
                         MeshWarnings::NonManifold => WARN_NON_MANIFOLD,
+                        MeshWarnings::OutOfBounds => WARN_OUT_OF_BOUNDS,
                         _ => unreachable!(),
                     };
                     warn = warn.on_hover_text(desc);
@@ -92,7 +96,10 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                                 .then(|| action = Action::Duplicate(i));
                             ui.button(concatcp!(ARROW_LINE_DOWN, " Align to Bed"))
                                 .clicked()
-                                .then(|| mesh.align_to_bed());
+                                .then(|| {
+                                    mesh.align_to_bed();
+                                    mesh.update_oob(&app.slice_config);
+                                });
                         });
                     });
                     ui.end_row();
@@ -105,7 +112,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                         let mut position = mesh.mesh.position();
                         vec3_dragger(ui, position.as_mut(), |x| x);
                         (mesh.mesh.position() != position)
-                            .then(|| mesh.mesh.set_position(position));
+                            .then(|| mesh.set_position(app, position));
                         ui.add_space(width);
                     });
                     ui.end_row();
@@ -123,7 +130,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                                 x.speed(0.01).clamp_range(0.001..=f32::MAX)
                             });
                         }
-                        (mesh.mesh.scale() != scale).then(|| mesh.mesh.set_scale(scale));
+                        (mesh.mesh.scale() != scale).then(|| mesh.set_scale(app, scale));
 
                         mesh.locked_scale ^= ui
                             .button(if mesh.locked_scale {
@@ -140,7 +147,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                     let original_rotation = rotation;
                     vec3_dragger(ui, rotation.as_mut(), |x| x.suffix("°"));
                     (original_rotation != rotation)
-                        .then(|| mesh.mesh.set_rotation(deg_to_rad(rotation)));
+                        .then(|| mesh.set_rotation(app, deg_to_rad(rotation)));
                     ui.end_row();
 
                     ui.label("Color");

@@ -62,3 +62,16 @@ pub fn random_string(len: usize) -> String {
         .map(char::from)
         .collect()
 }
+
+pub fn subscript_number(num: impl Into<u64>) -> String {
+    const SUBSCRIPT: [char; 10] = ['₀', '₁', '₂', '₃', '₄', '₅', '₆', '₇', '₈', '₉'];
+
+    let mut num = num.into();
+    let mut out = String::new();
+    while num > 0 {
+        out.push(SUBSCRIPT[(num % 10) as usize]);
+        num /= 10;
+    }
+
+    out
+}

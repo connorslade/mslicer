@@ -167,7 +167,7 @@ impl OwnedProject {
         *meshes = self
             .meshes
             .into_iter()
-            .map(|mesh| mesh.into_rendered_mesh())
+            .map(|mesh| mesh.into_rendered_mesh(app))
             .collect();
 
         app.slice_config = self.slice_config;
@@ -175,17 +175,19 @@ impl OwnedProject {
 }
 
 impl OwnedProjectMesh {
-    pub fn into_rendered_mesh(self) -> RenderedMesh {
+    pub fn into_rendered_mesh(self, app: &App) -> RenderedMesh {
         let mut mesh = Mesh::new_uncentred(self.vertices, self.faces, self.normals);
         mesh.set_position_unchecked(self.info.position);
         mesh.set_scale_unchecked(self.info.scale);
         mesh.set_rotation_unchecked(self.info.rotation);
         mesh.update_transformation_matrix();
 
-        RenderedMesh::from_mesh(mesh)
+        let mut rendered = RenderedMesh::from_mesh(mesh)
             .with_name(self.info.name)
             .with_color(self.info.color)
-            .with_hidden(self.info.hidden)
+            .with_hidden(self.info.hidden);
+        rendered.update_oob(&app.slice_config);
+        rendered
     }
 }
 

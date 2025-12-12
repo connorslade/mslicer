@@ -216,9 +216,10 @@ impl App {
         info!("Loaded model `{name}` with {} faces", mesh.face_count());
 
         mesh.recompute_normals();
-        let rendered_mesh = RenderedMesh::from_mesh(mesh)
+        let mut rendered_mesh = RenderedMesh::from_mesh(mesh)
             .with_name(name.clone())
             .with_random_color();
+        rendered_mesh.update_oob(&self.slice_config);
 
         self.meshes.write().push(rendered_mesh);
     }

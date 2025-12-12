@@ -39,7 +39,13 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
             ui.end_row();
 
             ui.label("Platform Size (mm)");
-            vec3_dragger(ui, app.slice_config.platform_size.as_mut(), |x| x);
+            let platform = &mut app.slice_config.platform_size;
+            let prev = *platform;
+            vec3_dragger(ui, platform.as_mut(), |x| x);
+            if *platform != prev {
+                (app.meshes.write().iter_mut())
+                    .for_each(|model| model.update_oob(&app.slice_config));
+            }
             ui.end_row();
 
             ui.label("Slice Height (mm)");
