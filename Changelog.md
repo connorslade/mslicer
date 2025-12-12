@@ -3,6 +3,7 @@
 ## v0.5.0 &mdash; Coming Soon™
 
 - Detect non-manifold meshes
+- Color backfaces grey in rendered view
 
 ## v0.4.0 &mdash; November 25th, 2025
 

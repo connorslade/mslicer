@@ -12,7 +12,7 @@ use crate::{
     ui::components::{vec3_dragger, vec3_dragger_proportional},
 };
 
-const WARN_NON_MANIFOLD: &str = "This is a non-manifold mesh, it may produce unexpected results when sliced.\nConsider running it through a mesh repair tool.";
+const WARN_NON_MANIFOLD: &str = "This mesh is non-manifold, it may produce unexpected results when sliced.\nConsider running it through a mesh repair tool.";
 
 enum Action {
     None,

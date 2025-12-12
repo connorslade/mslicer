@@ -35,14 +35,13 @@ fn vert(in: VertexInput) -> VertexOutput {
 }
 
 @fragment
-fn frag(in: VertexOutput) -> @location(0) vec4<f32> {
+fn frag(
+   @builtin(front_facing) is_front: bool,
+   in: VertexOutput
+) -> @location(0) vec4<f32> {
     let dy = dpdy(in.world_position);
     let dx = dpdx(in.world_position);
     let normal = normalize(cross(dy, dx));
-
-    if outside_build_volume(in.world_position) {
-        return vec4f(1.0, 0.0, 0.0, 1.0);
-    }
 
     switch context.render_style {
         case STYLE_NORMAL: {
@@ -60,11 +59,16 @@ fn frag(in: VertexOutput) -> @location(0) vec4<f32> {
             let reflect_dir = reflect(-camera_direction, normal);
             let specular = pow(max(dot(camera_direction, reflect_dir), 0.0), 32.0);
 
-            let intensity = (diffuse + specular + 0.1) * context.model_color.rgb;
+            let color = select(
+                select(vec3f(.5), context.model_color.rgb, is_front),
+                vec3f(1, 0, 0), outside_build_volume(in.world_position)
+            );
+
+            let intensity = (diffuse + specular + 0.1) * color;
             return vec4f(intensity, context.model_color.a);
         }
         default: {
-            return vec4f(0.0);
+            return vec4f();
         }
     }
 }
