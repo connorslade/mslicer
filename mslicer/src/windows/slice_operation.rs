@@ -109,7 +109,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
                         let layer_digits = result.layer_count.1 as usize;
                         ui.add(
                             DragValue::new(&mut result.slice_preview_layer)
-                                .clamp_range(1..=result.file.info().layers)
+                                .range(1..=result.file.info().layers)
                                 .custom_formatter(|n, _| {
                                     format!("{:0>layer_digits$}/{}", n, result.layer_count.0)
                                 }),
@@ -127,7 +127,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
                         ui.label("Scale");
                         ui.add(
                             DragValue::new(&mut result.preview_scale)
-                                .clamp_range(0.1..=10.0)
+                                .range(0.1..=10.0)
                                 .speed(0.1),
                         );
                     });

@@ -123,11 +123,11 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                         let mut scale = mesh.mesh.scale();
                         if mesh.locked_scale {
                             vec3_dragger_proportional(ui, scale.as_mut(), |x| {
-                                x.speed(0.01).clamp_range(0.001..=f32::MAX)
+                                x.speed(0.01).range(0.001..=f32::MAX)
                             });
                         } else {
                             vec3_dragger(ui, scale.as_mut(), |x| {
-                                x.speed(0.01).clamp_range(0.001..=f32::MAX)
+                                x.speed(0.01).range(0.001..=f32::MAX)
                             });
                         }
                         (mesh.mesh.scale() != scale).then(|| mesh.set_scale(app, scale));

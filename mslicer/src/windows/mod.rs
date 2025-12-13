@@ -1,7 +1,7 @@
 use std::mem;
 
 use egui::{CentralPanel, Color32, Context, Frame, Id, Sense, Theme, Ui, WidgetText};
-use egui_dock::{DockArea, NodeIndex, Style, SurfaceIndex, TabViewer};
+use egui_dock::{DockArea, NodeIndex, SurfaceIndex, TabViewer};
 use egui_wgpu::Callback;
 use nalgebra::Matrix4;
 use parking_lot::MappedRwLockWriteGuard;

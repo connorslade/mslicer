@@ -331,7 +331,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                 .suffix("s")
                 .max_decimals(1)
                 .speed(0.1)
-                .clamp_range(0.1..=60.0),
+                .range(0.1..=60.0),
         );
         ui.label("Network timeout");
     });

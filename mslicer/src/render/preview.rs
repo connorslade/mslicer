@@ -158,7 +158,7 @@ fn download_preview(
     let slice = staging_buffer.slice(..);
     slice.map_async(MapMode::Read, move |_| tx.send(()).unwrap());
 
-    device.poll(PollType::wait_indefinitely());
+    device.poll(PollType::wait_indefinitely()).unwrap();
     rx.recv().unwrap();
 
     let mapped_range = slice.get_mapped_range();

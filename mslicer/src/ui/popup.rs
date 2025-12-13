@@ -31,7 +31,7 @@ impl PopupManager {
     }
 
     pub fn render(&mut self, app: &mut App, ctx: &Context) {
-        let window_size = ctx.screen_rect().size();
+        let window_size = ctx.content_rect().size();
 
         let mut i = 0;
         let mut close = false;

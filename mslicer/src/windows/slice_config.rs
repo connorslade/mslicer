@@ -90,23 +90,23 @@ fn exposure_config_grid(ui: &mut Ui, config: &mut ExposureConfig) {
         .striped(true)
         .show(ui, |ui| {
             ui.label("Exposure Time (s)");
-            ui.add(DragValue::new(&mut config.exposure_time).clamp_range(0.0..=f32::MAX));
+            ui.add(DragValue::new(&mut config.exposure_time).range(0.0..=f32::MAX));
             ui.end_row();
 
             ui.label("Lift Distance (mm)");
-            ui.add(DragValue::new(&mut config.lift_distance).clamp_range(0.0..=f32::MAX));
+            ui.add(DragValue::new(&mut config.lift_distance).range(0.0..=f32::MAX));
             ui.end_row();
 
             ui.label("Lift Speed (cm/min)");
-            ui.add(DragValue::new(&mut config.lift_speed).clamp_range(0.0..=f32::MAX));
+            ui.add(DragValue::new(&mut config.lift_speed).range(0.0..=f32::MAX));
             ui.end_row();
 
             ui.label("Retract Distance (mm)");
-            ui.add(DragValue::new(&mut config.retract_distance).clamp_range(0.0..=f32::MAX));
+            ui.add(DragValue::new(&mut config.retract_distance).range(0.0..=f32::MAX));
             ui.end_row();
 
             ui.label("Retract Speed (cm/min)");
-            ui.add(DragValue::new(&mut config.retract_speed).clamp_range(0.0..=f32::MAX));
+            ui.add(DragValue::new(&mut config.retract_speed).range(0.0..=f32::MAX));
             ui.end_row();
         });
 }

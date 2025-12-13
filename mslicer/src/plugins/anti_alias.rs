@@ -23,7 +23,7 @@ impl Plugin for AntiAliasPlugin {
 
         ui.add_space(8.0);
         dragger(ui, "Radius", &mut self.radius, |x| {
-            x.speed(0.1).clamp_range(0.1..=10.0)
+            x.speed(0.1).range(0.1..=10.0)
         });
     }
 

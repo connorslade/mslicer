@@ -72,7 +72,7 @@ pub fn ui(app: &mut App, ctx: &Context) {
                         for path in app.config.recent_projects.iter() {
                             let name = path.file_name().unwrap().to_string_lossy();
                             if ui.button(name).clicked() {
-                                ui.close_menu();
+                                ui.close();
                                 load = Some(path.clone());
                             }
                         }
@@ -97,7 +97,7 @@ pub fn ui(app: &mut App, ctx: &Context) {
                     load_project_button,
                     quit_button,
                 ] {
-                    button.clicked().then(|| ui.close_menu());
+                    button.clicked().then(|| ui.close());
                 }
             });
 

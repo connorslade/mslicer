@@ -51,7 +51,7 @@ impl Plugin for ElephantFootFixerPlugin {
             "Intensity",
             "This percent will be multiplied by the pixel values of the edge pixels.",
             &mut self.intensity_multiplier,
-            |x| x.clamp_range(0.0..=100.0).speed(1).suffix("%"),
+            |x| x.range(0.0..=100.0).speed(1).suffix("%"),
         );
     }
 
