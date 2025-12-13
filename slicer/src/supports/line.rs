@@ -67,13 +67,13 @@ impl<'a> LineSupportGenerator<'a> {
             ..
         } = *self.config;
 
-        for [origin, _normal] in overhangs {
+        for [origin, normal] in overhangs {
             let bottom = origin.xy().to_homogeneous();
             let arm_bottom = bottom + Vector3::z() * (origin.z - ah);
             mesh.add_vertical_cylinder(arm_bottom, ah + 0.1, (sr, sr * 0.3), sp);
             mesh.add_vertical_cylinder(bottom, origin.z - ah, (sr, sr), sp);
             mesh.add_vertical_cylinder(bottom, bh, (br, sr), sp);
-            debug_points.push([origin, -Vector3::z()]);
+            debug_points.push([origin, normal]);
         }
 
         (mesh.build(), debug_points)
