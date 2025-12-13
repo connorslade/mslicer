@@ -1,5 +1,7 @@
 use egui::{Context, Ui};
-use libblur::{EdgeMode, FastBlurChannels, ThreadingPolicy};
+use libblur::{
+    AnisotropicRadius, BlurImageMut, EdgeMode, EdgeMode2D, FastBlurChannels, ThreadingPolicy,
+};
 use rayon::iter::{ParallelBridge, ParallelIterator};
 use slicer::format::FormatSliceFile;
 
@@ -34,16 +36,15 @@ impl Plugin for AntiAliasPlugin {
 
         file.iter_mut_layers().par_bridge().for_each(|mut layer| {
             let (width, height) = (layer.width(), layer.height());
+            let mut image =
+                BlurImageMut::borrow(&mut layer, width, height, FastBlurChannels::Plane);
             libblur::fast_gaussian_next(
-                &mut layer,
-                width,
-                width,
-                height,
-                self.radius as u32,
-                FastBlurChannels::Plane,
+                &mut image,
+                AnisotropicRadius::new(self.radius as u32),
                 ThreadingPolicy::Adaptive,
-                EdgeMode::Clamp,
-            );
+                EdgeMode2D::new(EdgeMode::Clamp),
+            )
+            .unwrap();
         });
     }
 }

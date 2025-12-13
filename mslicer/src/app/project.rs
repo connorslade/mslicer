@@ -144,7 +144,7 @@ impl<'a> BorrowedProject<'a> {
 
     pub fn serialize<Writer: Write>(&self, writer: &mut Writer) -> Result<()> {
         writer.write_all(&VERSION.to_le_bytes())?;
-        bincode::serialize_into(writer, self)?;
+        bincode::serde::encode_into_std_write(self, writer, bincode::config::standard())?;
         Ok(())
     }
 }
@@ -159,7 +159,10 @@ impl OwnedProject {
             anyhow::bail!("Invalid version: Expected {VERSION} found {version}");
         }
 
-        Ok(bincode::deserialize_from(reader)?)
+        Ok(bincode::serde::decode_from_std_read(
+            reader,
+            bincode::config::standard(),
+        )?)
     }
 
     pub fn apply(self, app: &mut App) {
