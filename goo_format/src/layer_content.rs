@@ -1,6 +1,6 @@
 use anyhow::{ensure, Result};
 
-use common::serde::{Deserializer, Serializer};
+use common::serde::{Deserializer, Serializer, SliceDeserializer};
 
 use crate::DELIMITER;
 
@@ -73,7 +73,7 @@ impl LayerContent {
         ser.write_bytes(DELIMITER);
     }
 
-    pub fn deserialize(des: &mut Deserializer) -> Result<Self> {
+    pub fn deserialize(des: &mut SliceDeserializer) -> Result<Self> {
         let pause_flag = des.read_u16_be();
         let pause_position_z = des.read_f32_be();
         let layer_position_z = des.read_f32_be();
@@ -91,12 +91,12 @@ impl LayerContent {
         let second_retract_distance = des.read_f32_be();
         let second_retract_speed = des.read_f32_be();
         let light_pwm = des.read_u16_be().min(255) as u8;
-        ensure!(des.read_bytes(2) == DELIMITER);
+        ensure!(des.read_slice(2) == DELIMITER);
         let data_len = des.read_u32_be() as usize - 2;
         ensure!(des.read_u8() == 0x55);
-        let data = des.read_bytes(data_len);
+        let data = des.read_slice(data_len);
         let checksum = des.read_u8();
-        ensure!(des.read_bytes(2) == DELIMITER);
+        ensure!(des.read_slice(2) == DELIMITER);
 
         Ok(Self {
             pause: pause_flag != 0,

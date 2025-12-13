@@ -3,7 +3,7 @@ use anyhow::{ensure, Result};
 use chrono::Local;
 use common::{
     misc::SliceResult,
-    serde::{Deserializer, Serializer, SizedString},
+    serde::{Serializer, SizedString, SliceDeserializer},
 };
 
 use crate::{Header, LayerContent, ENDING_STRING};
@@ -85,7 +85,7 @@ impl File {
     }
 
     pub fn deserialize(buf: &[u8]) -> Result<Self> {
-        let mut des = Deserializer::new(buf);
+        let mut des = SliceDeserializer::new(buf);
 
         let header = Header::deserialize(&mut des)?;
         let mut layers = Vec::with_capacity(header.layer_count as usize);
@@ -94,7 +94,7 @@ impl File {
             layers.push(LayerContent::deserialize(&mut des)?);
         }
 
-        ensure!(des.read_bytes(ENDING_STRING.len()) == ENDING_STRING);
+        ensure!(des.read_slice(ENDING_STRING.len()) == ENDING_STRING);
         Ok(Self { header, layers })
     }
 }

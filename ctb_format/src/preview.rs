@@ -5,7 +5,7 @@ use std::{
 
 use anyhow::Result;
 
-use common::serde::{Deserializer, Serializer};
+use common::serde::{Deserializer, Serializer, SliceDeserializer};
 use image::RgbaImage;
 use nalgebra::{Vector2, Vector3};
 
@@ -30,14 +30,14 @@ impl PreviewImage {
         }
     }
 
-    pub fn deserialize(des: &mut Deserializer) -> Result<Self> {
+    pub fn deserialize(des: &mut SliceDeserializer) -> Result<Self> {
         let width = des.read_u32_le();
         let height = des.read_u32_le();
         let image = Section::deserialize(des)?;
 
         des.jump_to(image.offset as usize);
         PreviewImage::from_bytes(
-            des.read_bytes(image.size as usize),
+            des.read_slice(image.size as usize),
             Vector2::new(width, height),
         )
     }

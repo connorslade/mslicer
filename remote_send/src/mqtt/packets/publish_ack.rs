@@ -1,6 +1,6 @@
 use anyhow::Result;
 
-use common::serde::{Deserializer, DynamicSerializer, Serializer};
+use common::serde::{Deserializer, DynamicSerializer, Serializer, SliceDeserializer};
 
 use super::Packet;
 
@@ -26,7 +26,7 @@ impl PublishAckPacket {
 
     pub fn from_packet(packet: &Packet) -> Result<Self> {
         assert_eq!(packet.packet_type, Self::PACKET_TYPE);
-        let mut des = Deserializer::new(&packet.remaining_bytes);
+        let mut des = SliceDeserializer::new(&packet.remaining_bytes);
 
         let packet_id = des.read_u16_be();
 

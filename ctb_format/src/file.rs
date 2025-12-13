@@ -7,7 +7,7 @@ use anyhow::{Result, ensure};
 
 use common::{
     misc::SliceResult,
-    serde::{Deserializer, DynamicSerializer, Serializer},
+    serde::{Deserializer, DynamicSerializer, Serializer, SliceDeserializer},
 };
 use nalgebra::{Vector2, Vector3, Vector4};
 use sha2::{Digest, Sha256};
@@ -90,7 +90,7 @@ pub struct File {
 }
 
 impl File {
-    pub fn deserialize(main_des: &mut Deserializer) -> Result<Self> {
+    pub fn deserialize(main_des: &mut SliceDeserializer) -> Result<Self> {
         assert_eq!(main_des.read_u32_le(), 0x12FD0107);
         let settings = Section::deserialize_rev(main_des)?;
 
@@ -100,15 +100,15 @@ impl File {
         let signature = Section::deserialize_rev(main_des)?;
 
         main_des.jump_to(settings.offset as usize);
-        let bytes = decrypt(main_des.read_bytes(settings.size as usize));
-        let mut des = Deserializer::new(&bytes);
+        let bytes = decrypt(main_des.read_slice(settings.size as usize));
+        let mut des = SliceDeserializer::new(&bytes);
 
         let checksum = des.read_u64_le();
         let hash = Sha256::digest(checksum.to_le_bytes());
         let signature = main_des.execute_at(signature.offset as usize, |des| {
-            des.read_bytes(signature.size as usize)
+            des.read_slice(signature.size as usize)
         });
-        ensure!(encrypt(&hash) == signature);
+        ensure!(&encrypt(&hash) == signature);
 
         let layer_offset = des.read_u32_le();
         let layer_count;
@@ -179,7 +179,7 @@ impl File {
             machine_name: {
                 let section = Section::deserialize(&mut des)?;
                 let machine_name = main_des.execute_at(section.offset as usize, |des| {
-                    String::from_utf8_lossy(des.read_bytes(section.size as usize))
+                    String::from_utf8_lossy(des.read_slice(section.size as usize))
                 });
                 machine_name.trim_end_matches('\0').to_owned()
             },
@@ -210,7 +210,7 @@ impl File {
                 des.advance_by(4 * 4);
                 let section = Section::deserialize(&mut des)?;
                 main_des.execute_at(section.offset as usize, |des| {
-                    String::from_utf8_lossy(des.read_bytes(section.size as usize)).into_owned()
+                    String::from_utf8_lossy(des.read_slice(section.size as usize)).into_owned()
                 })
             },
             resin_parameters: {

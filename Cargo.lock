@@ -2768,6 +2768,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "mesh_format"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "common",
+ "nalgebra 0.34.1",
+]
+
+[[package]]
 name = "metal"
 version = "0.32.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4372,6 +4381,7 @@ dependencies = [
  "ctb_format",
  "goo_format",
  "image",
+ "mesh_format",
  "nalgebra 0.34.1",
  "num-traits",
  "obj-rs",

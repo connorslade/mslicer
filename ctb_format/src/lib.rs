@@ -1,6 +1,6 @@
 use anyhow::Result;
 
-use common::serde::{Deserializer, Serializer};
+use common::serde::{Deserializer, Serializer, SliceDeserializer};
 
 mod crypto;
 mod file;
@@ -31,7 +31,7 @@ impl Section {
         }
     }
 
-    pub fn deserialize(des: &mut Deserializer) -> Result<Self> {
+    pub fn deserialize(des: &mut SliceDeserializer) -> Result<Self> {
         Ok(Self {
             offset: des.read_u32_le(),
             size: des.read_u32_le(),
@@ -43,7 +43,7 @@ impl Section {
         ser.write_u32_le(self.size);
     }
 
-    pub fn deserialize_rev(des: &mut Deserializer) -> Result<Self> {
+    pub fn deserialize_rev(des: &mut SliceDeserializer) -> Result<Self> {
         Ok(Self {
             size: des.read_u32_le(),
             offset: des.read_u32_le(),
@@ -56,8 +56,8 @@ impl Section {
     }
 }
 
-fn read_string(des: &mut Deserializer, section: Section) -> String {
+fn read_string(des: &mut SliceDeserializer, section: Section) -> String {
     des.execute_at(section.offset as usize, |des| {
-        String::from_utf8_lossy(des.read_bytes(section.size as usize)).into_owned()
+        String::from_utf8_lossy(des.read_slice(section.size as usize)).into_owned()
     })
 }

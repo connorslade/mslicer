@@ -5,9 +5,10 @@ use std::{
 };
 
 use anyhow::{bail, Result};
+use common::serde::ReaderDeserializer;
+use mesh_format::Progress;
 use nalgebra::{Matrix4, Vector3};
 use obj::{Obj, Vertex};
-use tracing::warn;
 
 use crate::Pos;
 
@@ -35,14 +36,8 @@ struct MeshInner {
 impl Mesh {
     /// Creates a new mesh from the givin vertices and faces. The
     /// transformations are all 0 by default.
-    pub fn new(mut vertices: Vec<Pos>, faces: Vec<[u32; 3]>, mut normals: Vec<Pos>) -> Self {
+    pub fn new(mut vertices: Vec<Pos>, faces: Vec<[u32; 3]>, normals: Vec<Pos>) -> Self {
         center_vertices(&mut vertices);
-
-        if normals.iter().any(|x| x.magnitude_squared() == 0.0) {
-            warn!("Model has invalid normals. Recomputing.");
-            normals = recompute_normals(&vertices, &faces);
-        }
-
         Self::new_uncentred(vertices, faces, normals)
     }
 
@@ -295,36 +290,16 @@ impl Mesh {
 }
 
 /// Loads a buffer into a mesh.
-/// Supported formats include:
-/// - stl
-/// - obj / mtl
+/// Supported formats include `.stl` and `.obj`.
 pub fn load_mesh<T: BufRead + Seek>(reader: &mut T, format: &str) -> Result<Mesh> {
     let format = format.to_ascii_lowercase();
     Ok(match format.as_str() {
         "stl" => {
-            let model = stl_io::read_stl(reader)?;
-            let vertices = model
-                .vertices
-                .iter()
-                .map(|v| Pos::new(v[0], v[1], v[2]))
-                .collect();
-            let faces = model
-                .faces
-                .iter()
-                .map(|f| {
-                    [
-                        f.vertices[0] as u32,
-                        f.vertices[1] as u32,
-                        f.vertices[2] as u32,
-                    ]
-                })
-                .collect();
-            let normals = model
-                .faces
-                .iter()
-                .map(|f| Vector3::new(f.normal[0], f.normal[1], f.normal[2]))
-                .collect();
-            Mesh::new(vertices, faces, normals)
+            let mut des = ReaderDeserializer::new(reader);
+            let progress = Progress::new();
+
+            let mesh = mesh_format::stl::parse(&mut des, progress.clone())?;
+            Mesh::new(mesh.verts, mesh.faces, Vec::new())
         }
         "obj" | "mtl" => {
             let model: Obj<Vertex> = obj::load_obj(reader)?;

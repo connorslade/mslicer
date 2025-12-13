@@ -2,7 +2,7 @@ use std::fmt::Debug;
 
 use anyhow::{Result, ensure};
 
-use common::serde::{Deserializer, Serializer};
+use common::serde::{Deserializer, Serializer, SliceDeserializer};
 
 use crate::{Section, crypto::decrypt_in_place};
 
@@ -31,7 +31,7 @@ pub struct Layer {
 }
 
 impl LayerRef {
-    pub fn deserialize(des: &mut Deserializer) -> Result<Self> {
+    pub fn deserialize(des: &mut SliceDeserializer) -> Result<Self> {
         let this = Self {
             layer_offset: des.read_u32_le(),
             page_number: des.read_u32_le(),
@@ -50,7 +50,7 @@ impl LayerRef {
 }
 
 impl Layer {
-    pub fn deserialize(des: &mut Deserializer, xor_key: u32, layer: u32) -> Result<Self> {
+    pub fn deserialize(des: &mut SliceDeserializer, xor_key: u32, layer: u32) -> Result<Self> {
         let table_size = des.read_u32_le();
         ensure!(table_size == 0x58);
 
@@ -65,7 +65,7 @@ impl Layer {
         let encrypted_data = Section::deserialize(des)?;
 
         let mut data = des.execute_at(layer_offset as usize, |des| {
-            des.read_bytes(layer_size as usize).to_vec()
+            des.read_slice(layer_size as usize).to_vec()
         });
 
         if encrypted_data.size != 0 {

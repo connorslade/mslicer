@@ -2,7 +2,7 @@ use std::fmt::Debug;
 
 use anyhow::{ensure, Result};
 
-use common::serde::{Deserializer, Serializer, SizedString};
+use common::serde::{Deserializer, Serializer, SizedString, SliceDeserializer};
 
 use crate::{PreviewImage, DELIMITER, MAGIC_TAG};
 
@@ -150,14 +150,14 @@ impl Header {
 // this is fine
 impl Header {
     pub fn serialize<T: Serializer>(&self, ser: &mut T) {
-        ser.write_sized_string(&self.version);
+        self.version.serialize(ser);
         ser.write_bytes(MAGIC_TAG);
-        ser.write_sized_string(&self.software_info);
-        ser.write_sized_string(&self.software_version);
-        ser.write_sized_string(&self.file_time);
-        ser.write_sized_string(&self.printer_name);
-        ser.write_sized_string(&self.printer_type);
-        ser.write_sized_string(&self.profile_name);
+        self.software_info.serialize(ser);
+        self.software_version.serialize(ser);
+        self.file_time.serialize(ser);
+        self.printer_name.serialize(ser);
+        self.printer_type.serialize(ser);
+        self.profile_name.serialize(ser);
         ser.write_u16_be(self.anti_aliasing_level);
         ser.write_u16_be(self.grey_level);
         ser.write_u16_be(self.blur_level);
@@ -208,34 +208,34 @@ impl Header {
         ser.write_f32_be(self.total_volume);
         ser.write_f32_be(self.total_weight);
         ser.write_f32_be(self.total_price);
-        ser.write_sized_string(&self.price_unit);
+        self.price_unit.serialize(ser);
         ser.write_u32_be(Self::SIZE as u32);
         ser.write_bool(self.grey_scale_level);
         ser.write_u16_be(self.transition_layers);
     }
 
-    pub fn deserialize(des: &mut Deserializer) -> Result<Self> {
+    pub fn deserialize(des: &mut SliceDeserializer) -> Result<Self> {
         Ok(Self {
-            version: des.read_sized_string(),
+            version: SizedString::deserialize(des),
             software_info: {
-                ensure!(des.read_bytes(8) == [0x07, 0x00, 0x00, 0x00, 0x44, 0x4C, 0x50, 0x00]);
-                des.read_sized_string()
+                ensure!(des.read_slice(8) == [0x07, 0x00, 0x00, 0x00, 0x44, 0x4C, 0x50, 0x00]);
+                SizedString::deserialize(des)
             },
-            software_version: des.read_sized_string(),
-            file_time: des.read_sized_string(),
-            printer_name: des.read_sized_string(),
-            printer_type: des.read_sized_string(),
-            profile_name: des.read_sized_string(),
+            software_version: SizedString::deserialize(des),
+            file_time: SizedString::deserialize(des),
+            printer_name: SizedString::deserialize(des),
+            printer_type: SizedString::deserialize(des),
+            profile_name: SizedString::deserialize(des),
             anti_aliasing_level: des.read_u16_be(),
             grey_level: des.read_u16_be(),
             blur_level: des.read_u16_be(),
             small_preview: PreviewImage::deserializes(des),
             big_preview: {
-                ensure!(des.read_bytes(2) == [0xd, 0xa]);
+                ensure!(des.read_slice(2) == [0xd, 0xa]);
                 PreviewImage::deserializes(des)
             },
             layer_count: {
-                ensure!(des.read_bytes(2) == [0xd, 0xa]);
+                ensure!(des.read_slice(2) == [0xd, 0xa]);
                 des.read_u32_be()
             },
             x_resolution: des.read_u16_be(),
@@ -280,7 +280,7 @@ impl Header {
             total_volume: des.read_f32_be(),
             total_weight: des.read_f32_be(),
             total_price: des.read_f32_be(),
-            price_unit: des.read_sized_string(),
+            price_unit: SizedString::deserialize(des),
             grey_scale_level: {
                 ensure!(des.read_u32_be() == Self::SIZE as u32);
                 des.read_bool()

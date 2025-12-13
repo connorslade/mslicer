@@ -3,7 +3,7 @@ use std::{
     sync::atomic::{AtomicU64, Ordering},
 };
 
-use common::serde::{Deserializer, Serializer};
+use common::serde::{Deserializer, Serializer, SliceDeserializer};
 
 pub trait MqttDeserialize<'a> {
     fn read_string(&mut self) -> Cow<'a, str>;
@@ -13,10 +13,10 @@ pub trait MqttSerializer {
     fn write_string(&mut self, data: &str);
 }
 
-impl<'a> MqttDeserialize<'a> for Deserializer<'a> {
+impl<'a> MqttDeserialize<'a> for SliceDeserializer<'a> {
     fn read_string(&mut self) -> Cow<'a, str> {
         let len = self.read_u16_be();
-        let buf = self.read_bytes(len as usize);
+        let buf = self.read_slice(len as usize);
         String::from_utf8_lossy(buf)
     }
 }

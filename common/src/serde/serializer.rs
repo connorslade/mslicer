@@ -1,7 +1,5 @@
 use std::iter::repeat_n;
 
-use super::SizedString;
-
 pub trait Serializer {
     fn pos(&self) -> usize;
     fn write_bool(&mut self, data: bool);
@@ -20,7 +18,6 @@ pub trait Serializer {
     fn reserve(&mut self, length: usize) -> usize;
     fn execute_at(&mut self, offset: usize, f: impl FnOnce(&mut SizedSerializer));
     fn view_mut(&mut self, offset: usize, size: usize) -> &mut [u8];
-    fn write_sized_string<const SIZE: usize>(&mut self, data: &SizedString<SIZE>);
 }
 
 pub struct SizedSerializer<'a> {
@@ -131,12 +128,6 @@ impl Serializer for SizedSerializer<'_> {
     fn view_mut(&mut self, offset: usize, size: usize) -> &mut [u8] {
         &mut self.buffer[offset..(offset + size)]
     }
-
-    fn write_sized_string<const SIZE: usize>(&mut self, data: &SizedString<SIZE>) {
-        let len = data.data.len();
-        self.buffer[self.offset..self.offset + len].copy_from_slice(&data.data);
-        self.offset += len;
-    }
 }
 
 impl Serializer for DynamicSerializer {
@@ -209,10 +200,6 @@ impl Serializer for DynamicSerializer {
 
     fn view_mut(&mut self, offset: usize, size: usize) -> &mut [u8] {
         &mut self.buffer[offset..(offset + size)]
-    }
-
-    fn write_sized_string<const SIZE: usize>(&mut self, data: &SizedString<SIZE>) {
-        self.buffer.extend_from_slice(&data.data);
     }
 }
 

@@ -1,5 +1,7 @@
 use std::fmt::{self, Debug, Display};
 
+use crate::serde::{Deserializer, Serializer};
+
 pub struct SizedString<const SIZE: usize> {
     pub(crate) data: [u8; SIZE],
 }
@@ -21,6 +23,14 @@ impl<const SIZE: usize> SizedString<SIZE> {
         }
 
         Self { data: arr }
+    }
+
+    pub fn deserialize<T: Deserializer>(des: &mut T) -> Self {
+        SizedString::new(&des.read_bytes(SIZE))
+    }
+
+    pub fn serialize<T: Serializer>(&self, ser: &mut T) {
+        ser.write_bytes(&self.data);
     }
 }
 

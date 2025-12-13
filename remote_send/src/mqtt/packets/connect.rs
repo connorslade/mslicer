@@ -1,7 +1,7 @@
 use anyhow::Result;
 use bitflags::bitflags;
 
-use common::serde::Deserializer;
+use common::serde::{Deserializer, SliceDeserializer};
 
 use crate::mqtt::misc::MqttDeserialize;
 
@@ -38,7 +38,7 @@ impl ConnectPacket {
     pub const PACKET_TYPE: u8 = 0x01;
 
     pub fn from_packet(packet: &Packet) -> Result<Self> {
-        let mut des = Deserializer::new(&packet.remaining_bytes);
+        let mut des = SliceDeserializer::new(&packet.remaining_bytes);
 
         let protocol_name = des.read_string().into_owned();
         let protocol_level = des.read_u8();

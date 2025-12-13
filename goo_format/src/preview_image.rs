@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 
-use common::serde::{Deserializer, Serializer};
+use common::serde::{Deserializer, Serializer, SliceDeserializer};
 use image::{imageops::FilterType, RgbaImage};
 
 pub struct PreviewImage<const WIDTH: usize, const HEIGHT: usize> {
@@ -54,7 +54,7 @@ impl<const WIDTH: usize, const HEIGHT: usize> PreviewImage<WIDTH, HEIGHT> {
         }
     }
 
-    pub fn deserializes(deserializer: &mut Deserializer) -> Self {
+    pub fn deserializes(deserializer: &mut SliceDeserializer) -> Self {
         let mut out = Self::empty();
 
         for pixel in out.data.iter_mut() {

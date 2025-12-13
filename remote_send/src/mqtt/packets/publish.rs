@@ -1,7 +1,7 @@
 use anyhow::Result;
 use bitflags::bitflags;
 
-use common::serde::{Deserializer, DynamicSerializer, Serializer};
+use common::serde::{Deserializer, DynamicSerializer, Serializer, SliceDeserializer};
 
 use crate::mqtt::misc::{MqttDeserialize, MqttSerializer};
 
@@ -30,7 +30,7 @@ impl PublishPacket {
 
     pub fn from_packet(packet: &Packet) -> Result<Self> {
         assert_eq!(packet.packet_type, Self::PACKET_TYPE);
-        let mut des = Deserializer::new(&packet.remaining_bytes);
+        let mut des = SliceDeserializer::new(&packet.remaining_bytes);
 
         let flags = PublishFlags::from_bits(packet.flags).unwrap();
         let topic = des.read_string().into_owned();
@@ -38,7 +38,7 @@ impl PublishPacket {
         let packet_id = (flags.contains(PublishFlags::QOS1) || flags.contains(PublishFlags::QOS2))
             .then(|| des.read_u16_be());
         let data = des
-            .read_bytes(packet.remaining_length as usize - des.pos())
+            .read_slice(packet.remaining_length as usize - des.pos())
             .to_vec();
 
         Ok(Self {

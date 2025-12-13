@@ -1,7 +1,7 @@
 use anyhow::Result;
 use nalgebra::Vector4;
 
-use common::serde::{Deserializer, Serializer};
+use common::serde::{Deserializer, Serializer, SliceDeserializer};
 
 use crate::{Section, read_string};
 
@@ -15,7 +15,7 @@ pub struct ResinParameters {
 }
 
 impl ResinParameters {
-    pub fn deserialize(des: &mut Deserializer) -> Result<Self> {
+    pub fn deserialize(des: &mut SliceDeserializer) -> Result<Self> {
         des.advance_by(4);
 
         let color_b = des.read_u8();

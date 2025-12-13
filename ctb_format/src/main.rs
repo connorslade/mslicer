@@ -6,7 +6,7 @@ use image::RgbImage;
 
 use common::{
     misc::Run,
-    serde::{Deserializer, DynamicSerializer},
+    serde::{DynamicSerializer, SliceDeserializer},
 };
 use ctb_format::{File, LayerDecoder};
 
@@ -25,7 +25,7 @@ fn main() -> Result<()> {
     let args = Args::parse();
 
     let file = fs::read(&args.path)?;
-    let mut des = Deserializer::new(&file);
+    let mut des = SliceDeserializer::new(&file);
 
     let file = File::deserialize(&mut des)?;
     dbg!(&file);

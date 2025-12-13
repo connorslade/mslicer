@@ -4,6 +4,7 @@ members = [
     "common",
     "ctb_format",
     "goo_format",
+    "mesh_format",
     "mslicer",
     "remote_send",
     "slicer"
