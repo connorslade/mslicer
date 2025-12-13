@@ -56,7 +56,7 @@ impl SolidLineDispatch {
         }
     }
 
-    pub fn paint<'a>(&'a self, render_pass: &mut RenderPass<'a>) {
+    pub fn paint(&self, render_pass: &mut RenderPass) {
         self.render_pipeline.paint(render_pass);
     }
 }

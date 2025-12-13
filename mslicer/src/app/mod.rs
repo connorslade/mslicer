@@ -9,8 +9,7 @@ use std::{
 
 use clone_macro::clone;
 use const_format::concatcp;
-use eframe::Theme;
-use egui::{Vec2, Visuals};
+use egui::{Theme, Vec2, Visuals};
 use egui_dock::{DockState, NodeIndex, Tree};
 use egui_phosphor::regular::CARET_RIGHT;
 use egui_tracing::EventCollector;

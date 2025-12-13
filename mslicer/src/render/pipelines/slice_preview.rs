@@ -75,17 +75,19 @@ impl SlicePreviewPipeline {
             layout: Some(&pipeline_layout),
             vertex: VertexState {
                 module: &shader,
-                entry_point: "vert",
+                entry_point: None,
                 buffers: &[VERTEX_BUFFER_LAYOUT],
+                compilation_options: Default::default(),
             },
             fragment: Some(FragmentState {
                 module: &shader,
-                entry_point: "frag",
+                entry_point: None,
                 targets: &[Some(ColorTargetState {
                     format: texture,
                     blend: None,
                     write_mask: ColorWrites::all(),
                 })],
+                compilation_options: Default::default(),
             }),
             primitive: PrimitiveState::default(),
             depth_stencil: Some(DepthStencilState {
@@ -100,6 +102,7 @@ impl SlicePreviewPipeline {
                 ..Default::default()
             },
             multiview: None,
+            cache: None,
         });
 
         let vert = [[-1.0, -1.0], [3.0, -1.0], [-1.0, 3.0]]
@@ -191,7 +194,7 @@ impl SlicePreviewPipeline {
         queue.write_buffer(&self.uniform_buffer, 0, &buffer.into_inner());
     }
 
-    pub fn paint<'a>(&'a self, render_pass: &mut RenderPass<'a>) {
+    pub fn paint(&self, render_pass: &mut RenderPass) {
         render_pass.set_pipeline(&self.render_pipeline);
         render_pass.set_bind_group(0, self.bind_group.as_ref().unwrap(), &[]);
 

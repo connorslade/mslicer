@@ -1,6 +1,7 @@
+use egui::PaintCallbackInfo;
 use egui_wgpu::{CallbackResources, CallbackTrait, ScreenDescriptor};
 use nalgebra::Vector2;
-use wgpu::{CommandBuffer, CommandEncoder, Device, Queue};
+use wgpu::{CommandBuffer, CommandEncoder, Device, Queue, RenderPass};
 
 use super::pipelines::slice_preview::SlicePreviewPipeline;
 
@@ -35,16 +36,15 @@ impl CallbackTrait for SlicePreviewRenderCallback {
         Vec::new()
     }
 
-    fn paint<'a>(
-        &'a self,
-        _info: egui::PaintCallbackInfo,
-        render_pass: &mut egui_wgpu::wgpu::RenderPass<'a>,
-        callback_resources: &'a egui_wgpu::CallbackResources,
+    fn paint(
+        &self,
+        _info: PaintCallbackInfo,
+        render_pass: &mut RenderPass<'static>,
+        callback_resources: &CallbackResources,
     ) {
         let resources = callback_resources
             .get::<SlicePreviewRenderResources>()
             .unwrap();
-
         resources.slice_preview_pipeline.paint(render_pass);
     }
 }

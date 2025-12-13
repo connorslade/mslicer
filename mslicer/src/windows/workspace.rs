@@ -1,6 +1,5 @@
 use const_format::concatcp;
-use eframe::Theme;
-use egui::{ComboBox, Context, DragValue, Grid, Ui};
+use egui::{ComboBox, Context, DragValue, Grid, Theme, Ui};
 use egui_phosphor::regular::{ARROW_COUNTER_CLOCKWISE, FOLDER, LAYOUT};
 use tracing::error;
 

@@ -1,4 +1,4 @@
-use egui::epaint::util::OrderedFloat;
+use egui::emath::OrderedFloat;
 use encase::{ShaderType, UniformBuffer};
 use nalgebra::{Matrix4, Vector3, Vector4};
 use serde::{Deserialize, Serialize};
@@ -64,17 +64,19 @@ impl ModelPipeline {
             layout: Some(&pipeline_layout),
             vertex: VertexState {
                 module: &shader,
-                entry_point: "vert",
+                entry_point: None,
                 buffers: &[VERTEX_BUFFER_LAYOUT],
+                compilation_options: Default::default(),
             },
             fragment: Some(FragmentState {
                 module: &shader,
-                entry_point: "frag",
+                entry_point: None,
                 targets: &[Some(ColorTargetState {
                     format: texture,
                     blend: Some(BlendState::ALPHA_BLENDING),
                     write_mask: ColorWrites::all(),
                 })],
+                compilation_options: Default::default(),
             }),
             primitive: PrimitiveState::default(),
             depth_stencil: Some(DepthStencilState {
@@ -89,6 +91,7 @@ impl ModelPipeline {
                 ..Default::default()
             },
             multiview: None,
+            cache: None,
         });
 
         Self {
@@ -149,11 +152,7 @@ impl ModelPipeline {
         }
     }
 
-    pub fn paint<'a>(
-        &'a self,
-        render_pass: &mut RenderPass<'a>,
-        resources: &WorkspaceRenderCallback,
-    ) {
+    pub fn paint(&self, render_pass: &mut RenderPass, resources: &WorkspaceRenderCallback) {
         render_pass.set_pipeline(&self.render_pipeline);
 
         let models = resources.models.read();

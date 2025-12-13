@@ -55,11 +55,11 @@ impl CallbackTrait for WorkspaceRenderCallback {
         Vec::new()
     }
 
-    fn paint<'a>(
-        &'a self,
+    fn paint(
+        &self,
         _info: PaintCallbackInfo,
-        render_pass: &mut RenderPass<'a>,
-        callback_resources: &'a CallbackResources,
+        render_pass: &mut RenderPass,
+        callback_resources: &CallbackResources,
     ) {
         let resources = callback_resources
             .get::<WorkspaceRenderResources>()
