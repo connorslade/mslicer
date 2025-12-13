@@ -31,7 +31,7 @@ impl PopupManager {
     }
 
     pub fn render(&mut self, app: &mut App, ctx: &Context) {
-        let window_size = ctx.screen_rect().size();
+        let window_size = ctx.content_rect().size();
 
         let mut i = 0;
         let mut close = false;
@@ -99,7 +99,7 @@ impl Popup {
             ui.centered_and_justified(|ui| {
                 Grid::new(id.with("grid")).num_columns(2).show(ui, |ui| {
                     ui.label(RichText::new(icon.as_char()).size(30.0).color(icon.color()));
-                    ui.add(Label::new(body.clone()).wrap(true));
+                    ui.add(Label::new(body.clone()).wrap());
                 });
                 ui.add_space(5.0);
                 close = ui.button("Close").clicked();

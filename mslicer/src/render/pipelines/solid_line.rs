@@ -97,7 +97,7 @@ impl SolidLinePipeline {
             layout: Some(&pipeline_layout),
             vertex: VertexState {
                 module: &shader,
-                entry_point: "vert",
+                entry_point: None,
                 buffers: &[VertexBufferLayout {
                     array_stride: mem::size_of::<LineVertex>() as BufferAddress,
                     step_mode: VertexStepMode::Vertex,
@@ -114,15 +114,17 @@ impl SolidLinePipeline {
                         },
                     ],
                 }],
+                compilation_options: Default::default(),
             },
             fragment: Some(FragmentState {
                 module: &shader,
-                entry_point: "frag",
+                entry_point: None,
                 targets: &[Some(ColorTargetState {
                     format: texture,
                     blend: None,
                     write_mask: ColorWrites::all(),
                 })],
+                compilation_options: Default::default(),
             }),
             primitive: PrimitiveState {
                 polygon_mode: PolygonMode::Line,
@@ -140,6 +142,7 @@ impl SolidLinePipeline {
                 ..Default::default()
             },
             multiview: None,
+            cache: None,
         });
 
         Self {
@@ -197,7 +200,7 @@ impl SolidLinePipeline {
         queue.write_buffer(&self.uniform_buffer, 0, &buffer.into_inner());
     }
 
-    pub fn paint<'a>(&'a self, render_pass: &mut RenderPass<'a>) {
+    pub fn paint(&self, render_pass: &mut RenderPass) {
         render_pass.set_pipeline(&self.render_pipeline);
         render_pass.set_bind_group(0, &self.bind_group, &[]);
 

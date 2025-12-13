@@ -1,6 +1,10 @@
-use std::sync::atomic::{AtomicU32, Ordering};
+use std::{
+    f32::consts::TAU,
+    sync::atomic::{AtomicU32, Ordering},
+};
 
-use common::oklab::START_COLOR;
+use bitflags::bitflags;
+use common::{config::SliceConfig, oklab::START_COLOR};
 use egui::Color32;
 use nalgebra::Vector3;
 use wgpu::{
@@ -10,7 +14,7 @@ use wgpu::{
 
 use slicer::mesh::Mesh;
 
-use crate::render::ModelVertex;
+use crate::{app::App, render::ModelVertex};
 
 pub struct RenderedMesh {
     pub name: String,
@@ -19,8 +23,17 @@ pub struct RenderedMesh {
     pub color: Color32,
     pub hidden: bool,
     pub locked_scale: bool,
+    pub warnings: MeshWarnings,
 
     buffers: Option<RenderedMeshBuffers>,
+}
+
+bitflags! {
+    #[derive(Clone, Copy, PartialEq, Eq)]
+    pub struct MeshWarnings: u8 {
+        const NonManifold = 1 << 0;
+        const OutOfBounds = 1 << 1;
+    }
 }
 
 pub struct RenderedMeshBuffers {
@@ -30,6 +43,9 @@ pub struct RenderedMeshBuffers {
 
 impl RenderedMesh {
     pub fn from_mesh(mesh: Mesh) -> Self {
+        let mut warnings = MeshWarnings::empty();
+        (!mesh.is_manifold()).then(|| warnings.insert(MeshWarnings::NonManifold));
+
         Self {
             name: String::new(),
             id: next_id(),
@@ -37,6 +53,7 @@ impl RenderedMesh {
             color: Color32::WHITE,
             hidden: false,
             locked_scale: true,
+            warnings,
             buffers: None,
         }
     }
@@ -62,20 +79,13 @@ impl RenderedMesh {
     }
 
     pub fn randomize_color(&mut self) -> &mut Self {
-        let shift = rand::random::<f32>() * std::f32::consts::PI * 2.0;
+        let shift = rand::random::<f32>() * TAU;
         let color = START_COLOR
             .hue_shift(shift)
             .to_srgb()
             .map(|x| (x.clamp(0.0, 1.0) * 255.0) as u8);
         self.color = Color32::from_rgb(color.r, color.g, color.b);
         self
-    }
-
-    pub fn align_to_bed(&mut self) {
-        let (bottom, _) = self.mesh.bounds();
-
-        let pos = self.mesh.position() - Vector3::new(0.0, 0.0, bottom.z);
-        self.mesh.set_position(pos);
     }
 
     pub fn try_get_buffers(&self) -> Option<&RenderedMeshBuffers> {
@@ -113,6 +123,40 @@ impl RenderedMesh {
     }
 }
 
+impl RenderedMesh {
+    pub fn align_to_bed(&mut self) {
+        let (bottom, _) = self.mesh.bounds();
+
+        let pos = self.mesh.position() - Vector3::new(0.0, 0.0, bottom.z);
+        self.mesh.set_position(pos);
+    }
+
+    pub fn update_oob(&mut self, config: &SliceConfig) {
+        let (min, max) = self.mesh.bounds();
+        let platform = config.platform_size.map(|x| x);
+        let half = platform.map(|x| x / 2.0);
+
+        let oob = (min.x < -half.x || min.y < -half.y || min.z < 0.0)
+            || (max.x > half.x || max.y > half.y || max.z > platform.z);
+        self.warnings.set(MeshWarnings::OutOfBounds, oob);
+    }
+
+    pub fn set_position(&mut self, app: &App, pos: Vector3<f32>) {
+        self.mesh.set_position(pos);
+        self.update_oob(&app.slice_config);
+    }
+
+    pub fn set_scale(&mut self, app: &App, scale: Vector3<f32>) {
+        self.mesh.set_scale(scale);
+        self.update_oob(&app.slice_config);
+    }
+
+    pub fn set_rotation(&mut self, app: &App, rotation: Vector3<f32>) {
+        self.mesh.set_rotation(rotation);
+        self.update_oob(&app.slice_config);
+    }
+}
+
 impl Clone for RenderedMesh {
     fn clone(&self) -> Self {
         Self {
@@ -122,6 +166,7 @@ impl Clone for RenderedMesh {
             color: self.color,
             hidden: self.hidden,
             locked_scale: self.locked_scale,
+            warnings: self.warnings,
             buffers: None,
         }
     }

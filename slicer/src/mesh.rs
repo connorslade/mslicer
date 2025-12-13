@@ -1,4 +1,5 @@
 use std::{
+    collections::HashMap,
     io::{BufRead, Seek},
     sync::Arc,
 };
@@ -167,6 +168,24 @@ impl Mesh {
         }
 
         intersections
+    }
+
+    pub fn is_manifold(&self) -> bool {
+        let mut edges = HashMap::<_, u8>::new();
+
+        for [a, b, c] in self.faces() {
+            for (a, b) in [(a, b), (b, c), (c, a)] {
+                *edges.entry((a.min(b), a.max(b))).or_default() += 1;
+            }
+        }
+
+        for count in edges.values() {
+            if *count != 2 {
+                return false;
+            }
+        }
+
+        true
     }
 
     /// Updates the internal transformation matrices. This is called

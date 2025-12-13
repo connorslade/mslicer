@@ -32,7 +32,7 @@ pub fn update(app: &mut App, ctx: &Context) {
 
     if hovering > 0 {
         let painter = ctx.layer_painter(LayerId::new(Order::Foreground, Id::new("drag_and_drop")));
-        let rect = ctx.screen_rect();
+        let rect = ctx.content_rect();
         let center = rect.center();
 
         painter.rect_filled(rect, 0.0, HOVER_BACKGROUND);

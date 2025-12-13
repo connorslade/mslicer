@@ -1,7 +1,6 @@
 use std::mem;
 
-use eframe::Theme;
-use egui::{CentralPanel, Color32, Context, Frame, Id, Sense, Ui, WidgetText};
+use egui::{CentralPanel, Color32, Context, Frame, Id, Sense, Theme, Ui, WidgetText};
 use egui_dock::{DockArea, NodeIndex, SurfaceIndex, TabViewer};
 use egui_wgpu::Callback;
 use nalgebra::Matrix4;
@@ -106,7 +105,7 @@ impl TabViewer for Tabs<'_> {
         }
     }
 
-    fn closeable(&mut self, tab: &mut Self::Tab) -> bool {
+    fn is_closeable(&self, tab: &Self::Tab) -> bool {
         *tab != Tab::Viewport
     }
 
@@ -126,20 +125,18 @@ impl TabViewer for Tabs<'_> {
 pub fn ui(app: &mut App, ctx: &Context) {
     top_bar::ui(app, ctx);
 
-    if mem::take(&mut app.state.queue_reset_ui) {
-        app.reset_ui();
-    }
-
-    CentralPanel::default()
-        .frame(Frame::none())
-        .show(ctx, |ui| {
-            // i am once again too tired to deal with this
-            let dock_state = unsafe { &mut *(&mut app.dock_state as *mut _) };
-            DockArea::new(dock_state)
-                .show_add_buttons(true)
-                .show_add_popup(true)
-                .show_inside(ui, &mut Tabs { app, ctx });
-        });
+    mem::take(&mut app.state.queue_reset_ui).then(|| app.reset_ui());
+    CentralPanel::default().frame(Frame::NONE).show(ctx, |ui| {
+        // i am once again too tired to deal with this
+        let dock_state = unsafe { &mut *(&mut app.dock_state as *mut _) };
+        DockArea::new(dock_state)
+            .show_add_buttons(true)
+            .show_add_popup(true)
+            .show_leaf_close_all_buttons(false)
+            .show_leaf_collapse_buttons(false)
+            .tab_context_menus(false)
+            .show_inside(ui, &mut Tabs { app, ctx });
+    });
 }
 
 fn viewport(app: &mut App, ui: &mut Ui, _ctx: &Context) {

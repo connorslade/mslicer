@@ -9,7 +9,7 @@ macro_rules! include_shader {
     ($shader:literal) => {
         ShaderModuleDescriptor {
             label: None,
-            source: ShaderSource::Wgsl(include_str!(concat!("../../shaders/", $shader)).into()),
+            source: ShaderSource::Wgsl(include_str!(concat!("../shaders/", $shader)).into()),
         }
     };
 }

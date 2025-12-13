@@ -3,7 +3,7 @@ use std::sync::Arc;
 use anyhow::Result;
 use eframe::NativeOptions;
 use egui::{FontDefinitions, IconData, Vec2, ViewportBuilder};
-use egui_wgpu::WgpuConfiguration;
+use egui_wgpu::{WgpuConfiguration, WgpuSetup, WgpuSetupCreateNew};
 use tracing::level_filters::LevelFilter;
 use tracing_subscriber::{filter, layer::SubscriberExt, util::SubscriberInitExt};
 use wgpu::{DeviceDescriptor, Features, Limits, TextureFormat};
@@ -54,17 +54,20 @@ fn main() -> Result<()> {
             stencil_buffer: 8,
             multisampling: 4,
             wgpu_options: WgpuConfiguration {
-                device_descriptor: Arc::new(move |_adapter| DeviceDescriptor {
-                    label: None,
-                    required_features: Features::POLYGON_MODE_LINE,
-                    required_limits: Limits {
-                        max_buffer_size,
-                        ..Limits::default()
-                    },
+                wgpu_setup: WgpuSetup::CreateNew(WgpuSetupCreateNew {
+                    device_descriptor: Arc::new(move |_adapter| DeviceDescriptor {
+                        label: None,
+                        required_features: Features::POLYGON_MODE_LINE,
+                        required_limits: Limits {
+                            max_buffer_size,
+                            ..Limits::default()
+                        },
+                        ..Default::default()
+                    }),
+                    ..Default::default()
                 }),
                 ..Default::default()
             },
-            follow_system_theme: false,
             ..Default::default()
         },
         Box::new(|cc| {
@@ -74,7 +77,8 @@ fn main() -> Result<()> {
             egui_phosphor::add_to_fonts(&mut fonts, egui_phosphor::Variant::Regular);
             cc.egui_ctx.set_fonts(fonts);
 
-            Box::new(App::new(render_state, config_dir, config, collector))
+            let app = App::new(render_state, config_dir, config, collector);
+            Ok(Box::new(app))
         }),
     )
     .unwrap();

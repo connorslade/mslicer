@@ -1,4 +1,4 @@
-use eframe::Theme;
+use egui::Theme;
 use nalgebra::Vector3;
 
 use crate::render::{pipelines::solid_line::Line, workspace::WorkspaceRenderCallback};

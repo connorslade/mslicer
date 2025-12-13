@@ -9,8 +9,7 @@ use std::{
 
 use clone_macro::clone;
 use const_format::concatcp;
-use eframe::Theme;
-use egui::{Vec2, Visuals};
+use egui::{Theme, Vec2, Visuals};
 use egui_dock::{DockState, NodeIndex, Tree};
 use egui_phosphor::regular::CARET_RIGHT;
 use egui_tracing::EventCollector;
@@ -216,9 +215,10 @@ impl App {
         info!("Loaded model `{name}` with {} faces", mesh.face_count());
 
         mesh.recompute_normals();
-        let rendered_mesh = RenderedMesh::from_mesh(mesh)
+        let mut rendered_mesh = RenderedMesh::from_mesh(mesh)
             .with_name(name.clone())
             .with_random_color();
+        rendered_mesh.update_oob(&self.slice_config);
 
         self.meshes.write().push(rendered_mesh);
     }

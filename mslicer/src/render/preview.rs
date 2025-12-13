@@ -5,10 +5,10 @@ use nalgebra::{Matrix4, Vector2, Vector3};
 use tracing::{error, info};
 use wgpu::{
     BufferAddress, BufferDescriptor, BufferUsages, Color, CommandEncoderDescriptor, Device,
-    Extent3d, ImageCopyBuffer, ImageCopyTexture, ImageDataLayout, LoadOp, Maintain, MapMode,
-    Operations, Origin3d, Queue, RenderPassColorAttachment, RenderPassDepthStencilAttachment,
-    RenderPassDescriptor, StoreOp, Texture, TextureAspect, TextureDescriptor, TextureDimension,
-    TextureFormat, TextureUsages, TextureView, TextureViewDescriptor,
+    Extent3d, LoadOp, MapMode, Operations, Origin3d, PollType, Queue, RenderPassColorAttachment,
+    RenderPassDepthStencilAttachment, RenderPassDescriptor, StoreOp, TexelCopyBufferInfo,
+    TexelCopyBufferLayout, TexelCopyTextureInfo, Texture, TextureAspect, TextureDescriptor,
+    TextureDimension, TextureFormat, TextureUsages, TextureView, TextureViewDescriptor,
 };
 
 use crate::{app::App, DEPTH_TEXTURE_FORMAT};
@@ -98,6 +98,7 @@ fn render_preview(
                 load: LoadOp::Clear(Color::BLACK),
                 store: StoreOp::Store,
             },
+            depth_slice: None,
         })],
         depth_stencil_attachment: Some(RenderPassDepthStencilAttachment {
             view: depth_texture_view,
@@ -135,15 +136,15 @@ fn download_preview(
     });
 
     download_encoder.copy_texture_to_buffer(
-        ImageCopyTexture {
+        TexelCopyTextureInfo {
             texture,
             mip_level: 0,
             origin: Origin3d::ZERO,
             aspect: TextureAspect::All,
         },
-        ImageCopyBuffer {
+        TexelCopyBufferInfo {
             buffer: &staging_buffer,
-            layout: ImageDataLayout {
+            layout: TexelCopyBufferLayout {
                 offset: 0,
                 bytes_per_row: Some(4 * texture_extent.width),
                 rows_per_image: Some(texture_extent.height),
@@ -157,7 +158,7 @@ fn download_preview(
     let slice = staging_buffer.slice(..);
     slice.map_async(MapMode::Read, move |_| tx.send(()).unwrap());
 
-    device.poll(Maintain::Wait);
+    device.poll(PollType::wait_indefinitely()).unwrap();
     rx.recv().unwrap();
 
     let mapped_range = slice.get_mapped_range();

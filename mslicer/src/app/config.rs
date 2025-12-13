@@ -5,7 +5,7 @@ use std::{
 };
 
 use anyhow::Result;
-use eframe::Theme;
+use egui::Theme;
 use egui_dock::Tree;
 use serde::{Deserialize, Serialize};
 use tracing::{info, warn};
