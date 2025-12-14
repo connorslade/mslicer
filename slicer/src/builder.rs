@@ -1,8 +1,6 @@
 use std::f32::consts::PI;
 
-use anyhow::Result;
 use nalgebra::Vector3;
-use stl_io::Triangle;
 
 use crate::mesh::Mesh;
 
@@ -38,28 +36,6 @@ impl MeshBuilder {
 
     pub fn build(self) -> Mesh {
         Mesh::new_uncentred(self.vertices, self.faces, self.normals)
-    }
-
-    pub fn save_stl(&self, path: &str) -> Result<()> {
-        let mut stl = Vec::new();
-
-        for (face, normal) in self.faces.iter().zip(self.normals.iter()) {
-            let (a, b, c) = (
-                self.vertices[face[0] as usize],
-                self.vertices[face[1] as usize],
-                self.vertices[face[2] as usize],
-            );
-
-            let into_stl = |v: Vector3<f32>| stl_io::Vertex::new([v.x, v.y, v.z]);
-            stl.push(Triangle {
-                normal: into_stl(*normal),
-                vertices: [into_stl(a), into_stl(b), into_stl(c)],
-            });
-        }
-
-        let mut file = std::fs::File::create(path)?;
-        stl_io::write_stl(&mut file, stl.iter())?;
-        Ok(())
     }
 }
 

@@ -131,8 +131,7 @@ impl App {
 
 impl<'a> BorrowedProject<'a> {
     pub fn new(meshes: &'a [RenderedMesh], slice_config: &'a SliceConfig) -> Self {
-        let meshes = meshes
-            .iter()
+        let meshes = (meshes.iter())
             .map(BorrowedProjectMesh::from_rendered_mesh)
             .collect();
 

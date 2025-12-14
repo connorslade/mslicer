@@ -28,10 +28,9 @@ fn main() -> Result<()> {
 
     for model in models {
         let ext = model.path.extension().unwrap().to_string_lossy();
-        let file = File::open(&model.path)?;
+        let buf = BufReader::new(File::open(&model.path)?);
 
-        let mut buf = BufReader::new(file);
-        let mut mesh = load_mesh(&mut buf, &ext)?;
+        let mut mesh = load_mesh(buf, &ext)?;
         mesh.recompute_normals();
 
         mesh.set_scale(model.scale);

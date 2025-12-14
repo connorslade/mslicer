@@ -1,14 +1,12 @@
 use std::{
     collections::HashMap,
-    io::{BufRead, Seek},
+    io::{Read, Seek},
     sync::Arc,
 };
 
-use anyhow::{bail, Result};
+use anyhow::{Ok, Result};
 use common::serde::ReaderDeserializer;
-use mesh_format::Progress;
 use nalgebra::{Matrix4, Vector3};
-use obj::{Obj, Vertex};
 
 use crate::Pos;
 
@@ -34,14 +32,14 @@ struct MeshInner {
 }
 
 impl Mesh {
-    /// Creates a new mesh from the givin vertices and faces. The
+    /// Creates a new mesh from the given vertices and faces. The
     /// transformations are all 0 by default.
     pub fn new(mut vertices: Vec<Pos>, faces: Vec<[u32; 3]>, normals: Vec<Pos>) -> Self {
         center_vertices(&mut vertices);
         Self::new_uncentred(vertices, faces, normals)
     }
 
-    /// Creates a new mesh from the givin vertices and faces. The
+    /// Creates a new mesh from the given vertices and faces. The
     /// transformations are all 0 by default and the vertices are
     /// not centered.
     pub fn new_uncentred(vertices: Vec<Pos>, faces: Vec<[u32; 3]>, normals: Vec<Pos>) -> Self {
@@ -289,46 +287,16 @@ impl Mesh {
     }
 }
 
-/// Loads a buffer into a mesh.
+/// Loads a buffer into a mesh in a blocking manner.
 /// Supported formats include `.stl` and `.obj`.
-pub fn load_mesh<T: BufRead + Seek>(reader: &mut T, format: &str) -> Result<Mesh> {
+pub fn load_mesh<T: Read + Seek + Send + 'static>(reader: T, format: &str) -> Result<Mesh> {
+    let des = ReaderDeserializer::new(reader);
     let format = format.to_ascii_lowercase();
-    Ok(match format.as_str() {
-        "stl" => {
-            let mut des = ReaderDeserializer::new(reader);
-            let progress = Progress::new();
 
-            let mesh = mesh_format::stl::parse(&mut des, progress.clone())?;
-            Mesh::new(mesh.verts, mesh.faces, Vec::new())
-        }
-        "obj" | "mtl" => {
-            let model: Obj<Vertex> = obj::load_obj(reader)?;
-            let vertices = model
-                .vertices
-                .iter()
-                .map(|v| Pos::new(v.position[0], v.position[1], v.position[2]))
-                .collect();
-            let faces = model
-                .indices
-                .chunks_exact(3)
-                .map(|i| [i[0] as u32, i[1] as u32, i[2] as u32])
-                .collect::<Vec<_>>();
-            let normals = faces
-                .iter()
-                .map(|face| {
-                    let n1 = model.vertices[face[0] as usize].normal;
-                    let n2 = model.vertices[face[1] as usize].normal;
-                    let n3 = model.vertices[face[2] as usize].normal;
-                    let normal = Vector3::new(n1[0], n1[1], n1[2])
-                        + Vector3::new(n2[0], n2[1], n2[2])
-                        + Vector3::new(n3[0], n3[1], n3[2]);
-                    normal.normalize()
-                })
-                .collect();
-            Mesh::new(vertices, faces, normals)
-        }
-        _ => bail!("Unsupported format: {}", format),
-    })
+    let job = mesh_format::load_mesh(des, &format).1;
+    let mesh = job.join().unwrap();
+
+    Ok(Mesh::new(mesh.verts, mesh.faces, Vec::new()))
 }
 
 impl Default for Mesh {

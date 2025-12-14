@@ -1,4 +1,4 @@
-use egui::{pos2, vec2, Color32, Context, Grid, Id, Label, RichText, Ui, WidgetText, Window};
+use egui::{vec2, Color32, Context, Grid, Id, Label, RichText, Ui, WidgetText, Window};
 
 use crate::app::App;
 
@@ -29,22 +29,18 @@ impl PopupManager {
     }
 
     pub fn render(&mut self, app: &mut App, ctx: &Context) {
-        let window_size = ctx.content_rect().size();
-
         let mut i = 0;
         let mut close = false;
 
         while i < self.popups.len() {
             let popup = &mut self.popups[i];
+            let size = vec2(400.0, 0.0);
             Window::new("")
                 .id(popup.id)
                 .title_bar(false)
                 .resizable(false)
-                .default_size(vec2(400.0, 0.0))
-                .default_pos(pos2(
-                    window_size.x * 0.5 - 200.0,
-                    window_size.y * 0.5 - 100.0,
-                ))
+                .default_size(size)
+                .default_pos((ctx.content_rect().size() - size).to_pos2() / 2.0)
                 .show(ctx, |ui| {
                     ui.set_height(50.0);
                     ui.vertical_centered(|ui| {

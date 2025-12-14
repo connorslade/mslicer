@@ -4,10 +4,13 @@ use anyhow::Result;
 use common::serde::Deserializer;
 use nalgebra::Vector3;
 
-use crate::{Mesh, Progress};
+use crate::{
+    Mesh, Progress,
+    util::{WHITESPACE, tokenize},
+};
 
 pub fn parse<T: Deserializer>(des: &mut T, progress: Progress) -> Result<Mesh> {
-    let is_ascii = &*des.read_bytes(5) == b"solid";
+    let is_ascii = &*des.read_bytes(6) == b"solid ";
     des.jump_to(0);
 
     if is_ascii {
@@ -77,15 +80,15 @@ mod ascii {
         let mut builder = [Vector3::zeros(); 3];
         let mut component = 9;
 
-        tokenize(des, progress, |token| {
+        tokenize(des, &WHITESPACE, progress, |token| {
             if component < 9 {
                 let Ok(value) = token.parse::<f32>() else {
-                    return;
+                    return Ok(());
                 };
 
                 builder[component / 3][component % 3] = value;
                 component += 1;
-                return;
+                return Ok(());
             }
 
             match token {
@@ -99,32 +102,11 @@ mod ascii {
                 }
                 _ => {}
             }
-        });
+
+            Ok(())
+        })?;
 
         Ok(finish(verts, faces))
-    }
-
-    const WHITESPACE: [char; 4] = [' ', '\t', '\r', '\n'];
-    fn tokenize<T: Deserializer>(des: &mut T, progress: Progress, mut callback: impl FnMut(&str)) {
-        let mut complete = 0;
-        let mut carry = String::new();
-        loop {
-            let next = des.read_bytes(8 * 1024);
-            if next.is_empty() && carry.is_empty() {
-                break;
-            }
-
-            complete += next.len() as u64;
-            progress.set_complete(complete);
-
-            let str = carry + str::from_utf8(&next).unwrap();
-            let (str, new_carry) = str.rsplit_once(WHITESPACE).unwrap_or(("", &str));
-            carry = new_carry.to_owned();
-
-            for token in str.split(WHITESPACE).filter(|x| !x.is_empty()) {
-                callback(token);
-            }
-        }
     }
 }
 

@@ -1,4 +1,4 @@
-use std::{fs::File, io::BufReader, mem, sync::mpsc::Receiver};
+use std::{fs::File, io::BufReader, mem, thread::JoinHandle};
 
 use common::serde::{ReaderDeserializer, SliceDeserializer};
 use egui::{vec2, Context, Id, ProgressBar, Window};
@@ -39,26 +39,26 @@ impl TaskManager {
 
 pub struct MeshLoad {
     progress: mesh_format::Progress,
-    reciver: Receiver<mesh_format::Mesh>,
+    join: Option<JoinHandle<mesh_format::Mesh>>,
     name: String,
 }
 
 impl MeshLoad {
     pub fn file(file: File, name: String, format: &str) -> Self {
         let des = ReaderDeserializer::new(BufReader::new(file));
-        let (progress, reciver) = load_mesh(des, format);
+        let (progress, join) = load_mesh(des, format);
         Self {
             progress,
-            reciver,
+            join: Some(join),
             name,
         }
     }
 
     pub fn buffer(buffer: &'static [u8], name: String, format: &str) -> Self {
-        let (progress, reciver) = load_mesh(SliceDeserializer::new(buffer), format);
+        let (progress, join) = load_mesh(SliceDeserializer::new(buffer), format);
         Self {
             progress,
-            reciver,
+            join: Some(join),
             name,
         }
     }
@@ -67,7 +67,8 @@ impl MeshLoad {
 impl Task for MeshLoad {
     fn poll(&mut self, app: &mut App, ctx: &Context) -> bool {
         if self.progress.complete() {
-            let mesh = self.reciver.recv().unwrap();
+            let handle = mem::take(&mut self.join).unwrap();
+            let mesh = handle.join().unwrap();
             let mut mesh = Mesh::new(mesh.verts, mesh.faces, Vec::new());
             info!(
                 "Loaded model `{}` with {} faces",
@@ -84,11 +85,13 @@ impl Task for MeshLoad {
             return true;
         }
 
+        let size = vec2(400.0, 0.0);
         Window::new("")
             .id(Id::new(&self.name))
             .title_bar(false)
             .resizable(false)
-            .default_size(vec2(400.0, 0.0))
+            .default_size(size)
+            .default_pos((ctx.content_rect().size() - size).to_pos2() / 2.0)
             .show(ctx, |ui| {
                 ui.set_height(50.0);
                 ui.vertical_centered(|ui| {
