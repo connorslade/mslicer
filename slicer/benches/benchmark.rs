@@ -10,8 +10,7 @@ pub fn bench(c: &mut Criterion) {
     let parent = Path::new("..");
     for mesh_name in ["teapot.stl", "dragon.stl", "david.stl"] {
         let file = BufReader::new(File::open(parent.join(mesh_name)).unwrap());
-        let mut mesh = load_mesh(file, "stl").unwrap();
-        mesh.recompute_normals();
+        let mesh = load_mesh(file, "stl").unwrap();
         let segments = Segments1D::from_mesh(&mesh, 100);
 
         group.bench_with_input(BenchmarkId::new("Linear", mesh_name), &mesh, |b, i| {

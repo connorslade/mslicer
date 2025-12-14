@@ -69,14 +69,13 @@ impl Task for MeshLoad {
         if self.progress.complete() {
             let handle = mem::take(&mut self.join).unwrap();
             let mesh = handle.join().unwrap();
-            let mut mesh = Mesh::new(mesh.verts, mesh.faces, Vec::new());
+            let mesh = Mesh::new(mesh.verts, mesh.faces);
             info!(
                 "Loaded model `{}` with {} faces",
                 self.name,
                 mesh.face_count()
             );
 
-            mesh.recompute_normals();
             let mut rendered_mesh = RenderedMesh::from_mesh(mesh)
                 .with_name(mem::take(&mut self.name))
                 .with_random_color();

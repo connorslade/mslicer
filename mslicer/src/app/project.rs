@@ -20,7 +20,7 @@ use crate::{
 use common::config::SliceConfig;
 use slicer::mesh::Mesh;
 
-const VERSION: u32 = 0;
+const VERSION: u32 = 1;
 
 #[derive(Serialize)]
 pub struct BorrowedProject<'a> {
@@ -40,7 +40,6 @@ pub struct OwnedProjectMesh {
 
     vertices: Vec<Vector3<f32>>,
     faces: Vec<[u32; 3]>,
-    normals: Vec<Vector3<f32>>,
 }
 
 #[derive(Serialize)]
@@ -49,7 +48,6 @@ pub struct BorrowedProjectMesh<'a> {
 
     vertices: &'a [Vector3<f32>],
     faces: &'a [[u32; 3]],
-    normals: &'a [Vector3<f32>],
 }
 
 #[derive(Serialize, Deserialize)]
@@ -178,7 +176,7 @@ impl OwnedProject {
 
 impl OwnedProjectMesh {
     pub fn into_rendered_mesh(self, app: &App) -> RenderedMesh {
-        let mut mesh = Mesh::new_uncentred(self.vertices, self.faces, self.normals);
+        let mut mesh = Mesh::new_uncentred(self.vertices, self.faces);
         mesh.set_position_unchecked(self.info.position);
         mesh.set_scale_unchecked(self.info.scale);
         mesh.set_rotation_unchecked(self.info.rotation);
@@ -200,7 +198,6 @@ impl<'a> BorrowedProjectMesh<'a> {
 
             vertices: rendered_mesh.mesh.vertices(),
             faces: rendered_mesh.mesh.faces(),
-            normals: rendered_mesh.mesh.normals(),
         }
     }
 }

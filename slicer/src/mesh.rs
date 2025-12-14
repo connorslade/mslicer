@@ -28,26 +28,24 @@ pub struct Mesh {
 struct MeshInner {
     pub vertices: Box<[Vector3<f32>]>,
     pub faces: Box<[[u32; 3]]>,
-    pub normals: Box<[Vector3<f32>]>,
 }
 
 impl Mesh {
     /// Creates a new mesh from the given vertices and faces. The
     /// transformations are all 0 by default.
-    pub fn new(mut vertices: Vec<Pos>, faces: Vec<[u32; 3]>, normals: Vec<Pos>) -> Self {
+    pub fn new(mut vertices: Vec<Pos>, faces: Vec<[u32; 3]>) -> Self {
         center_vertices(&mut vertices);
-        Self::new_uncentred(vertices, faces, normals)
+        Self::new_uncentred(vertices, faces)
     }
 
     /// Creates a new mesh from the given vertices and faces. The
     /// transformations are all 0 by default and the vertices are
     /// not centered.
-    pub fn new_uncentred(vertices: Vec<Pos>, faces: Vec<[u32; 3]>, normals: Vec<Pos>) -> Self {
+    pub fn new_uncentred(vertices: Vec<Pos>, faces: Vec<[u32; 3]>) -> Self {
         Self {
             inner: Arc::new(MeshInner {
                 vertices: vertices.into_boxed_slice(),
                 faces: faces.into_boxed_slice(),
-                normals: normals.into_boxed_slice(),
             }),
             ..Default::default()
         }
@@ -61,16 +59,15 @@ impl Mesh {
         self.inner.faces.as_ref()
     }
 
-    pub fn normals(&self) -> &[Pos] {
-        self.inner.normals.as_ref()
-    }
-
     pub fn face(&self, index: usize) -> &[u32; 3] {
         self.faces().get(index).unwrap()
     }
 
-    pub fn normal(&self, index: usize) -> &Pos {
-        self.normals().get(index).unwrap()
+    pub fn normal(&self, index: usize) -> Pos {
+        let (v, f) = (self.vertices(), self.face(index));
+        let edge1 = v[f[2] as usize] - v[f[1] as usize];
+        let edge2 = v[f[0] as usize] - v[f[1] as usize];
+        edge1.cross(&edge2).normalize()
     }
 
     pub fn vertex_count(&self) -> usize {
@@ -79,30 +76,6 @@ impl Mesh {
 
     pub fn face_count(&self) -> usize {
         self.faces().len()
-    }
-
-    /// Makes a copy of the mesh with normals computed from the triangles
-    /// directly. The copy makes this operation kinda expensive.
-    pub fn recompute_normals(&mut self) {
-        let normals = recompute_normals(self.vertices(), self.faces());
-        self.overwrite_normals(normals)
-    }
-
-    /// Makes a copy of the mesh with normals computed from the triangles
-    /// directly. The copy makes this operation kinda expensive.
-    pub fn flip_normals(&mut self) {
-        let normals = self.normals().iter().map(|f| -f).collect();
-        self.overwrite_normals(normals);
-    }
-
-    // The alternate is to put normals in a separate Arc to avoid cloning all
-    // verts and faces here, but its proooobly fine.
-    fn overwrite_normals(&mut self, normals: Vec<Vector3<f32>>) {
-        self.inner = Arc::new(MeshInner {
-            vertices: self.inner.vertices.clone(),
-            faces: self.inner.faces.clone(),
-            normals: normals.into_boxed_slice(),
-        });
     }
 
     /// Intersect the mesh with a plane with linear time complexity. You
@@ -155,7 +128,7 @@ impl Mesh {
             (c_pos ^ a_pos).then(|| push_intersection(c, a, v2, v0));
 
             if n == 2 {
-                let entering = self.transform_normal(self.normal(idx)).x > 0.0;
+                let entering = self.transform_normal(&self.normal(idx)).x > 0.0;
                 intersections.push((out, entering));
             }
         }
@@ -296,7 +269,7 @@ pub fn load_mesh<T: Read + Seek + Send + 'static>(reader: T, format: &str) -> Re
     let job = mesh_format::load_mesh(des, &format).1;
     let mesh = job.join().unwrap();
 
-    Ok(Mesh::new(mesh.verts, mesh.faces, Vec::new()))
+    Ok(Mesh::new(mesh.verts, mesh.faces))
 }
 
 impl Default for Mesh {
@@ -305,7 +278,6 @@ impl Default for Mesh {
             inner: Arc::new(MeshInner {
                 vertices: Box::new([]),
                 faces: Box::new([]),
-                normals: Box::new([]),
             }),
 
             transformation_matrix: Matrix4::identity(),
@@ -337,22 +309,11 @@ fn vertex_bounds(vertices: &[Pos], transform: &Matrix4<f32>) -> (Pos, Pos) {
     )
 }
 
-/// Moves the model to have its origin at its centerpoint.
+/// Moves the model to have its origin at its center point.
 fn center_vertices(vertices: &mut [Pos]) {
     let (min, max) = vertex_bounds(vertices, &Matrix4::identity());
 
     let center = (min + max) / 2.0;
     let center = Pos::new(center.x, center.y, min.z);
     vertices.iter_mut().for_each(|v| *v -= center);
-}
-
-fn recompute_normals(vertices: &[Pos], faces: &[[u32; 3]]) -> Vec<Vector3<f32>> {
-    faces
-        .iter()
-        .map(|f| {
-            let edge1 = vertices[f[2] as usize] - vertices[f[1] as usize];
-            let edge2 = vertices[f[0] as usize] - vertices[f[1] as usize];
-            edge1.cross(&edge2).normalize()
-        })
-        .collect()
 }

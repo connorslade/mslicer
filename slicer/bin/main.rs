@@ -31,7 +31,6 @@ fn main() -> Result<()> {
         let buf = BufReader::new(File::open(&model.path)?);
 
         let mut mesh = load_mesh(buf, &ext)?;
-        mesh.recompute_normals();
 
         mesh.set_scale(model.scale);
         mesh.set_rotation(model.rotation.map(f32::to_radians));

@@ -6,7 +6,6 @@ use crate::mesh::Mesh;
 
 pub struct MeshBuilder {
     vertices: Vec<Vector3<f32>>,
-    normals: Vec<Vector3<f32>>,
     faces: Vec<[u32; 3]>,
 }
 
@@ -14,7 +13,6 @@ impl MeshBuilder {
     pub fn new() -> Self {
         Self {
             vertices: Vec::new(),
-            normals: Vec::new(),
             faces: Vec::new(),
         }
     }
@@ -24,18 +22,17 @@ impl MeshBuilder {
         (self.vertices.len() - 1) as u32
     }
 
-    pub fn add_face(&mut self, face: [u32; 3], normal: Vector3<f32>) {
+    pub fn add_face(&mut self, face: [u32; 3]) {
         self.faces.push(face);
-        self.normals.push(normal);
     }
 
-    pub fn add_quad(&mut self, quad: [u32; 4], normal: Vector3<f32>) {
-        self.add_face([quad[0], quad[1], quad[2]], normal);
-        self.add_face([quad[2], quad[1], quad[3]], normal);
+    pub fn add_quad(&mut self, quad: [u32; 4]) {
+        self.add_face([quad[0], quad[1], quad[2]]);
+        self.add_face([quad[2], quad[1], quad[3]]);
     }
 
     pub fn build(self) -> Mesh {
-        Mesh::new_uncentred(self.vertices, self.faces, self.normals)
+        Mesh::new_uncentred(self.vertices, self.faces)
     }
 }
 
@@ -61,22 +58,22 @@ impl MeshBuilder {
             let bottom = self.add_vertex(bottom + normal * bottom_radius);
 
             if let Some((last_top, last_bottom)) = last {
-                self.add_quad([last_top, last_bottom, top, bottom], normal);
-                self.add_face([last_top, top, top_center], Vector3::z());
-                self.add_face([last_bottom, bottom_center, bottom], -Vector3::z());
+                self.add_quad([last_top, last_bottom, top, bottom]);
+                self.add_face([last_top, top, top_center]);
+                self.add_face([last_bottom, bottom_center, bottom]);
             }
 
             last = Some((top, bottom));
             if fist.is_none() {
-                fist = Some((top, bottom, normal));
+                fist = Some((top, bottom));
             }
         }
 
-        if let Some((first_top, first_bottom, normal)) = fist {
+        if let Some((first_top, first_bottom)) = fist {
             if let Some((last_top, last_bottom)) = last {
-                self.add_quad([last_top, last_bottom, first_top, first_bottom], normal);
-                self.add_face([last_top, first_top, top_center], Vector3::z());
-                self.add_face([last_bottom, bottom_center, first_bottom], -Vector3::z());
+                self.add_quad([last_top, last_bottom, first_top, first_bottom]);
+                self.add_face([last_top, first_top, top_center]);
+                self.add_face([last_bottom, bottom_center, first_bottom]);
             }
         }
     }

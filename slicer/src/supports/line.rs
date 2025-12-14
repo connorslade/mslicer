@@ -89,8 +89,6 @@ impl<'a> LineSupportGenerator<'a> {
         let mut seen = HashSet::new();
 
         let vertices = mesh.vertices();
-        let normals = mesh.normals();
-
         for edge in 0..half_edge.half_edge_count() {
             let origin = half_edge.get_edge(edge as u32);
             if !seen.insert(origin.origin_vertex) {
@@ -98,7 +96,7 @@ impl<'a> LineSupportGenerator<'a> {
             }
 
             // Ignore points that are not on the bottom of the mesh
-            let origin_normal = mesh.transform_normal(&normals[origin.face as usize]);
+            let origin_normal = mesh.transform_normal(&mesh.normal(origin.face as usize));
             if origin_normal.z >= 0.0 {
                 continue;
             }
@@ -122,10 +120,9 @@ impl<'a> LineSupportGenerator<'a> {
         let mut out = Vec::new();
 
         let vertices = mesh.vertices();
-        let normals = mesh.normals();
 
-        for (face, normal) in normals.iter().enumerate() {
-            let normal = mesh.transform_normal(normal);
+        for face in 0..mesh.face_count() {
+            let normal = mesh.transform_normal(&mesh.normal(face));
             if normal.z >= 0.0 {
                 continue;
             }
@@ -157,7 +154,7 @@ impl<'a> LineSupportGenerator<'a> {
                             mesh.transform(&vertices[face[1] as usize]),
                             mesh.transform(&vertices[face[2] as usize]),
                         ],
-                        mesh.transform_normal(&normals[idx]),
+                        mesh.transform_normal(&mesh.normal(idx)),
                         pos.to_homogeneous(),
                         Vector3::z(),
                     ) {
@@ -169,7 +166,7 @@ impl<'a> LineSupportGenerator<'a> {
                 intersections.dedup_by(|a, b| (a.0.z - b.0.z).abs() < 0.1);
 
                 for (intersection, idx) in intersections {
-                    let normal = mesh.transform_normal(&normals[idx]);
+                    let normal = mesh.transform_normal(&mesh.normal(idx));
                     out.push([intersection, normal]);
                 }
             }
