@@ -1,14 +1,11 @@
-use std::{
-    fs::File,
-    io::{BufReader, Cursor},
-};
+use std::fs::File;
 
 use const_format::concatcp;
 use egui::{Button, Context, Key, KeyboardShortcut, Modifiers, TopBottomPanel, ViewportCommand};
 use egui_phosphor::regular::STACK;
 use rfd::FileDialog;
 
-use crate::app::App;
+use crate::app::{task::MeshLoad, App};
 
 const IMPORT_MODEL_SHORTCUT: KeyboardShortcut = KeyboardShortcut::new(Modifiers::CTRL, Key::I);
 const LOAD_TEAPOT_SHORTCUT: KeyboardShortcut = KeyboardShortcut::new(Modifiers::CTRL, Key::T);
@@ -127,14 +124,16 @@ fn import_model(app: &mut App) {
         let format = ext.unwrap_or_default().to_string_lossy();
 
         let file = File::open(&path).unwrap();
-        let mut buf = BufReader::new(file);
-        app.load_mesh(&mut buf, &format, name);
+        app.tasks.add(MeshLoad::file(file, name, &format));
     }
 }
 
 fn import_teapot(app: &mut App) {
-    let mut buf = Cursor::new(include_bytes!("../assets/teapot.stl"));
-    app.load_mesh(&mut buf, "stl", "Utah Teapot".into());
+    app.tasks.add(MeshLoad::buffer(
+        include_bytes!("../assets/teapot.stl"),
+        "Utah Teapot".into(),
+        "stl",
+    ));
 }
 
 fn save(app: &mut App) {

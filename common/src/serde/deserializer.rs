@@ -5,6 +5,8 @@ use std::{
     slice,
 };
 
+use crate::misc::as_array;
+
 #[rustfmt::skip]
 pub trait Deserializer {
     fn pos(&mut self) -> usize;
@@ -16,8 +18,7 @@ pub trait Deserializer {
     fn is_eof(&mut self) -> bool;
 
     fn read_array<const LENGTH: usize>(&mut self) -> [u8; LENGTH] {
-        self.read_bytes(LENGTH)
-            .as_array::<LENGTH>()
+        as_array::<_, LENGTH>(&self.read_bytes(LENGTH))
             .copied()
             .unwrap_or([0; LENGTH])
     }
@@ -128,7 +129,10 @@ impl<T: Read + Seek> Deserializer for ReaderDeserializer<T> {
     }
 
     fn size(&mut self) -> usize {
-        self.reader.stream_len().unwrap() as usize
+        let pos = self.reader.stream_position().unwrap();
+        let len = self.reader.seek(SeekFrom::End(0)).unwrap();
+        (pos != len).then(|| self.reader.seek(SeekFrom::Start(pos)).unwrap());
+        len as usize
     }
 
     fn advance_by(&mut self, amount: usize) {

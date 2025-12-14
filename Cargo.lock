@@ -2772,6 +2772,7 @@ name = "mesh_format"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "clone-macro",
  "common",
  "nalgebra 0.34.1",
 ]
@@ -2833,6 +2834,7 @@ dependencies = [
  "itertools 0.14.0",
  "libblur",
  "markdown",
+ "mesh_format",
  "nalgebra 0.34.1",
  "notify-rust",
  "open",

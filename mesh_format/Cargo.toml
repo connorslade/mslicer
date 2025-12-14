@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 anyhow.workspace = true
+clone-macro.workspace = true
 nalgebra.workspace = true
 
 common = { path = "../common" }

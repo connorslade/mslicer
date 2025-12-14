@@ -1,11 +1,4 @@
-use std::{
-    io::{BufRead, Seek},
-    mem,
-    path::PathBuf,
-    sync::Arc,
-    thread,
-    time::Instant,
-};
+use std::{mem, path::PathBuf, sync::Arc, thread, time::Instant};
 
 use clone_macro::clone;
 use const_format::concatcp;
@@ -19,6 +12,7 @@ use parking_lot::RwLock;
 use tracing::{info, warn};
 
 use crate::{
+    app::task::TaskManager,
     plugins::{
         anti_alias,
         elephant_foot_fixer::{self},
@@ -39,16 +33,17 @@ pub mod config;
 pub mod project;
 pub mod remote_print;
 pub mod slice_operation;
+pub mod task;
 use config::Config;
 use remote_print::RemotePrint;
 use slice_operation::{SliceOperation, SliceResult};
 
 pub struct App {
     pub render_state: RenderState,
-    // todo: dock state in ui_state?
-    pub dock_state: DockState<Tab>,
+    pub dock_state: DockState<Tab>, // todo: dock state in ui_state?
     pub fps: FpsTracker,
     pub popup: PopupManager,
+    pub tasks: TaskManager,
 
     pub state: UiState,
     pub config: Config,
@@ -91,7 +86,8 @@ impl App {
         Self {
             render_state,
             dock_state,
-            popup: PopupManager::new(),
+            popup: PopupManager::default(),
+            tasks: TaskManager::default(),
             state: UiState {
                 event_collector,
                 ..Default::default()
@@ -200,29 +196,6 @@ impl App {
         ));
     }
 
-    pub fn load_mesh<T: BufRead + Seek>(&mut self, buf: &mut T, format: &str, name: String) {
-        let mut mesh = match slicer::mesh::load_mesh(buf, format) {
-            Ok(model) => model,
-            Err(err) => {
-                self.popup.open(Popup::simple(
-                    "Import Error",
-                    PopupIcon::Error,
-                    format!("Failed to import model.\n{err}"),
-                ));
-                return;
-            }
-        };
-        info!("Loaded model `{name}` with {} faces", mesh.face_count());
-
-        mesh.recompute_normals();
-        let mut rendered_mesh = RenderedMesh::from_mesh(mesh)
-            .with_name(name.clone())
-            .with_random_color();
-        rendered_mesh.update_oob(&self.slice_config);
-
-        self.meshes.write().push(rendered_mesh);
-    }
-
     pub fn reset_ui(&mut self) {
         self.dock_state = DockState::new(vec![Tab::Viewport]);
         let surface = self.dock_state.main_surface_mut();
@@ -238,6 +211,7 @@ impl eframe::App for App {
         // todo: probably dont do this
         let app = unsafe { &mut *(self as *mut _) };
         self.popup.render(app, ctx);
+        self.tasks.render(app, ctx);
 
         // only update the visuals if the theme has changed
         match self.config.theme {

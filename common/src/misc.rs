@@ -75,3 +75,12 @@ pub fn subscript_number(num: impl Into<u64>) -> String {
 
     out
 }
+
+pub const fn as_array<T, const N: usize>(this: &[T]) -> Option<&[T; N]> {
+    if this.len() == N {
+        let ptr = this.as_ptr() as *const [T; N];
+        Some(unsafe { &*ptr })
+    } else {
+        None
+    }
+}

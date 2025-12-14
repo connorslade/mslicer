@@ -3,6 +3,8 @@ use egui::{pos2, vec2, Color32, Context, Grid, Id, Label, RichText, Ui, WidgetTe
 use crate::app::App;
 
 type UiFunction = dyn FnMut(&mut App, &mut Ui) -> bool;
+
+#[derive(Default)]
 pub struct PopupManager {
     popups: Vec<Popup>,
 }
@@ -22,10 +24,6 @@ pub enum PopupIcon {
 }
 
 impl PopupManager {
-    pub fn new() -> Self {
-        Self { popups: Vec::new() }
-    }
-
     pub fn open(&mut self, popup: Popup) {
         self.popups.push(popup);
     }

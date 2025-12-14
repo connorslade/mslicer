@@ -74,35 +74,27 @@ mod ascii {
         let mut verts = HashMap::new();
         let mut faces = Vec::new();
 
-        let mut vert_builder = [Vector3::zeros(); 3];
-        let mut vertex_idx = 3;
-        let mut component_idx = 3;
+        let mut builder = [Vector3::zeros(); 3];
+        let mut component = 9;
 
         tokenize(des, progress, |token| {
-            if component_idx < 3 && vertex_idx < 3 {
-                if token == "vertex" {
+            if component < 9 {
+                let Ok(value) = token.parse::<f32>() else {
                     return;
-                }
+                };
 
-                vert_builder[vertex_idx][component_idx] = token.parse::<f32>().unwrap();
-                component_idx += 1;
-                if component_idx >= 3 {
-                    component_idx = 0;
-                    vertex_idx += 1;
-                }
+                builder[component / 3][component % 3] = value;
+                component += 1;
                 return;
             }
 
             match token {
-                "vertex" => {
-                    vertex_idx = 0;
-                    component_idx = 0;
-                }
+                "vertex" => component = 0,
                 "endloop" => {
                     faces.push([
-                        vert_idx(&mut verts, vert_builder[0]),
-                        vert_idx(&mut verts, vert_builder[1]),
-                        vert_idx(&mut verts, vert_builder[2]),
+                        vert_idx(&mut verts, builder[0]),
+                        vert_idx(&mut verts, builder[1]),
+                        vert_idx(&mut verts, builder[2]),
                     ]);
                 }
                 _ => {}

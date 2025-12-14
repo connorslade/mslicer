@@ -1,10 +1,10 @@
-use std::{borrow::Cow, fs::File, io::BufReader, path::Path};
+use std::{borrow::Cow, fs::File, path::Path};
 
 use egui::{pos2, Align2, Color32, Context, FontFamily, FontId, Id, LayerId, Order};
 use egui_phosphor::regular::{FILES, FILE_TEXT};
 use itertools::Itertools;
 
-use crate::app::App;
+use crate::app::{task::MeshLoad, App};
 
 const HOVER_BACKGROUND: Color32 = Color32::from_rgba_premultiplied(0, 0, 0, 200);
 
@@ -23,8 +23,7 @@ pub fn update(app: &mut App, ctx: &Context) {
                     app.load_project(path);
                 } else {
                     let file = File::open(path).unwrap();
-                    let mut buf = BufReader::new(file);
-                    app.load_mesh(&mut buf, &format, name);
+                    app.tasks.add(MeshLoad::file(file, name, &format));
                 }
             }
         }

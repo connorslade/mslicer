@@ -40,5 +40,6 @@ wgpu.workspace = true
 
 common = { path = "../common" }
 goo_format = { path = "../goo_format" }
+mesh_format = { path = "../mesh_format" }
 remote_send = { path = "../remote_send" }
 slicer = { path = "../slicer" }
