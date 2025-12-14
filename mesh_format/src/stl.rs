@@ -10,13 +10,14 @@ use crate::{
 };
 
 pub fn parse<T: Deserializer>(des: &mut T, progress: Progress) -> Result<Mesh> {
-    let is_ascii = &*des.read_bytes(6) == b"solid ";
+    des.advance_by(80);
+    let tri_count = des.read_u32_le();
+    let is_ascii = des.size() != 84 + 50 * tri_count as usize;
     des.jump_to(0);
 
-    if is_ascii {
-        ascii::parse(des, progress)
-    } else {
-        binary::parse(des, progress)
+    match is_ascii {
+        true => ascii::parse(des, progress),
+        false => binary::parse(des, progress),
     }
 }
 

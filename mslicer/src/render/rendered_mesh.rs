@@ -43,9 +43,6 @@ pub struct RenderedMeshBuffers {
 
 impl RenderedMesh {
     pub fn from_mesh(mesh: Mesh) -> Self {
-        let mut warnings = MeshWarnings::empty();
-        (!mesh.is_manifold()).then(|| warnings.insert(MeshWarnings::NonManifold));
-
         Self {
             name: String::new(),
             id: next_id(),
@@ -53,7 +50,7 @@ impl RenderedMesh {
             color: Color32::WHITE,
             hidden: false,
             locked_scale: true,
-            warnings,
+            warnings: MeshWarnings::empty(),
             buffers: None,
         }
     }
