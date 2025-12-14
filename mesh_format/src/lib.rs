@@ -1,6 +1,8 @@
+#![feature(gen_blocks)]
+
 use std::sync::{
     Arc,
-    atomic::{AtomicU32, Ordering},
+    atomic::{AtomicU64, Ordering},
 };
 
 use nalgebra::Vector3;
@@ -17,15 +19,15 @@ pub struct Mesh {
 pub struct Progress(Arc<ProgressInner>);
 
 struct ProgressInner {
-    complete: AtomicU32,
-    total: AtomicU32,
+    complete: AtomicU64,
+    total: AtomicU64,
 }
 
 impl Progress {
     pub fn new() -> Self {
         Self(Arc::new(ProgressInner {
-            complete: AtomicU32::new(0),
-            total: AtomicU32::new(0),
+            complete: AtomicU64::new(0),
+            total: AtomicU64::new(0),
         }))
     }
 
@@ -38,11 +40,11 @@ impl Progress {
         self.0.complete.load(Ordering::Relaxed) as f32 / total as f32
     }
 
-    fn set_total(&self, total: u32) {
+    fn set_total(&self, total: u64) {
         self.0.total.store(total, Ordering::Relaxed);
     }
 
-    fn set_complete(&self, complete: u32) {
+    fn set_complete(&self, complete: u64) {
         self.0.complete.store(complete, Ordering::Relaxed);
     }
 }

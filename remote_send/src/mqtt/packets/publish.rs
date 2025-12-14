@@ -37,9 +37,8 @@ impl PublishPacket {
 
         let packet_id = (flags.contains(PublishFlags::QOS1) || flags.contains(PublishFlags::QOS2))
             .then(|| des.read_u16_be());
-        let data = des
-            .read_slice(packet.remaining_length as usize - des.pos())
-            .to_vec();
+        let length = packet.remaining_length as usize - des.pos();
+        let data = des.read_slice(length).to_vec();
 
         Ok(Self {
             flags,

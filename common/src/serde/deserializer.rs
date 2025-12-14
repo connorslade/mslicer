@@ -1,29 +1,39 @@
 use std::{
     borrow::Cow,
-    io::{Read, Seek, SeekFrom},
+    io::{ErrorKind, Read, Seek, SeekFrom},
     mem::{self, MaybeUninit},
     slice,
 };
 
+#[rustfmt::skip]
 pub trait Deserializer {
-    fn pos(&self) -> usize;
+    fn pos(&mut self) -> usize;
+    fn size(&mut self) -> usize;
     fn advance_by(&mut self, amount: usize);
     fn jump_to(&mut self, pos: usize);
     fn execute_at<T>(&mut self, pos: usize, func: impl FnOnce(&mut Self) -> T) -> T;
-    fn read_bool(&mut self) -> bool;
-    fn read_u8(&mut self) -> u8;
-    fn read_u16_be(&mut self) -> u16;
-    fn read_u16_le(&mut self) -> u16;
-    fn read_u32_be(&mut self) -> u32;
-    fn read_u32_le(&mut self) -> u32;
-    fn read_u64_be(&mut self) -> u64;
-    fn read_u64_le(&mut self) -> u64;
-    fn read_f32_be(&mut self) -> f32;
-    fn read_f32_le(&mut self) -> f32;
-    fn read_f64_be(&mut self) -> f64;
-    fn read_f64_le(&mut self) -> f64;
     fn read_bytes(&mut self, length: usize) -> Cow<'_, [u8]>;
     fn is_eof(&mut self) -> bool;
+
+    fn read_array<const LENGTH: usize>(&mut self) -> [u8; LENGTH] {
+        self.read_bytes(LENGTH)
+            .as_array::<LENGTH>()
+            .copied()
+            .unwrap_or([0; LENGTH])
+    }
+
+    fn read_bool(&mut self) -> bool { self.read_u8() != 0 }
+    fn read_u8(&mut self) -> u8 { self.read_array::<1>()[0] }
+    fn read_u16_be(&mut self) -> u16 { u16::from_be_bytes(self.read_array()) }
+    fn read_u16_le(&mut self) -> u16 { u16::from_le_bytes(self.read_array()) }
+    fn read_u32_be(&mut self) -> u32 { u32::from_be_bytes(self.read_array()) }
+    fn read_u32_le(&mut self) -> u32 { u32::from_le_bytes(self.read_array()) }
+    fn read_u64_be(&mut self) -> u64 { u64::from_be_bytes(self.read_array()) }
+    fn read_u64_le(&mut self) -> u64 { u64::from_le_bytes(self.read_array()) }
+    fn read_f32_be(&mut self) -> f32 { f32::from_be_bytes(self.read_array()) }
+    fn read_f32_le(&mut self) -> f32 { f32::from_le_bytes(self.read_array()) }
+    fn read_f64_be(&mut self) -> f64 { f64::from_be_bytes(self.read_array()) }
+    fn read_f64_le(&mut self) -> f64 { f64::from_le_bytes(self.read_array()) }
 }
 
 pub struct SliceDeserializer<'a> {
@@ -48,14 +58,6 @@ impl<'a> SliceDeserializer<'a> {
         self.offset += length;
         value
     }
-
-    fn read_array<const LENGTH: usize>(&mut self) -> &[u8; LENGTH] {
-        let out = self.buffer[self.offset..self.offset + LENGTH]
-            .as_array::<LENGTH>()
-            .unwrap_or(&[0; LENGTH]);
-        self.offset += LENGTH;
-        out
-    }
 }
 
 impl<T: Read> ReaderDeserializer<T> {
@@ -65,22 +67,32 @@ impl<T: Read> ReaderDeserializer<T> {
 
     fn read_vec(&mut self, length: usize) -> Vec<u8> {
         let mut buf = Vec::<MaybeUninit<u8>>::with_capacity(length);
+        let slice = unsafe { slice::from_raw_parts_mut(buf.as_mut_ptr() as *mut u8, length) };
+
+        let mut written = 0;
+        while written < length {
+            match self.reader.read(&mut slice[written..]) {
+                Ok(0) => break,
+                Ok(n) => written += n,
+                Err(e) if e.kind() == ErrorKind::Interrupted => continue,
+                Err(e) => panic!("failed to read from reader: {}", e),
+            }
+        }
+
         unsafe {
-            buf.set_len(length);
-            let slice = slice::from_raw_parts_mut(buf.as_mut_ptr() as *mut u8, length);
-            self.reader.read_exact(slice).unwrap();
+            buf.set_len(written);
             mem::transmute(buf)
         }
-    }
-
-    fn read_array<const LENGTH: usize>(&mut self) -> [u8; LENGTH] {
-        *self.read_vec(LENGTH).as_array::<LENGTH>().unwrap()
     }
 }
 
 impl<'a> Deserializer for SliceDeserializer<'a> {
-    fn pos(&self) -> usize {
+    fn pos(&mut self) -> usize {
         self.offset
+    }
+
+    fn size(&mut self) -> usize {
+        self.buffer.len()
     }
 
     fn advance_by(&mut self, amount: usize) {
@@ -99,56 +111,6 @@ impl<'a> Deserializer for SliceDeserializer<'a> {
         result
     }
 
-    fn read_bool(&mut self) -> bool {
-        self.read_u8() != 0
-    }
-
-    fn read_u8(&mut self) -> u8 {
-        let value = self.buffer[self.offset];
-        self.offset += 1;
-        value
-    }
-
-    fn read_u16_be(&mut self) -> u16 {
-        u16::from_be_bytes(*self.read_array())
-    }
-
-    fn read_u16_le(&mut self) -> u16 {
-        u16::from_le_bytes(*self.read_array())
-    }
-
-    fn read_u32_be(&mut self) -> u32 {
-        u32::from_be_bytes(*self.read_array())
-    }
-
-    fn read_u32_le(&mut self) -> u32 {
-        u32::from_le_bytes(*self.read_array())
-    }
-
-    fn read_u64_be(&mut self) -> u64 {
-        u64::from_be_bytes(*self.read_array())
-    }
-
-    fn read_u64_le(&mut self) -> u64 {
-        u64::from_le_bytes(*self.read_array())
-    }
-
-    fn read_f32_be(&mut self) -> f32 {
-        f32::from_be_bytes(*self.read_array())
-    }
-
-    fn read_f32_le(&mut self) -> f32 {
-        f32::from_le_bytes(*self.read_array())
-    }
-
-    fn read_f64_be(&mut self) -> f64 {
-        f64::from_be_bytes(*self.read_array())
-    }
-
-    fn read_f64_le(&mut self) -> f64 {
-        f64::from_le_bytes(*self.read_array())
-    }
-
     fn read_bytes(&mut self, length: usize) -> Cow<'_, [u8]> {
         let value = &self.buffer[self.offset..self.offset + length];
         self.offset += length;
@@ -156,13 +118,17 @@ impl<'a> Deserializer for SliceDeserializer<'a> {
     }
 
     fn is_eof(&mut self) -> bool {
-        self.offset == self.buffer.len()
+        self.offset >= self.buffer.len()
     }
 }
 
 impl<T: Read + Seek> Deserializer for ReaderDeserializer<T> {
-    fn pos(&self) -> usize {
-        todo!()
+    fn pos(&mut self) -> usize {
+        self.reader.stream_position().unwrap() as usize
+    }
+
+    fn size(&mut self) -> usize {
+        self.reader.stream_len().unwrap() as usize
     }
 
     fn advance_by(&mut self, amount: usize) {
@@ -181,60 +147,11 @@ impl<T: Read + Seek> Deserializer for ReaderDeserializer<T> {
         result
     }
 
-    fn read_bool(&mut self) -> bool {
-        self.read_u8() != 0
-    }
-
-    fn read_u8(&mut self) -> u8 {
-        self.read_vec(1)[0]
-    }
-
-    fn read_u16_be(&mut self) -> u16 {
-        u16::from_be_bytes(self.read_array())
-    }
-
-    fn read_u16_le(&mut self) -> u16 {
-        u16::from_le_bytes(self.read_array())
-    }
-
-    fn read_u32_be(&mut self) -> u32 {
-        u32::from_be_bytes(self.read_array())
-    }
-
-    fn read_u32_le(&mut self) -> u32 {
-        u32::from_le_bytes(self.read_array())
-    }
-
-    fn read_u64_be(&mut self) -> u64 {
-        u64::from_be_bytes(self.read_array())
-    }
-
-    fn read_u64_le(&mut self) -> u64 {
-        u64::from_le_bytes(self.read_array())
-    }
-
-    fn read_f32_be(&mut self) -> f32 {
-        f32::from_be_bytes(self.read_array())
-    }
-
-    fn read_f32_le(&mut self) -> f32 {
-        f32::from_le_bytes(self.read_array())
-    }
-
-    fn read_f64_be(&mut self) -> f64 {
-        f64::from_be_bytes(self.read_array())
-    }
-
-    fn read_f64_le(&mut self) -> f64 {
-        f64::from_le_bytes(self.read_array())
-    }
-
     fn read_bytes(&mut self, length: usize) -> Cow<'_, [u8]> {
         Cow::Owned(self.read_vec(length))
     }
 
     fn is_eof(&mut self) -> bool {
-        let pos = self.reader.stream_position().unwrap();
-        pos >= self.reader.stream_len().unwrap()
+        self.pos() >= self.size()
     }
 }
