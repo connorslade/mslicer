@@ -5,6 +5,7 @@ use std::{
     thread::{self, JoinHandle},
 };
 
+use anyhow::Result;
 use clone_macro::clone;
 use common::serde::{ReaderDeserializer, SliceDeserializer};
 use egui::{vec2, Context, Id, ProgressBar, Window};
@@ -15,6 +16,7 @@ use tracing::info;
 use crate::{
     app::App,
     render::rendered_mesh::{MeshWarnings, RenderedMesh},
+    ui::popup::{Popup, PopupIcon},
 };
 
 // Async operation that can be polled every frame.
@@ -47,7 +49,7 @@ impl TaskManager {
 
 pub struct MeshLoad {
     progress: mesh_format::Progress,
-    join: Option<JoinHandle<mesh_format::Mesh>>,
+    join: Option<JoinHandle<Result<mesh_format::Mesh>>>,
     name: String,
 }
 
@@ -76,7 +78,18 @@ impl Task for MeshLoad {
     fn poll(&mut self, app: &mut App, ctx: &Context) -> bool {
         if self.progress.complete() {
             let handle = mem::take(&mut self.join).unwrap();
-            let mesh = handle.join().unwrap();
+            let mesh = match handle.join().unwrap() {
+                Ok(x) => x,
+                Err(e) => {
+                    app.popup.open(Popup::simple(
+                        "Failed to Load Model",
+                        PopupIcon::Error,
+                        e.to_string(),
+                    ));
+                    return true;
+                }
+            };
+
             let mesh = Mesh::new(mesh.verts, mesh.faces);
             info!(
                 "Loaded model `{}` with {} faces",

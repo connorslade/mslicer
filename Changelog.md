@@ -4,6 +4,7 @@
 
 - Detect non-manifold meshes
 - Color backfaces grey in rendered view
+- Load models async and show progress (required custom format implementations sob)
 
 ## v0.4.0 &mdash; November 25th, 2025
 

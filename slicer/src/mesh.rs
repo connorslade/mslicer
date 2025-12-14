@@ -267,7 +267,7 @@ pub fn load_mesh<T: Read + Seek + Send + 'static>(reader: T, format: &str) -> Re
     let format = format.to_ascii_lowercase();
 
     let job = mesh_format::load_mesh(des, &format).1;
-    let mesh = job.join().unwrap();
+    let mesh = job.join().unwrap()?;
 
     Ok(Mesh::new(mesh.verts, mesh.faces))
 }
