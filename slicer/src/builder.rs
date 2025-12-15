@@ -1,4 +1,4 @@
-use std::f32::consts::PI;
+use std::f32::consts::TAU;
 
 use nalgebra::Vector3;
 
@@ -51,16 +51,16 @@ impl MeshBuilder {
         let mut last = None;
         let mut fist = None;
         for i in 0..precision {
-            let angle = 2.0 * PI * (i as f32) / (precision as f32);
+            let angle = TAU * (i as f32) / (precision as f32);
             let normal = Vector3::new(angle.sin(), angle.cos(), 0.0);
 
             let top = self.add_vertex(top + normal * top_radius);
             let bottom = self.add_vertex(bottom + normal * bottom_radius);
 
             if let Some((last_top, last_bottom)) = last {
-                self.add_quad([last_top, last_bottom, top, bottom]);
-                self.add_face([last_top, top, top_center]);
-                self.add_face([last_bottom, bottom_center, bottom]);
+                self.add_quad([last_bottom, last_top, bottom, top]);
+                self.add_face([top, last_top, top_center]);
+                self.add_face([bottom_center, last_bottom, bottom]);
             }
 
             last = Some((top, bottom));
@@ -71,9 +71,9 @@ impl MeshBuilder {
 
         if let Some((first_top, first_bottom)) = fist {
             if let Some((last_top, last_bottom)) = last {
-                self.add_quad([last_top, last_bottom, first_top, first_bottom]);
-                self.add_face([last_top, first_top, top_center]);
-                self.add_face([last_bottom, bottom_center, first_bottom]);
+                self.add_quad([last_bottom, last_top, first_bottom, first_top]);
+                self.add_face([first_top, last_top, top_center]);
+                self.add_face([bottom_center, last_bottom, first_bottom]);
             }
         }
     }
