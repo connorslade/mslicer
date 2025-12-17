@@ -150,7 +150,11 @@ fn viewport(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     {
         app.state.line_support_debug.clear();
         for model in app.meshes.read().iter() {
-            let intersection = model.bvh.intersect_ray(&model.mesh, pos, dir);
+            let intersection = model.bvh.intersect_ray(
+                &model.mesh,
+                model.mesh.inv_transform(&pos),
+                model.mesh.inv_transform_normal(&dir),
+            );
 
             if let Some(face_idx) = intersection {
                 let face = model.mesh.face(face_idx);
@@ -159,7 +163,10 @@ fn viewport(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                 let position =
                     verts[face[0] as usize] + verts[face[1] as usize] + verts[face[2] as usize];
                 let normal = model.mesh.normal(face_idx);
-                app.state.line_support_debug.push([position / 3.0, normal]);
+                app.state.line_support_debug.push([
+                    model.mesh.transform(&(position / 3.0)),
+                    model.mesh.transform_normal(&normal),
+                ]);
             }
         }
     }

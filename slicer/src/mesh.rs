@@ -183,6 +183,10 @@ impl Mesh {
         (self.inv_transformation_matrix * pos.push(1.0)).xyz()
     }
 
+    pub fn inv_transform_normal(&self, normal: &Pos) -> Pos {
+        (self.inv_transformation_matrix * normal.to_homogeneous()).xyz()
+    }
+
     /// Get the minimum and maximum of each component of every vertex in the
     /// model. These points define the bounding box of the model.
     pub fn bounds(&self) -> (Pos, Pos) {
