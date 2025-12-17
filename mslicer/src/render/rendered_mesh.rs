@@ -12,18 +12,21 @@ use wgpu::{
     Buffer, BufferUsages, Device,
 };
 
-use slicer::mesh::Mesh;
+use slicer::{intersection::bvh::Bvh, mesh::Mesh};
 
 use crate::{app::App, render::ModelVertex};
 
 pub struct RenderedMesh {
     pub name: String,
     pub id: u32,
+
     pub mesh: Mesh,
+    pub bvh: Bvh,
+    pub warnings: MeshWarnings,
+
     pub color: Color32,
     pub hidden: bool,
     pub locked_scale: bool,
-    pub warnings: MeshWarnings,
 
     buffers: Option<RenderedMeshBuffers>,
 }
@@ -46,6 +49,7 @@ impl RenderedMesh {
         Self {
             name: String::new(),
             id: next_id(),
+            bvh: Bvh::from_mesh(&mesh),
             mesh,
             color: Color32::WHITE,
             hidden: false,
@@ -160,6 +164,7 @@ impl Clone for RenderedMesh {
             name: self.name.clone(),
             id: next_id(),
             mesh: self.mesh.clone(),
+            bvh: self.bvh.clone(),
             color: self.color,
             hidden: self.hidden,
             locked_scale: self.locked_scale,

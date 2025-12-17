@@ -20,27 +20,27 @@ pub enum BvhNode {
 }
 
 impl BvhNode {
-    pub fn intersect_plane(
+    pub fn intersect_ray(
         &self,
         arena: &Vec<BvhNode>,
         mesh: &Mesh,
-        pos: Vector3<f32>,
-        normal: Vector3<f32>,
-        out: &mut Vec<Vector3<f32>>,
+        origin: Vector3<f32>,
+        direction: Vector3<f32>,
+        out: &mut Vec<(f32, usize)>,
     ) {
         match self {
-            BvhNode::Leaf { faces, bounds } if bounds.intersect_plane(pos, normal) => {
+            BvhNode::Leaf { faces, bounds } if bounds.intersect_ray(origin, direction) => {
                 for face in faces {
-                    intersect_triangle(mesh, *face, pos, normal, out)
+                    intersect_ray(mesh, *face, origin, direction, out)
                 }
             }
             BvhNode::Node {
                 left,
                 right,
                 bounds,
-            } if bounds.intersect_plane(pos, normal) => {
-                arena[*left].intersect_plane(arena, mesh, pos, normal, out);
-                arena[*right].intersect_plane(arena, mesh, pos, normal, out);
+            } if bounds.intersect_ray(origin, direction) => {
+                arena[*left].intersect_ray(arena, mesh, origin, direction, out);
+                arena[*right].intersect_ray(arena, mesh, origin, direction, out);
             }
             _ => {}
         }
@@ -93,35 +93,35 @@ pub fn build_bvh_node(
     }
 }
 
-fn intersect_triangle(
+// From https://iquilezles.org/articles/intersectors
+// Look into Möller–Trumbore triangle-ray intersection?
+fn intersect_ray(
     mesh: &Mesh,
-    face: usize,
-    point: Vector3<f32>,
-    normal: Vector3<f32>,
-    out: &mut Vec<Vector3<f32>>,
+    face_idx: usize,
+    origin: Vector3<f32>,
+    direction: Vector3<f32>,
+    out: &mut Vec<(f32, usize)>,
 ) {
-    let face = mesh.face(face);
+    let face = mesh.face(face_idx);
     let verts = mesh.vertices();
 
     let v0 = verts[face[0] as usize];
     let v1 = verts[face[1] as usize];
     let v2 = verts[face[2] as usize];
 
-    let (a, b, c) = (
-        (v0 - point).dot(&normal),
-        (v1 - point).dot(&normal),
-        (v2 - point).dot(&normal),
-    );
-    let (a_pos, b_pos, c_pos) = (a > 0.0, b > 0.0, c > 0.0);
+    let v1v0 = v1 - v0;
+    let v2v0 = v2 - v0;
+    let rov0 = origin - v0;
 
-    let mut push_intersection = |a: f32, b: f32, v0: Vector3<f32>, v1: Vector3<f32>| {
-        let (v0, v1) = (mesh.transform(&v0), mesh.transform(&v1));
-        let t = a / (a - b);
-        let intersection = v0 + t * (v1 - v0);
-        out.push(intersection);
-    };
+    let n = v1v0.cross(&v2v0);
+    let q = rov0.cross(&direction);
 
-    (a_pos ^ b_pos).then(|| push_intersection(a, b, v0, v1));
-    (b_pos ^ c_pos).then(|| push_intersection(b, c, v1, v2));
-    (c_pos ^ a_pos).then(|| push_intersection(c, a, v2, v0));
+    let d = direction.dot(&n).recip();
+    let u = d * (-q).dot(&v2v0);
+    let v = d * q.dot(&v1v0);
+    let t = d * (-n).dot(&rov0);
+
+    if !(u < 0.0 || v < 0.0 || (u + v) > 1.0) {
+        out.push((t, face_idx));
+    }
 }

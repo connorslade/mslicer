@@ -1,20 +1,23 @@
+use std::sync::Arc;
+
 use crate::mesh::Mesh;
 
 use bvh_node::{build_bvh_node, BvhNode};
 use nalgebra::Vector3;
+use ordered_float::OrderedFloat;
 
 mod bounding_box;
 mod bvh_node;
 
+#[derive(Clone, Default)]
 pub struct Bvh {
-    /// The root node is the last one
-    nodes: Vec<BvhNode>,
+    nodes: Arc<Vec<BvhNode>>,
 }
 
 impl Bvh {
     pub fn from_mesh(mesh: &Mesh) -> Self {
         if mesh.face_count() == 0 {
-            return Self { nodes: Vec::new() };
+            return Self::default();
         }
 
         let mut arena = Vec::with_capacity(mesh.face_count() * 2 - 1);
@@ -23,21 +26,23 @@ impl Bvh {
         let root = build_bvh_node(&mut arena, mesh, face_indices);
         arena.push(root);
 
-        Self { nodes: arena }
+        Self {
+            nodes: Arc::new(arena),
+        }
     }
 
-    pub fn intersect_plane(
+    pub fn intersect_ray(
         &self,
         mesh: &Mesh,
-        pos: Vector3<f32>,
-        normal: Vector3<f32>,
-    ) -> Vec<Vector3<f32>> {
+        origin: Vector3<f32>,
+        direction: Vector3<f32>,
+    ) -> Option<usize> {
+        let mut out = Vec::new();
         if let Some(root) = self.nodes.last() {
-            let mut out = Vec::new();
-            root.intersect_plane(&self.nodes, mesh, pos, normal, &mut out);
-            out
-        } else {
-            Vec::new()
+            root.intersect_ray(&self.nodes, mesh, origin, direction, &mut out);
         }
+
+        out.sort_by_key(|(dist, _face)| OrderedFloat(*dist));
+        out.first().map(|(_dist, face)| *face)
     }
 }

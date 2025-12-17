@@ -26,6 +26,35 @@ impl Camera {
         projection * view
     }
 
+    // returns ray pos (camera pos) and ray dir
+    pub fn hovered_ray(&self, aspect: f32, (u, v): (f32, f32)) -> (Vector3<f32>, Vector3<f32>) {
+        let camera_pos = self.position() + self.target;
+
+        // Convert screen coordinates (u, v) in [0, 1] to normalized device coords,
+        // with x in [-1, 1] (left to right) and y in [-1, 1] (bottom to top).
+        // Many UI systems have v increasing downward, so we flip v here.
+        let x_ndc = 2.0 * u - 1.0;
+        let y_ndc = 1.0 - 2.0 * v;
+
+        // Image plane half-height at unit distance from the camera.
+        let tan_half_fov = (self.fov * 0.5).tan();
+
+        // Camera basis in world space.
+        // forward points from camera position toward the target.
+        let forward = (self.target - camera_pos).normalize();
+        let right = forward.cross(&Vector3::z()).normalize();
+        let up = right.cross(&forward).normalize();
+
+        // Compute a point on the image plane in world space and form the ray.
+        let image_plane_point = camera_pos
+            + forward
+            + right * (x_ndc * aspect * tan_half_fov)
+            + up * (y_ndc * tan_half_fov);
+        let dir = (image_plane_point - camera_pos).normalize();
+
+        (camera_pos, dir)
+    }
+
     pub fn handle_movement(&mut self, response: &Response, ui: &Ui) {
         let shift_down = ui.input(|x| x.modifiers.shift);
         let drag_delta = response.drag_delta() * if shift_down { 0.1 } else { 1.0 };

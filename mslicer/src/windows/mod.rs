@@ -141,6 +141,29 @@ pub fn ui(app: &mut App, ctx: &Context) {
 
 fn viewport(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     let (rect, response) = ui.allocate_exact_size(ui.available_size(), Sense::drag());
+    let hover_pos = response.hover_pos().unwrap_or_default();
+    let aspect = rect.width() / rect.height();
+    let uv = (hover_pos - rect.min) / rect.size();
+
+    let (pos, dir) = app.camera.hovered_ray(aspect, (uv.x, uv.y));
+
+    {
+        app.state.line_support_debug.clear();
+        for model in app.meshes.read().iter() {
+            let intersection = model.bvh.intersect_ray(&model.mesh, pos, dir);
+
+            if let Some(face_idx) = intersection {
+                let face = model.mesh.face(face_idx);
+                let verts = model.mesh.vertices();
+
+                let position =
+                    verts[face[0] as usize] + verts[face[1] as usize] + verts[face[2] as usize];
+                let normal = model.mesh.normal(face_idx);
+                app.state.line_support_debug.push([position / 3.0, normal]);
+            }
+        }
+    }
+
     app.camera.handle_movement(&response, ui);
 
     let color = match app.config.theme {
@@ -149,7 +172,6 @@ fn viewport(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     };
     ui.painter().rect_filled(rect, 0.0, color);
 
-    let aspect = rect.width() / rect.height();
     let view_projection = app.camera.view_projection_matrix(aspect);
 
     let callback = Callback::new_paint_callback(
