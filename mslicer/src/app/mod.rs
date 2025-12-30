@@ -83,6 +83,15 @@ impl App {
             None => *surface = Tree::new(vec![Tab::Viewport]),
         }
 
+        let slice_config = SliceConfig::default();
+        let selcted_printer = (config.printers.iter())
+            .position(|x| {
+                x.resolution == slice_config.platform_resolution
+                    && x.size == slice_config.platform_size
+            })
+            .map(|x| x + 1)
+            .unwrap_or_default();
+
         Self {
             render_state,
             dock_state,
@@ -90,11 +99,12 @@ impl App {
             tasks: TaskManager::default(),
             state: UiState {
                 event_collector,
+                selcted_printer,
                 ..Default::default()
             },
             config,
             camera: Camera::default(),
-            slice_config: SliceConfig::default(),
+            slice_config,
             plugin_manager: PluginManager {
                 plugins: vec![elephant_foot_fixer::get_plugin(), anti_alias::get_plugin()],
             },

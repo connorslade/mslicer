@@ -7,6 +7,7 @@ use std::{
 use anyhow::Result;
 use egui::Theme;
 use egui_dock::Tree;
+use nalgebra::{Vector2, Vector3};
 use serde::{Deserialize, Serialize};
 use tracing::{info, warn};
 
@@ -31,6 +32,14 @@ pub struct Config {
     // Advanced Settings
     pub show_normals: bool,
     pub max_buffer_size: u64,
+    pub printers: Vec<PrinterDefaults>,
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+pub struct PrinterDefaults {
+    pub name: String,
+    pub resolution: Vector2<u32>,
+    pub size: Vector3<f32>,
 }
 
 impl Config {
@@ -86,6 +95,11 @@ impl Default for Config {
 
             max_buffer_size: 512 << 20,
             show_normals: false,
+            printers: vec![PrinterDefaults {
+                name: "Elegoo Saturn 3 Ultra".into(),
+                resolution: Vector2::new(11_520, 5_120),
+                size: Vector3::new(218.88, 122.904, 260.0),
+            }],
         }
     }
 }
