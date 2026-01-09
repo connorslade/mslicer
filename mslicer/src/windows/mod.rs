@@ -205,7 +205,9 @@ impl App {
             is_moving,
             models: self.meshes.clone(),
             config: self.config.clone(),
+
             line_support_debug: self.state.line_support_debug.clone(),
+            overhang_angle: self.state.line_support_config.min_angle,
         }
     }
 

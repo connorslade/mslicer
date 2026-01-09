@@ -31,7 +31,7 @@ impl PointGenerator for OverhangPointDispatch {
                 self.cached_points.push(Point {
                     position,
                     radius: 0.5,
-                    color: Vector4::new(1.0, 0.5, 0.0, 0.25),
+                    color: Vector4::new(1.0, 1.0, 0.0, 0.25),
                 });
             }
         }

@@ -32,6 +32,7 @@ pub struct WorkspaceRenderCallback {
     pub config: Config,
 
     pub line_support_debug: Vec<[Vector3<f32>; 2]>,
+    pub overhang_angle: f32,
 }
 
 impl CallbackTrait for WorkspaceRenderCallback {

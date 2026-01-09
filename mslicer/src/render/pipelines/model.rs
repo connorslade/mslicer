@@ -36,6 +36,7 @@ struct ModelUniforms {
     camera_position: Vector3<f32>,
     camera_target: Vector3<f32>,
     render_style: u32,
+    overhang_angle: f32,
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -114,6 +115,7 @@ impl ModelPipeline {
                 camera_position: resources.camera.position(),
                 camera_target: resources.camera.target,
                 render_style: resources.config.render_style as u32,
+                overhang_angle: resources.overhang_angle.to_radians(),
             };
 
             let mut buffer = UniformBuffer::new(Vec::new());
