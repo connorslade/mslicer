@@ -43,6 +43,10 @@ fn frag(
     let dx = dpdx(in.world_position);
     let normal = normalize(cross(dy, dx));
 
+    if normal.z < 0.0 {
+        return vec4(0.5, 0.5, 0.5, 1.0);
+    }
+
     switch context.render_style {
         case STYLE_NORMAL: {
             return vec4f(normal, 1.0);

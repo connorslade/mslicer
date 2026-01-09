@@ -2,14 +2,12 @@ use std::thread::{self, JoinHandle};
 
 use anyhow::Result;
 use clone_macro::clone;
-use common::serde::Deserializer;
+use common::{progress::Progress, serde::Deserializer};
 use nalgebra::Vector3;
 
 mod obj;
-mod progress;
 mod stl;
 mod util;
-pub use progress::Progress;
 
 #[derive(Debug, Default)]
 pub struct Mesh {

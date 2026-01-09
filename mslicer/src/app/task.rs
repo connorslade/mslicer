@@ -7,7 +7,10 @@ use std::{
 
 use anyhow::Result;
 use clone_macro::clone;
-use common::serde::{ReaderDeserializer, SliceDeserializer};
+use common::{
+    progress::Progress,
+    serde::{ReaderDeserializer, SliceDeserializer},
+};
 use egui::{vec2, Context, Id, ProgressBar, Window};
 use mesh_format::load_mesh;
 use slicer::mesh::Mesh;
@@ -15,7 +18,7 @@ use tracing::info;
 
 use crate::{
     app::App,
-    render::rendered_mesh::{MeshWarnings, RenderedMesh},
+    render::model::{MeshWarnings, Model},
     ui::popup::{Popup, PopupIcon},
 };
 
@@ -48,7 +51,7 @@ impl TaskManager {
 }
 
 pub struct MeshLoad {
-    progress: mesh_format::Progress,
+    progress: Progress,
     join: Option<JoinHandle<Result<mesh_format::Mesh>>>,
     name: String,
 }
@@ -97,7 +100,7 @@ impl Task for MeshLoad {
                 mesh.face_count()
             );
 
-            let mut rendered_mesh = RenderedMesh::from_mesh(mesh)
+            let mut rendered_mesh = Model::from_mesh(mesh)
                 .with_name(mem::take(&mut self.name))
                 .with_random_color();
             rendered_mesh.update_oob(&app.slice_config);
@@ -136,7 +139,7 @@ pub struct MeshManifold {
 }
 
 impl MeshManifold {
-    pub fn new(mesh: &RenderedMesh) -> Self {
+    pub fn new(mesh: &Model) -> Self {
         Self {
             mesh: mesh.id,
             join: Some(thread::spawn(clone!([{ mesh.mesh } as model], move || {

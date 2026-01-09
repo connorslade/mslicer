@@ -11,9 +11,7 @@ struct VertexOutput {
 
 @vertex
 fn vert(@location(0) position: vec4<f32>) -> VertexOutput {
-    var out: VertexOutput;
-    out.position = context.transform * position;
-    return out;
+    return  VertexOutput(context.transform * position);
 }
 
 @fragment

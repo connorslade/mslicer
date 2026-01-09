@@ -1,11 +1,11 @@
 use std::collections::HashMap;
 
 use anyhow::Result;
-use common::serde::Deserializer;
+use common::{progress::Progress, serde::Deserializer};
 use nalgebra::Vector3;
 
 use crate::{
-    Mesh, Progress,
+    Mesh,
     util::{WHITESPACE, tokenize},
 };
 

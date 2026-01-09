@@ -1,8 +1,8 @@
 use anyhow::{Context, Result};
-use common::serde::Deserializer;
+use common::{progress::Progress, serde::Deserializer};
 use nalgebra::Vector3;
 
-use crate::{Mesh, Progress, util::tokenize};
+use crate::{Mesh, util::tokenize};
 
 pub fn parse<T: Deserializer>(des: &mut T, progress: Progress) -> Result<Mesh> {
     progress.set_total(des.size() as u64);

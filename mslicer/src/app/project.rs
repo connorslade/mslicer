@@ -14,7 +14,7 @@ use tracing::{error, info};
 
 use crate::{
     app::App,
-    render::rendered_mesh::RenderedMesh,
+    render::model::Model,
     ui::popup::{Popup, PopupIcon},
 };
 use common::config::SliceConfig;
@@ -128,7 +128,7 @@ impl App {
 }
 
 impl<'a> BorrowedProject<'a> {
-    pub fn new(meshes: &'a [RenderedMesh], slice_config: &'a SliceConfig) -> Self {
+    pub fn new(meshes: &'a [Model], slice_config: &'a SliceConfig) -> Self {
         let meshes = (meshes.iter())
             .map(BorrowedProjectMesh::from_rendered_mesh)
             .collect();
@@ -175,14 +175,14 @@ impl OwnedProject {
 }
 
 impl OwnedProjectMesh {
-    pub fn into_rendered_mesh(self, app: &App) -> RenderedMesh {
+    pub fn into_rendered_mesh(self, app: &App) -> Model {
         let mut mesh = Mesh::new_uncentred(self.vertices, self.faces);
         mesh.set_position_unchecked(self.info.position);
         mesh.set_scale_unchecked(self.info.scale);
         mesh.set_rotation_unchecked(self.info.rotation);
         mesh.update_transformation_matrix();
 
-        let mut rendered = RenderedMesh::from_mesh(mesh)
+        let mut rendered = Model::from_mesh(mesh)
             .with_name(self.info.name)
             .with_color(self.info.color)
             .with_hidden(self.info.hidden);
@@ -192,7 +192,7 @@ impl OwnedProjectMesh {
 }
 
 impl<'a> BorrowedProjectMesh<'a> {
-    pub fn from_rendered_mesh(rendered_mesh: &'a RenderedMesh) -> Self {
+    pub fn from_rendered_mesh(rendered_mesh: &'a Model) -> Self {
         Self {
             info: ProjectMeshInfo::from_rendered_mesh(rendered_mesh),
 
@@ -203,7 +203,7 @@ impl<'a> BorrowedProjectMesh<'a> {
 }
 
 impl ProjectMeshInfo {
-    pub fn from_rendered_mesh(rendered_mesh: &RenderedMesh) -> Self {
+    pub fn from_rendered_mesh(rendered_mesh: &Model) -> Self {
         Self {
             name: rendered_mesh.name.clone(),
             color: rendered_mesh.color,

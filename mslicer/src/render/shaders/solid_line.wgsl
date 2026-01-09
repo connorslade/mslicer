@@ -16,10 +16,7 @@ struct VertexOutput {
 
 @vertex
 fn vert(in: VertexInput) -> VertexOutput {
-    var out: VertexOutput;
-    out.position = context.transform * in.position;
-    out.color = in.color;
-    return out;
+    return VertexOutput(context.transform * in.position, in.color);
 }
 
 @fragment

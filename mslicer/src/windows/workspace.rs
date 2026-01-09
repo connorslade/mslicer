@@ -33,14 +33,6 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     });
     ui.add_space(8.0);
 
-    ComboBox::new("render_style", "Render Style")
-        .selected_text(app.config.render_style.name())
-        .show_ui(ui, |ui| {
-            for style in RenderStyle::ALL {
-                ui.selectable_value(&mut app.config.render_style, style, style.name());
-            }
-        });
-
     ComboBox::new("theme", "Theme")
         .selected_text(match app.config.theme {
             Theme::Dark => "Dark",
@@ -57,6 +49,14 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
 
     ui.add_space(16.0);
     ui.heading("Advanced");
+
+    ComboBox::new("render_style", "Render Style")
+        .selected_text(app.config.render_style.name())
+        .show_ui(ui, |ui| {
+            for style in RenderStyle::ALL {
+                ui.selectable_value(&mut app.config.render_style, style, style.name());
+            }
+        });
 
     ui.checkbox(&mut app.config.show_normals, "Show Normals");
 

@@ -11,8 +11,8 @@ use crate::app::config::Config;
 use super::{
     camera::Camera,
     dispatch::solid_line::SolidLineDispatch,
+    model::Model,
     pipelines::{model::ModelPipeline, target_point::TargetPointPipeline},
-    rendered_mesh::RenderedMesh,
 };
 
 pub struct WorkspaceRenderResources {
@@ -31,7 +31,7 @@ pub struct WorkspaceRenderCallback {
     pub bed_size: Vector3<f32>,
     pub grid_size: f32,
 
-    pub models: Arc<RwLock<Vec<RenderedMesh>>>,
+    pub models: Arc<RwLock<Vec<Model>>>,
     pub config: Config,
 
     pub line_support_debug: Vec<[Vector3<f32>; 2]>,

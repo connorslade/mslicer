@@ -1,6 +1,6 @@
 use std::sync::{
-    Arc,
     atomic::{AtomicU64, Ordering},
+    Arc,
 };
 
 #[derive(Clone)]
@@ -37,15 +37,15 @@ impl Progress {
         self.0.complete.load(Ordering::Relaxed) >= total
     }
 
-    pub(crate) fn set_total(&self, total: u64) {
+    pub fn set_total(&self, total: u64) {
         self.0.total.store(total, Ordering::Relaxed);
     }
 
-    pub(crate) fn set_complete(&self, complete: u64) {
+    pub fn set_complete(&self, complete: u64) {
         self.0.complete.store(complete, Ordering::Relaxed);
     }
 
-    pub(crate) fn set_finished(&self) {
+    pub fn set_finished(&self) {
         let total = self.0.total.load(Ordering::Relaxed);
         self.0.complete.store(total, Ordering::Relaxed);
     }

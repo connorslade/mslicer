@@ -18,7 +18,7 @@ use crate::{
         elephant_foot_fixer::{self},
         PluginManager,
     },
-    render::{camera::Camera, preview, rendered_mesh::RenderedMesh},
+    render::{camera::Camera, model::Model, preview},
     ui::{
         drag_and_drop,
         popup::{Popup, PopupIcon, PopupManager},
@@ -51,7 +51,7 @@ pub struct App {
     pub plugin_manager: PluginManager,
 
     pub camera: Camera,
-    pub meshes: Arc<RwLock<Vec<RenderedMesh>>>,
+    pub meshes: Arc<RwLock<Vec<Model>>>,
     pub slice_operation: Option<SliceOperation>,
     pub remote_print: RemotePrint,
     pub config_dir: PathBuf,

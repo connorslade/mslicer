@@ -2,11 +2,12 @@ use std::collections::{HashMap, HashSet};
 
 use crate::mesh::Mesh;
 
+#[derive(Clone)]
 pub struct HalfEdgeMesh {
     half_edges: Vec<HalfEdge>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct HalfEdge {
     pub origin_vertex: u32,
     pub vertex: u32,
@@ -18,7 +19,7 @@ pub struct HalfEdge {
 }
 
 impl HalfEdgeMesh {
-    pub fn new(mesh: &Mesh) -> Self {
+    pub fn from_mesh(mesh: &Mesh) -> Self {
         let mut half_edges = Vec::new();
         let mut edge_map = HashMap::new();
 

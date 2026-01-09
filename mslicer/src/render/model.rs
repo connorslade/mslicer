@@ -12,17 +12,23 @@ use wgpu::{
     Buffer, BufferUsages, Device,
 };
 
-use slicer::{intersection::bvh::Bvh, mesh::Mesh};
+use slicer::{
+    half_edge::HalfEdgeMesh, intersection::bvh::Bvh, mesh::Mesh,
+    supports::overhangs::detect_point_overhangs,
+};
 
 use crate::{app::App, render::ModelVertex};
 
-pub struct RenderedMesh {
+pub struct Model {
     pub name: String,
     pub id: u32,
 
     pub mesh: Mesh,
     pub bvh: Bvh,
+    pub half_edge: HalfEdgeMesh,
+
     pub warnings: MeshWarnings,
+    pub overhangs: Option<Vec<u32>>,
 
     pub color: Color32,
     pub hidden: bool,
@@ -44,17 +50,22 @@ pub struct RenderedMeshBuffers {
     pub index_buffer: Buffer,
 }
 
-impl RenderedMesh {
+impl Model {
     pub fn from_mesh(mesh: Mesh) -> Self {
         Self {
             name: String::new(),
             id: next_id(),
+
             bvh: Bvh::from_mesh(&mesh),
+            half_edge: HalfEdgeMesh::from_mesh(&mesh),
             mesh,
+
+            warnings: MeshWarnings::empty(),
+            overhangs: None,
+
             color: Color32::WHITE,
             hidden: false,
             locked_scale: true,
-            warnings: MeshWarnings::empty(),
             buffers: None,
         }
     }
@@ -87,6 +98,15 @@ impl RenderedMesh {
             .map(|x| (x.clamp(0.0, 1.0) * 255.0) as u8);
         self.color = Color32::from_rgb(color.r, color.g, color.b);
         self
+    }
+
+    // Returns a list of vertices that are lower than all their neighbors.
+    pub fn find_overhangs(&mut self) {
+        self.overhangs = Some(detect_point_overhangs(
+            &self.mesh,
+            &self.half_edge,
+            |origin, _, _| origin.origin_vertex,
+        ));
     }
 
     pub fn try_get_buffers(&self) -> Option<&RenderedMeshBuffers> {
@@ -124,7 +144,7 @@ impl RenderedMesh {
     }
 }
 
-impl RenderedMesh {
+impl Model {
     pub fn align_to_bed(&mut self) {
         let (bottom, _) = self.mesh.bounds();
 
@@ -150,25 +170,33 @@ impl RenderedMesh {
     pub fn set_scale(&mut self, app: &App, scale: Vector3<f32>) {
         self.mesh.set_scale(scale);
         self.update_oob(&app.slice_config);
+        self.overhangs = None;
     }
 
     pub fn set_rotation(&mut self, app: &App, rotation: Vector3<f32>) {
         self.mesh.set_rotation(rotation);
         self.update_oob(&app.slice_config);
+        self.overhangs = None;
     }
 }
 
-impl Clone for RenderedMesh {
+// todo: this really bad...
+impl Clone for Model {
     fn clone(&self) -> Self {
         Self {
             name: self.name.clone(),
             id: next_id(),
+
             mesh: self.mesh.clone(),
             bvh: self.bvh.clone(),
+            half_edge: self.half_edge.clone(),
+
+            warnings: self.warnings,
+            overhangs: self.overhangs.clone(),
+
             color: self.color,
             hidden: self.hidden,
             locked_scale: self.locked_scale,
-            warnings: self.warnings,
             buffers: None,
         }
     }

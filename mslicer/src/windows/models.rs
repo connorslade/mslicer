@@ -9,7 +9,7 @@ use slicer::Pos;
 
 use crate::{
     app::App,
-    render::rendered_mesh::MeshWarnings,
+    render::model::MeshWarnings,
     ui::components::{vec3_dragger, vec3_dragger_proportional},
 };
 

@@ -1,7 +1,5 @@
 use anyhow::Result;
-use common::serde::Deserializer;
-
-use crate::Progress;
+use common::{progress::Progress, serde::Deserializer};
 
 pub const WHITESPACE: [char; 4] = [' ', '\t', '\r', '\n'];
 

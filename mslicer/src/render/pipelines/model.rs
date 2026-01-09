@@ -13,8 +13,7 @@ use wgpu::{
 use crate::{
     include_shader,
     render::{
-        rendered_mesh::RenderedMeshBuffers, workspace::WorkspaceRenderCallback,
-        VERTEX_BUFFER_LAYOUT,
+        model::RenderedMeshBuffers, workspace::WorkspaceRenderCallback, VERTEX_BUFFER_LAYOUT,
     },
     DEPTH_TEXTURE_FORMAT,
 };

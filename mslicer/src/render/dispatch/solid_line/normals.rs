@@ -4,12 +4,12 @@ use nalgebra::{Matrix4, Vector3};
 use parking_lot::RwLock;
 
 use crate::render::{
-    pipelines::solid_line::Line, rendered_mesh::RenderedMesh, workspace::WorkspaceRenderCallback,
+    model::Model, pipelines::solid_line::Line, workspace::WorkspaceRenderCallback,
 };
 
 use super::LineDispatch;
 
-type Models = Arc<RwLock<Vec<RenderedMesh>>>;
+type Models = Arc<RwLock<Vec<Model>>>;
 
 pub struct NormalsDispatch {
     last_models: Vec<u32>,
