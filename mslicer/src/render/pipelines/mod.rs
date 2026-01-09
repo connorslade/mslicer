@@ -1,15 +1,15 @@
 mod consts;
+pub mod line;
 pub mod model;
+pub mod point;
 pub mod slice_preview;
-pub mod solid_line;
-pub mod target_point;
 
 #[macro_export]
 macro_rules! include_shader {
     ($shader:literal) => {
-        ShaderModuleDescriptor {
+        wgpu::ShaderModuleDescriptor {
             label: None,
-            source: ShaderSource::Wgsl(include_str!(concat!("../shaders/", $shader)).into()),
+            source: wgpu::ShaderSource::Wgsl(include_str!(concat!("../shaders/", $shader)).into()),
         }
     };
 }

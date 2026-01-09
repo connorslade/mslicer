@@ -4,10 +4,9 @@ use nalgebra::{Matrix4, Vector3};
 use parking_lot::RwLock;
 
 use crate::render::{
-    model::Model, pipelines::solid_line::Line, workspace::WorkspaceRenderCallback,
+    dispatch::line::LineGenerator, model::Model, pipelines::line::Line,
+    workspace::WorkspaceRenderCallback,
 };
-
-use super::LineDispatch;
 
 type Models = Arc<RwLock<Vec<Model>>>;
 
@@ -31,7 +30,7 @@ impl NormalsDispatch {
     }
 }
 
-impl LineDispatch for NormalsDispatch {
+impl LineGenerator for NormalsDispatch {
     fn generate_lines(&mut self, resources: &WorkspaceRenderCallback) -> bool {
         let show_normals = resources.config.show_normals;
         if !show_normals && show_normals == self.last_normals {
@@ -39,13 +38,11 @@ impl LineDispatch for NormalsDispatch {
         }
 
         let models = resources.models.read();
-        let ids = models
-            .iter()
+        let ids = (models.iter())
             .filter(|x| x.hidden)
             .map(|x| x.id)
             .collect::<Vec<_>>();
-        let transforms = models
-            .iter()
+        let transforms = (models.iter())
             .map(|x| *x.mesh.transformation_matrix())
             .collect::<Vec<_>>();
 
@@ -82,8 +79,7 @@ fn generate_normals(models: Models) -> Vec<Line> {
         let (face, vertices) = (model.mesh.faces(), model.mesh.vertices());
 
         for (idx, &face) in face.iter().enumerate() {
-            let center = face
-                .iter()
+            let center = (face.iter())
                 .map(|&idx| vertices[idx as usize])
                 .sum::<Vector3<f32>>()
                 / 3.0;

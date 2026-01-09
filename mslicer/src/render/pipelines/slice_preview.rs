@@ -4,17 +4,18 @@ use wgpu::{
     util::{BufferInitDescriptor, DeviceExt},
     BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayout, BindGroupLayoutDescriptor,
     BindGroupLayoutEntry, BindingResource, BindingType, Buffer, BufferBinding, BufferBindingType,
-    BufferDescriptor, BufferUsages, ColorTargetState, ColorWrites, CompareFunction,
-    DepthStencilState, Device, FragmentState, IndexFormat, MultisampleState,
-    PipelineLayoutDescriptor, PrimitiveState, Queue, RenderPass, RenderPipeline,
-    RenderPipelineDescriptor, ShaderModuleDescriptor, ShaderSource, ShaderStages, TextureFormat,
-    VertexState, COPY_BUFFER_ALIGNMENT,
+    BufferDescriptor, BufferUsages, ColorTargetState, ColorWrites, Device, FragmentState,
+    IndexFormat, MultisampleState, PipelineLayoutDescriptor, PrimitiveState, Queue, RenderPass,
+    RenderPipeline, RenderPipelineDescriptor, ShaderStages, TextureFormat, VertexState,
+    COPY_BUFFER_ALIGNMENT,
 };
 
 use crate::{
     include_shader,
-    render::{slice_preview::SlicePreviewRenderCallback, ModelVertex, VERTEX_BUFFER_LAYOUT},
-    DEPTH_TEXTURE_FORMAT,
+    render::{
+        pipelines::consts::DEPTH_STENCIL_STATE, slice_preview::SlicePreviewRenderCallback,
+        ModelVertex, VERTEX_BUFFER_LAYOUT,
+    },
 };
 
 use super::consts::{BASE_UNIFORM_DESCRIPTOR, UNIFORM_BIND_GROUP_LAYOUT_ENTRY};
@@ -90,13 +91,7 @@ impl SlicePreviewPipeline {
                 compilation_options: Default::default(),
             }),
             primitive: PrimitiveState::default(),
-            depth_stencil: Some(DepthStencilState {
-                format: DEPTH_TEXTURE_FORMAT,
-                depth_write_enabled: true,
-                depth_compare: CompareFunction::Less,
-                stencil: Default::default(),
-                bias: Default::default(),
-            }),
+            depth_stencil: Some(DEPTH_STENCIL_STATE),
             multisample: MultisampleState {
                 count: 4,
                 ..Default::default()

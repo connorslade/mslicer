@@ -1,1 +1,2 @@
-pub mod solid_line;
+pub mod line;
+pub mod point;

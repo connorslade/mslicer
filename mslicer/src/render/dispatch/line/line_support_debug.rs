@@ -1,8 +1,8 @@
 use nalgebra::Vector3;
 
-use crate::render::{pipelines::solid_line::Line, workspace::WorkspaceRenderCallback};
-
-use super::LineDispatch;
+use crate::render::{
+    dispatch::line::LineGenerator, pipelines::line::Line, workspace::WorkspaceRenderCallback,
+};
 
 pub struct LineSupportDebugDispatch {
     cached_lines: Vec<Line>,
@@ -16,7 +16,7 @@ impl LineSupportDebugDispatch {
     }
 }
 
-impl LineDispatch for LineSupportDebugDispatch {
+impl LineGenerator for LineSupportDebugDispatch {
     fn generate_lines(&mut self, resources: &WorkspaceRenderCallback) -> bool {
         self.cached_lines = resources
             .line_support_debug

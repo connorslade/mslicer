@@ -1,9 +1,9 @@
 use egui::Theme;
 use nalgebra::Vector3;
 
-use crate::render::{pipelines::solid_line::Line, workspace::WorkspaceRenderCallback};
-
-use super::LineDispatch;
+use crate::render::{
+    dispatch::line::LineGenerator, pipelines::line::Line, workspace::WorkspaceRenderCallback,
+};
 
 pub struct BuildPlateDispatch {
     last_bed_size: Vector3<f32>,
@@ -25,7 +25,7 @@ impl BuildPlateDispatch {
     }
 }
 
-impl LineDispatch for BuildPlateDispatch {
+impl LineGenerator for BuildPlateDispatch {
     fn generate_lines(&mut self, resources: &WorkspaceRenderCallback) -> bool {
         let bed_size = resources.bed_size;
         let grid_size = resources.grid_size;

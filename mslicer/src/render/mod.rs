@@ -1,16 +1,16 @@
 use std::mem;
 
-use dispatch::solid_line::SolidLineDispatch;
+use dispatch::line::LineDispatch;
 use eframe::CreationContext;
 use egui_wgpu::RenderState;
 use nalgebra::Vector4;
-use pipelines::{
-    model::ModelPipeline, slice_preview::SlicePreviewPipeline, target_point::TargetPointPipeline,
-};
+use pipelines::{model::ModelPipeline, slice_preview::SlicePreviewPipeline};
 use slice_preview::SlicePreviewRenderResources;
 use wgpu::{BufferAddress, VertexAttribute, VertexBufferLayout, VertexFormat, VertexStepMode};
 
 use workspace::WorkspaceRenderResources;
+
+use crate::render::dispatch::point::PointDispatch;
 pub mod camera;
 mod dispatch;
 pub mod model;
@@ -42,9 +42,9 @@ pub fn init_wgpu(cc: &CreationContext) -> RenderState {
 
     let resources = &mut render_state.renderer.write().callback_resources;
     resources.insert(WorkspaceRenderResources {
-        solid_line: SolidLineDispatch::new(device, texture),
+        solid_line: LineDispatch::new(device, texture),
         model_pipeline: ModelPipeline::new(device, texture),
-        target_point_pipeline: TargetPointPipeline::new(device, texture),
+        point: PointDispatch::new(device, texture),
     });
     resources.insert(SlicePreviewRenderResources {
         slice_preview_pipeline: SlicePreviewPipeline::new(device, texture),

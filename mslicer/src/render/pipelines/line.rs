@@ -1,19 +1,40 @@
-use std::mem;
-
 use encase::{ShaderSize, ShaderType, UniformBuffer};
 use nalgebra::{Matrix4, Vector3};
 use wgpu::{
     util::{BufferInitDescriptor, DeviceExt},
-    BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayoutDescriptor,
-    BindGroupLayoutEntry, BindingResource, BindingType, Buffer, BufferAddress, BufferBinding,
-    BufferBindingType, BufferDescriptor, BufferUsages, ColorTargetState, ColorWrites,
-    CompareFunction, DepthStencilState, Device, FragmentState, IndexFormat, MultisampleState,
-    PipelineLayoutDescriptor, PolygonMode, PrimitiveState, Queue, RenderPass, RenderPipeline,
-    RenderPipelineDescriptor, ShaderModuleDescriptor, ShaderSource, ShaderStages, TextureFormat,
-    VertexAttribute, VertexBufferLayout, VertexFormat, VertexState, VertexStepMode,
+    BindGroup, BindGroupDescriptor, BindGroupEntry, BindingResource, Buffer, BufferBinding,
+    BufferDescriptor, BufferUsages, ColorTargetState, ColorWrites, Device, FragmentState,
+    IndexFormat, MultisampleState, PipelineLayoutDescriptor, PolygonMode, PrimitiveState, Queue,
+    RenderPass, RenderPipeline, RenderPipelineDescriptor, TextureFormat, VertexAttribute,
+    VertexBufferLayout, VertexFormat, VertexState, VertexStepMode,
 };
 
-use crate::{include_shader, render::workspace::WorkspaceRenderCallback, DEPTH_TEXTURE_FORMAT};
+use crate::{
+    include_shader,
+    render::{
+        pipelines::consts::{
+            BASE_BIND_GROUP_LAYOUT_DESCRIPTOR, BASE_UNIFORM_DESCRIPTOR, DEPTH_STENCIL_STATE,
+        },
+        workspace::WorkspaceRenderCallback,
+    },
+};
+
+const VERTEX_BUFFER_LAYOUT: VertexBufferLayout = VertexBufferLayout {
+    array_stride: LineVertex::SHADER_SIZE.get(),
+    step_mode: VertexStepMode::Vertex,
+    attributes: &[
+        VertexAttribute {
+            format: VertexFormat::Float32x4,
+            offset: 0,
+            shader_location: 0,
+        },
+        VertexAttribute {
+            format: VertexFormat::Float32x3,
+            offset: 4 * 4,
+            shader_location: 1,
+        },
+    ],
+};
 
 pub struct SolidLinePipeline {
     render_pipeline: RenderPipeline,
@@ -23,8 +44,6 @@ pub struct SolidLinePipeline {
     index_buffer: Option<Buffer>,
     uniform_buffer: Buffer,
 
-    last_bed_size: Vector3<f32>,
-    last_grid_size: f32,
     vertex_count: u32,
 }
 
@@ -37,12 +56,12 @@ pub struct Line {
 }
 
 #[derive(ShaderType)]
-struct SolidLineUniforms {
+struct LineUniforms {
     transform: Matrix4<f32>,
 }
 
 #[repr(C)]
-#[derive(Default, Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
+#[derive(Default, Copy, Clone, ShaderType, bytemuck::Pod, bytemuck::Zeroable)]
 struct LineVertex {
     pub position: [f32; 4],
     pub color: [f32; 3],
@@ -50,29 +69,14 @@ struct LineVertex {
 
 impl SolidLinePipeline {
     pub fn new(device: &Device, texture: TextureFormat) -> Self {
-        let shader = device.create_shader_module(include_shader!("solid_line.wgsl"));
+        let shader = device.create_shader_module(include_shader!("line.wgsl"));
 
         let uniform_buffer = device.create_buffer(&BufferDescriptor {
-            label: None,
-            size: SolidLineUniforms::SHADER_SIZE.get(),
-            usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
-            mapped_at_creation: false,
+            size: LineUniforms::SHADER_SIZE.get(),
+            ..BASE_UNIFORM_DESCRIPTOR
         });
 
-        let bind_group_layout = device.create_bind_group_layout(&BindGroupLayoutDescriptor {
-            label: None,
-            entries: &[BindGroupLayoutEntry {
-                binding: 0,
-                visibility: ShaderStages::VERTEX | ShaderStages::FRAGMENT,
-                ty: BindingType::Buffer {
-                    ty: BufferBindingType::Uniform,
-                    has_dynamic_offset: false,
-                    min_binding_size: None,
-                },
-                count: None,
-            }],
-        });
-
+        let bind_group_layout = device.create_bind_group_layout(&BASE_BIND_GROUP_LAYOUT_DESCRIPTOR);
         let pipeline_layout = device.create_pipeline_layout(&PipelineLayoutDescriptor {
             label: None,
             bind_group_layouts: &[&bind_group_layout],
@@ -98,22 +102,7 @@ impl SolidLinePipeline {
             vertex: VertexState {
                 module: &shader,
                 entry_point: None,
-                buffers: &[VertexBufferLayout {
-                    array_stride: mem::size_of::<LineVertex>() as BufferAddress,
-                    step_mode: VertexStepMode::Vertex,
-                    attributes: &[
-                        VertexAttribute {
-                            format: VertexFormat::Float32x4,
-                            offset: 0,
-                            shader_location: 0,
-                        },
-                        VertexAttribute {
-                            format: VertexFormat::Float32x3,
-                            offset: 4 * 4,
-                            shader_location: 1,
-                        },
-                    ],
-                }],
+                buffers: &[VERTEX_BUFFER_LAYOUT],
                 compilation_options: Default::default(),
             },
             fragment: Some(FragmentState {
@@ -130,13 +119,7 @@ impl SolidLinePipeline {
                 polygon_mode: PolygonMode::Line,
                 ..Default::default()
             },
-            depth_stencil: Some(DepthStencilState {
-                format: DEPTH_TEXTURE_FORMAT,
-                depth_write_enabled: true,
-                depth_compare: CompareFunction::Less,
-                stencil: Default::default(),
-                bias: Default::default(),
-            }),
+            depth_stencil: Some(DEPTH_STENCIL_STATE),
             multisample: MultisampleState {
                 count: 4,
                 ..Default::default()
@@ -153,8 +136,6 @@ impl SolidLinePipeline {
             index_buffer: None,
             uniform_buffer,
 
-            last_bed_size: Vector3::zeros(),
-            last_grid_size: 0.0,
             vertex_count: 0,
         }
     }
@@ -169,14 +150,11 @@ impl SolidLinePipeline {
         lines: Option<&[&[Line]]>,
     ) {
         if let Some(lines) = lines {
-            let vertex = lines
-                .iter()
+            let vertex = (lines.iter())
                 .flat_map(|x| x.iter())
                 .flat_map(Line::to_vertex)
                 .collect::<Vec<_>>();
             self.vertex_count = vertex.len() as u32;
-            self.last_bed_size = resources.bed_size;
-            self.last_grid_size = resources.grid_size;
 
             self.vertex_buffer = Some(device.create_buffer_init(&BufferInitDescriptor {
                 label: None,
@@ -192,11 +170,8 @@ impl SolidLinePipeline {
         }
 
         let mut buffer = UniformBuffer::new(Vec::new());
-        buffer
-            .write(&SolidLineUniforms {
-                transform: resources.transform,
-            })
-            .unwrap();
+        let transform = resources.transform;
+        buffer.write(&LineUniforms { transform }).unwrap();
         queue.write_buffer(&self.uniform_buffer, 0, &buffer.into_inner());
     }
 

@@ -5,17 +5,17 @@ use serde::{Deserialize, Serialize};
 use wgpu::{
     util::{BufferInitDescriptor, DeviceExt},
     BindGroup, BindGroupEntry, BindGroupLayout, BlendState, BufferUsages, ColorTargetState,
-    ColorWrites, CompareFunction, DepthStencilState, Device, FragmentState, IndexFormat,
-    MultisampleState, PipelineLayoutDescriptor, PrimitiveState, RenderPass, RenderPipeline,
-    RenderPipelineDescriptor, ShaderModuleDescriptor, ShaderSource, TextureFormat, VertexState,
+    ColorWrites, Device, FragmentState, IndexFormat, MultisampleState, PipelineLayoutDescriptor,
+    PrimitiveState, RenderPass, RenderPipeline, RenderPipelineDescriptor, TextureFormat,
+    VertexState,
 };
 
 use crate::{
     include_shader,
     render::{
-        model::RenderedMeshBuffers, workspace::WorkspaceRenderCallback, VERTEX_BUFFER_LAYOUT,
+        model::RenderedMeshBuffers, pipelines::consts::DEPTH_STENCIL_STATE,
+        workspace::WorkspaceRenderCallback, VERTEX_BUFFER_LAYOUT,
     },
-    DEPTH_TEXTURE_FORMAT,
 };
 
 use super::consts::BASE_BIND_GROUP_LAYOUT_DESCRIPTOR;
@@ -78,13 +78,7 @@ impl ModelPipeline {
                 compilation_options: Default::default(),
             }),
             primitive: PrimitiveState::default(),
-            depth_stencil: Some(DepthStencilState {
-                format: DEPTH_TEXTURE_FORMAT,
-                depth_write_enabled: true,
-                depth_compare: CompareFunction::Less,
-                stencil: Default::default(),
-                bias: Default::default(),
-            }),
+            depth_stencil: Some(DEPTH_STENCIL_STATE),
             multisample: MultisampleState {
                 count: 4,
                 ..Default::default()

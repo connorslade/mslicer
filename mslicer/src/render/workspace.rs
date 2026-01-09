@@ -6,20 +6,17 @@ use nalgebra::{Matrix4, Vector3};
 use parking_lot::RwLock;
 use wgpu::{CommandBuffer, CommandEncoder, Device, Queue, RenderPass};
 
-use crate::app::config::Config;
+use crate::{app::config::Config, render::dispatch::point::PointDispatch};
 
 use super::{
-    camera::Camera,
-    dispatch::solid_line::SolidLineDispatch,
-    model::Model,
-    pipelines::{model::ModelPipeline, target_point::TargetPointPipeline},
+    camera::Camera, dispatch::line::LineDispatch, model::Model, pipelines::model::ModelPipeline,
 };
 
 pub struct WorkspaceRenderResources {
     pub model_pipeline: ModelPipeline,
-    pub target_point_pipeline: TargetPointPipeline,
 
-    pub solid_line: SolidLineDispatch,
+    pub point: PointDispatch,
+    pub solid_line: LineDispatch,
 }
 
 #[derive(Clone)]
@@ -48,9 +45,10 @@ impl CallbackTrait for WorkspaceRenderCallback {
     ) -> Vec<CommandBuffer> {
         let resources = resources.get_mut::<WorkspaceRenderResources>().unwrap();
 
-        resources.solid_line.prepare(device, queue, self);
         resources.model_pipeline.prepare(device, self);
-        resources.target_point_pipeline.prepare(queue, self);
+
+        resources.solid_line.prepare(device, queue, self);
+        resources.point.prepare(device, queue, self);
 
         Vec::new()
     }
@@ -67,6 +65,6 @@ impl CallbackTrait for WorkspaceRenderCallback {
 
         resources.solid_line.paint(render_pass);
         resources.model_pipeline.paint(render_pass, self);
-        resources.target_point_pipeline.paint(render_pass, self);
+        resources.point.paint(render_pass);
     }
 }
