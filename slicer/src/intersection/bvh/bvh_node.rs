@@ -1,7 +1,6 @@
-use nalgebra::Vector3;
 use ordered_float::OrderedFloat;
 
-use crate::mesh::Mesh;
+use crate::{intersection::bvh::Ray, mesh::Mesh};
 
 use super::bounding_box::BoundingBox;
 
@@ -20,29 +19,46 @@ pub enum BvhNode {
 }
 
 impl BvhNode {
-    pub fn intersect_ray(
-        &self,
-        arena: &Vec<BvhNode>,
-        mesh: &Mesh,
-        origin: Vector3<f32>,
-        direction: Vector3<f32>,
-        out: &mut Vec<(f32, usize)>,
-    ) {
+    fn bounds(&self) -> &BoundingBox {
         match self {
-            BvhNode::Leaf { faces, bounds } if bounds.intersect_ray(origin, direction) => {
-                for face in faces {
-                    intersect_ray(mesh, *face, origin, direction, out)
+            BvhNode::Leaf { bounds, .. } | BvhNode::Node { bounds, .. } => bounds,
+        }
+    }
+
+    pub fn intersect<const SEGMENT: bool>(
+        &self,
+        arena: &[BvhNode],
+        mesh: &Mesh,
+        ray: Ray,
+        out: &mut (f32, usize),
+    ) {
+        if !(self.bounds().intersect::<SEGMENT>(ray))
+            .map(|t| t < out.0)
+            .unwrap_or_default()
+        {
+            return;
+        };
+
+        match self {
+            BvhNode::Leaf { faces, .. } => faces
+                .iter()
+                .for_each(|face| intersect_ray(mesh, *face, ray, out)),
+            BvhNode::Node { left, right, .. } => {
+                let left = (arena[*left].bounds().intersect::<SEGMENT>(ray))
+                    .and_then(|t| (t <= out.0).then_some((t, *left)));
+                let right = (arena[*right].bounds().intersect::<SEGMENT>(ray))
+                    .and_then(|t| (t <= out.0).then_some((t, *right)));
+
+                if let (Some(a), Some(b)) = (left, right) {
+                    let (first, second) = if a.0 < b.0 { (a, b) } else { (b, a) };
+                    arena[first.1].intersect::<SEGMENT>(arena, mesh, ray, out);
+                    if second.0 <= out.0 {
+                        arena[second.1].intersect::<SEGMENT>(arena, mesh, ray, out);
+                    }
+                } else if let Some((_, child)) = left.or(right) {
+                    arena[child].intersect::<SEGMENT>(arena, mesh, ray, out);
                 }
             }
-            BvhNode::Node {
-                left,
-                right,
-                bounds,
-            } if bounds.intersect_ray(origin, direction) => {
-                arena[*left].intersect_ray(arena, mesh, origin, direction, out);
-                arena[*right].intersect_ray(arena, mesh, origin, direction, out);
-            }
-            _ => {}
         }
     }
 }
@@ -95,13 +111,7 @@ pub fn build_bvh_node(
 
 // From https://iquilezles.org/articles/intersectors
 // Look into Möller–Trumbore triangle-ray intersection?
-fn intersect_ray(
-    mesh: &Mesh,
-    face_idx: usize,
-    origin: Vector3<f32>,
-    direction: Vector3<f32>,
-    out: &mut Vec<(f32, usize)>,
-) {
+fn intersect_ray(mesh: &Mesh, face_idx: usize, ray: Ray, out: &mut (f32, usize)) {
     let face = mesh.face(face_idx);
     let verts = mesh.vertices();
 
@@ -111,17 +121,17 @@ fn intersect_ray(
 
     let v1v0 = v1 - v0;
     let v2v0 = v2 - v0;
-    let rov0 = origin - v0;
+    let rov0 = ray.origin - v0;
 
     let n = v1v0.cross(&v2v0);
-    let q = rov0.cross(&direction);
+    let q = rov0.cross(&ray.direction);
 
-    let d = direction.dot(&n).recip();
+    let d = ray.direction.dot(&n).recip();
     let u = d * (-q).dot(&v2v0);
     let v = d * q.dot(&v1v0);
     let t = d * (-n).dot(&rov0);
 
-    if !(u < 0.0 || v < 0.0 || (u + v) > 1.0) {
-        out.push((t, face_idx));
+    if !(u < 0.0 || v < 0.0 || (u + v) > 1.0) && t < out.0 {
+        *out = (t, face_idx);
     }
 }

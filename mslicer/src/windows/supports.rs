@@ -5,11 +5,18 @@ use slicer::supports::line::LineSupportGenerator;
 use crate::{app::App, render::model::Model, ui::components::dragger};
 
 pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
-    ui.strong("This feature is still very early in development.");
+    ui.label("This feature is still very early in development.");
     ui.add_space(8.0);
 
+    ui.heading("Overhang Detection");
+
+    let min_angle = &mut app.state.line_support_config.min_angle;
+    ui.checkbox(&mut true, "Visualize Overhanging Faces");
+    dragger(ui, "Overhang Angle", min_angle, |x| x.speed(0.1));
+
+    ui.add_space(8.0);
     let mut meshes = app.meshes.write();
-    ui.menu_button("Detect", |ui| {
+    ui.menu_button("Detect Overhanging Points", |ui| {
         ui.style_mut().visuals.button_frame = false;
         for idx in 0..meshes.len() {
             let mesh = &mut meshes[idx];

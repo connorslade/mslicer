@@ -2,9 +2,8 @@ use std::sync::Arc;
 
 use crate::mesh::Mesh;
 
-use bvh_node::{build_bvh_node, BvhNode};
+use bvh_node::{BvhNode, build_bvh_node};
 use nalgebra::Vector3;
-use ordered_float::OrderedFloat;
 
 mod bounding_box;
 mod bvh_node;
@@ -12,6 +11,12 @@ mod bvh_node;
 #[derive(Clone, Default)]
 pub struct Bvh {
     nodes: Arc<Vec<BvhNode>>,
+}
+
+#[derive(Clone, Copy)]
+struct Ray {
+    origin: Vector3<f32>,
+    direction: Vector3<f32>,
 }
 
 impl Bvh {
@@ -31,18 +36,36 @@ impl Bvh {
         }
     }
 
+    fn intersect<const SEGMENT: bool>(&self, mesh: &Mesh, ray: Ray) -> Option<usize> {
+        let mut out = (f32::MAX, usize::MAX);
+        if let Some(root) = self.nodes.last() {
+            root.intersect::<SEGMENT>(&self.nodes, mesh, ray, &mut out);
+        }
+
+        (out.1 != usize::MAX).then_some(out.1)
+    }
+
     pub fn intersect_ray(
         &self,
         mesh: &Mesh,
         origin: Vector3<f32>,
         direction: Vector3<f32>,
     ) -> Option<usize> {
-        let mut out = Vec::new();
-        if let Some(root) = self.nodes.last() {
-            root.intersect_ray(&self.nodes, mesh, origin, direction, &mut out);
-        }
+        self.intersect::<false>(mesh, Ray { origin, direction })
+    }
 
-        out.sort_by_key(|(dist, _face)| OrderedFloat(*dist));
-        out.first().map(|(_dist, face)| *face)
+    pub fn intersect_segment(
+        &self,
+        mesh: &Mesh,
+        a: Vector3<f32>,
+        b: Vector3<f32>,
+    ) -> Option<usize> {
+        self.intersect::<true>(
+            mesh,
+            Ray {
+                origin: a,
+                direction: b - a,
+            },
+        )
     }
 }

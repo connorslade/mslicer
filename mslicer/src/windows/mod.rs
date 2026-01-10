@@ -3,7 +3,7 @@ use std::mem;
 use egui::{CentralPanel, Color32, Context, Frame, Id, Sense, Theme, Ui, WidgetText};
 use egui_dock::{DockArea, NodeIndex, SurfaceIndex, TabViewer};
 use egui_wgpu::Callback;
-use nalgebra::Matrix4;
+use nalgebra::{Matrix4, Vector3};
 use parking_lot::MappedRwLockWriteGuard;
 use serde::{Deserialize, Serialize};
 
@@ -163,10 +163,46 @@ fn viewport(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                 let position =
                     verts[face[0] as usize] + verts[face[1] as usize] + verts[face[2] as usize];
                 let normal = model.mesh.normal(face_idx);
-                app.state.line_support_debug.push([
-                    model.mesh.transform(&(position / 3.0)),
-                    model.mesh.transform_normal(&normal),
-                ]);
+
+                if normal.z <= 0.0 {
+                    let mut position = model.mesh.transform(&(position / 3.0));
+                    let normal = model.mesh.transform_normal(&normal);
+                    app.state.line_support_debug.push([position, normal]);
+                    let start = position + normal;
+
+                    let down = model.mesh.inv_transform_normal(&-Vector3::z());
+                    for n in 0..15 {
+                        let intersection = model.bvh.intersect_ray(&model.mesh, position, down);
+
+                        if let Some(intersection) = intersection {
+                            let normal =
+                                (model.mesh).transform_normal(&model.mesh.normal(intersection));
+                            position += normal.xy().normalize().to_homogeneous();
+                        } else {
+                            println!("n = {n}");
+                            let base = position.xy().to_homogeneous();
+                            for i in (0..10).rev() {
+                                let middle = base + Vector3::z() * start.z * (i as f32 / 10.0);
+                                let intersection = model.bvh.intersect_segment(
+                                    &model.mesh,
+                                    model.mesh.inv_transform(&start),
+                                    model.mesh.inv_transform(&middle),
+                                );
+
+                                if intersection.is_some() {
+                                    continue;
+                                }
+
+                                app.state.line_support_debug.extend_from_slice(&[
+                                    [start, middle - start],
+                                    [middle, base - middle],
+                                ]);
+                                break;
+                            }
+                            break;
+                        }
+                    }
+                }
             }
         }
     }

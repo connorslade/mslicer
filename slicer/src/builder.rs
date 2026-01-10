@@ -69,12 +69,12 @@ impl MeshBuilder {
             }
         }
 
-        if let Some((first_top, first_bottom)) = fist {
-            if let Some((last_top, last_bottom)) = last {
-                self.add_quad([last_bottom, last_top, first_bottom, first_top]);
-                self.add_face([first_top, last_top, top_center]);
-                self.add_face([bottom_center, last_bottom, first_bottom]);
-            }
+        if let Some((first_top, first_bottom)) = fist
+            && let Some((last_top, last_bottom)) = last
+        {
+            self.add_quad([last_bottom, last_top, first_bottom, first_top]);
+            self.add_face([first_top, last_top, top_center]);
+            self.add_face([bottom_center, last_bottom, first_bottom]);
         }
     }
 }

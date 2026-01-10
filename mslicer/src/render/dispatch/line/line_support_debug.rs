@@ -22,7 +22,7 @@ impl LineGenerator for LineSupportDebugDispatch {
             .line_support_debug
             .iter()
             .map(|[vertex, normal]| {
-                Line::new(*vertex, *vertex + normal * 0.2).color(Vector3::new(1.0, 0.0, 0.0))
+                Line::new(*vertex, *vertex + normal).color(Vector3::new(1.0, 0.0, 0.0))
             })
             .collect();
         true

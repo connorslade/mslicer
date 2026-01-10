@@ -149,7 +149,7 @@ impl Default for LineSupportConfig {
             base_height: 0.5,
             support_precision: 15,
 
-            min_angle: 3.0,
+            min_angle: 30.0,
             face_support_spacing: 1.0,
         }
     }
