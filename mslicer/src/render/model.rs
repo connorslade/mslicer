@@ -8,12 +8,12 @@ use common::{config::SliceConfig, oklab::START_COLOR};
 use egui::Color32;
 use nalgebra::Vector3;
 use wgpu::{
-    util::{BufferInitDescriptor, DeviceExt},
     Buffer, BufferUsages, Device,
+    util::{BufferInitDescriptor, DeviceExt},
 };
 
 use slicer::{
-    half_edge::HalfEdgeMesh, intersection::bvh::Bvh, mesh::Mesh,
+    geometry::bvh::Bvh, half_edge::HalfEdgeMesh, mesh::Mesh,
     supports::overhangs::detect_point_overhangs,
 };
 

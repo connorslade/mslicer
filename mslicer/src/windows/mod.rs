@@ -148,60 +148,38 @@ fn viewport(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     let (pos, dir) = app.camera.hovered_ray(aspect, (uv.x, uv.y));
 
     {
-        app.state.line_support_debug.clear();
+        let lines = &mut app.state.line_support_debug;
+        lines.clear();
+
+        let delta = 0.1;
+
         for model in app.meshes.read().iter() {
-            let intersection = model.bvh.intersect_ray(
+            let sdf = |point| model.bvh.closest(&model.mesh, point).unwrap().t;
+
+            let Some(intersection) = model.bvh.intersect_ray(
                 &model.mesh,
                 model.mesh.inv_transform(&pos),
                 model.mesh.inv_transform_normal(&dir),
-            );
+            ) else {
+                continue;
+            };
 
-            if let Some(face_idx) = intersection {
-                let face = model.mesh.face(face_idx);
-                let verts = model.mesh.vertices();
+            let normal = (model.mesh).transform_normal(&model.mesh.normal(intersection.face));
+            let mut point = intersection.position + normal * 0.1;
+            loop {
+                let distance = sdf(point);
+                let delta_x = sdf(point + Vector3::x() * delta);
+                let delta_y = sdf(point + Vector3::y() * delta);
+                let delta_z = sdf(point + Vector3::z() * delta);
 
-                let position =
-                    verts[face[0] as usize] + verts[face[1] as usize] + verts[face[2] as usize];
-                let normal = model.mesh.normal(face_idx);
+                let grad = Vector3::new(delta_x, delta_y, delta_z) - Vector3::repeat(distance);
+                let next = point + grad.normalize() * distance;
 
-                if normal.z <= 0.0 {
-                    let mut position = model.mesh.transform(&(position / 3.0));
-                    let normal = model.mesh.transform_normal(&normal);
-                    app.state.line_support_debug.push([position, normal]);
-                    let start = position + normal;
+                lines.push([point, next - point]);
+                point = next;
 
-                    let down = model.mesh.inv_transform_normal(&-Vector3::z());
-                    for n in 0..15 {
-                        let intersection = model.bvh.intersect_ray(&model.mesh, position, down);
-
-                        if let Some(intersection) = intersection {
-                            let normal =
-                                (model.mesh).transform_normal(&model.mesh.normal(intersection));
-                            position += normal.xy().normalize().to_homogeneous();
-                        } else {
-                            println!("n = {n}");
-                            let base = position.xy().to_homogeneous();
-                            for i in (0..10).rev() {
-                                let middle = base + Vector3::z() * start.z * (i as f32 / 10.0);
-                                let intersection = model.bvh.intersect_segment(
-                                    &model.mesh,
-                                    model.mesh.inv_transform(&start),
-                                    model.mesh.inv_transform(&middle),
-                                );
-
-                                if intersection.is_some() {
-                                    continue;
-                                }
-
-                                app.state.line_support_debug.extend_from_slice(&[
-                                    [start, middle - start],
-                                    [middle, base - middle],
-                                ]);
-                                break;
-                            }
-                            break;
-                        }
-                    }
+                if distance > 10.0 {
+                    break;
                 }
             }
         }

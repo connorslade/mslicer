@@ -63,6 +63,14 @@ impl Mesh {
         self.faces().get(index).unwrap()
     }
 
+    pub fn face_verts(&self, index: usize) -> [Vector3<f32>; 3] {
+        let (v, f) = (self.vertices(), self.face(index));
+        let v0 = self.transform(&v[f[0] as usize]);
+        let v1 = self.transform(&v[f[1] as usize]);
+        let v2 = self.transform(&v[f[2] as usize]);
+        [v0, v1, v2]
+    }
+
     pub fn normal(&self, index: usize) -> Pos {
         let (v, f) = (self.vertices(), self.face(index));
         let edge1 = v[f[2] as usize] - v[f[1] as usize];

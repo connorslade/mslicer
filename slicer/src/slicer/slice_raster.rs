@@ -5,8 +5,8 @@ use ordered_float::OrderedFloat;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
 use crate::{
-    intersection::Segments1D,
-    slicer::{Slicer, SEGMENT_LAYERS},
+    geometry::Segments1D,
+    slicer::{SEGMENT_LAYERS, Slicer},
 };
 
 impl Slicer {

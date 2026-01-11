@@ -1,6 +1,6 @@
 use nalgebra::Vector3;
 
-use crate::{intersection::triangle::plane_triangle_intersection, mesh::Mesh};
+use crate::{geometry::triangle::plane_triangle_intersection, mesh::Mesh};
 
 /// Acceleration structure for mesh slicing. By spiting the mesh into segments
 /// along the slicing axis and adding references to all the triangles that

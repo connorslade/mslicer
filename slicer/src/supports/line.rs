@@ -3,8 +3,10 @@ use ordered_float::OrderedFloat;
 use tracing::info;
 
 use crate::{
-    builder::MeshBuilder, half_edge::HalfEdgeMesh,
-    intersection::triangle::ray_triangle_intersection, mesh::Mesh,
+    builder::MeshBuilder,
+    geometry::{Ray, primitive, triangle::triangle_intersection},
+    half_edge::HalfEdgeMesh,
+    mesh::Mesh,
     supports::overhangs::detect_point_overhangs,
 };
 
@@ -83,8 +85,6 @@ impl<'a> LineSupportGenerator<'a> {
         let mut overhangs = Vec::new();
         let mut out = Vec::new();
 
-        let vertices = mesh.vertices();
-
         for face in 0..mesh.face_count() {
             let normal = mesh.transform_normal(&mesh.normal(face));
             if normal.z >= 0.0 {
@@ -111,18 +111,14 @@ impl<'a> LineSupportGenerator<'a> {
 
                 let mut intersections = Vec::new();
                 for &idx in overhangs.iter() {
-                    let face = mesh.face(idx);
-                    if let Some(intersection) = ray_triangle_intersection(
-                        [
-                            mesh.transform(&vertices[face[0] as usize]),
-                            mesh.transform(&vertices[face[1] as usize]),
-                            mesh.transform(&vertices[face[2] as usize]),
-                        ],
-                        mesh.transform_normal(&mesh.normal(idx)),
-                        pos.to_homogeneous(),
-                        Vector3::z(),
-                    ) {
-                        intersections.push((intersection, idx));
+                    let ray = Ray {
+                        origin: pos.to_homogeneous(),
+                        direction: Vector3::z(),
+                    };
+                    if let Some(intersection) =
+                        triangle_intersection::<primitive::Ray>(mesh, idx, ray)
+                    {
+                        intersections.push((intersection.position, idx));
                     }
                 }
 

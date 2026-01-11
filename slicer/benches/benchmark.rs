@@ -1,8 +1,8 @@
 use std::{fs::File, io::BufReader, path::Path};
 
-use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
+use criterion::{BenchmarkId, Criterion, criterion_group, criterion_main};
 
-use slicer::{intersection::Segments1D, mesh::load_mesh};
+use slicer::{geometry::Segments1D, mesh::load_mesh};
 
 pub fn bench(c: &mut Criterion) {
     let mut group = c.benchmark_group("Mesh Intersections");

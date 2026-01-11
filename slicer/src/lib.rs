@@ -5,7 +5,7 @@ use nalgebra::Vector3;
 pub mod builder;
 pub mod format;
 pub mod half_edge;
-pub mod intersection;
+pub mod geometry;
 pub mod mesh;
 pub mod slicer;
 pub mod supports;

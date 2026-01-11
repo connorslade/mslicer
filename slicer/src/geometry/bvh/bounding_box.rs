@@ -1,6 +1,9 @@
 use nalgebra::Vector3;
 
-use crate::{intersection::bvh::Ray, mesh::Mesh};
+use crate::{
+    geometry::{Primitive, bvh::Ray},
+    mesh::Mesh,
+};
 
 pub struct BoundingBox {
     min: Vector3<f32>,
@@ -56,8 +59,8 @@ impl BoundingBox {
     }
 
     // Returns first intersection point. (Closer to ray origin)
-    pub fn intersect<const SEGMENT: bool>(&self, ray: Ray) -> Option<f32> {
-        let (mut t_min, mut t_max) = (0_f32, [f32::INFINITY, 1_f32][SEGMENT as usize]);
+    pub fn intersect<Type: Primitive>(&self, ray: Ray) -> Option<f32> {
+        let (mut t_min, mut t_max) = (Type::min_t(), Type::max_t());
 
         for i in 0..3 {
             if ray.direction[i].abs() > 1e-8 {
@@ -74,6 +77,19 @@ impl BoundingBox {
             }
         }
 
-        (t_max >= 0.0).then_some(t_min)
+        (t_max >= Type::min_t()).then_some(t_min)
+    }
+
+    // Returns the squared distance from some point to the closest point on the AABB.
+    // "Distance of Point to AABB" from Real-Time Collision Detection by Christer Ericson
+    pub fn distance(&self, point: Vector3<f32>) -> f32 {
+        let mut dist_sq = 0.0;
+        for i in 0..3 {
+            let v = point[i];
+            (v < self.min[i]).then(|| dist_sq += (self.min[i] - v) * (self.min[i] - v));
+            (v > self.max[i]).then(|| dist_sq += (v - self.max[i]) * (v - self.max[i]));
+        }
+
+        dist_sq
     }
 }
