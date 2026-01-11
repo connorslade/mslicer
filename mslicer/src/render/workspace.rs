@@ -35,6 +35,11 @@ pub struct WorkspaceRenderCallback {
     pub overhang_angle: f32,
 }
 
+pub struct Gcx<'a> {
+    pub device: &'a Device,
+    pub queue: &'a Queue,
+}
+
 impl CallbackTrait for WorkspaceRenderCallback {
     fn prepare(
         &self,
@@ -46,10 +51,10 @@ impl CallbackTrait for WorkspaceRenderCallback {
     ) -> Vec<CommandBuffer> {
         let resources = resources.get_mut::<WorkspaceRenderResources>().unwrap();
 
-        resources.model_pipeline.prepare(device, self);
-
-        resources.solid_line.prepare(device, queue, self);
-        resources.point.prepare(device, queue, self);
+        let gcx = Gcx { device, queue };
+        resources.solid_line.prepare(&gcx, self);
+        resources.model_pipeline.prepare(&gcx, self);
+        resources.point.prepare(&gcx, self);
 
         Vec::new()
     }

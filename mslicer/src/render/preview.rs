@@ -11,7 +11,7 @@ use wgpu::{
     TextureDimension, TextureFormat, TextureUsages, TextureView, TextureViewDescriptor,
 };
 
-use crate::{DEPTH_TEXTURE_FORMAT, app::App};
+use crate::{DEPTH_TEXTURE_FORMAT, app::App, render::workspace::Gcx};
 
 use super::{
     camera::Camera,
@@ -64,7 +64,9 @@ fn render_preview_image(app: &App, size: (u32, u32)) -> RgbaImage {
     let aspect = size.0 as f32 / size.1 as f32;
     workspace.transform = workspace.camera.view_projection_matrix(aspect);
 
-    resources.model_pipeline.prepare(device, &workspace);
+    resources
+        .model_pipeline
+        .prepare(&Gcx { device, queue }, &workspace);
 
     render_preview(
         device,

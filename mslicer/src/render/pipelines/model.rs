@@ -13,8 +13,9 @@ use wgpu::{
 use crate::{
     include_shader,
     render::{
-        VERTEX_BUFFER_LAYOUT, model::RenderedMeshBuffers, pipelines::consts::DEPTH_STENCIL_STATE,
-        workspace::WorkspaceRenderCallback,
+        VERTEX_BUFFER_LAYOUT,
+        pipelines::consts::DEPTH_STENCIL_STATE,
+        workspace::{Gcx, WorkspaceRenderCallback},
     },
 };
 
@@ -97,7 +98,7 @@ impl ModelPipeline {
 }
 
 impl ModelPipeline {
-    pub fn prepare(&mut self, device: &Device, resources: &WorkspaceRenderCallback) {
+    pub fn prepare(&mut self, gcx: &Gcx, resources: &WorkspaceRenderCallback) {
         self.bind_groups.clear();
         let mut to_generate = Vec::new();
 
@@ -121,13 +122,13 @@ impl ModelPipeline {
             let mut buffer = UniformBuffer::new(Vec::new());
             buffer.write(&uniforms).unwrap();
 
-            let uniform_buffer = device.create_buffer_init(&BufferInitDescriptor {
+            let uniform_buffer = gcx.device.create_buffer_init(&BufferInitDescriptor {
                 label: None,
                 contents: &buffer.into_inner(),
                 usage: BufferUsages::UNIFORM,
             });
 
-            let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            let bind_group = gcx.device.create_bind_group(&wgpu::BindGroupDescriptor {
                 label: None,
                 layout: &self.bind_group_layout,
                 entries: &[BindGroupEntry {
@@ -142,7 +143,7 @@ impl ModelPipeline {
         if !to_generate.is_empty() {
             let mut meshes = resources.models.write();
             for idx in to_generate {
-                meshes[idx].get_buffers(device);
+                meshes[idx].get_buffers(gcx.device);
             }
         }
     }
@@ -167,13 +168,10 @@ impl ModelPipeline {
         });
 
         for idx in indexes {
-            let model = &models[idx];
-
             render_pass.set_bind_group(0, &self.bind_groups[idx], &[]);
 
-            // SAFETY: im really tired and i dont care anymore
-            let buffers =
-                unsafe { &*(model.try_get_buffers().unwrap() as *const RenderedMeshBuffers) };
+            let model = &models[idx];
+            let buffers = model.try_get_buffers().unwrap();
             render_pass.set_vertex_buffer(0, buffers.vertex_buffer.slice(..));
             render_pass.set_index_buffer(buffers.index_buffer.slice(..), IndexFormat::Uint32);
             render_pass.draw_indexed(0..(model.mesh.face_count() as u32 * 3), 0, 0..1);

@@ -3,19 +3,21 @@ use nalgebra::{Matrix4, Vector3};
 use wgpu::{
     BindGroup, BindGroupDescriptor, BindGroupEntry, BindingResource, Buffer, BufferBinding,
     BufferDescriptor, BufferUsages, ColorTargetState, ColorWrites, Device, FragmentState,
-    IndexFormat, MultisampleState, PipelineLayoutDescriptor, PolygonMode, PrimitiveState, Queue,
+    IndexFormat, MultisampleState, PipelineLayoutDescriptor, PolygonMode, PrimitiveState,
     RenderPass, RenderPipeline, RenderPipelineDescriptor, TextureFormat, VertexAttribute,
     VertexBufferLayout, VertexFormat, VertexState, VertexStepMode,
-    util::{BufferInitDescriptor, DeviceExt},
 };
 
 use crate::{
     include_shader,
     render::{
-        pipelines::consts::{
-            BASE_BIND_GROUP_LAYOUT_DESCRIPTOR, BASE_UNIFORM_DESCRIPTOR, DEPTH_STENCIL_STATE,
+        pipelines::{
+            ResizingBuffer,
+            consts::{
+                BASE_BIND_GROUP_LAYOUT_DESCRIPTOR, BASE_UNIFORM_DESCRIPTOR, DEPTH_STENCIL_STATE,
+            },
         },
-        workspace::WorkspaceRenderCallback,
+        workspace::{Gcx, WorkspaceRenderCallback},
     },
 };
 
@@ -40,8 +42,8 @@ pub struct SolidLinePipeline {
     render_pipeline: RenderPipeline,
     bind_group: BindGroup,
 
-    vertex_buffer: Option<Buffer>,
-    index_buffer: Option<Buffer>,
+    vertex_buffer: ResizingBuffer,
+    index_buffer: ResizingBuffer,
     uniform_buffer: Buffer,
 
     vertex_count: u32,
@@ -132,8 +134,8 @@ impl SolidLinePipeline {
             render_pipeline,
             bind_group,
 
-            vertex_buffer: None,
-            index_buffer: None,
+            vertex_buffer: ResizingBuffer::new(device, BufferUsages::VERTEX),
+            index_buffer: ResizingBuffer::new(device, BufferUsages::INDEX),
             uniform_buffer,
 
             vertex_count: 0,
@@ -144,8 +146,7 @@ impl SolidLinePipeline {
 impl SolidLinePipeline {
     pub fn prepare(
         &mut self,
-        device: &Device,
-        queue: &Queue,
+        gcx: &Gcx,
         resources: &WorkspaceRenderCallback,
         lines: Option<&[&[Line]]>,
     ) {
@@ -154,36 +155,26 @@ impl SolidLinePipeline {
                 .flat_map(|x| x.iter())
                 .flat_map(Line::to_vertex)
                 .collect::<Vec<_>>();
+            let index = (0..vertex.len() as u32).collect::<Vec<_>>();
+
             self.vertex_count = vertex.len() as u32;
-
-            self.vertex_buffer = Some(device.create_buffer_init(&BufferInitDescriptor {
-                label: None,
-                contents: bytemuck::cast_slice(&vertex),
-                usage: BufferUsages::VERTEX | BufferUsages::COPY_DST,
-            }));
-
-            self.index_buffer = Some(device.create_buffer_init(&BufferInitDescriptor {
-                label: None,
-                contents: bytemuck::cast_slice(&(0..vertex.len() as u32).collect::<Vec<_>>()),
-                usage: BufferUsages::INDEX | BufferUsages::COPY_DST,
-            }));
+            self.vertex_buffer.write_slice(gcx, &vertex);
+            self.index_buffer.write_slice(gcx, &index);
         }
 
         let mut buffer = UniformBuffer::new(Vec::new());
         let transform = resources.transform;
         buffer.write(&LineUniforms { transform }).unwrap();
-        queue.write_buffer(&self.uniform_buffer, 0, &buffer.into_inner());
+        gcx.queue
+            .write_buffer(&self.uniform_buffer, 0, &buffer.into_inner());
     }
 
     pub fn paint(&self, render_pass: &mut RenderPass) {
         render_pass.set_pipeline(&self.render_pipeline);
         render_pass.set_bind_group(0, &self.bind_group, &[]);
 
-        render_pass.set_vertex_buffer(0, self.vertex_buffer.as_ref().unwrap().slice(..));
-        render_pass.set_index_buffer(
-            self.index_buffer.as_ref().unwrap().slice(..),
-            IndexFormat::Uint32,
-        );
+        render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
+        render_pass.set_index_buffer(self.index_buffer.slice(..), IndexFormat::Uint32);
         render_pass.draw_indexed(0..self.vertex_count, 0, 0..1);
     }
 }

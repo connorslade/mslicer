@@ -1,9 +1,9 @@
-use wgpu::{Device, Queue, RenderPass, TextureFormat};
+use wgpu::{Device, RenderPass, TextureFormat};
 
 use crate::render::{
     dispatch::point::{overhangs::OverhangPointDispatch, target::TargetPointDispatch},
     pipelines::point::{Point, PointPipeline},
-    workspace::WorkspaceRenderCallback,
+    workspace::{Gcx, WorkspaceRenderCallback},
 };
 
 mod overhangs;
@@ -26,7 +26,7 @@ impl PointDispatch {
         }
     }
 
-    pub fn prepare(&mut self, device: &Device, queue: &Queue, resources: &WorkspaceRenderCallback) {
+    pub fn prepare(&mut self, gcx: &Gcx, resources: &WorkspaceRenderCallback) {
         let dispatches: &mut [&mut dyn PointGenerator] =
             &mut [&mut self.target_point, &mut self.overhangs];
 
@@ -37,10 +37,9 @@ impl PointDispatch {
 
         if changed {
             let points = &[self.target_point.points(), self.overhangs.points()][..];
-            self.render_pipeline
-                .prepare(device, queue, resources, Some(points));
+            self.render_pipeline.prepare(gcx, resources, Some(points));
         } else {
-            self.render_pipeline.prepare(device, queue, resources, None);
+            self.render_pipeline.prepare(gcx, resources, None);
         }
     }
 

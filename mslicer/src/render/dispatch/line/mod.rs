@@ -1,11 +1,11 @@
 use build_plate::BuildPlateDispatch;
 use line_support_debug::LineSupportDebugDispatch;
 use normals::NormalsDispatch;
-use wgpu::{Device, Queue, RenderPass, TextureFormat};
+use wgpu::{Device, RenderPass, TextureFormat};
 
 use crate::render::{
     pipelines::line::{Line, SolidLinePipeline},
-    workspace::WorkspaceRenderCallback,
+    workspace::{Gcx, WorkspaceRenderCallback},
 };
 
 mod build_plate;
@@ -31,7 +31,7 @@ impl LineDispatch {
         }
     }
 
-    pub fn prepare(&mut self, device: &Device, queue: &Queue, resources: &WorkspaceRenderCallback) {
+    pub fn prepare(&mut self, gcx: &Gcx, resources: &WorkspaceRenderCallback) {
         let dispatches: &mut [&mut dyn LineGenerator] = &mut [
             &mut self.build_plate,
             &mut self.normals,
@@ -49,10 +49,9 @@ impl LineDispatch {
                 self.normals.lines(),
                 self.line_support_debug.lines(),
             ][..];
-            self.render_pipeline
-                .prepare(device, queue, resources, Some(lines));
+            self.render_pipeline.prepare(gcx, resources, Some(lines));
         } else {
-            self.render_pipeline.prepare(device, queue, resources, None);
+            self.render_pipeline.prepare(gcx, resources, None);
         }
     }
 

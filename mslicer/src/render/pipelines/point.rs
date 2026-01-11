@@ -6,17 +6,16 @@ use wgpu::{
     BindGroup, BindGroupDescriptor, BindGroupEntry, BindingResource, BlendState, Buffer,
     BufferBinding, BufferDescriptor, BufferUsages, ColorTargetState, ColorWrites,
     DepthStencilState, Device, FragmentState, IndexFormat, MultisampleState,
-    PipelineLayoutDescriptor, PrimitiveState, Queue, RenderPass, RenderPipeline,
-    RenderPipelineDescriptor, TextureFormat, VertexAttribute, VertexBufferLayout, VertexFormat,
-    VertexState, VertexStepMode,
-    util::{BufferInitDescriptor, DeviceExt},
+    PipelineLayoutDescriptor, PrimitiveState, RenderPass, RenderPipeline, RenderPipelineDescriptor,
+    TextureFormat, VertexAttribute, VertexBufferLayout, VertexFormat, VertexState, VertexStepMode,
 };
 
 use crate::{
     include_shader,
     render::{
-        VERTEX_BUFFER_LAYOUT, gpu_mesh_buffers, pipelines::consts::DEPTH_STENCIL_STATE,
-        workspace::WorkspaceRenderCallback,
+        VERTEX_BUFFER_LAYOUT, gpu_mesh_buffers,
+        pipelines::{ResizingBuffer, consts::DEPTH_STENCIL_STATE},
+        workspace::{Gcx, WorkspaceRenderCallback},
     },
 };
 
@@ -50,8 +49,8 @@ pub struct PointPipeline {
 
     vertex_buffer: Buffer,
     index_buffer: Buffer,
-    instance_buffer: Buffer,
     uniform_buffer: Buffer,
+    instance_buffer: ResizingBuffer,
 
     index_count: u32,
     instance_count: u32,
@@ -145,21 +144,14 @@ impl PointPipeline {
         let index_count = mesh.face_count() as u32 * 3;
         let (vertex_buffer, index_buffer) = gpu_mesh_buffers(device, &mesh);
 
-        let instance_buffer = device.create_buffer(&BufferDescriptor {
-            label: None,
-            size: 0,
-            usage: BufferUsages::VERTEX,
-            mapped_at_creation: false,
-        });
-
         Self {
             render_pipeline,
             bind_group,
 
             vertex_buffer,
             index_buffer,
-            instance_buffer,
             uniform_buffer,
+            instance_buffer: ResizingBuffer::new(device, BufferUsages::VERTEX),
 
             index_count,
             instance_count: 0,
@@ -170,8 +162,7 @@ impl PointPipeline {
 impl PointPipeline {
     pub fn prepare(
         &mut self,
-        device: &Device,
-        queue: &Queue,
+        gcx: &Gcx,
         resources: &WorkspaceRenderCallback,
         points: Option<&[&[Point]]>,
     ) {
@@ -182,17 +173,14 @@ impl PointPipeline {
                 .collect::<Vec<_>>();
 
             self.instance_count = points.len() as u32;
-            self.instance_buffer = device.create_buffer_init(&BufferInitDescriptor {
-                label: None,
-                contents: bytemuck::cast_slice(&points),
-                usage: BufferUsages::VERTEX,
-            });
+            self.instance_buffer.write_slice(gcx, &points);
         }
 
         let mut buffer = UniformBuffer::new(Vec::new());
         let transform = resources.transform;
         buffer.write(&PointUniforms { transform }).unwrap();
-        queue.write_buffer(&self.uniform_buffer, 0, &buffer.into_inner());
+        gcx.queue
+            .write_buffer(&self.uniform_buffer, 0, &buffer.into_inner());
     }
 
     pub fn paint(&self, render_pass: &mut RenderPass) {
