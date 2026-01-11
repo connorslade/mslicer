@@ -1,11 +1,12 @@
 use std::mem;
 
-use egui::{CentralPanel, Color32, Context, Frame, Id, Sense, Theme, Ui, WidgetText};
+use egui::{CentralPanel, Color32, Context, Frame, Id, Key, Sense, Theme, Ui, WidgetText};
 use egui_dock::{DockArea, NodeIndex, SurfaceIndex, TabViewer};
 use egui_wgpu::Callback;
-use nalgebra::{Matrix4, Vector3};
+use nalgebra::Matrix4;
 use parking_lot::MappedRwLockWriteGuard;
 use serde::{Deserialize, Serialize};
+use slicer::supports::route_support;
 
 use crate::{app::App, render::workspace::WorkspaceRenderCallback};
 
@@ -147,15 +148,11 @@ fn viewport(app: &mut App, ui: &mut Ui, _ctx: &Context) {
 
     let (pos, dir) = app.camera.hovered_ray(aspect, (uv.x, uv.y));
 
-    {
+    if ui.input(|i| i.key_pressed(Key::S)) {
         let lines = &mut app.state.line_support_debug;
-        lines.clear();
+        let mut line = |a, b| lines.push([a, b - a]);
 
-        let delta = 0.1;
-
-        for model in app.meshes.read().iter() {
-            let sdf = |point| model.bvh.closest(&model.mesh, point).unwrap().t;
-
+        for model in app.models.read().iter() {
             let Some(intersection) = model.bvh.intersect_ray(
                 &model.mesh,
                 model.mesh.inv_transform(&pos),
@@ -165,22 +162,11 @@ fn viewport(app: &mut App, ui: &mut Ui, _ctx: &Context) {
             };
 
             let normal = (model.mesh).transform_normal(&model.mesh.normal(intersection.face));
-            let mut point = intersection.position + normal * 0.1;
-            loop {
-                let distance = sdf(point);
-                let delta_x = sdf(point + Vector3::x() * delta);
-                let delta_y = sdf(point + Vector3::y() * delta);
-                let delta_z = sdf(point + Vector3::z() * delta);
-
-                let grad = Vector3::new(delta_x, delta_y, delta_z) - Vector3::repeat(distance);
-                let next = point + grad.normalize() * distance;
-
-                lines.push([point, next - point]);
-                point = next;
-
-                if distance > 10.0 {
-                    break;
-                }
+            let start = intersection.position + normal * 0.1;
+            if let Some(lines) = route_support(&model.mesh, &model.bvh, start) {
+                line(intersection.position, start);
+                line(lines[0], lines[1]);
+                line(lines[1], lines[2]);
             }
         }
     }
@@ -217,7 +203,7 @@ impl App {
             grid_size: self.config.grid_size,
 
             is_moving,
-            models: self.meshes.clone(),
+            models: self.models.clone(),
             config: self.config.clone(),
 
             line_support_debug: self.state.line_support_debug.clone(),

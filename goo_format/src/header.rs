@@ -1,10 +1,10 @@
 use std::fmt::Debug;
 
-use anyhow::{ensure, Result};
+use anyhow::{Result, ensure};
 
 use common::serde::{Deserializer, Serializer, SizedString, SliceDeserializer};
 
-use crate::{PreviewImage, DELIMITER, MAGIC_TAG};
+use crate::{DELIMITER, MAGIC_TAG, PreviewImage};
 
 /// The header section of a `.goo` file.
 #[derive(Debug)]

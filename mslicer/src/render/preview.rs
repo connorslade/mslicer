@@ -11,7 +11,7 @@ use wgpu::{
     TextureDimension, TextureFormat, TextureUsages, TextureView, TextureViewDescriptor,
 };
 
-use crate::{app::App, DEPTH_TEXTURE_FORMAT};
+use crate::{DEPTH_TEXTURE_FORMAT, app::App};
 
 use super::{
     camera::Camera,
@@ -180,7 +180,9 @@ fn download_preview(
             image
         }
         x => {
-            error!("Can't make preview image due to unsupported framebuffer texture format {x:?}. Please make an issue on Github.");
+            error!(
+                "Can't make preview image due to unsupported framebuffer texture format {x:?}. Please make an issue on Github."
+            );
             RgbaImage::new(width, height)
         }
     };

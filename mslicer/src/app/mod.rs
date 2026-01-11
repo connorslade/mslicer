@@ -14,9 +14,8 @@ use tracing::{info, warn};
 use crate::{
     app::task::TaskManager,
     plugins::{
-        anti_alias,
+        PluginManager, anti_alias,
         elephant_foot_fixer::{self},
-        PluginManager,
     },
     render::{camera::Camera, model::Model, preview},
     ui::{
@@ -27,7 +26,7 @@ use crate::{
     windows::{self, Tab},
 };
 use common::config::SliceConfig;
-use slicer::{format::FormatSliceFile, slicer::Slicer, Pos};
+use slicer::{Pos, format::FormatSliceFile, slicer::Slicer};
 
 pub mod config;
 pub mod project;
@@ -51,7 +50,7 @@ pub struct App {
     pub plugin_manager: PluginManager,
 
     pub camera: Camera,
-    pub meshes: Arc<RwLock<Vec<Model>>>,
+    pub models: Arc<RwLock<Vec<Model>>>,
     pub slice_operation: Option<SliceOperation>,
     pub remote_print: RemotePrint,
     pub config_dir: PathBuf,
@@ -109,7 +108,7 @@ impl App {
                 plugins: vec![elephant_foot_fixer::get_plugin(), anti_alias::get_plugin()],
             },
             fps: FpsTracker::new(),
-            meshes: Arc::new(RwLock::new(Vec::new())),
+            models: Arc::new(RwLock::new(Vec::new())),
             slice_operation: None,
             remote_print: RemotePrint::uninitialized(),
             config_dir,
@@ -117,7 +116,7 @@ impl App {
     }
 
     pub fn slice(&mut self) {
-        let meshes = (self.meshes.read().iter())
+        let meshes = (self.models.read().iter())
             .filter(|x| !x.hidden)
             .cloned()
             .collect::<Vec<_>>();

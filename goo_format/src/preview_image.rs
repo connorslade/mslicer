@@ -1,7 +1,7 @@
 use std::fmt::Debug;
 
 use common::serde::{Deserializer, Serializer, SliceDeserializer};
-use image::{imageops::FilterType, RgbaImage};
+use image::{RgbaImage, imageops::FilterType};
 
 pub struct PreviewImage<const WIDTH: usize, const HEIGHT: usize> {
     // 0brrrrrggggggbbbbb

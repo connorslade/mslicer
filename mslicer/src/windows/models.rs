@@ -23,7 +23,7 @@ enum Action {
 }
 
 pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
-    let mut meshes = app.meshes.write();
+    let mut meshes = app.models.write();
     let mut action = Action::None;
 
     if meshes.is_empty() {

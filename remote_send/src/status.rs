@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use serde_repr::Deserialize_repr;
 
-use crate::{parse_resolution, Resolution};
+use crate::{Resolution, parse_resolution};
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "PascalCase")]

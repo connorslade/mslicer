@@ -1,10 +1,10 @@
 use std::{borrow::Cow, fs::File, path::Path};
 
-use egui::{pos2, Align2, Color32, Context, FontFamily, FontId, Id, LayerId, Order};
-use egui_phosphor::regular::{FILES, FILE_TEXT};
+use egui::{Align2, Color32, Context, FontFamily, FontId, Id, LayerId, Order, pos2};
+use egui_phosphor::regular::{FILE_TEXT, FILES};
 use itertools::Itertools;
 
-use crate::app::{task::MeshLoad, App};
+use crate::app::{App, task::MeshLoad};
 
 const HOVER_BACKGROUND: Color32 = Color32::from_rgba_premultiplied(0, 0, 0, 200);
 

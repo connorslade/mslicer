@@ -17,7 +17,7 @@ mod plugins;
 mod render;
 mod ui;
 mod windows;
-use app::{config::Config, App};
+use app::{App, config::Config};
 
 const ICON: &[u8] = include_bytes!("assets/icon.png");
 

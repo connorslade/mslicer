@@ -1,6 +1,6 @@
 use common::serde::SizedString;
 
-use crate::{header::ExposureDelayMode, Header, LayerContent, PreviewImage};
+use crate::{Header, LayerContent, PreviewImage, header::ExposureDelayMode};
 
 impl Default for Header {
     fn default() -> Self {

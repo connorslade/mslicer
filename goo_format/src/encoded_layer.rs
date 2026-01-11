@@ -3,7 +3,7 @@ use common::{
     misc::{EncodableLayer, Run},
 };
 
-use crate::{layer_content::calculate_checksum, LayerContent};
+use crate::{LayerContent, layer_content::calculate_checksum};
 
 pub struct LayerEncoder {
     data: Vec<u8>,

@@ -1,4 +1,4 @@
-use image::{imageops::FilterType, GrayImage, RgbaImage};
+use image::{GrayImage, RgbaImage, imageops::FilterType};
 use iter::SliceLayerIterator;
 use nalgebra::{Vector2, Vector3};
 use parking_lot::MappedMutexGuard;

@@ -1,12 +1,12 @@
 use encase::{ShaderSize, ShaderType, UniformBuffer};
 use nalgebra::{Matrix4, Vector3};
 use wgpu::{
-    util::{BufferInitDescriptor, DeviceExt},
     BindGroup, BindGroupDescriptor, BindGroupEntry, BindingResource, Buffer, BufferBinding,
     BufferDescriptor, BufferUsages, ColorTargetState, ColorWrites, Device, FragmentState,
     IndexFormat, MultisampleState, PipelineLayoutDescriptor, PolygonMode, PrimitiveState, Queue,
     RenderPass, RenderPipeline, RenderPipelineDescriptor, TextureFormat, VertexAttribute,
     VertexBufferLayout, VertexFormat, VertexState, VertexStepMode,
+    util::{BufferInitDescriptor, DeviceExt},
 };
 
 use crate::{

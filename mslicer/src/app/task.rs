@@ -11,7 +11,7 @@ use common::{
     progress::Progress,
     serde::{ReaderDeserializer, SliceDeserializer},
 };
-use egui::{vec2, Context, Id, ProgressBar, Window};
+use egui::{Context, Id, ProgressBar, Window, vec2};
 use mesh_format::load_mesh;
 use slicer::mesh::Mesh;
 use tracing::info;
@@ -105,7 +105,7 @@ impl Task for MeshLoad {
                 .with_random_color();
             rendered_mesh.update_oob(&app.slice_config);
             app.tasks.add(MeshManifold::new(&rendered_mesh));
-            app.meshes.write().push(rendered_mesh);
+            app.models.write().push(rendered_mesh);
             return true;
         }
 
@@ -153,7 +153,7 @@ impl Task for MeshManifold {
     fn poll(&mut self, app: &mut App, _ctx: &Context) -> bool {
         if self.join.as_ref().unwrap().is_finished() {
             let result = mem::take(&mut self.join).unwrap().join().unwrap();
-            if let Some(model) = app.meshes.write().iter_mut().find(|x| x.id == self.mesh) {
+            if let Some(model) = app.models.write().iter_mut().find(|x| x.id == self.mesh) {
                 model.warnings.set(MeshWarnings::NonManifold, !result);
             }
 

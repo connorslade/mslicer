@@ -1,6 +1,6 @@
 use std::{
     fs::{self, File},
-    io::{stdout, BufReader, Write},
+    io::{BufReader, Write, stdout},
     thread,
     time::Instant,
 };
@@ -8,7 +8,7 @@ use std::{
 use anyhow::Result;
 use args::{Args, Model};
 use clap::{CommandFactory, FromArgMatches};
-use image::{imageops::FilterType, ImageReader};
+use image::{ImageReader, imageops::FilterType};
 
 use common::serde::DynamicSerializer;
 use goo_format::{File as GooFile, LayerEncoder, PreviewImage};

@@ -4,15 +4,15 @@ use std::{
     net::{Ipv4Addr, SocketAddr, TcpListener, TcpStream},
     ops::Deref,
     sync::{
-        atomic::{AtomicBool, Ordering},
         Arc,
+        atomic::{AtomicBool, Ordering},
     },
     thread,
 };
 
 use afire::{
-    internal::{event_loop::EventLoop, handle::handle, socket::Socket},
     Content, Method, Server, Status,
+    internal::{event_loop::EventLoop, handle::handle, socket::Socket},
 };
 use parking_lot::Mutex;
 use serde::Serialize;

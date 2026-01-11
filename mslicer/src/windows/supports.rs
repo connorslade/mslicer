@@ -1,6 +1,6 @@
 use egui::{CollapsingHeader, Context, Ui};
 use nalgebra::Vector3;
-use slicer::supports::line::LineSupportGenerator;
+use slicer::supports::{line::LineSupportGenerator, route_support};
 
 use crate::{app::App, render::model::Model, ui::components::dragger};
 
@@ -15,13 +15,28 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     dragger(ui, "Overhang Angle", min_angle, |x| x.speed(0.1));
 
     ui.add_space(8.0);
-    let mut meshes = app.meshes.write();
+    let mut models = app.models.write();
     ui.menu_button("Detect Overhanging Points", |ui| {
         ui.style_mut().visuals.button_frame = false;
-        for idx in 0..meshes.len() {
-            let mesh = &mut meshes[idx];
-            if ui.button(&mesh.name).clicked() {
-                mesh.find_overhangs();
+        for idx in 0..models.len() {
+            let model = &mut models[idx];
+            if ui.button(&model.name).clicked() {
+                model.find_overhangs();
+
+                let verts = model.mesh.vertices();
+                let lines = &mut app.state.line_support_debug;
+                let mut line = |a, b| lines.push([a, b - a]);
+
+                for overhang in model.overhangs.as_ref().unwrap() {
+                    let point = model.mesh.transform(&verts[*overhang as usize]);
+
+                    let start = point - Vector3::z() * 0.1;
+                    if let Some(lines) = route_support(&model.mesh, &model.bvh, start) {
+                        line(point, start);
+                        line(lines[0], lines[1]);
+                        line(lines[1], lines[2]);
+                    }
+                }
             }
         }
     });
@@ -34,15 +49,15 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
         ui.menu_button("Generate", |ui| {
             ui.style_mut().visuals.button_frame = false;
 
-            for idx in 0..meshes.len() {
-                let mesh = &meshes[idx];
+            for idx in 0..models.len() {
+                let mesh = &models[idx];
                 if ui.button(&mesh.name).clicked() {
                     let generator = LineSupportGenerator::new(
                         &app.state.line_support_config,
                         app.slice_config.platform_size,
                     );
 
-                    app.state.line_support_debug = generate_support(&mut meshes, idx, &generator);
+                    app.state.line_support_debug = generate_support(&mut models, idx, &generator);
                 }
             }
         });
@@ -54,13 +69,13 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                 app.slice_config.platform_size,
             );
 
-            for i in 0..meshes.len() {
-                let debug = generate_support(&mut meshes, i, &generator);
+            for i in 0..models.len() {
+                let debug = generate_support(&mut models, i, &generator);
                 app.state.line_support_debug.extend_from_slice(&debug);
             }
         }
     });
-    drop(meshes);
+    drop(models);
 
     ui.add_space(8.0);
     let support = &mut app.state.line_support_config;

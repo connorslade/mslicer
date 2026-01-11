@@ -3,8 +3,8 @@ use std::{
     io::ErrorKind,
     net::{Ipv4Addr, SocketAddr, TcpListener, TcpStream},
     sync::{
-        atomic::{AtomicBool, Ordering},
         Arc,
+        atomic::{AtomicBool, Ordering},
     },
     thread,
 };
@@ -12,15 +12,15 @@ use std::{
 use anyhow::Result;
 use misc::next_id;
 use packets::{
+    Packet,
     connect::ConnectPacket,
     connect_ack::ConnectAckPacket,
     publish::{PublishFlags, PublishPacket},
     publish_ack::PublishAckPacket,
     subscribe::SubscribePacket,
     subscribe_ack::SubscribeAckPacket,
-    Packet,
 };
-use parking_lot::{lock_api::MutexGuard, MappedMutexGuard, Mutex};
+use parking_lot::{MappedMutexGuard, Mutex, lock_api::MutexGuard};
 use soon::Soon;
 use tracing::{info, trace, warn};
 

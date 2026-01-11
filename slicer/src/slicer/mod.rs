@@ -1,8 +1,8 @@
 use std::{
     ops::Deref,
     sync::{
-        atomic::{AtomicU32, Ordering},
         Arc, Condvar, Mutex,
+        atomic::{AtomicU32, Ordering},
     },
 };
 

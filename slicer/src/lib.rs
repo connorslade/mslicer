@@ -4,8 +4,8 @@ use nalgebra::Vector3;
 
 pub mod builder;
 pub mod format;
-pub mod half_edge;
 pub mod geometry;
+pub mod half_edge;
 pub mod mesh;
 pub mod slicer;
 pub mod supports;

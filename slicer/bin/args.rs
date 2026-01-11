@@ -6,7 +6,7 @@ use common::{
     config::{ExposureConfig, SliceConfig},
     format::Format,
 };
-use nalgebra::{ArrayStorage, Const, Matrix, Scalar, Vector2, Vector3, U1};
+use nalgebra::{ArrayStorage, Const, Matrix, Scalar, U1, Vector2, Vector3};
 use num_traits::Zero;
 
 #[derive(Debug, Parser)]

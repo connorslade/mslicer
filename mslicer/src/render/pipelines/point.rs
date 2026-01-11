@@ -4,19 +4,19 @@ use bytemuck::{Pod, Zeroable};
 use encase::{ShaderSize, ShaderType, UniformBuffer};
 use nalgebra::{Matrix4, Vector3, Vector4};
 use wgpu::{
-    util::{BufferInitDescriptor, DeviceExt},
     BindGroup, BindGroupDescriptor, BindGroupEntry, BindingResource, BlendState, Buffer,
     BufferBinding, BufferDescriptor, BufferUsages, ColorTargetState, ColorWrites, Device,
     FragmentState, IndexFormat, MultisampleState, PipelineLayoutDescriptor, PrimitiveState, Queue,
     RenderPass, RenderPipeline, RenderPipelineDescriptor, TextureFormat, VertexAttribute,
     VertexBufferLayout, VertexFormat, VertexState, VertexStepMode,
+    util::{BufferInitDescriptor, DeviceExt},
 };
 
 use crate::{
     include_shader,
     render::{
-        pipelines::consts::DEPTH_STENCIL_STATE, workspace::WorkspaceRenderCallback, ModelVertex,
-        VERTEX_BUFFER_LAYOUT,
+        ModelVertex, VERTEX_BUFFER_LAYOUT, pipelines::consts::DEPTH_STENCIL_STATE,
+        workspace::WorkspaceRenderCallback,
     },
 };
 

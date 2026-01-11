@@ -4,8 +4,8 @@ use common::{
 };
 use nalgebra::Vector2;
 use svg::{
-    node::element::{Polygon, Rectangle},
     Document,
+    node::element::{Polygon, Rectangle},
 };
 
 pub struct SvgFile {

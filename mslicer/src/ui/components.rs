@@ -1,4 +1,4 @@
-use egui::{emath::Numeric, Align, DragValue, Layout, Ui};
+use egui::{Align, DragValue, Layout, Ui, emath::Numeric};
 use egui_phosphor::regular::INFO;
 
 pub fn dragger<Num: Numeric>(

@@ -1,4 +1,4 @@
-use anyhow::{ensure, Result};
+use anyhow::{Result, ensure};
 
 use common::serde::{Deserializer, Serializer, SliceDeserializer};
 

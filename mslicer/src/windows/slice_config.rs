@@ -67,7 +67,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
             }
 
             if *platform != prev {
-                (app.meshes.write().iter_mut())
+                (app.models.write().iter_mut())
                     .for_each(|model| model.update_oob(&app.slice_config));
             }
 

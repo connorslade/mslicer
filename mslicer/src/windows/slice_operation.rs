@@ -2,8 +2,8 @@ use std::{fs::File, io::Write, mem, sync::Arc};
 
 use const_format::concatcp;
 use egui::{
-    style::HandleShape, text::LayoutJob, Align, Button, Context, DragValue, FontSelection, Grid,
-    Id, Layout, ProgressBar, RichText, Sense, Slider, Style, Ui, Vec2,
+    Align, Button, Context, DragValue, FontSelection, Grid, Id, Layout, ProgressBar, RichText,
+    Sense, Slider, Style, Ui, Vec2, style::HandleShape, text::LayoutJob,
 };
 use egui_phosphor::regular::{FLOPPY_DISK_BACK, PAPER_PLANE_TILT};
 use egui_wgpu::Callback;
@@ -12,7 +12,7 @@ use rfd::FileDialog;
 use wgpu::COPY_BUFFER_ALIGNMENT;
 
 use crate::{
-    app::{slice_operation::SliceResult, App},
+    app::{App, slice_operation::SliceResult},
     render::slice_preview::SlicePreviewRenderCallback,
     ui::{components::vec2_dragger, popup::Popup},
 };

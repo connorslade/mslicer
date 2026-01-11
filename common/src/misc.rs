@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use nalgebra::Vector2;
-use rand::{distr::Alphanumeric, Rng};
+use rand::{Rng, distr::Alphanumeric};
 
 use crate::config::SliceConfig;
 

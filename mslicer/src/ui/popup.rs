@@ -1,4 +1,4 @@
-use egui::{vec2, Color32, Context, Grid, Id, Label, RichText, Ui, WidgetText, Window};
+use egui::{Color32, Context, Grid, Id, Label, RichText, Ui, WidgetText, Window, vec2};
 
 use crate::app::App;
 

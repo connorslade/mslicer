@@ -1,20 +1,19 @@
 use encase::{ShaderSize, ShaderType, UniformBuffer};
 use nalgebra::Vector2;
 use wgpu::{
-    util::{BufferInitDescriptor, DeviceExt},
     BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayout, BindGroupLayoutDescriptor,
     BindGroupLayoutEntry, BindingResource, BindingType, Buffer, BufferBinding, BufferBindingType,
-    BufferDescriptor, BufferUsages, ColorTargetState, ColorWrites, Device, FragmentState,
-    IndexFormat, MultisampleState, PipelineLayoutDescriptor, PrimitiveState, Queue, RenderPass,
-    RenderPipeline, RenderPipelineDescriptor, ShaderStages, TextureFormat, VertexState,
-    COPY_BUFFER_ALIGNMENT,
+    BufferDescriptor, BufferUsages, COPY_BUFFER_ALIGNMENT, ColorTargetState, ColorWrites, Device,
+    FragmentState, IndexFormat, MultisampleState, PipelineLayoutDescriptor, PrimitiveState, Queue,
+    RenderPass, RenderPipeline, RenderPipelineDescriptor, ShaderStages, TextureFormat, VertexState,
+    util::{BufferInitDescriptor, DeviceExt},
 };
 
 use crate::{
     include_shader,
     render::{
-        pipelines::consts::DEPTH_STENCIL_STATE, slice_preview::SlicePreviewRenderCallback,
-        ModelVertex, VERTEX_BUFFER_LAYOUT,
+        ModelVertex, VERTEX_BUFFER_LAYOUT, pipelines::consts::DEPTH_STENCIL_STATE,
+        slice_preview::SlicePreviewRenderCallback,
     },
 };
 

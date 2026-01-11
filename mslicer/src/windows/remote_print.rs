@@ -1,6 +1,6 @@
 use std::{
     fs,
-    sync::{atomic::Ordering, Arc},
+    sync::{Arc, atomic::Ordering},
     time::Duration,
 };
 
@@ -8,7 +8,7 @@ use chrono::DateTime;
 use common::{format::Format, misc::human_duration};
 use const_format::concatcp;
 use egui::{
-    vec2, Align, Context, DragValue, Grid, Layout, ProgressBar, Separator, Spinner, TextEdit, Ui,
+    Align, Context, DragValue, Grid, Layout, ProgressBar, Separator, Spinner, TextEdit, Ui, vec2,
 };
 use egui_phosphor::regular::{NETWORK, PLUGS, PRINTER, STOP, TRASH_SIMPLE, UPLOAD_SIMPLE};
 use notify_rust::Notification;

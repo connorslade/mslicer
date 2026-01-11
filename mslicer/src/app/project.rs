@@ -72,7 +72,7 @@ impl App {
     }
 
     fn _save_project(&mut self, path: &Path) -> Result<()> {
-        let meshes = self.meshes.read();
+        let meshes = self.models.read();
         let project = BorrowedProject::new(&meshes, &self.slice_config);
 
         let mut file = File::create(path)?;
@@ -102,7 +102,7 @@ impl App {
         project.apply(self);
 
         info!("Loaded project from `{}`", path.display());
-        let meshes = self.meshes.read();
+        let meshes = self.models.read();
         for (i, mesh) in meshes.iter().enumerate() {
             info!(
                 " {} Loaded model `{}` with {} faces",
@@ -163,7 +163,7 @@ impl OwnedProject {
     }
 
     pub fn apply(self, app: &mut App) {
-        let mut meshes = app.meshes.write();
+        let mut meshes = app.models.write();
         *meshes = self
             .meshes
             .into_iter()

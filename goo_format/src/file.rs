@@ -1,4 +1,4 @@
-use anyhow::{ensure, Result};
+use anyhow::{Result, ensure};
 
 use chrono::Local;
 use common::{
@@ -6,7 +6,7 @@ use common::{
     serde::{Serializer, SizedString, SliceDeserializer},
 };
 
-use crate::{Header, LayerContent, ENDING_STRING};
+use crate::{ENDING_STRING, Header, LayerContent};
 
 pub struct File {
     pub header: Header,

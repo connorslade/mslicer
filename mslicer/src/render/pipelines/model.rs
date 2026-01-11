@@ -3,18 +3,18 @@ use encase::{ShaderType, UniformBuffer};
 use nalgebra::{Matrix4, Vector3, Vector4};
 use serde::{Deserialize, Serialize};
 use wgpu::{
-    util::{BufferInitDescriptor, DeviceExt},
     BindGroup, BindGroupEntry, BindGroupLayout, BlendState, BufferUsages, ColorTargetState,
     ColorWrites, Device, FragmentState, IndexFormat, MultisampleState, PipelineLayoutDescriptor,
     PrimitiveState, RenderPass, RenderPipeline, RenderPipelineDescriptor, TextureFormat,
     VertexState,
+    util::{BufferInitDescriptor, DeviceExt},
 };
 
 use crate::{
     include_shader,
     render::{
-        model::RenderedMeshBuffers, pipelines::consts::DEPTH_STENCIL_STATE,
-        workspace::WorkspaceRenderCallback, VERTEX_BUFFER_LAYOUT,
+        VERTEX_BUFFER_LAYOUT, model::RenderedMeshBuffers, pipelines::consts::DEPTH_STENCIL_STATE,
+        workspace::WorkspaceRenderCallback,
     },
 };
 
