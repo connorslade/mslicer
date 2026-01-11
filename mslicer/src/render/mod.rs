@@ -6,7 +6,12 @@ use egui_wgpu::RenderState;
 use nalgebra::Vector4;
 use pipelines::{model::ModelPipeline, slice_preview::SlicePreviewPipeline};
 use slice_preview::SlicePreviewRenderResources;
-use wgpu::{BufferAddress, VertexAttribute, VertexBufferLayout, VertexFormat, VertexStepMode};
+use slicer::mesh::Mesh;
+use wgpu::{
+    Buffer, BufferAddress, BufferUsages, Device, VertexAttribute, VertexBufferLayout, VertexFormat,
+    VertexStepMode,
+    util::{BufferInitDescriptor, DeviceExt},
+};
 
 use workspace::WorkspaceRenderResources;
 
@@ -51,6 +56,32 @@ pub fn init_wgpu(cc: &CreationContext) -> RenderState {
     });
 
     render_state.clone()
+}
+
+pub fn gpu_mesh(mesh: &Mesh) -> (Vec<ModelVertex>, Vec<u32>) {
+    let index = mesh.faces().iter().flatten().copied().collect::<Vec<_>>();
+    let vertices = (mesh.vertices().iter())
+        .map(|vert| ModelVertex::new(vert.push(1.0)))
+        .collect::<Vec<_>>();
+    (vertices, index)
+}
+
+pub fn gpu_mesh_buffers(device: &Device, mesh: &Mesh) -> (Buffer, Buffer) {
+    let (vertices, indices) = gpu_mesh(mesh);
+
+    let vertex_buffer = device.create_buffer_init(&BufferInitDescriptor {
+        label: None,
+        contents: bytemuck::cast_slice(&vertices),
+        usage: BufferUsages::VERTEX,
+    });
+
+    let index_buffer = device.create_buffer_init(&BufferInitDescriptor {
+        label: None,
+        contents: bytemuck::cast_slice(&indices),
+        usage: BufferUsages::INDEX,
+    });
+
+    (vertex_buffer, index_buffer)
 }
 
 impl ModelVertex {

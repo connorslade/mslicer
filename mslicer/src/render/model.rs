@@ -7,17 +7,14 @@ use bitflags::bitflags;
 use common::{config::SliceConfig, oklab::START_COLOR};
 use egui::Color32;
 use nalgebra::Vector3;
-use wgpu::{
-    Buffer, BufferUsages, Device,
-    util::{BufferInitDescriptor, DeviceExt},
-};
+use wgpu::{Buffer, Device};
 
 use slicer::{
     geometry::bvh::Bvh, half_edge::HalfEdgeMesh, mesh::Mesh,
     supports::overhangs::detect_point_overhangs,
 };
 
-use crate::{app::App, render::ModelVertex};
+use crate::{app::App, render::gpu_mesh_buffers};
 
 pub struct Model {
     pub name: String,
@@ -115,25 +112,7 @@ impl Model {
 
     pub fn get_buffers(&mut self, device: &Device) -> &RenderedMeshBuffers {
         if self.buffers.is_none() {
-            let (vertices, faces) = (self.mesh.vertices(), self.mesh.faces());
-
-            let index = faces.iter().flatten().copied().collect::<Vec<_>>();
-            let vertices = (vertices.iter())
-                .map(|vert| ModelVertex::new(vert.push(1.0)))
-                .collect::<Vec<_>>();
-
-            let vertex_buffer = device.create_buffer_init(&BufferInitDescriptor {
-                label: None,
-                contents: bytemuck::cast_slice(&vertices),
-                usage: BufferUsages::VERTEX,
-            });
-
-            let index_buffer = device.create_buffer_init(&BufferInitDescriptor {
-                label: None,
-                contents: bytemuck::cast_slice(&index),
-                usage: BufferUsages::INDEX,
-            });
-
+            let (vertex_buffer, index_buffer) = gpu_mesh_buffers(device, &self.mesh);
             self.buffers = Some(RenderedMeshBuffers {
                 vertex_buffer,
                 index_buffer,

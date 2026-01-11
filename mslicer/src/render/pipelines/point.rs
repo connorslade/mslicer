@@ -1,21 +1,21 @@
-use std::f32::consts::{PI, TAU};
-
 use bytemuck::{Pod, Zeroable};
 use encase::{ShaderSize, ShaderType, UniformBuffer};
 use nalgebra::{Matrix4, Vector3, Vector4};
+use slicer::builder::MeshBuilder;
 use wgpu::{
     BindGroup, BindGroupDescriptor, BindGroupEntry, BindingResource, BlendState, Buffer,
-    BufferBinding, BufferDescriptor, BufferUsages, ColorTargetState, ColorWrites, Device,
-    FragmentState, IndexFormat, MultisampleState, PipelineLayoutDescriptor, PrimitiveState, Queue,
-    RenderPass, RenderPipeline, RenderPipelineDescriptor, TextureFormat, VertexAttribute,
-    VertexBufferLayout, VertexFormat, VertexState, VertexStepMode,
+    BufferBinding, BufferDescriptor, BufferUsages, ColorTargetState, ColorWrites,
+    DepthStencilState, Device, FragmentState, IndexFormat, MultisampleState,
+    PipelineLayoutDescriptor, PrimitiveState, Queue, RenderPass, RenderPipeline,
+    RenderPipelineDescriptor, TextureFormat, VertexAttribute, VertexBufferLayout, VertexFormat,
+    VertexState, VertexStepMode,
     util::{BufferInitDescriptor, DeviceExt},
 };
 
 use crate::{
     include_shader,
     render::{
-        ModelVertex, VERTEX_BUFFER_LAYOUT, pipelines::consts::DEPTH_STENCIL_STATE,
+        VERTEX_BUFFER_LAYOUT, gpu_mesh_buffers, pipelines::consts::DEPTH_STENCIL_STATE,
         workspace::WorkspaceRenderCallback,
     },
 };
@@ -126,7 +126,10 @@ impl PointPipeline {
                 compilation_options: Default::default(),
             }),
             primitive: PrimitiveState::default(),
-            depth_stencil: Some(DEPTH_STENCIL_STATE),
+            depth_stencil: Some(DepthStencilState {
+                depth_write_enabled: false,
+                ..DEPTH_STENCIL_STATE
+            }),
             multisample: MultisampleState {
                 count: 4,
                 ..Default::default()
@@ -135,20 +138,12 @@ impl PointPipeline {
             cache: None,
         });
 
-        let (vertices, indices) = generate_sphere(20);
-        let index_count = indices.len() as u32;
+        let mut builder = MeshBuilder::new();
+        builder.add_sphere(Vector3::zeros(), 1.0, 20);
+        let mesh = builder.build();
 
-        let vertex_buffer = device.create_buffer_init(&BufferInitDescriptor {
-            label: None,
-            contents: bytemuck::cast_slice(&vertices),
-            usage: BufferUsages::VERTEX,
-        });
-
-        let index_buffer = device.create_buffer_init(&BufferInitDescriptor {
-            label: None,
-            contents: bytemuck::cast_slice(&indices),
-            usage: BufferUsages::INDEX,
-        });
+        let index_count = mesh.face_count() as u32 * 3;
+        let (vertex_buffer, index_buffer) = gpu_mesh_buffers(device, &mesh);
 
         let instance_buffer = device.create_buffer(&BufferDescriptor {
             label: None,
@@ -223,28 +218,4 @@ impl Point {
             color: self.color.into(),
         }
     }
-}
-
-/// Returns a unit sphere mesh with the specified number of vertices along the pitch and azimuth.
-fn generate_sphere(precision: u32) -> (Vec<ModelVertex>, Vec<u32>) {
-    let (mut vertices, mut indices) = (Vec::new(), Vec::new());
-    for i_theta in 0..=precision {
-        let theta = i_theta as f32 / precision as f32 * TAU;
-        for i_phi in 0..=precision {
-            let phi = i_phi as f32 / precision as f32 * PI;
-
-            let idx = vertices.len() as u32;
-            let rect = Vector3::new(phi.sin() * theta.cos(), phi.sin() * theta.sin(), phi.cos());
-            vertices.push(ModelVertex {
-                position: rect.push(1.0).into(),
-            });
-
-            if i_theta < precision && i_phi < precision {
-                indices.extend([idx, idx + 1, idx + precision + 1]);
-                indices.extend([idx + 1, idx + precision + 2, idx + precision + 1]);
-            }
-        }
-    }
-
-    (vertices, indices)
 }
