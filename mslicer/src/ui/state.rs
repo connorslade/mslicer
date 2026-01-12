@@ -10,7 +10,7 @@ pub struct UiState {
     pub line_support_config: LineSupportConfig,
     pub line_support_debug: Vec<[Vector3<f32>; 2]>,
     pub queue_reset_ui: bool,
-    pub selcted_printer: usize,
+    pub selected_printer: usize,
 
     // remote send ui
     pub working_address: String,

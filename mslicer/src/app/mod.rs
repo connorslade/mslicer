@@ -83,7 +83,7 @@ impl App {
         }
 
         let slice_config = SliceConfig::default();
-        let selcted_printer = (config.printers.iter())
+        let selected_printer = (config.printers.iter())
             .position(|x| {
                 x.resolution == slice_config.platform_resolution
                     && x.size == slice_config.platform_size
@@ -98,7 +98,7 @@ impl App {
             tasks: TaskManager::default(),
             state: UiState {
                 event_collector,
-                selcted_printer,
+                selected_printer,
                 ..Default::default()
             },
             config,

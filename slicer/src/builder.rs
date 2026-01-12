@@ -60,8 +60,10 @@ impl MeshBuilder {
         let mut last = None;
         let mut fist = None;
         for i in 0..precision {
-            let angle = TAU * (i as f32) / (precision as f32);
-            let normal = Vector3::new(angle.sin(), angle.cos(), 0.0);
+            let angle = i as f32 / precision as f32 * TAU;
+            let normal = Vector3::new(angle.sin(), angle.cos(), 0.0)
+                .cross(&(b - a))
+                .normalize();
 
             let top = self.add_vertex(b + normal * b_radius);
             let bottom = self.add_vertex(a + normal * a_radius);

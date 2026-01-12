@@ -33,15 +33,15 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
 
             ui.label("Printer");
             ComboBox::new("printer", "")
-                .selected_text(match app.state.selcted_printer {
+                .selected_text(match app.state.selected_printer {
                     0 => "Custom",
                     i => &app.config.printers[i - 1].name,
                 })
                 .show_ui(ui, |ui| {
-                    ui.selectable_value(&mut app.state.selcted_printer, 0, "Custom");
+                    ui.selectable_value(&mut app.state.selected_printer, 0, "Custom");
                     for (i, printer) in app.config.printers.iter().enumerate() {
                         let (res, size) = (printer.resolution, printer.size);
-                        ui.selectable_value(&mut app.state.selcted_printer, i + 1, &printer.name)
+                        ui.selectable_value(&mut app.state.selected_printer, i + 1, &printer.name)
                             .on_hover_text(format!(
                                 "{}x{} ({}x{}x{})",
                                 res.x, res.y, size.x, size.y, size.z
@@ -52,7 +52,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
 
             let platform = &mut app.slice_config.platform_size;
             let prev = *platform;
-            if app.state.selcted_printer == 0 {
+            if app.state.selected_printer == 0 {
                 ui.label("Platform Resolution");
                 vec2_dragger(ui, app.slice_config.platform_resolution.as_mut(), |x| x);
                 ui.end_row();
@@ -61,7 +61,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                 vec3_dragger(ui, platform.as_mut(), |x| x);
                 ui.end_row();
             } else {
-                let printer = &app.config.printers[app.state.selcted_printer - 1];
+                let printer = &app.config.printers[app.state.selected_printer - 1];
                 app.slice_config.platform_resolution = printer.resolution;
                 *platform = printer.size;
             }
