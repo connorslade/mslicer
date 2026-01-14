@@ -1,8 +1,15 @@
 use egui::{CollapsingHeader, Context, Ui};
 use nalgebra::Vector3;
-use slicer::supports::{line::LineSupportGenerator, route_support};
+use slicer::{
+    builder::MeshBuilder,
+    supports::{line::LineSupportGenerator, route_support},
+};
 
-use crate::{app::App, render::model::Model, ui::components::dragger};
+use crate::{
+    app::{App, task::MeshManifold},
+    render::model::Model,
+    ui::components::dragger,
+};
 
 pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     ui.label("This feature is still very early in development.");
@@ -24,18 +31,32 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                 model.find_overhangs();
 
                 let verts = model.mesh.vertices();
-                let lines = &mut app.state.line_support_debug;
-                let mut line = |a, b| lines.push([a, b - a]);
+                let mut builder = MeshBuilder::new();
 
                 for overhang in model.overhangs.as_ref().unwrap() {
                     let point = model.mesh.transform(&verts[*overhang as usize]);
 
-                    let start = point - Vector3::z() * 0.1;
+                    let start = point - Vector3::z();
                     if let Some(lines) = route_support(&model.mesh, &model.bvh, start) {
-                        line(point, start);
-                        line(lines[0], lines[1]);
-                        line(lines[1], lines[2]);
+                        let (r, p) = (1.0, 10);
+                        builder.add_cylinder((point, start), (0.2, r), p);
+                        builder.add_cylinder((lines[0], lines[1]), (r, r), p);
+                        builder.add_cylinder((lines[1], lines[2]), (r, r), p);
+
+                        builder.add_sphere(point, 0.2, p);
+                        builder.add_sphere(lines[0], r, p);
+                        builder.add_sphere(lines[1], r, p);
                     }
+                }
+
+                if !builder.is_empty() {
+                    let mesh = builder.build();
+                    let mut rendered_mesh = Model::from_mesh(mesh)
+                        .with_name("Supports".into())
+                        .with_random_color();
+                    rendered_mesh.update_oob(&app.slice_config);
+                    app.tasks.add(MeshManifold::new(&rendered_mesh));
+                    models.push(rendered_mesh);
                 }
             }
         }
