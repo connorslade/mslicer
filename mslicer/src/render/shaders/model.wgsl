@@ -63,9 +63,10 @@ fn frag(
             let reflect_dir = reflect(-camera_direction, normal);
             let specular = pow(max(dot(camera_direction, reflect_dir), 0.0), 32.0);
 
-            var color = select(vec3f(.5), context.model_color.rgb, is_front);
-                color = select(color, OOB_COLOR, outside_build_volume(in.world_position));
+            var color = context.model_color.rgb;
                 color = mix(color, OVERHANG_COLOR, 1.0 - smoothstep(0, context.overhang_angle, acos(-normal.z)));
+                color = select(vec3f(.5), color, is_front);
+                color = select(color, OOB_COLOR, outside_build_volume(in.world_position));
 
             let intensity = (diffuse + specular + 0.1) * color;
             return vec4f(intensity, context.model_color.a);

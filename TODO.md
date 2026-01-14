@@ -59,14 +59,13 @@
 - [x] Optionally proxy printer state over http (api and sse)
 - [x] Remote print error handing
 - [x] Make all network operations async (not block ui)
-- [ ] Make model loading async
-- [ ] Dont repaint if nothing changes
+- [x] Make model loading async
 - [ ] Allow changing broadcast address
 - [x] Actually init remote print at startup if requested
 - [ ] Preferred service ports
 - [x] Button to disable remote print services
 - [x] Check if files are removed from the file server after being downloaded once
-- [x] Dont allow adding the same printer multiple times
+- [x] Don't allow adding the same printer multiple times
 - [x] Drag and drop to load models
 - [x] Look into mqtt server resource leak on disable
 - [ ] Run post-slice plugins on slice thread
@@ -82,27 +81,27 @@
 - [x] Allow dragging in project to load them
 - [ ] Remember the file that was opened for future save operations
 - [ ] Save on remote thread
-- [ ] Printer profiles
+- [x] Printer profiles
 - [x] Save config on quit
 - [x] Refactor plugins to post processors
 - [x] Update readme
 - [ ] Make post processing async
 - [x] Allow recalculating normals
 - [x] Cleanup self intersection resolution
-- [ ] Dont fail to load an stl without normals
-- [ ] GPU accalration for post processing effect?
+- [x] Don't fail to load an stl without normals
+- [ ] GPU acceleration for post processing effect?
 - [x] Fix requiring viewport to be visible to render preview image
-- [x] Visulize mesh outside of bounging box
+- [x] Visualize mesh outside of bounding box
 - [x] Save panel layout
 - [x] Random triangle color render mode
-- [ ] Dont clone Config every frame for no reason
+- [ ] Don't clone Config every frame for no reason
 - [x] Add button to reset UI
 - [ ] Put all models in the same segments1d to improve slicing times with supports?
 - [ ] Island detection
 - [x] Require `.mslicer` extension when saving
 - [ ] Alignment tools
 - [ ] Tools for working with lots of models
-- [ ] Bounds checking in slice preview
+- [x] Bounds checking in slice preview
 - [ ] Allow loading .goo files to use with the preview and remote send
 - [ ] Allow inspecting / manually editing goo files?
 - [ ] Systematic testing to fix bad slicing / polygon filling
@@ -116,9 +115,3 @@
 - [x] Require Viewport tab to be active on startup
 - [x] Support uploading pre-sliced .cbt files (windows::remote_print::upload_file)
 - [x] Update mesh oob warning when print volume changed
-
----
-
-skull (layer ~596)
-- rot: ⟨0°, 0°, 90°⟩
-- scale: 0.5

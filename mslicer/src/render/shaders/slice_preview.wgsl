@@ -24,6 +24,10 @@ fn vert(@location(0) position: vec4f) -> VertexOutput {
 }
 
 fn index(pos: vec2u) -> f32 {
+    if pos.x >= context.dimensions.x || pos.y >= context.dimensions.y {
+        return 0.0;
+    }
+
     let byte_idx = (pos.y * context.dimensions.x + pos.x);
     let array_idx = byte_idx / 4;
     let shift = (byte_idx % 4) * 8;
