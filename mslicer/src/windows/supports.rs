@@ -17,9 +17,9 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
 
     ui.heading("Overhang Detection");
 
-    let min_angle = &mut app.state.line_support_config.min_angle;
-    ui.checkbox(&mut true, "Visualize Overhanging Faces");
-    dragger(ui, "Overhang Angle", min_angle, |x| x.speed(0.1));
+    let overhang = &mut app.config.overhang_visualization;
+    ui.checkbox(&mut overhang.0, "Visualize Overhanging Faces");
+    dragger(ui, "Overhang Angle", &mut overhang.1, |x| x.speed(0.1));
 
     ui.add_space(8.0);
     let mut models = app.models.write();

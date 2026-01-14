@@ -32,7 +32,7 @@ pub struct WorkspaceRenderCallback {
     pub config: Config,
 
     pub line_support_debug: Vec<[Vector3<f32>; 2]>,
-    pub overhang_angle: f32,
+    pub overhang_angle: Option<f32>,
 }
 
 pub struct Gcx<'a> {

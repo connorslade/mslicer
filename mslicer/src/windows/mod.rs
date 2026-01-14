@@ -195,6 +195,7 @@ impl App {
         view_projection: Matrix4<f32>,
         is_moving: bool,
     ) -> WorkspaceRenderCallback {
+        let (show_overhang, overhang_angle) = self.config.overhang_visualization;
         WorkspaceRenderCallback {
             camera: self.camera.clone(),
             transform: view_projection,
@@ -207,7 +208,7 @@ impl App {
             config: self.config.clone(),
 
             line_support_debug: self.state.line_support_debug.clone(),
-            overhang_angle: self.state.line_support_config.min_angle,
+            overhang_angle: show_overhang.then_some(overhang_angle),
         }
     }
 

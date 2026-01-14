@@ -108,6 +108,9 @@ impl ModelPipeline {
             }
 
             let model_transform = *model.mesh.transformation_matrix();
+            let overhang_angle = (resources.overhang_angle)
+                .map(|x| x.to_radians())
+                .unwrap_or(f32::from_bits(u32::MAX));
             let uniforms = ModelUniforms {
                 transform: resources.transform * model_transform,
                 model_transform,
@@ -116,7 +119,7 @@ impl ModelPipeline {
                 camera_position: resources.camera.position(),
                 camera_target: resources.camera.target,
                 render_style: resources.config.render_style as u32,
-                overhang_angle: resources.overhang_angle.to_radians(),
+                overhang_angle,
             };
 
             let mut buffer = UniformBuffer::new(Vec::new());

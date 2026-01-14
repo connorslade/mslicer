@@ -16,9 +16,9 @@ use crate::{render::pipelines::model::RenderStyle, windows::Tab};
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Config {
-    pub render_style: RenderStyle,
     pub grid_size: f32,
     pub theme: Theme,
+    pub overhang_visualization: (bool, f32),
     pub recent_projects: Vec<PathBuf>,
     pub panels: Option<Tree<Tab>>,
 
@@ -30,6 +30,7 @@ pub struct Config {
     pub network_broadcast_address: IpAddr,
 
     // Advanced Settings
+    pub render_style: RenderStyle,
     pub show_normals: bool,
     pub max_buffer_size: u64,
     pub printers: Vec<PrinterDefaults>,
@@ -80,9 +81,9 @@ impl Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
-            render_style: RenderStyle::Rendered,
             grid_size: 12.16,
             theme: Theme::Dark,
+            overhang_visualization: (false, 30.0),
 
             recent_projects: Vec::new(),
             panels: None,
@@ -93,6 +94,7 @@ impl Default for Config {
             network_timeout: 5.0,
             network_broadcast_address: IpAddr::V4(Ipv4Addr::new(192, 168, 1, 255)),
 
+            render_style: RenderStyle::Rendered,
             max_buffer_size: 512 << 20,
             show_normals: false,
             printers: vec![PrinterDefaults {
