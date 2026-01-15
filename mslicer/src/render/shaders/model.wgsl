@@ -42,10 +42,8 @@ fn vert(in: VertexInput) -> VertexOutput {
 fn frag(
    @builtin(front_facing) is_front: bool,
    in: VertexOutput
-) -> @location(0) vec4<f32> {
-    let dy = dpdy(in.world_position);
-    let dx = dpdx(in.world_position);
-    let normal = normalize(cross(dy, dx));
+) -> @location(0) vec4f {
+    let normal = screen_normal(in.world_position);
 
     switch context.render_style {
         case STYLE_NORMAL: {
@@ -56,13 +54,6 @@ fn frag(
             return vec4f(rand(), rand(), rand(), 1.0);
         }
         case STYLE_RENDERED: {
-            let camera_direction = normalize(context.camera_position + context.camera_target);
-
-            let diffuse = max(dot(normal, camera_direction), 0.0);
-
-            let reflect_dir = reflect(-camera_direction, normal);
-            let specular = pow(max(dot(camera_direction, reflect_dir), 0.0), 32.0);
-
             var color = context.model_color.rgb;
             if bitcast<u32>(context.overhang_angle) != 0xFFFFFFFF {
                 color = mix(color, OVERHANG_COLOR, 1.0 - smoothstep(0, context.overhang_angle, acos(-normal.z)));
@@ -71,8 +62,9 @@ fn frag(
             color = select(vec3f(.5), color, is_front);
             color = select(color, OOB_COLOR, outside_build_volume(in.world_position));
 
-            let intensity = (diffuse + specular + 0.1) * color;
-            return vec4f(intensity, context.model_color.a);
+            let camera_direction = normalize(context.camera_position + context.camera_target);
+            let intensity = blinn_phong(normal, camera_direction);
+            return vec4f(intensity * color.rgb, context.model_color.a);
         }
         default: {
             return vec4f();

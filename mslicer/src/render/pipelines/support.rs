@@ -1,18 +1,16 @@
-use bytemuck::{Pod, Zeroable};
 use encase::{ShaderSize, ShaderType, UniformBuffer};
-use nalgebra::{Matrix4, Vector3, Vector4};
-use slicer::builder::MeshBuilder;
+use nalgebra::{Matrix4, Vector3};
 use wgpu::{
     BindGroup, BlendState, Buffer, BufferDescriptor, BufferUsages, ColorTargetState, ColorWrites,
     DepthStencilState, Device, FragmentState, IndexFormat, MultisampleState,
     PipelineLayoutDescriptor, PrimitiveState, RenderPass, RenderPipeline, RenderPipelineDescriptor,
-    TextureFormat, VertexAttribute, VertexBufferLayout, VertexFormat, VertexState, VertexStepMode,
+    TextureFormat, VertexState,
 };
 
 use crate::{
     include_shader,
     render::{
-        VERTEX_BUFFER_LAYOUT, gpu_mesh_buffers,
+        VERTEX_BUFFER_LAYOUT, gpu_mesh,
         pipelines::{
             ResizingBuffer,
             consts::{DEPTH_STENCIL_STATE, bind_group},
@@ -23,67 +21,28 @@ use crate::{
 
 use super::consts::{BASE_BIND_GROUP_LAYOUT_DESCRIPTOR, BASE_UNIFORM_DESCRIPTOR};
 
-const INSTANCE_BUFFER_LAYOUT: VertexBufferLayout = VertexBufferLayout {
-    array_stride: Point::SHADER_SIZE.get(),
-    step_mode: VertexStepMode::Instance,
-    attributes: &[
-        VertexAttribute {
-            format: VertexFormat::Float32x3,
-            offset: 0,
-            shader_location: 1,
-        },
-        VertexAttribute {
-            format: VertexFormat::Float32,
-            offset: 12,
-            shader_location: 2,
-        },
-        VertexAttribute {
-            format: VertexFormat::Float32x4,
-            offset: 16,
-            shader_location: 3,
-        },
-    ],
-};
-
-pub struct PointPipeline {
+pub struct SupportPipeline {
     render_pipeline: RenderPipeline,
     bind_group: BindGroup,
 
-    vertex_buffer: Buffer,
-    index_buffer: Buffer,
+    vertex_buffer: ResizingBuffer,
+    index_buffer: ResizingBuffer,
     uniform_buffer: Buffer,
-    instance_buffer: ResizingBuffer,
-
     index_count: u32,
-    instance_count: u32,
 }
 
 #[derive(ShaderType)]
-pub struct Point {
-    pub position: Vector3<f32>,
-    pub radius: f32,
-    pub color: Vector4<f32>,
-}
-
-#[derive(Clone, Copy, Pod, Zeroable)]
-#[repr(C)]
-struct PointInstance {
-    position: [f32; 3],
-    radius: f32,
-    color: [f32; 4],
-}
-
-#[derive(ShaderType)]
-struct PointUniforms {
+struct SupportUniforms {
     transform: Matrix4<f32>,
+    camera_direction: Vector3<f32>,
 }
 
-impl PointPipeline {
+impl SupportPipeline {
     pub fn new(device: &Device, texture: TextureFormat) -> Self {
-        let shader = device.create_shader_module(include_shader!("point.wgsl"));
+        let shader = device.create_shader_module(include_shader!("support.wgsl", "common.wgsl"));
 
         let uniform_buffer = device.create_buffer(&BufferDescriptor {
-            size: PointUniforms::SHADER_SIZE.get(),
+            size: SupportUniforms::SHADER_SIZE.get(),
             ..BASE_UNIFORM_DESCRIPTOR
         });
 
@@ -105,7 +64,7 @@ impl PointPipeline {
             vertex: VertexState {
                 module: &shader,
                 entry_point: None,
-                buffers: &[VERTEX_BUFFER_LAYOUT, INSTANCE_BUFFER_LAYOUT],
+                buffers: &[VERTEX_BUFFER_LAYOUT],
                 compilation_options: Default::default(),
             },
             fragment: Some(FragmentState {
@@ -131,46 +90,45 @@ impl PointPipeline {
             cache: None,
         });
 
-        let mut builder = MeshBuilder::new();
-        builder.add_sphere(Vector3::zeros(), 1.0, 20);
-        let mesh = builder.build();
-
-        let index_count = mesh.face_count() as u32 * 3;
-        let (vertex_buffer, index_buffer) = gpu_mesh_buffers(device, &mesh);
-
         Self {
             render_pipeline,
             bind_group,
 
-            vertex_buffer,
-            index_buffer,
+            vertex_buffer: ResizingBuffer::new(device, BufferUsages::VERTEX),
+            index_buffer: ResizingBuffer::new(device, BufferUsages::INDEX),
             uniform_buffer,
-            instance_buffer: ResizingBuffer::new(device, BufferUsages::VERTEX),
 
-            index_count,
-            instance_count: 0,
+            index_count: 0,
         }
     }
 }
 
-impl PointPipeline {
-    pub fn prepare(&mut self, gcx: &Gcx, resources: &WorkspaceRenderCallback, points: &[&[Point]]) {
-        let points = (points.iter())
-            .flat_map(|x| x.iter())
-            .map(|x| x.to_instance())
-            .collect::<Vec<_>>();
-        self.instance_count = points.len() as u32;
-        self.instance_buffer.write_slice(gcx, &points);
+impl SupportPipeline {
+    pub fn prepare(&mut self, gcx: &Gcx, resources: &WorkspaceRenderCallback) {
+        let mesh = None;
+        let Some(mesh) = mesh else {
+            self.index_count = 0;
+            return;
+        };
+
+        let (vertices, indices) = gpu_mesh(&mesh);
+        self.vertex_buffer.write_slice(gcx, &vertices);
+        self.index_buffer.write_slice(gcx, &indices);
+        self.index_count = indices.len() as u32;
+
+        let uniform = SupportUniforms {
+            transform: resources.transform,
+            camera_direction: -resources.camera.position() / resources.camera.distance,
+        };
 
         let mut buffer = UniformBuffer::new(Vec::new());
-        let transform = resources.transform;
-        buffer.write(&PointUniforms { transform }).unwrap();
+        buffer.write(&uniform).unwrap();
         gcx.queue
             .write_buffer(&self.uniform_buffer, 0, &buffer.into_inner());
     }
 
     pub fn paint(&self, render_pass: &mut RenderPass) {
-        if self.instance_count == 0 {
+        if self.index_count == 0 {
             return;
         }
 
@@ -178,18 +136,7 @@ impl PointPipeline {
         render_pass.set_bind_group(0, &self.bind_group, &[]);
 
         render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
-        render_pass.set_vertex_buffer(1, self.instance_buffer.slice(..));
         render_pass.set_index_buffer(self.index_buffer.slice(..), IndexFormat::Uint32);
-        render_pass.draw_indexed(0..self.index_count, 0, 0..self.instance_count);
-    }
-}
-
-impl Point {
-    fn to_instance(&self) -> PointInstance {
-        PointInstance {
-            position: self.position.into(),
-            radius: self.radius,
-            color: self.color.into(),
-        }
+        render_pass.draw_indexed(0..self.index_count, 0, 0..1);
     }
 }

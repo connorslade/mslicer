@@ -64,14 +64,12 @@ fn render_preview_image(app: &App, size: (u32, u32)) -> RgbaImage {
     let aspect = size.0 as f32 / size.1 as f32;
     workspace.transform = workspace.camera.view_projection_matrix(aspect);
 
-    resources
-        .model_pipeline
-        .prepare(&Gcx { device, queue }, &workspace);
+    resources.model.prepare(&Gcx { device, queue }, &workspace);
 
     render_preview(
         device,
         queue,
-        &resources.model_pipeline,
+        &resources.model,
         &workspace,
         &texture_view,
         &resolved_texture_view,

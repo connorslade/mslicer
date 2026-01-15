@@ -50,10 +50,9 @@ pub enum RenderStyle {
 
 impl ModelPipeline {
     pub fn new(device: &Device, texture: TextureFormat) -> Self {
-        let shader = device.create_shader_module(include_shader!("model.wgsl"));
+        let shader = device.create_shader_module(include_shader!("model.wgsl", "common.wgsl"));
 
         let bind_group_layout = device.create_bind_group_layout(&BASE_BIND_GROUP_LAYOUT_DESCRIPTOR);
-
         let pipeline_layout = device.create_pipeline_layout(&PipelineLayoutDescriptor {
             label: None,
             bind_group_layouts: &[&bind_group_layout],

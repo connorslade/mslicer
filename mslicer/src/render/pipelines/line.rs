@@ -1,11 +1,10 @@
 use encase::{ShaderSize, ShaderType, UniformBuffer};
 use nalgebra::{Matrix4, Vector3};
 use wgpu::{
-    BindGroup, BindGroupDescriptor, BindGroupEntry, BindingResource, Buffer, BufferBinding,
-    BufferDescriptor, BufferUsages, ColorTargetState, ColorWrites, Device, FragmentState,
-    IndexFormat, MultisampleState, PipelineLayoutDescriptor, PolygonMode, PrimitiveState,
-    RenderPass, RenderPipeline, RenderPipelineDescriptor, TextureFormat, VertexAttribute,
-    VertexBufferLayout, VertexFormat, VertexState, VertexStepMode,
+    BindGroup, Buffer, BufferDescriptor, BufferUsages, ColorTargetState, ColorWrites, Device,
+    FragmentState, IndexFormat, MultisampleState, PipelineLayoutDescriptor, PolygonMode,
+    PrimitiveState, RenderPass, RenderPipeline, RenderPipelineDescriptor, TextureFormat,
+    VertexAttribute, VertexBufferLayout, VertexFormat, VertexState, VertexStepMode,
 };
 
 use crate::{
@@ -15,6 +14,7 @@ use crate::{
             ResizingBuffer,
             consts::{
                 BASE_BIND_GROUP_LAYOUT_DESCRIPTOR, BASE_UNIFORM_DESCRIPTOR, DEPTH_STENCIL_STATE,
+                bind_group,
             },
         },
         workspace::{Gcx, WorkspaceRenderCallback},
@@ -78,24 +78,16 @@ impl SolidLinePipeline {
             ..BASE_UNIFORM_DESCRIPTOR
         });
 
-        let bind_group_layout = device.create_bind_group_layout(&BASE_BIND_GROUP_LAYOUT_DESCRIPTOR);
+        let (bind_group_layout, bind_group) = bind_group(
+            device,
+            BASE_BIND_GROUP_LAYOUT_DESCRIPTOR,
+            [uniform_buffer.as_entire_binding()],
+        );
+
         let pipeline_layout = device.create_pipeline_layout(&PipelineLayoutDescriptor {
             label: None,
             bind_group_layouts: &[&bind_group_layout],
             push_constant_ranges: &[],
-        });
-
-        let bind_group = device.create_bind_group(&BindGroupDescriptor {
-            label: None,
-            layout: &bind_group_layout,
-            entries: &[BindGroupEntry {
-                binding: 0,
-                resource: BindingResource::Buffer(BufferBinding {
-                    buffer: &uniform_buffer,
-                    offset: 0,
-                    size: None,
-                }),
-            }],
         });
 
         let render_pipeline = device.create_render_pipeline(&RenderPipelineDescriptor {

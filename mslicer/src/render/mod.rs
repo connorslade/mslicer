@@ -15,7 +15,7 @@ use wgpu::{
 
 use workspace::WorkspaceRenderResources;
 
-use crate::render::dispatch::point::PointDispatch;
+use crate::render::{dispatch::point::PointDispatch, pipelines::support::SupportPipeline};
 pub mod camera;
 mod dispatch;
 pub mod model;
@@ -47,9 +47,10 @@ pub fn init_wgpu(cc: &CreationContext) -> RenderState {
 
     let resources = &mut render_state.renderer.write().callback_resources;
     resources.insert(WorkspaceRenderResources {
-        solid_line: LineDispatch::new(device, texture),
-        model_pipeline: ModelPipeline::new(device, texture),
+        model: ModelPipeline::new(device, texture),
+        support: SupportPipeline::new(device, texture),
         point: PointDispatch::new(device, texture),
+        solid_line: LineDispatch::new(device, texture),
     });
     resources.insert(SlicePreviewRenderResources {
         slice_preview_pipeline: SlicePreviewPipeline::new(device, texture),

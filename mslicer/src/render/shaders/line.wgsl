@@ -1,8 +1,4 @@
-@group(0) @binding(0) var<uniform> context: Context;
-
-struct Context {
-    transform: mat4x4f,
-}
+@group(0) @binding(0) var<uniform> transform: mat4x4f;
 
 struct VertexInput {
     @location(0) position: vec4f,
@@ -16,7 +12,7 @@ struct VertexOutput {
 
 @vertex
 fn vert(in: VertexInput) -> VertexOutput {
-    return VertexOutput(context.transform * in.position, in.color);
+    return VertexOutput(transform * in.position, in.color);
 }
 
 @fragment

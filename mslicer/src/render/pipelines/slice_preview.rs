@@ -2,10 +2,10 @@ use encase::{ShaderSize, ShaderType, UniformBuffer};
 use nalgebra::Vector2;
 use wgpu::{
     BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayout, BindGroupLayoutDescriptor,
-    BindGroupLayoutEntry, BindingResource, BindingType, Buffer, BufferBinding, BufferBindingType,
-    BufferDescriptor, BufferUsages, COPY_BUFFER_ALIGNMENT, ColorTargetState, ColorWrites, Device,
-    FragmentState, IndexFormat, MultisampleState, PipelineLayoutDescriptor, PrimitiveState, Queue,
-    RenderPass, RenderPipeline, RenderPipelineDescriptor, ShaderStages, TextureFormat, VertexState,
+    BindGroupLayoutEntry, BindingType, Buffer, BufferBindingType, BufferDescriptor, BufferUsages,
+    COPY_BUFFER_ALIGNMENT, ColorTargetState, ColorWrites, Device, FragmentState, IndexFormat,
+    MultisampleState, PipelineLayoutDescriptor, PrimitiveState, Queue, RenderPass, RenderPipeline,
+    RenderPipelineDescriptor, ShaderStages, TextureFormat, VertexState,
     util::{BufferInitDescriptor, DeviceExt},
 };
 
@@ -159,19 +159,11 @@ impl SlicePreviewPipeline {
             entries: &[
                 BindGroupEntry {
                     binding: 0,
-                    resource: BindingResource::Buffer(BufferBinding {
-                        buffer: &self.uniform_buffer,
-                        offset: 0,
-                        size: None,
-                    }),
+                    resource: self.uniform_buffer.as_entire_binding(),
                 },
                 BindGroupEntry {
                     binding: 1,
-                    resource: BindingResource::Buffer(BufferBinding {
-                        buffer: self.slice_buffer.as_ref().unwrap(),
-                        offset: 0,
-                        size: None,
-                    }),
+                    resource: self.slice_buffer.as_ref().unwrap().as_entire_binding(),
                 },
             ],
         }));

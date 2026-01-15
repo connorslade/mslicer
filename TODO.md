@@ -115,3 +115,10 @@
 - [x] Require Viewport tab to be active on startup
 - [x] Support uploading pre-sliced .cbt files (windows::remote_print::upload_file)
 - [x] Update mesh oob warning when print volume changed
+- [ ] Support structure generation
+  - [x] Face overhang visualization
+  - [x] Point overhang detection
+  - [ ] Support routing
+  - [ ] Manual support visualization
+- [ ] Overhaul save format
+- [ ] Add more printer configs

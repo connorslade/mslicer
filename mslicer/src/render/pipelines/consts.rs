@@ -1,7 +1,8 @@
 use wgpu::{
-    BindGroupLayoutDescriptor, BindGroupLayoutEntry, BindingType, BufferBindingType,
-    BufferDescriptor, BufferUsages, CompareFunction, DepthBiasState, DepthStencilState,
-    ShaderStages, StencilFaceState, StencilState,
+    BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayout, BindGroupLayoutDescriptor,
+    BindGroupLayoutEntry, BindingResource, BindingType, BufferBindingType, BufferDescriptor,
+    BufferUsages, CompareFunction, DepthBiasState, DepthStencilState, Device, ShaderStages,
+    StencilFaceState, StencilState,
 };
 
 use crate::DEPTH_TEXTURE_FORMAT;
@@ -46,3 +47,21 @@ pub const DEPTH_STENCIL_STATE: DepthStencilState = DepthStencilState {
         clamp: 0.0,
     },
 };
+
+pub fn bind_group<'a, const N: usize>(
+    device: &Device,
+    layout_descriptor: BindGroupLayoutDescriptor,
+    resources: [BindingResource<'a>; N],
+) -> (BindGroupLayout, BindGroup) {
+    let bind_group_layout = device.create_bind_group_layout(&layout_descriptor);
+    let bind_group = device.create_bind_group(&BindGroupDescriptor {
+        label: None,
+        layout: &bind_group_layout,
+        entries: &resources.map(|x| BindGroupEntry {
+            binding: 0,
+            resource: x,
+        }),
+    });
+
+    (bind_group_layout, bind_group)
+}
