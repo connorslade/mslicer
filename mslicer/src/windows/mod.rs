@@ -8,7 +8,7 @@ use parking_lot::MappedRwLockWriteGuard;
 use serde::{Deserialize, Serialize};
 use slicer::supports::route_support;
 
-use crate::{app::App, render::workspace::WorkspaceRenderCallback};
+use crate::{app::App, render::callback::WorkspaceRenderCallback};
 
 mod about;
 mod logs;

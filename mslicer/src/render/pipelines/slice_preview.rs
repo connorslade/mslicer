@@ -12,8 +12,8 @@ use wgpu::{
 use crate::{
     include_shader,
     render::{
-        ModelVertex, VERTEX_BUFFER_LAYOUT, pipelines::consts::DEPTH_STENCIL_STATE,
-        slice_preview::SlicePreviewRenderCallback,
+        ModelVertex, VERTEX_BUFFER_LAYOUT, callback::SlicePreviewRenderCallback,
+        pipelines::consts::DEPTH_STENCIL_STATE,
     },
 };
 

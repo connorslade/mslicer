@@ -1,9 +1,10 @@
 use wgpu::{Device, RenderPass, TextureFormat};
 
 use crate::render::{
+    Gcx,
+    callback::WorkspaceRenderCallback,
     dispatch::point::{overhangs::OverhangPointDispatch, target::TargetPointDispatch},
     pipelines::point::{Point, PointPipeline},
-    workspace::{Gcx, WorkspaceRenderCallback},
 };
 
 mod overhangs;

@@ -8,11 +8,13 @@ use wgpu::{CommandBuffer, CommandEncoder, Device, Queue, RenderPass};
 
 use crate::{
     app::config::Config,
-    render::{dispatch::point::PointDispatch, pipelines::support::SupportPipeline},
-};
-
-use super::{
-    camera::Camera, dispatch::line::LineDispatch, model::Model, pipelines::model::ModelPipeline,
+    render::{
+        Gcx,
+        camera::Camera,
+        dispatch::{line::LineDispatch, point::PointDispatch},
+        model::Model,
+        pipelines::{model::ModelPipeline, support::SupportPipeline},
+    },
 };
 
 pub struct WorkspaceRenderResources {
@@ -37,11 +39,6 @@ pub struct WorkspaceRenderCallback {
 
     pub line_support_debug: Vec<[Vector3<f32>; 2]>,
     pub overhang_angle: Option<f32>,
-}
-
-pub struct Gcx<'a> {
-    pub device: &'a Device,
-    pub queue: &'a Queue,
 }
 
 impl CallbackTrait for WorkspaceRenderCallback {

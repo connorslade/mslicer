@@ -4,8 +4,9 @@ use normals::NormalsDispatch;
 use wgpu::{Device, RenderPass, TextureFormat};
 
 use crate::render::{
-    pipelines::line::{Line, SolidLinePipeline},
-    workspace::{Gcx, WorkspaceRenderCallback},
+    Gcx,
+    callback::WorkspaceRenderCallback,
+    pipelines::line::{Line, LinePipeline},
 };
 
 mod build_plate;
@@ -13,7 +14,7 @@ mod line_support_debug;
 mod normals;
 
 pub struct LineDispatch {
-    render_pipeline: SolidLinePipeline,
+    render_pipeline: LinePipeline,
 
     build_plate: BuildPlateDispatch,
     normals: NormalsDispatch,
@@ -23,7 +24,7 @@ pub struct LineDispatch {
 impl LineDispatch {
     pub fn new(device: &Device, texture: TextureFormat) -> Self {
         Self {
-            render_pipeline: SolidLinePipeline::new(device, texture),
+            render_pipeline: LinePipeline::new(device, texture),
 
             build_plate: BuildPlateDispatch::new(),
             normals: NormalsDispatch::new(),

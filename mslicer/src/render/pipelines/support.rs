@@ -10,12 +10,13 @@ use wgpu::{
 use crate::{
     include_shader,
     render::{
-        VERTEX_BUFFER_LAYOUT, gpu_mesh,
+        Gcx, VERTEX_BUFFER_LAYOUT,
+        callback::WorkspaceRenderCallback,
+        gpu_mesh,
         pipelines::{
             ResizingBuffer,
             consts::{DEPTH_STENCIL_STATE, bind_group},
         },
-        workspace::{Gcx, WorkspaceRenderCallback},
     },
 };
 

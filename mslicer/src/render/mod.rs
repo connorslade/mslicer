@@ -5,24 +5,24 @@ use eframe::CreationContext;
 use egui_wgpu::RenderState;
 use nalgebra::Vector4;
 use pipelines::{model::ModelPipeline, slice_preview::SlicePreviewPipeline};
-use slice_preview::SlicePreviewRenderResources;
 use slicer::mesh::Mesh;
 use wgpu::{
-    Buffer, BufferAddress, BufferUsages, Device, VertexAttribute, VertexBufferLayout, VertexFormat,
-    VertexStepMode,
+    Buffer, BufferAddress, BufferUsages, Device, Queue, VertexAttribute, VertexBufferLayout,
+    VertexFormat, VertexStepMode,
     util::{BufferInitDescriptor, DeviceExt},
 };
 
-use workspace::WorkspaceRenderResources;
-
-use crate::render::{dispatch::point::PointDispatch, pipelines::support::SupportPipeline};
+use crate::render::{
+    callback::{SlicePreviewRenderResources, WorkspaceRenderResources},
+    dispatch::point::PointDispatch,
+    pipelines::support::SupportPipeline,
+};
+pub mod callback;
 pub mod camera;
 mod dispatch;
 pub mod model;
 pub mod pipelines;
 pub mod preview;
-pub mod slice_preview;
-pub mod workspace;
 
 pub const VERTEX_BUFFER_LAYOUT: VertexBufferLayout = VertexBufferLayout {
     array_stride: mem::size_of::<ModelVertex>() as BufferAddress,
@@ -33,6 +33,11 @@ pub const VERTEX_BUFFER_LAYOUT: VertexBufferLayout = VertexBufferLayout {
         shader_location: 0,
     }],
 };
+
+pub struct Gcx<'a> {
+    pub device: &'a Device,
+    pub queue: &'a Queue,
+}
 
 #[repr(C)]
 #[derive(Default, Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]

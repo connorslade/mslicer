@@ -1,7 +1,7 @@
 use nalgebra::Vector3;
 
 use crate::render::{
-    dispatch::line::LineGenerator, pipelines::line::Line, workspace::WorkspaceRenderCallback,
+    callback::WorkspaceRenderCallback, dispatch::line::LineGenerator, pipelines::line::Line,
 };
 
 pub struct LineSupportDebugDispatch {

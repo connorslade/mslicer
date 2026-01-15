@@ -11,13 +11,16 @@ use wgpu::{
     TextureDimension, TextureFormat, TextureUsages, TextureView, TextureViewDescriptor,
 };
 
-use crate::{DEPTH_TEXTURE_FORMAT, app::App, render::workspace::Gcx};
-
-use super::{
-    camera::Camera,
-    pipelines::model::ModelPipeline,
-    workspace::{WorkspaceRenderCallback, WorkspaceRenderResources},
+use crate::{
+    DEPTH_TEXTURE_FORMAT,
+    app::App,
+    render::{
+        Gcx,
+        callback::{WorkspaceRenderCallback, WorkspaceRenderResources},
+    },
 };
+
+use super::{camera::Camera, pipelines::model::ModelPipeline};
 
 pub fn process_previews(app: &App) {
     match &app.slice_operation {

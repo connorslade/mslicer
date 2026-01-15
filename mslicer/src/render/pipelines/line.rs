@@ -10,6 +10,8 @@ use wgpu::{
 use crate::{
     include_shader,
     render::{
+        Gcx,
+        callback::WorkspaceRenderCallback,
         pipelines::{
             ResizingBuffer,
             consts::{
@@ -17,7 +19,6 @@ use crate::{
                 bind_group,
             },
         },
-        workspace::{Gcx, WorkspaceRenderCallback},
     },
 };
 
@@ -38,7 +39,7 @@ const VERTEX_BUFFER_LAYOUT: VertexBufferLayout = VertexBufferLayout {
     ],
 };
 
-pub struct SolidLinePipeline {
+pub struct LinePipeline {
     render_pipeline: RenderPipeline,
     bind_group: BindGroup,
 
@@ -69,7 +70,7 @@ struct LineVertex {
     pub color: [f32; 3],
 }
 
-impl SolidLinePipeline {
+impl LinePipeline {
     pub fn new(device: &Device, texture: TextureFormat) -> Self {
         let shader = device.create_shader_module(include_shader!("line.wgsl"));
 
@@ -135,7 +136,7 @@ impl SolidLinePipeline {
     }
 }
 
-impl SolidLinePipeline {
+impl LinePipeline {
     pub fn prepare(&mut self, gcx: &Gcx, resources: &WorkspaceRenderCallback, lines: &[&[Line]]) {
         let vertex = (lines.iter())
             .flat_map(|x| x.iter())

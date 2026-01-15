@@ -3,7 +3,7 @@ use std::ops::Deref;
 use bytemuck::NoUninit;
 use wgpu::{Buffer, BufferDescriptor, BufferUsages, Device};
 
-use crate::render::workspace::Gcx;
+use crate::render::Gcx;
 
 mod consts;
 pub mod line;

@@ -13,9 +13,8 @@ use wgpu::{
 use crate::{
     include_shader,
     render::{
-        VERTEX_BUFFER_LAYOUT,
+        Gcx, VERTEX_BUFFER_LAYOUT, callback::WorkspaceRenderCallback,
         pipelines::consts::DEPTH_STENCIL_STATE,
-        workspace::{Gcx, WorkspaceRenderCallback},
     },
 };
 

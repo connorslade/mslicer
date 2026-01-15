@@ -3,7 +3,7 @@ use egui_wgpu::{CallbackResources, CallbackTrait, ScreenDescriptor};
 use nalgebra::Vector2;
 use wgpu::{CommandBuffer, CommandEncoder, Device, Queue, RenderPass};
 
-use super::pipelines::slice_preview::SlicePreviewPipeline;
+use crate::render::pipelines::slice_preview::SlicePreviewPipeline;
 
 pub struct SlicePreviewRenderResources {
     pub slice_preview_pipeline: SlicePreviewPipeline,
