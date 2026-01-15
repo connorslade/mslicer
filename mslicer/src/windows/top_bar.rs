@@ -3,10 +3,12 @@ use std::fs::File;
 use const_format::concatcp;
 use egui::{Button, Context, Key, KeyboardShortcut, Modifiers, TopBottomPanel, ViewportCommand};
 use egui_phosphor::regular::STACK;
-use rfd::FileDialog;
 
 use crate::{
-    app::{App, task::MeshLoad},
+    app::{
+        App,
+        task::{FileDialog, MeshLoad},
+    },
     include_asset,
 };
 
@@ -117,18 +119,17 @@ pub fn ui(app: &mut App, ctx: &Context) {
 }
 
 fn import_model(app: &mut App) {
-    // TODO: async
-    if let Some(path) = FileDialog::new()
-        .add_filter("Mesh", &["stl", "obj"])
-        .pick_file()
-    {
-        let name = path.file_name().unwrap().to_str().unwrap().to_string();
-        let ext = path.extension();
-        let format = ext.unwrap_or_default().to_string_lossy();
+    app.tasks.add(FileDialog::pick_file(
+        ("Mesh", &["stl", "obj"]),
+        |app, path| {
+            let name = path.file_name().unwrap().to_str().unwrap().to_string();
+            let ext = path.extension();
+            let format = ext.unwrap_or_default().to_string_lossy();
 
-        let file = File::open(&path).unwrap();
-        app.tasks.add(MeshLoad::file(file, name, &format));
-    }
+            let file = File::open(&path).unwrap();
+            app.tasks.add(MeshLoad::file(file, name, &format));
+        },
+    ));
 }
 
 fn import_teapot(app: &mut App) {
@@ -140,21 +141,17 @@ fn import_teapot(app: &mut App) {
 }
 
 fn save(app: &mut App) {
-    if let Some(path) = FileDialog::new()
-        .add_filter("mslicer project", &["mslicer"])
-        .save_file()
-    {
-        app.save_project(&path.with_extension("mslicer"));
-    }
+    app.tasks.add(FileDialog::save_file(
+        ("mslicer project", &["mslicer"]),
+        |app, path| app.save_project(&path.with_extension("mslicer")),
+    ));
 }
 
 fn load(app: &mut App) {
-    if let Some(path) = FileDialog::new()
-        .add_filter("mslicer project", &["mslicer"])
-        .pick_file()
-    {
-        app.load_project(&path);
-    }
+    app.tasks.add(FileDialog::save_file(
+        ("mslicer project", &["mslicer"]),
+        |app, path| app.load_project(&path),
+    ));
 }
 
 fn quit(ctx: &Context) {
