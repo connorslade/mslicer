@@ -144,23 +144,16 @@ impl SolidLinePipeline {
 }
 
 impl SolidLinePipeline {
-    pub fn prepare(
-        &mut self,
-        gcx: &Gcx,
-        resources: &WorkspaceRenderCallback,
-        lines: Option<&[&[Line]]>,
-    ) {
-        if let Some(lines) = lines {
-            let vertex = (lines.iter())
-                .flat_map(|x| x.iter())
-                .flat_map(Line::to_vertex)
-                .collect::<Vec<_>>();
-            let index = (0..vertex.len() as u32).collect::<Vec<_>>();
+    pub fn prepare(&mut self, gcx: &Gcx, resources: &WorkspaceRenderCallback, lines: &[&[Line]]) {
+        let vertex = (lines.iter())
+            .flat_map(|x| x.iter())
+            .flat_map(Line::to_vertex)
+            .collect::<Vec<_>>();
+        let index = (0..vertex.len() as u32).collect::<Vec<_>>();
 
-            self.vertex_count = vertex.len() as u32;
-            self.vertex_buffer.write_slice(gcx, &vertex);
-            self.index_buffer.write_slice(gcx, &index);
-        }
+        self.vertex_count = vertex.len() as u32;
+        self.vertex_buffer.write_slice(gcx, &vertex);
+        self.index_buffer.write_slice(gcx, &index);
 
         let mut buffer = UniformBuffer::new(Vec::new());
         let transform = resources.transform;

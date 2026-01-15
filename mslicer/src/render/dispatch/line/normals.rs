@@ -31,10 +31,10 @@ impl NormalsDispatch {
 }
 
 impl LineGenerator for NormalsDispatch {
-    fn generate_lines(&mut self, resources: &WorkspaceRenderCallback) -> bool {
+    fn generate_lines(&mut self, resources: &WorkspaceRenderCallback) {
         let show_normals = resources.config.show_normals;
         if !show_normals && show_normals == self.last_normals {
-            return false;
+            return;
         }
 
         let models = resources.models.read();
@@ -59,11 +59,7 @@ impl LineGenerator for NormalsDispatch {
             } else {
                 self.cached_lines = Vec::new();
             }
-
-            return true;
         }
-
-        false
     }
 
     fn lines(&self) -> &[Line] {

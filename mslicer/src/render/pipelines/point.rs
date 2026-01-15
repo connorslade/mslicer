@@ -160,21 +160,13 @@ impl PointPipeline {
 }
 
 impl PointPipeline {
-    pub fn prepare(
-        &mut self,
-        gcx: &Gcx,
-        resources: &WorkspaceRenderCallback,
-        points: Option<&[&[Point]]>,
-    ) {
-        if let Some(points) = points {
-            let points = (points.iter())
-                .flat_map(|x| x.iter())
-                .map(|x| x.to_instance())
-                .collect::<Vec<_>>();
-
-            self.instance_count = points.len() as u32;
-            self.instance_buffer.write_slice(gcx, &points);
-        }
+    pub fn prepare(&mut self, gcx: &Gcx, resources: &WorkspaceRenderCallback, points: &[&[Point]]) {
+        let points = (points.iter())
+            .flat_map(|x| x.iter())
+            .map(|x| x.to_instance())
+            .collect::<Vec<_>>();
+        self.instance_count = points.len() as u32;
+        self.instance_buffer.write_slice(gcx, &points);
 
         let mut buffer = UniformBuffer::new(Vec::new());
         let transform = resources.transform;

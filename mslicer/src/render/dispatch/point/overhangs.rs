@@ -17,7 +17,7 @@ impl OverhangPointDispatch {
 }
 
 impl PointGenerator for OverhangPointDispatch {
-    fn generate_points(&mut self, resources: &WorkspaceRenderCallback) -> bool {
+    fn generate_points(&mut self, resources: &WorkspaceRenderCallback) {
         self.cached_points.clear();
 
         for model in resources.models.read().iter() {
@@ -35,8 +35,6 @@ impl PointGenerator for OverhangPointDispatch {
                 });
             }
         }
-
-        true // todo: fix
     }
 
     fn points(&self) -> &[Point] {

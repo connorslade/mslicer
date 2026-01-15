@@ -25,11 +25,8 @@ impl TargetPointDispatch {
 }
 
 impl PointGenerator for TargetPointDispatch {
-    fn generate_points(&mut self, resources: &WorkspaceRenderCallback) -> bool {
-        let pos = [UNDEFINED, resources.camera.target][resources.is_moving as usize];
-        let dirty = self.point.position != pos;
-        self.point.position = pos;
-        dirty
+    fn generate_points(&mut self, resources: &WorkspaceRenderCallback) {
+        self.point.position = [UNDEFINED, resources.camera.target][resources.is_moving as usize];
     }
 
     fn points(&self) -> &[Point] {

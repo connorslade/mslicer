@@ -17,7 +17,7 @@ impl LineSupportDebugDispatch {
 }
 
 impl LineGenerator for LineSupportDebugDispatch {
-    fn generate_lines(&mut self, resources: &WorkspaceRenderCallback) -> bool {
+    fn generate_lines(&mut self, resources: &WorkspaceRenderCallback) {
         self.cached_lines = resources
             .line_support_debug
             .iter()
@@ -25,7 +25,6 @@ impl LineGenerator for LineSupportDebugDispatch {
                 Line::new(*vertex, *vertex + normal).color(Vector3::new(1.0, 0.0, 0.0))
             })
             .collect();
-        true
     }
 
     fn lines(&self) -> &[Line] {

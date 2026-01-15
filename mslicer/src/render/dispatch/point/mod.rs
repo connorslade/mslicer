@@ -29,18 +29,12 @@ impl PointDispatch {
     pub fn prepare(&mut self, gcx: &Gcx, resources: &WorkspaceRenderCallback) {
         let dispatches: &mut [&mut dyn PointGenerator] =
             &mut [&mut self.target_point, &mut self.overhangs];
-
-        let mut changed = false;
         for dispatch in dispatches.iter_mut() {
-            changed |= dispatch.generate_points(resources);
+            dispatch.generate_points(resources);
         }
 
-        if changed {
-            let points = &[self.target_point.points(), self.overhangs.points()][..];
-            self.render_pipeline.prepare(gcx, resources, Some(points));
-        } else {
-            self.render_pipeline.prepare(gcx, resources, None);
-        }
+        let points = &[self.target_point.points(), self.overhangs.points()][..];
+        self.render_pipeline.prepare(gcx, resources, points);
     }
 
     pub fn paint(&self, render_pass: &mut RenderPass) {
@@ -49,6 +43,6 @@ impl PointDispatch {
 }
 
 trait PointGenerator {
-    fn generate_points(&mut self, resources: &WorkspaceRenderCallback) -> bool;
+    fn generate_points(&mut self, resources: &WorkspaceRenderCallback);
     fn points(&self) -> &[Point];
 }

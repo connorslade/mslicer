@@ -2,7 +2,7 @@
 
 const STYLE_NORMAL: u32 = 0;
 const STYLE_RANDOM: u32 = 1;
-const STYLE_RENDERD: u32 = 2;
+const STYLE_RENDERED: u32 = 2;
 
 const OOB_COLOR: vec3f = vec3f(1.0, 0.0, 0.0);
 const OVERHANG_COLOR: vec3f = vec3f(0.67, 0.65, 0.38);
@@ -55,7 +55,7 @@ fn frag(
             seed = in.vertex_index;
             return vec4f(rand(), rand(), rand(), 1.0);
         }
-        case STYLE_RENDERD: {
+        case STYLE_RENDERED: {
             let camera_direction = normalize(context.camera_position + context.camera_target);
 
             let diffuse = max(dot(normal, camera_direction), 0.0);

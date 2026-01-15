@@ -26,7 +26,7 @@ impl BuildPlateDispatch {
 }
 
 impl LineGenerator for BuildPlateDispatch {
-    fn generate_lines(&mut self, resources: &WorkspaceRenderCallback) -> bool {
+    fn generate_lines(&mut self, resources: &WorkspaceRenderCallback) {
         let bed_size = resources.bed_size;
         let grid_size = resources.grid_size;
         let theme = resources.config.theme;
@@ -39,10 +39,7 @@ impl LineGenerator for BuildPlateDispatch {
             self.last_grid_size = grid_size;
             self.last_theme = theme;
             self.cached_lines = generate_mesh(bed_size, grid_size, theme);
-            return true;
         }
-
-        false
     }
 
     fn lines(&self) -> &[Line] {

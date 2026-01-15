@@ -37,22 +37,16 @@ impl LineDispatch {
             &mut self.normals,
             &mut self.line_support_debug,
         ];
-
-        let mut changed = false;
         for dispatch in dispatches.iter_mut() {
-            changed |= dispatch.generate_lines(resources);
+            dispatch.generate_lines(resources);
         }
 
-        if changed {
-            let lines = &[
-                self.build_plate.lines(),
-                self.normals.lines(),
-                self.line_support_debug.lines(),
-            ][..];
-            self.render_pipeline.prepare(gcx, resources, Some(lines));
-        } else {
-            self.render_pipeline.prepare(gcx, resources, None);
-        }
+        let lines = &[
+            self.build_plate.lines(),
+            self.normals.lines(),
+            self.line_support_debug.lines(),
+        ][..];
+        self.render_pipeline.prepare(gcx, resources, lines);
     }
 
     pub fn paint(&self, render_pass: &mut RenderPass) {
@@ -61,6 +55,6 @@ impl LineDispatch {
 }
 
 trait LineGenerator {
-    fn generate_lines(&mut self, resources: &WorkspaceRenderCallback) -> bool;
+    fn generate_lines(&mut self, resources: &WorkspaceRenderCallback);
     fn lines(&self) -> &[Line];
 }
