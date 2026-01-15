@@ -7,7 +7,7 @@ use egui_dock::{DockState, NodeIndex, Tree};
 use egui_phosphor::regular::CARET_RIGHT;
 use egui_tracing::EventCollector;
 use egui_wgpu::RenderState;
-use nalgebra::Vector2;
+use nalgebra::{Vector2, Vector3};
 use parking_lot::RwLock;
 use tracing::{info, warn};
 
@@ -26,7 +26,7 @@ use crate::{
     windows::{self, Tab},
 };
 use common::config::SliceConfig;
-use slicer::{Pos, format::FormatSliceFile, slicer::Slicer};
+use slicer::{format::FormatSliceFile, slicer::Slicer};
 
 pub mod config;
 pub mod project;
@@ -141,7 +141,7 @@ impl App {
         let mut out = Vec::new();
         let mut preview_scale = f32::MAX;
 
-        let mm_to_px = Pos::new(
+        let mm_to_px = Vector3::new(
             self.slice_config.platform_resolution.x as f32 / self.slice_config.platform_size.x,
             self.slice_config.platform_resolution.y as f32 / self.slice_config.platform_size.y,
             1.0,
@@ -160,7 +160,7 @@ impl App {
             let pos = mesh.position();
             mesh.set_position_unchecked(
                 pos.component_mul(&mm_to_px)
-                    + Pos::new(
+                    + Vector3::new(
                         self.slice_config.platform_resolution.x as f32 / 2.0,
                         self.slice_config.platform_resolution.y as f32 / 2.0,
                         -self.slice_config.slice_height,

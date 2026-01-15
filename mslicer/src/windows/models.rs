@@ -5,7 +5,7 @@ use egui_phosphor::regular::{
     ARROW_LINE_DOWN, CIRCLES_THREE, COPY, DICE_THREE, EYE, EYE_SLASH, LINK_BREAK, LINK_SIMPLE,
     TRASH, TRIANGLE, WARNING,
 };
-use slicer::Pos;
+use nalgebra::Vector3;
 
 use crate::{
     app::App,
@@ -179,10 +179,10 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     }
 }
 
-fn rad_to_deg(pos: Pos) -> Pos {
-    Pos::new(pos.x.to_degrees(), pos.y.to_degrees(), pos.z.to_degrees())
+fn rad_to_deg(pos: Vector3<f32>) -> Vector3<f32> {
+    pos.map(|x| x.to_degrees())
 }
 
-fn deg_to_rad(pos: Pos) -> Pos {
-    Pos::new(pos.x.to_radians(), pos.y.to_radians(), pos.z.to_radians())
+fn deg_to_rad(pos: Vector3<f32>) -> Vector3<f32> {
+    pos.map(|x| x.to_radians())
 }
