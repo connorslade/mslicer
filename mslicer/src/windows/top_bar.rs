@@ -126,7 +126,7 @@ fn import_model(app: &mut App) {
             let ext = path.extension();
             let format = ext.unwrap_or_default().to_string_lossy();
 
-            let file = File::open(&path).unwrap();
+            let file = File::open(path).unwrap();
             app.tasks.add(MeshLoad::file(file, name, &format));
         },
     ));
@@ -150,7 +150,7 @@ fn save(app: &mut App) {
 fn load(app: &mut App) {
     app.tasks.add(FileDialog::save_file(
         ("mslicer project", &["mslicer"]),
-        |app, path| app.load_project(&path),
+        |app, path| app.load_project(path),
     ));
 }
 
