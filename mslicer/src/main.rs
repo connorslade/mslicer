@@ -16,10 +16,11 @@ mod app;
 mod plugins;
 mod render;
 mod ui;
+mod util;
 mod windows;
 use app::{App, config::Config};
 
-const ICON: &[u8] = include_bytes!("assets/icon.png");
+const ICON: &[u8] = include_asset!("icon.png");
 
 fn main() -> Result<()> {
     let filter = filter::Targets::new()

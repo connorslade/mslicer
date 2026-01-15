@@ -5,7 +5,10 @@ use egui::{Button, Context, Key, KeyboardShortcut, Modifiers, TopBottomPanel, Vi
 use egui_phosphor::regular::STACK;
 use rfd::FileDialog;
 
-use crate::app::{App, task::MeshLoad};
+use crate::{
+    app::{App, task::MeshLoad},
+    include_asset,
+};
 
 const IMPORT_MODEL_SHORTCUT: KeyboardShortcut = KeyboardShortcut::new(Modifiers::CTRL, Key::I);
 const LOAD_TEAPOT_SHORTCUT: KeyboardShortcut = KeyboardShortcut::new(Modifiers::CTRL, Key::T);
@@ -130,7 +133,7 @@ fn import_model(app: &mut App) {
 
 fn import_teapot(app: &mut App) {
     app.tasks.add(MeshLoad::buffer(
-        include_bytes!("../assets/teapot.stl"),
+        include_asset!("teapot.stl"),
         "Utah Teapot".into(),
         "stl",
     ));
