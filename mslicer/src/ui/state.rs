@@ -1,6 +1,6 @@
 use egui_tracing::EventCollector;
 use nalgebra::Vector3;
-use slicer::supports::line::LineSupportConfig;
+use slicer::{mesh::Mesh, supports::line::LineSupportConfig};
 
 use super::markdown::CompiledMarkdown;
 
@@ -11,6 +11,7 @@ pub struct UiState {
     pub line_support_debug: Vec<[Vector3<f32>; 2]>,
     pub queue_reset_ui: bool,
     pub selected_printer: usize,
+    pub support_preview: Option<Mesh>,
 
     // remote send ui
     pub working_address: String,

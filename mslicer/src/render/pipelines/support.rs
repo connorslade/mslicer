@@ -2,9 +2,8 @@ use encase::{ShaderSize, ShaderType, UniformBuffer};
 use nalgebra::{Matrix4, Vector3};
 use wgpu::{
     BindGroup, BlendState, Buffer, BufferDescriptor, BufferUsages, ColorTargetState, ColorWrites,
-    DepthStencilState, Device, FragmentState, IndexFormat, MultisampleState,
-    PipelineLayoutDescriptor, PrimitiveState, RenderPass, RenderPipeline, RenderPipelineDescriptor,
-    TextureFormat, VertexState,
+    Device, FragmentState, IndexFormat, MultisampleState, PipelineLayoutDescriptor, PrimitiveState,
+    RenderPass, RenderPipeline, RenderPipelineDescriptor, TextureFormat, VertexState,
 };
 
 use crate::{
@@ -79,10 +78,7 @@ impl SupportPipeline {
                 compilation_options: Default::default(),
             }),
             primitive: PrimitiveState::default(),
-            depth_stencil: Some(DepthStencilState {
-                depth_write_enabled: false,
-                ..DEPTH_STENCIL_STATE
-            }),
+            depth_stencil: Some(DEPTH_STENCIL_STATE),
             multisample: MultisampleState {
                 count: 4,
                 ..Default::default()
@@ -106,20 +102,19 @@ impl SupportPipeline {
 
 impl SupportPipeline {
     pub fn prepare(&mut self, gcx: &Gcx, resources: &WorkspaceRenderCallback) {
-        let mesh = None;
-        let Some(mesh) = mesh else {
+        let Some(mesh) = &resources.support_model else {
             self.index_count = 0;
             return;
         };
 
-        let (vertices, indices) = gpu_mesh(&mesh);
+        let (vertices, indices) = gpu_mesh(mesh);
         self.vertex_buffer.write_slice(gcx, &vertices);
         self.index_buffer.write_slice(gcx, &indices);
         self.index_count = indices.len() as u32;
 
         let uniform = SupportUniforms {
             transform: resources.transform,
-            camera_direction: -resources.camera.position() / resources.camera.distance,
+            camera_direction: resources.camera.position() / resources.camera.distance,
         };
 
         let mut buffer = UniformBuffer::new(Vec::new());

@@ -4,6 +4,7 @@ use egui::PaintCallbackInfo;
 use egui_wgpu::{CallbackResources, CallbackTrait, ScreenDescriptor};
 use nalgebra::{Matrix4, Vector3};
 use parking_lot::RwLock;
+use slicer::mesh::Mesh;
 use wgpu::{CommandBuffer, CommandEncoder, Device, Queue, RenderPass};
 
 use crate::{
@@ -38,6 +39,7 @@ pub struct WorkspaceRenderCallback {
     pub config: Config,
 
     pub line_support_debug: Vec<[Vector3<f32>; 2]>,
+    pub support_model: Option<Mesh>,
     pub overhang_angle: Option<f32>,
 }
 

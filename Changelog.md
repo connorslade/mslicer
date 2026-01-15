@@ -2,9 +2,17 @@
 
 ## v0.5.0 &mdash; Coming Soon™
 
-- Detect non-manifold meshes
+- Detect and show warning for non-manifold meshes
+- Show warning for meshes that extend outside the printable volume
 - Color backfaces grey in rendered view
 - Load models async and show progress (required custom format implementations sob)
+- Async file pick/save dialog
+- Don't show multiple copies of layer in slice preview when panning far to the right
+- Printer presets (print volume, resolution)
+- Reduce memory usage of loaded models
+- Reuse GPU buffers when possible (instead of reallocating)
+- Support generation
+  - Visualize overhanging faces and vertices
 
 ## v0.4.0 &mdash; November 25th, 2025
 

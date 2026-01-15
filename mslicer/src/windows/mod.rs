@@ -1,12 +1,12 @@
 use std::mem;
 
-use egui::{CentralPanel, Color32, Context, Frame, Id, Key, Sense, Theme, Ui, WidgetText};
+use egui::{CentralPanel, Color32, Context, Frame, Id, Sense, Theme, Ui, WidgetText};
 use egui_dock::{DockArea, NodeIndex, SurfaceIndex, TabViewer};
 use egui_wgpu::Callback;
 use nalgebra::Matrix4;
 use parking_lot::MappedRwLockWriteGuard;
 use serde::{Deserialize, Serialize};
-use slicer::supports::route_support;
+use slicer::{builder::MeshBuilder, supports::route_support};
 
 use crate::{app::App, render::callback::WorkspaceRenderCallback};
 
@@ -142,16 +142,16 @@ pub fn ui(app: &mut App, ctx: &Context) {
 
 fn viewport(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     let (rect, response) = ui.allocate_exact_size(ui.available_size(), Sense::drag());
+    let is_moving = response.dragged();
+
     let hover_pos = response.hover_pos().unwrap_or_default();
     let aspect = rect.width() / rect.height();
     let uv = (hover_pos - rect.min) / rect.size();
 
     let (pos, dir) = app.camera.hovered_ray(aspect, (uv.x, uv.y));
 
-    if ui.input(|i| i.key_pressed(Key::S)) {
-        let lines = &mut app.state.line_support_debug;
-        let mut line = |a, b| lines.push([a, b - a]);
-
+    if !is_moving {
+        let mut builder = MeshBuilder::new();
         for model in app.models.read().iter() {
             let Some(intersection) = model.bvh.intersect_ray(
                 &model.mesh,
@@ -164,11 +164,17 @@ fn viewport(app: &mut App, ui: &mut Ui, _ctx: &Context) {
             let normal = (model.mesh).transform_normal(&model.mesh.normal(intersection.face));
             let start = intersection.position + normal * 0.1;
             if let Some(lines) = route_support(&model.mesh, &model.bvh, start) {
-                line(intersection.position, start);
-                line(lines[0], lines[1]);
-                line(lines[1], lines[2]);
+                let (r, p) = (1.0, 100);
+                builder.add_cylinder((intersection.position, start), (0.2, r), p);
+                builder.add_cylinder((lines[0], lines[1]), (r, r), p);
+                builder.add_cylinder((lines[1], lines[2]), (r, r), p);
+
+                builder.add_sphere(intersection.position, 0.2, p);
+                builder.add_sphere(lines[0], r, p);
+                builder.add_sphere(lines[1], r, p);
             }
         }
+        app.state.support_preview = (!builder.is_empty()).then(|| builder.build());
     }
 
     app.camera.handle_movement(&response, ui);
@@ -183,7 +189,7 @@ fn viewport(app: &mut App, ui: &mut Ui, _ctx: &Context) {
 
     let callback = Callback::new_paint_callback(
         rect,
-        app.get_workspace_render_callback(view_projection, response.dragged()),
+        app.get_workspace_render_callback(view_projection, is_moving),
     );
 
     ui.painter().add(callback);
@@ -208,6 +214,7 @@ impl App {
             config: self.config.clone(),
 
             line_support_debug: self.state.line_support_debug.clone(),
+            support_model: self.state.support_preview.clone(),
             overhang_angle: show_overhang.then_some(overhang_angle),
         }
     }
