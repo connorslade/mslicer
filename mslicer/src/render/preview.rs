@@ -7,16 +7,16 @@ use wgpu::{
     BufferAddress, BufferDescriptor, BufferUsages, Color, CommandEncoderDescriptor, Device,
     Extent3d, LoadOp, MapMode, Operations, Origin3d, PollType, Queue, RenderPassColorAttachment,
     RenderPassDepthStencilAttachment, RenderPassDescriptor, StoreOp, TexelCopyBufferInfo,
-    TexelCopyBufferLayout, TexelCopyTextureInfo, Texture, TextureAspect, TextureDescriptor,
-    TextureDimension, TextureFormat, TextureUsages, TextureView, TextureViewDescriptor,
+    TexelCopyBufferLayout, TexelCopyTextureInfo, Texture, TextureAspect, TextureFormat,
+    TextureView, TextureViewDescriptor,
 };
 
 use crate::{
-    DEPTH_TEXTURE_FORMAT,
     app::App,
     render::{
         Gcx,
         callback::{WorkspaceRenderCallback, WorkspaceRenderResources},
+        init_textures,
     },
 };
 
@@ -194,51 +194,4 @@ fn download_preview(
     staging_buffer.unmap();
 
     image
-}
-
-fn init_textures(
-    device: &Device,
-    format: TextureFormat,
-    size: (u32, u32),
-) -> (Texture, Texture, Texture) {
-    let size = Extent3d {
-        width: size.0,
-        height: size.1,
-        depth_or_array_layers: 1,
-    };
-
-    let texture = device.create_texture(&TextureDescriptor {
-        label: None,
-        size,
-        mip_level_count: 1,
-        sample_count: 4,
-        dimension: TextureDimension::D2,
-        format,
-        usage: TextureUsages::RENDER_ATTACHMENT,
-        view_formats: &[],
-    });
-
-    let resolved_texture = device.create_texture(&TextureDescriptor {
-        label: None,
-        size,
-        mip_level_count: 1,
-        sample_count: 1,
-        dimension: TextureDimension::D2,
-        format,
-        usage: TextureUsages::RENDER_ATTACHMENT | TextureUsages::COPY_SRC,
-        view_formats: &[],
-    });
-
-    let depth_texture = device.create_texture(&TextureDescriptor {
-        label: None,
-        size,
-        mip_level_count: 1,
-        sample_count: 4,
-        dimension: TextureDimension::D2,
-        format: DEPTH_TEXTURE_FORMAT,
-        usage: TextureUsages::RENDER_ATTACHMENT,
-        view_formats: &[],
-    });
-
-    (texture, resolved_texture, depth_texture)
 }

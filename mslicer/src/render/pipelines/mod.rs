@@ -5,6 +5,7 @@ use wgpu::{Buffer, BufferDescriptor, BufferUsages, Device};
 
 use crate::render::Gcx;
 
+pub mod composite;
 mod consts;
 pub mod line;
 pub mod model;

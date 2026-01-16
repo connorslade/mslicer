@@ -7,15 +7,19 @@ use nalgebra::Vector4;
 use pipelines::{model::ModelPipeline, slice_preview::SlicePreviewPipeline};
 use slicer::mesh::Mesh;
 use wgpu::{
-    Buffer, BufferAddress, BufferUsages, Device, Queue, VertexAttribute, VertexBufferLayout,
+    Buffer, BufferAddress, BufferUsages, Device, Extent3d, Queue, Texture, TextureDescriptor,
+    TextureDimension, TextureFormat, TextureUsages, VertexAttribute, VertexBufferLayout,
     VertexFormat, VertexStepMode,
     util::{BufferInitDescriptor, DeviceExt},
 };
 
-use crate::render::{
-    callback::{SlicePreviewRenderResources, WorkspaceRenderResources},
-    dispatch::point::PointDispatch,
-    pipelines::support::SupportPipeline,
+use crate::{
+    DEPTH_TEXTURE_FORMAT,
+    render::{
+        callback::{SlicePreviewRenderResources, WorkspaceRenderResources},
+        dispatch::point::PointDispatch,
+        pipelines::{composite::CompositePipeline, support::SupportPipeline},
+    },
 };
 pub mod callback;
 pub mod camera;
@@ -52,6 +56,9 @@ pub fn init_wgpu(cc: &CreationContext) -> RenderState {
 
     let resources = &mut render_state.renderer.write().callback_resources;
     resources.insert(WorkspaceRenderResources {
+        texture,
+        composite: CompositePipeline::new(device, texture),
+
         model: ModelPipeline::new(device, texture),
         support: SupportPipeline::new(device, texture),
         point: PointDispatch::new(device, texture),
@@ -88,6 +95,55 @@ pub fn gpu_mesh_buffers(device: &Device, mesh: &Mesh) -> (Buffer, Buffer) {
     });
 
     (vertex_buffer, index_buffer)
+}
+
+pub fn init_textures(
+    device: &Device,
+    format: TextureFormat,
+    (width, height): (u32, u32),
+) -> (Texture, Texture, Texture) {
+    let size = Extent3d {
+        width,
+        height,
+        depth_or_array_layers: 1,
+    };
+
+    let texture = device.create_texture(&TextureDescriptor {
+        label: None,
+        size,
+        mip_level_count: 1,
+        sample_count: 4,
+        dimension: TextureDimension::D2,
+        format,
+        usage: TextureUsages::RENDER_ATTACHMENT,
+        view_formats: &[],
+    });
+
+    let resolved_texture = device.create_texture(&TextureDescriptor {
+        label: None,
+        size,
+        mip_level_count: 1,
+        sample_count: 1,
+        dimension: TextureDimension::D2,
+        format,
+        usage: TextureUsages::RENDER_ATTACHMENT
+            | TextureUsages::COPY_SRC
+            | TextureUsages::TEXTURE_BINDING,
+        view_formats: &[],
+    });
+
+    let depth_texture = device.create_texture(&TextureDescriptor {
+        label: None,
+        size,
+        mip_level_count: 1,
+        sample_count: 4,
+        dimension: TextureDimension::D2,
+        format: DEPTH_TEXTURE_FORMAT,
+        usage: TextureUsages::RENDER_ATTACHMENT,
+        view_formats: &[],
+    });
+
+    (texture, resolved_texture, depth_texture)
 }
 
 impl ModelVertex {

@@ -142,6 +142,7 @@ pub fn ui(app: &mut App, ctx: &Context) {
 
 fn viewport(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     let (rect, response) = ui.allocate_exact_size(ui.available_size(), Sense::drag());
+    app.camera.handle_movement(&response, ui);
     let is_moving = response.dragged();
 
     let hover_pos = response.hover_pos().unwrap_or_default();
@@ -177,22 +178,18 @@ fn viewport(app: &mut App, ui: &mut Ui, _ctx: &Context) {
         app.state.support_preview = (!builder.is_empty()).then(|| builder.build());
     }
 
-    app.camera.handle_movement(&response, ui);
+    let view_projection = app.camera.view_projection_matrix(aspect);
+    let callback = app.get_workspace_render_callback(view_projection, is_moving);
+    let callback = Callback::new_paint_callback(rect, callback);
 
+    let painter = ui.painter();
     let color = match app.config.theme {
         Theme::Dark => Color32::from_rgb(9, 9, 9),
         Theme::Light => Color32::from_rgb(255, 255, 255),
     };
-    ui.painter().rect_filled(rect, 0.0, color);
 
-    let view_projection = app.camera.view_projection_matrix(aspect);
-
-    let callback = Callback::new_paint_callback(
-        rect,
-        app.get_workspace_render_callback(view_projection, is_moving),
-    );
-
-    ui.painter().add(callback);
+    painter.rect_filled(rect, 0.0, color);
+    painter.add(callback);
 }
 
 impl App {
