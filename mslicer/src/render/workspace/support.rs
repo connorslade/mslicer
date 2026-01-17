@@ -14,8 +14,7 @@ use crate::{
             BASE_BIND_GROUP_LAYOUT_DESCRIPTOR, BASE_UNIFORM_DESCRIPTOR, DEPTH_STENCIL_STATE,
             bind_group,
         },
-        gpu_mesh,
-        util::ResizingBuffer,
+        util::{ResizingBuffer, gpu_mesh},
         workspace::WorkspaceRenderCallback,
     },
 };

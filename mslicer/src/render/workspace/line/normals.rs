@@ -3,9 +3,9 @@ use std::sync::Arc;
 use nalgebra::{Matrix4, Vector3};
 use parking_lot::RwLock;
 
-use crate::render::{
-    model::Model,
-    workspace::{
+use crate::{
+    app::model::Model,
+    render::workspace::{
         WorkspaceRenderCallback,
         line::{Line, LineGenerator},
     },

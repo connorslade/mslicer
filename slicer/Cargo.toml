@@ -8,11 +8,15 @@ anyhow.workspace = true
 clap.workspace = true
 const_format.workspace = true
 image.workspace = true
+imageproc.workspace = true
+itertools.workspace = true
+libblur.workspace = true
 nalgebra.workspace = true
 num-traits.workspace = true
 ordered-float.workspace = true
 parking_lot.workspace = true
 rayon.workspace = true
+serde.workspace = true
 svg.workspace = true
 tracing.workspace = true
 

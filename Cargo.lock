@@ -2968,9 +2968,7 @@ dependencies = [
  "encase",
  "goo_format",
  "image",
- "imageproc",
  "itertools 0.14.0",
- "libblur",
  "markdown",
  "mesh_format",
  "nalgebra 0.34.1",
@@ -4554,12 +4552,16 @@ dependencies = [
  "ctb_format",
  "goo_format",
  "image",
+ "imageproc",
+ "itertools 0.14.0",
+ "libblur",
  "mesh_format",
  "nalgebra 0.34.1",
  "num-traits",
  "ordered-float",
  "parking_lot",
  "rayon",
+ "serde",
  "svg",
  "tracing",
 ]
@@ -6292,9 +6294,9 @@ dependencies = [
 
 [[package]]
 name = "zaft"
-version = "0.2.4"
+version = "0.2.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "759d90f1b2ab5b3121e3a646a383a67df8b77bf4eb83b32fa2286201a9815225"
+checksum = "03ba3fc7e5e32ebdb3269d5253175c16893479d407e9c090caa3836b1c74a144"
 dependencies = [
  "novtb",
  "num-complex",

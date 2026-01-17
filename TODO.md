@@ -122,3 +122,4 @@
   - [ ] Manual support visualization
 - [ ] Overhaul save format
 - [ ] Add more printer configs
+- [ ] Antialiasing without post-processing?

@@ -9,15 +9,18 @@ use egui_tracing::EventCollector;
 use egui_wgpu::RenderState;
 use nalgebra::{Vector2, Vector3};
 use parking_lot::RwLock;
+use serde::{Deserialize, Serialize};
 use tracing::{info, warn};
 
 use crate::{
-    app::task::TaskManager,
-    plugins::{
-        PluginManager, anti_alias,
-        elephant_foot_fixer::{self},
+    app::{
+        config::Config,
+        model::Model,
+        remote_print::RemotePrint,
+        slice_operation::{SliceOperation, SliceResult},
+        task::TaskManager,
     },
-    render::{camera::Camera, model::Model, preview},
+    render::{camera::Camera, preview},
     ui::{
         drag_and_drop,
         popup::{Popup, PopupIcon, PopupManager},
@@ -26,16 +29,18 @@ use crate::{
     windows::{self, Tab},
 };
 use common::config::SliceConfig;
-use slicer::{format::FormatSliceFile, slicer::Slicer};
+use slicer::{
+    format::FormatSliceFile,
+    post_process::{anti_alias::AntiAlias, elephant_foot_fixer::ElephantFootFixer},
+    slicer::Slicer,
+};
 
 pub mod config;
+pub mod model;
 pub mod project;
 pub mod remote_print;
 pub mod slice_operation;
 pub mod task;
-use config::Config;
-use remote_print::RemotePrint;
-use slice_operation::{SliceOperation, SliceResult};
 
 pub struct App {
     pub render_state: RenderState,
@@ -47,7 +52,7 @@ pub struct App {
     pub state: UiState,
     pub config: Config,
     pub slice_config: SliceConfig,
-    pub plugin_manager: PluginManager,
+    pub post_processing: PostProcessing,
 
     pub camera: Camera,
     pub models: Arc<RwLock<Vec<Model>>>,
@@ -59,6 +64,12 @@ pub struct App {
 pub struct FpsTracker {
     last_frame: Instant,
     last_frame_time: f32,
+}
+
+#[derive(Default, Serialize, Deserialize)]
+pub struct PostProcessing {
+    pub anti_alias: AntiAlias,
+    pub elephant_foot_fixer: ElephantFootFixer,
 }
 
 impl App {
@@ -104,9 +115,7 @@ impl App {
             config,
             camera: Camera::default(),
             slice_config,
-            plugin_manager: PluginManager {
-                plugins: vec![elephant_foot_fixer::get_plugin(), anti_alias::get_plugin()],
-            },
+            post_processing: PostProcessing::default(),
             fps: FpsTracker::new(),
             models: Arc::new(RwLock::new(Vec::new())),
             slice_operation: None,
@@ -267,6 +276,13 @@ impl FpsTracker {
 
     pub fn frame_time(&self) -> f32 {
         self.last_frame_time
+    }
+}
+
+impl PostProcessing {
+    pub fn process(&self, file: &mut FormatSliceFile) {
+        self.elephant_foot_fixer.post_slice(file);
+        self.anti_alias.post_slice(file);
     }
 }
 

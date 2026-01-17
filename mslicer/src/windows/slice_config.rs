@@ -1,9 +1,10 @@
-use egui::{ComboBox, Context, DragValue, Grid, Ui};
-use egui_phosphor::regular::INFO;
+use egui::{Align, ComboBox, Context, DragValue, Grid, Layout, Ui};
+use egui_phosphor::regular::{INFO, WARNING};
+use slicer::post_process::{anti_alias::AntiAlias, elephant_foot_fixer::ElephantFootFixer};
 
 use crate::{
     app::App,
-    ui::components::{vec2_dragger, vec3_dragger},
+    ui::components::{dragger, dragger_tip, vec2_dragger, vec3_dragger},
 };
 use common::{config::ExposureConfig, format::Format};
 
@@ -99,14 +100,14 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     });
 
     ui.add_space(16.0);
-    ui.heading("Plugins");
+    ui.heading("Post Processing");
 
-    let this_app = unsafe { &mut *(app as *mut _) };
-    for plugin in &mut app.plugin_manager.plugins {
-        ui.collapsing(plugin.name(), |ui| {
-            plugin.ui(this_app, ui, _ctx);
-        });
-    }
+    ui.collapsing("Anti Alias", |ui| {
+        anti_alias(&mut app.post_processing.anti_alias, ui)
+    });
+    ui.collapsing("Elephant Foot Fixer", |ui| {
+        elephant_foot_fixer(&mut app.post_processing.elephant_foot_fixer, ui)
+    });
 }
 
 fn exposure_config_grid(ui: &mut Ui, config: &mut ExposureConfig) {
@@ -135,4 +136,42 @@ fn exposure_config_grid(ui: &mut Ui, config: &mut ExposureConfig) {
             ui.add(DragValue::new(&mut config.retract_speed).range(0.0..=f32::MAX));
             ui.end_row();
         });
+}
+
+pub fn anti_alias(this: &mut AntiAlias, ui: &mut Ui) {
+    ui.label("Applies a blur to each layer to smooth the edges.");
+    ui.checkbox(&mut this.enabled, "Enabled");
+
+    ui.add_space(8.0);
+    dragger(ui, "Radius", &mut this.radius, |x| {
+        x.speed(0.1).range(0.1..=10.0)
+    });
+}
+
+pub fn elephant_foot_fixer(this: &mut ElephantFootFixer, ui: &mut Ui) {
+    ui.label("Fixes the 'Elephant Foot' effect by exposing the edges of the bottom layers at a lower intensity. You may have to make a few test prints to find the right settings for your printer and resin.");
+    ui.checkbox(&mut this.enabled, "Enabled");
+
+    ui.add_space(8.0);
+    ui.horizontal(|ui| {
+        dragger(ui, "Inset Distance", &mut this.inset_distance, |x| {
+            x.speed(0.1).suffix("mm")
+        });
+        ui.with_layout(Layout::right_to_left(Align::Min), |ui| {
+            ui.label(INFO).on_hover_text(
+                "The distance in from the edges that will have a reduced intensity.",
+            );
+            ui.label(WARNING)
+                .on_hover_text("Larger values will drastically increase post-processing time.");
+            ui.add_space(ui.available_width());
+        })
+    });
+
+    dragger_tip(
+        ui,
+        "Intensity",
+        "This percent will be multiplied by the pixel values of the edge pixels.",
+        &mut this.intensity_multiplier,
+        |x| x.range(0.0..=100.0).speed(1).suffix("%"),
+    );
 }

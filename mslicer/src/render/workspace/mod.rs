@@ -8,11 +8,10 @@ use slicer::mesh::Mesh;
 use wgpu::{CommandBuffer, CommandEncoder, Device, Queue, RenderPass};
 
 use crate::{
-    app::config::Config,
+    app::{config::Config, model::Model},
     render::{
         Gcx,
         camera::Camera,
-        model::Model,
         workspace::{
             line::LineDispatch, model::ModelPipeline, point::PointDispatch,
             support::SupportPipeline,

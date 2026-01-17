@@ -6,9 +6,10 @@ use std::{
 use clone_macro::clone;
 use egui::Context;
 
-use crate::{
-    app::{App, task::Task},
-    render::model::{MeshWarnings, Model},
+use crate::app::{
+    App,
+    model::{MeshWarnings, Model},
+    task::Task,
 };
 
 pub struct MeshManifold {

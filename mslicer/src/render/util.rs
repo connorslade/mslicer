@@ -1,9 +1,17 @@
 use std::ops::Deref;
 
 use bytemuck::NoUninit;
-use wgpu::{Buffer, BufferDescriptor, BufferUsages, Device};
+use slicer::mesh::Mesh;
+use wgpu::{
+    Buffer, BufferDescriptor, BufferUsages, Device, Extent3d, Texture, TextureDescriptor,
+    TextureDimension, TextureFormat, TextureUsages,
+    util::{BufferInitDescriptor, DeviceExt},
+};
 
-use crate::render::Gcx;
+use crate::{
+    DEPTH_TEXTURE_FORMAT,
+    render::{Gcx, ModelVertex},
+};
 
 #[macro_export]
 macro_rules! include_shader {
@@ -57,4 +65,79 @@ impl Deref for ResizingBuffer {
     fn deref(&self) -> &Self::Target {
         &self.inner
     }
+}
+
+pub fn gpu_mesh(mesh: &Mesh) -> (Vec<ModelVertex>, Vec<u32>) {
+    let index = mesh.faces().iter().flatten().copied().collect::<Vec<_>>();
+    let vertices = (mesh.vertices().iter())
+        .map(|vert| ModelVertex::new(vert.push(1.0)))
+        .collect::<Vec<_>>();
+    (vertices, index)
+}
+
+pub fn gpu_mesh_buffers(device: &Device, mesh: &Mesh) -> (Buffer, Buffer) {
+    let (vertices, indices) = gpu_mesh(mesh);
+
+    let vertex_buffer = device.create_buffer_init(&BufferInitDescriptor {
+        label: None,
+        contents: bytemuck::cast_slice(&vertices),
+        usage: BufferUsages::VERTEX,
+    });
+
+    let index_buffer = device.create_buffer_init(&BufferInitDescriptor {
+        label: None,
+        contents: bytemuck::cast_slice(&indices),
+        usage: BufferUsages::INDEX,
+    });
+
+    (vertex_buffer, index_buffer)
+}
+
+pub fn init_textures(
+    device: &Device,
+    format: TextureFormat,
+    (width, height): (u32, u32),
+) -> (Texture, Texture, Texture) {
+    let size = Extent3d {
+        width,
+        height,
+        depth_or_array_layers: 1,
+    };
+
+    let texture = device.create_texture(&TextureDescriptor {
+        label: None,
+        size,
+        mip_level_count: 1,
+        sample_count: 4,
+        dimension: TextureDimension::D2,
+        format,
+        usage: TextureUsages::RENDER_ATTACHMENT,
+        view_formats: &[],
+    });
+
+    let resolved_texture = device.create_texture(&TextureDescriptor {
+        label: None,
+        size,
+        mip_level_count: 1,
+        sample_count: 1,
+        dimension: TextureDimension::D2,
+        format,
+        usage: TextureUsages::RENDER_ATTACHMENT
+            | TextureUsages::COPY_SRC
+            | TextureUsages::TEXTURE_BINDING,
+        view_formats: &[],
+    });
+
+    let depth_texture = device.create_texture(&TextureDescriptor {
+        label: None,
+        size,
+        mip_level_count: 1,
+        sample_count: 4,
+        dimension: TextureDimension::D2,
+        format: DEPTH_TEXTURE_FORMAT,
+        usage: TextureUsages::RENDER_ATTACHMENT,
+        view_formats: &[],
+    });
+
+    (texture, resolved_texture, depth_texture)
 }

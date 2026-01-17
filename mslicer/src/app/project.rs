@@ -13,8 +13,7 @@ use serde::{Deserialize, Serialize};
 use tracing::{error, info};
 
 use crate::{
-    app::App,
-    render::model::Model,
+    app::{App, PostProcessing, model::Model},
     ui::popup::{Popup, PopupIcon},
 };
 use common::config::SliceConfig;
@@ -26,12 +25,14 @@ const VERSION: u32 = 1;
 pub struct BorrowedProject<'a> {
     meshes: Vec<BorrowedProjectMesh<'a>>,
     slice_config: &'a SliceConfig,
+    post_processing: &'a PostProcessing,
 }
 
 #[derive(Deserialize)]
 pub struct OwnedProject {
     meshes: Vec<OwnedProjectMesh>,
     slice_config: SliceConfig,
+    post_processing: PostProcessing,
 }
 
 #[derive(Deserialize)]
@@ -73,7 +74,7 @@ impl App {
 
     fn _save_project(&mut self, path: &Path) -> Result<()> {
         let meshes = self.models.read();
-        let project = BorrowedProject::new(&meshes, &self.slice_config);
+        let project = BorrowedProject::new(&meshes, &self.slice_config, &self.post_processing);
 
         let mut file = File::create(path)?;
         project.serialize(&mut file)?;
@@ -128,7 +129,11 @@ impl App {
 }
 
 impl<'a> BorrowedProject<'a> {
-    pub fn new(meshes: &'a [Model], slice_config: &'a SliceConfig) -> Self {
+    pub fn new(
+        meshes: &'a [Model],
+        slice_config: &'a SliceConfig,
+        post_processing: &'a PostProcessing,
+    ) -> Self {
         let meshes = (meshes.iter())
             .map(BorrowedProjectMesh::from_rendered_mesh)
             .collect();
@@ -136,6 +141,7 @@ impl<'a> BorrowedProject<'a> {
         Self {
             meshes,
             slice_config,
+            post_processing,
         }
     }
 
@@ -171,6 +177,7 @@ impl OwnedProject {
             .collect();
 
         app.slice_config = self.slice_config;
+        app.post_processing = self.post_processing;
     }
 }
 

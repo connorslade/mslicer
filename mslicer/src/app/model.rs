@@ -14,7 +14,7 @@ use slicer::{
     supports::overhangs::detect_point_overhangs,
 };
 
-use crate::{app::App, render::gpu_mesh_buffers};
+use crate::{app::App, render::util::gpu_mesh_buffers};
 
 pub struct Model {
     pub name: String,

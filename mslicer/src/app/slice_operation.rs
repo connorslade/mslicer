@@ -94,8 +94,8 @@ impl SliceOperation {
             return;
         }
 
-        let goo = &mut result.as_mut().unwrap().file;
-        app.plugin_manager.post_slice(app, goo);
+        let file = &mut result.as_mut().unwrap().file;
+        app.post_processing.process(file);
         self.has_post_processed = true;
     }
 

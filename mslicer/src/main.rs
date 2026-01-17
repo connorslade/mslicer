@@ -13,7 +13,6 @@ use wgpu::{DeviceDescriptor, Features, Limits, TextureFormat};
 const DEPTH_TEXTURE_FORMAT: TextureFormat = TextureFormat::Depth24PlusStencil8;
 
 mod app;
-mod plugins;
 mod render;
 mod ui;
 mod util;

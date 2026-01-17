@@ -11,14 +11,12 @@ use wgpu::{
     TextureView, TextureViewDescriptor,
 };
 
-use crate::{
-    app::App,
-    render::{
-        Gcx,
-        camera::Camera,
-        init_textures,
-        workspace::{WorkspaceRenderCallback, WorkspaceRenderResources, model::ModelPipeline},
-    },
+use crate::app::App;
+use crate::render::{
+    Gcx,
+    camera::Camera,
+    util::init_textures,
+    workspace::{WorkspaceRenderCallback, WorkspaceRenderResources, model::ModelPipeline},
 };
 
 pub fn process_previews(app: &App) {
