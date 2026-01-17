@@ -15,7 +15,7 @@ use crate::{
     app::{App, PostProcessing, model::Model},
     ui::popup::{Popup, PopupIcon},
 };
-use common::{config::SliceConfig, oklab::Rgb};
+use common::{color::LinearRgb, config::SliceConfig};
 use slicer::mesh::Mesh;
 
 const VERSION: u32 = 1;
@@ -53,7 +53,7 @@ pub struct BorrowedProjectMesh<'a> {
 #[derive(Serialize, Deserialize)]
 pub struct ProjectMeshInfo {
     name: String,
-    color: Rgb<f32>,
+    color: LinearRgb<f32>,
     hidden: bool,
 
     position: Vector3<f32>,

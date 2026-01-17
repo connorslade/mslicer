@@ -1,4 +1,3 @@
-use egui::emath::OrderedFloat;
 use encase::{ShaderType, UniformBuffer};
 use nalgebra::{Matrix4, Vector3};
 use serde::{Deserialize, Serialize};
@@ -112,7 +111,7 @@ impl ModelPipeline {
                 transform: resources.transform * model_transform,
                 model_transform,
                 build_volume: resources.bed_size,
-                model_color: model.color.map(|x| x.powf(1.0 / 2.2)).as_vector(),
+                model_color: model.color.to_srgb().into(),
                 camera_position: resources.camera.position(),
                 camera_target: resources.camera.target,
                 render_style: resources.config.render_style as u32,
