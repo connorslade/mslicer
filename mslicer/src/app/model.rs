@@ -4,8 +4,10 @@ use std::{
 };
 
 use bitflags::bitflags;
-use common::{config::SliceConfig, oklab::START_COLOR};
-use egui::Color32;
+use common::{
+    config::SliceConfig,
+    oklab::{Rgb, START_COLOR},
+};
 use nalgebra::Vector3;
 use wgpu::{Buffer, Device};
 
@@ -27,7 +29,7 @@ pub struct Model {
     pub warnings: MeshWarnings,
     pub overhangs: Option<Vec<u32>>,
 
-    pub color: Color32,
+    pub color: Rgb<f32>,
     pub hidden: bool,
     pub locked_scale: bool,
 
@@ -60,7 +62,7 @@ impl Model {
             warnings: MeshWarnings::empty(),
             overhangs: None,
 
-            color: Color32::WHITE,
+            color: Rgb::repeat(1.0),
             hidden: false,
             locked_scale: true,
             buffers: None,
@@ -72,7 +74,7 @@ impl Model {
         self
     }
 
-    pub fn with_color(mut self, color: Color32) -> Self {
+    pub fn with_color(mut self, color: Rgb<f32>) -> Self {
         self.color = color;
         self
     }
@@ -89,11 +91,7 @@ impl Model {
 
     pub fn randomize_color(&mut self) -> &mut Self {
         let shift = rand::random::<f32>() * TAU;
-        let color = START_COLOR
-            .hue_shift(shift)
-            .to_srgb()
-            .map(|x| (x.clamp(0.0, 1.0) * 255.0) as u8);
-        self.color = Color32::from_rgb(color.r, color.g, color.b);
+        self.color = START_COLOR.hue_shift(shift).to_srgb();
         self
     }
 

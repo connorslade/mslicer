@@ -11,7 +11,7 @@ struct Context {
     transform: mat4x4f,
     model_transform: mat4x4f,
     build_volume: vec3f,
-    model_color: vec4f,
+    model_color: vec3f,
     camera_position: vec3f,
     camera_target: vec3f,
     render_style: u32,
@@ -54,7 +54,7 @@ fn frag(
             return vec4f(rand(), rand(), rand(), 1.0);
         }
         case STYLE_RENDERED: {
-            var color = context.model_color.rgb;
+            var color = context.model_color;
             if bitcast<u32>(context.overhang_angle) != 0xFFFFFFFF {
                 color = mix(color, OVERHANG_COLOR, 1.0 - smoothstep(0, context.overhang_angle, acos(-normal.z)));
             }
@@ -64,7 +64,7 @@ fn frag(
 
             let camera_direction = normalize(context.camera_position + context.camera_target);
             let intensity = blinn_phong(normal, camera_direction);
-            return vec4f(intensity * color.rgb, context.model_color.a);
+            return vec4f(intensity * color, 1.0);
         }
         default: {
             return vec4f();

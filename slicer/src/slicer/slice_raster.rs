@@ -53,8 +53,7 @@ impl Slicer {
                 // this one works surprisingly fast.
                 for y in 0..platform_resolution.y {
                     let yf = y as f32;
-                    let mut intersections = segments
-                        .iter()
+                    let mut intersections = (segments.iter())
                         .map(|x| (x.0[0], x.0[1], x.1))
                         // Filtering to only consider segments with one point
                         // above the current row and one point below.

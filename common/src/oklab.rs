@@ -1,4 +1,7 @@
-use std::f32::consts::PI;
+use std::{f32::consts::PI, mem};
+
+use nalgebra::Vector3;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy)]
 pub struct OkLab<T> {
@@ -7,7 +10,7 @@ pub struct OkLab<T> {
     pub b: T,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
 pub struct Rgb<T> {
     pub r: T,
     pub g: T,
@@ -26,21 +29,16 @@ impl OkLab<f32> {
         OkLab { l, a, b }
     }
 
-    pub fn to_srgb(&self) -> Rgb<f32> {
+    pub fn to_linear_srgb(&self) -> Rgb<f32> {
         oklab_to_linear_srgb(*self)
     }
 
-    pub fn from_srgb(c: Rgb<f32>) -> Self {
+    pub fn from_linear_srgb(c: Rgb<f32>) -> Self {
         linear_srgb_to_oklab(c)
     }
 
-    pub fn to_lrgb(&self) -> Rgb<u8> {
-        let srgb = self.to_srgb();
-        Rgb {
-            r: (to_gamma(srgb.r) * 255.0).round() as u8,
-            g: (to_gamma(srgb.g) * 255.0).round() as u8,
-            b: (to_gamma(srgb.b) * 255.0).round() as u8,
-        }
+    pub fn to_srgb(&self) -> Rgb<f32> {
+        self.to_linear_srgb().map(|x| x.powf(2.2))
     }
 
     pub fn hue_shift(&self, shift: f32) -> Self {
@@ -57,12 +55,30 @@ impl OkLab<f32> {
 }
 
 impl<T> Rgb<T> {
+    pub fn new(r: T, g: T, b: T) -> Self {
+        Self { r, g, b }
+    }
+
+    pub fn as_slice_mut(&mut self) -> &mut [T; 3] {
+        unsafe { mem::transmute(self) }
+    }
+
+    pub fn as_vector(self) -> Vector3<T> {
+        Vector3::new(self.r, self.g, self.b)
+    }
+
     pub fn map<U, F: Fn(T) -> U>(self, f: F) -> Rgb<U> {
         Rgb {
             r: f(self.r),
             g: f(self.g),
             b: f(self.b),
         }
+    }
+}
+
+impl<T: Copy> Rgb<T> {
+    pub fn repeat(v: T) -> Self {
+        Self::new(v, v, v)
     }
 }
 

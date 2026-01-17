@@ -94,7 +94,7 @@
 - [x] Visualize mesh outside of bounding box
 - [x] Save panel layout
 - [x] Random triangle color render mode
-- [ ] Don't clone Config every frame for no reason
+- [ ] Don't clone Config every frame for no reason (pass app ref to render callback)
 - [x] Add button to reset UI
 - [ ] Put all models in the same segments1d to improve slicing times with supports?
 - [ ] Island detection

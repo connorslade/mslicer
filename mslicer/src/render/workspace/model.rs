@@ -1,6 +1,6 @@
 use egui::emath::OrderedFloat;
 use encase::{ShaderType, UniformBuffer};
-use nalgebra::{Matrix4, Vector3, Vector4};
+use nalgebra::{Matrix4, Vector3};
 use serde::{Deserialize, Serialize};
 use wgpu::{
     BindGroup, BindGroupEntry, BindGroupLayout, BlendState, BufferUsages, ColorTargetState,
@@ -31,7 +31,7 @@ struct ModelUniforms {
     transform: Matrix4<f32>,
     model_transform: Matrix4<f32>,
     build_volume: Vector3<f32>,
-    model_color: Vector4<f32>,
+    model_color: Vector3<f32>,
     camera_position: Vector3<f32>,
     camera_target: Vector3<f32>,
     render_style: u32,
@@ -112,7 +112,7 @@ impl ModelPipeline {
                 transform: resources.transform * model_transform,
                 model_transform,
                 build_volume: resources.bed_size,
-                model_color: model.color.to_normalized_gamma_f32().into(),
+                model_color: model.color.map(|x| x.powf(1.0 / 2.2)).as_vector(),
                 camera_position: resources.camera.position(),
                 camera_target: resources.camera.target,
                 render_style: resources.config.render_style as u32,
@@ -152,20 +152,10 @@ impl ModelPipeline {
         render_pass.set_pipeline(&self.render_pipeline);
 
         let models = resources.models.read();
-        let mut indexes = models
-            .iter()
+        let indexes = (models.iter())
             .enumerate()
             .filter(|(_, x)| !x.hidden)
-            .map(|(idx, _)| idx)
-            .collect::<Vec<_>>();
-
-        // todo: cache order and dont use when no translucent objects
-        let camera = resources.camera.position();
-        indexes.sort_by_cached_key(|&idx| {
-            let model_center = models[idx].mesh.position();
-            let distance = (camera - model_center).magnitude();
-            OrderedFloat::from(-distance)
-        });
+            .map(|(idx, _)| idx);
 
         for idx in indexes {
             render_pass.set_bind_group(0, &self.bind_groups[idx], &[]);

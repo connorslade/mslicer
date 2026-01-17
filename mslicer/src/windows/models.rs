@@ -34,23 +34,23 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
 
     let width = ui.available_width();
 
-    for (i, mesh) in meshes.iter_mut().enumerate() {
-        let id = Id::new(format!("model_show_{}", mesh.id));
+    for (i, model) in meshes.iter_mut().enumerate() {
+        let id = Id::new(format!("model_show_{}", model.id));
         let open = ui.data_mut(|map| *map.get_temp_mut_or_insert_with(id, || false));
 
         ui.horizontal(|ui| {
             if ui.button(if open { "⏷" } else { "⏵" }).clicked() {
                 ui.data_mut(|map| map.insert_temp(id, !open));
             }
-            mesh.hidden ^= ui
-                .button(if mesh.hidden { EYE_SLASH } else { EYE })
-                .on_hover_text(if mesh.hidden { "Show" } else { "Hide" })
+            model.hidden ^= ui
+                .button(if model.hidden { EYE_SLASH } else { EYE })
+                .on_hover_text(if model.hidden { "Show" } else { "Hide" })
                 .clicked();
 
-            if !mesh.warnings.is_empty() {
-                let count = mesh.warnings.bits().count_ones();
+            if !model.warnings.is_empty() {
+                let count = model.warnings.bits().count_ones();
                 let mut warn = ui.label(format!("{WARNING}{}", subscript_number(count)));
-                for warning in mesh.warnings.iter() {
+                for warning in model.warnings.iter() {
                     let desc = match warning {
                         MeshWarnings::NonManifold => WARN_NON_MANIFOLD,
                         MeshWarnings::OutOfBounds => WARN_OUT_OF_BOUNDS,
@@ -61,26 +61,26 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
             }
 
             if open {
-                ui.text_edit_singleline(&mut mesh.name);
+                ui.text_edit_singleline(&mut model.name);
             } else {
-                ui.label(&mesh.name);
+                ui.label(&model.name);
             }
         });
 
         if open {
-            Grid::new(format!("model_{}", mesh.id))
+            Grid::new(format!("model_{}", model.id))
                 .num_columns(2)
                 .with_row_color(|row, style| (row % 2 == 0).then_some(style.visuals.faint_bg_color))
                 .show(ui, |ui| {
                     ui.label("Info");
                     ui.horizontal(|ui| {
                         ui.label(TRIANGLE);
-                        ui.monospace(mesh.mesh.face_count().to_string());
+                        ui.monospace(model.mesh.face_count().to_string());
 
                         ui.separator();
 
                         ui.label(CIRCLES_THREE);
-                        ui.monospace(mesh.mesh.vertex_count().to_string());
+                        ui.monospace(model.mesh.vertex_count().to_string());
                     });
                     ui.end_row();
 
@@ -96,8 +96,8 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                             ui.button(concatcp!(ARROW_LINE_DOWN, " Align to Bed"))
                                 .clicked()
                                 .then(|| {
-                                    mesh.align_to_bed();
-                                    mesh.update_oob(&app.slice_config);
+                                    model.align_to_bed();
+                                    model.update_oob(&app.slice_config);
                                 });
                         });
                     });
@@ -108,10 +108,10 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                         ui.add_space(20.0);
                     });
                     ui.horizontal(|ui| {
-                        let mut position = mesh.mesh.position();
+                        let mut position = model.mesh.position();
                         vec3_dragger(ui, position.as_mut(), |x| x);
-                        (mesh.mesh.position() != position)
-                            .then(|| mesh.set_position(app, position));
+                        (model.mesh.position() != position)
+                            .then(|| model.set_position(app, position));
                         ui.add_space(width);
                     });
                     ui.end_row();
@@ -119,8 +119,8 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                     ui.label("Scale");
 
                     ui.horizontal(|ui| {
-                        let mut scale = mesh.mesh.scale();
-                        if mesh.locked_scale {
+                        let mut scale = model.mesh.scale();
+                        if model.locked_scale {
                             vec3_dragger_proportional(ui, scale.as_mut(), |x| {
                                 x.speed(0.01).range(0.001..=f32::MAX)
                             });
@@ -129,10 +129,10 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                                 x.speed(0.01).range(0.001..=f32::MAX)
                             });
                         }
-                        (mesh.mesh.scale() != scale).then(|| mesh.set_scale(app, scale));
+                        (model.mesh.scale() != scale).then(|| model.set_scale(app, scale));
 
-                        mesh.locked_scale ^= ui
-                            .button(if mesh.locked_scale {
+                        model.locked_scale ^= ui
+                            .button(if model.locked_scale {
                                 LINK_SIMPLE
                             } else {
                                 LINK_BREAK
@@ -142,23 +142,23 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                     ui.end_row();
 
                     ui.label("Rotation");
-                    let mut rotation = rad_to_deg(mesh.mesh.rotation());
+                    let mut rotation = rad_to_deg(model.mesh.rotation());
                     let original_rotation = rotation;
                     vec3_dragger(ui, rotation.as_mut(), |x| x.suffix("°"));
                     (original_rotation != rotation)
-                        .then(|| mesh.set_rotation(app, deg_to_rad(rotation)));
+                        .then(|| model.set_rotation(app, deg_to_rad(rotation)));
                     ui.end_row();
 
                     ui.label("Color");
                     ui.horizontal(|ui| {
-                        ui.color_edit_button_srgba(&mut mesh.color);
+                        ui.color_edit_button_rgb(model.color.as_slice_mut());
                         ui.button(concatcp!(DICE_THREE, " Random"))
                             .clicked()
-                            .then(|| mesh.randomize_color());
+                            .then(|| model.randomize_color());
                     });
 
                     ui.label("Name");
-                    ui.text_edit_singleline(&mut mesh.name);
+                    ui.text_edit_singleline(&mut model.name);
                     ui.end_row();
                 });
         }

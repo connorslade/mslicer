@@ -6,7 +6,6 @@ use std::{
 };
 
 use anyhow::Result;
-use egui::Color32;
 use itertools::Itertools;
 use nalgebra::Vector3;
 use serde::{Deserialize, Serialize};
@@ -16,7 +15,7 @@ use crate::{
     app::{App, PostProcessing, model::Model},
     ui::popup::{Popup, PopupIcon},
 };
-use common::config::SliceConfig;
+use common::{config::SliceConfig, oklab::Rgb};
 use slicer::mesh::Mesh;
 
 const VERSION: u32 = 1;
@@ -54,8 +53,7 @@ pub struct BorrowedProjectMesh<'a> {
 #[derive(Serialize, Deserialize)]
 pub struct ProjectMeshInfo {
     name: String,
-    #[serde(with = "color32")]
-    color: Color32,
+    color: Rgb<f32>,
     hidden: bool,
 
     position: Vector3<f32>,
@@ -220,26 +218,5 @@ impl ProjectMeshInfo {
             scale: rendered_mesh.mesh.scale(),
             rotation: rendered_mesh.mesh.rotation(),
         }
-    }
-}
-
-pub mod color32 {
-    use egui::Color32;
-
-    use super::*;
-
-    pub fn deserialize<'de, D>(deserializer: D) -> Result<Color32, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        let [r, g, b, a]: [u8; 4] = <[u8; 4]>::deserialize(deserializer)?;
-        Ok(Color32::from_rgba_premultiplied(r, g, b, a))
-    }
-
-    pub fn serialize<S>(data: &Color32, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        data.to_array().serialize(serializer)
     }
 }
