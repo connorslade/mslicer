@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::format::FormatSliceFile;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct AntiAlias {
     pub enabled: bool,
     pub radius: f32,

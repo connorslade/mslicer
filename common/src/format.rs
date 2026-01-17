@@ -10,8 +10,8 @@ pub enum Format {
 impl Format {
     pub const ALL: [Format; 3] = [Format::Goo, Format::Ctb, Format::Svg];
 
-    pub fn from_extention(extention: &str) -> Option<Self> {
-        Some(match extention.to_lowercase().as_str() {
+    pub fn from_extension(extension: &str) -> Option<Self> {
+        Some(match extension.to_lowercase().as_str() {
             "goo" => Format::Goo,
             "ctb" => Format::Ctb,
             "svg" => Format::Svg,
@@ -27,7 +27,7 @@ impl Format {
         }
     }
 
-    pub fn extention(&self) -> &'static str {
+    pub fn extension(&self) -> &'static str {
         match self {
             Format::Goo => "goo",
             Format::Ctb => "ctb",

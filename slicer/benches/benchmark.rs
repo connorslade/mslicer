@@ -13,10 +13,6 @@ pub fn bench(c: &mut Criterion) {
         let mesh = load_mesh(file, "stl").unwrap();
         let segments = Segments1D::from_mesh(&mesh, 100);
 
-        group.bench_with_input(BenchmarkId::new("Linear", mesh_name), &mesh, |b, i| {
-            b.iter(|| i.intersect_plane(0.0))
-        });
-
         group.bench_with_input(
             BenchmarkId::new("Segments", mesh_name),
             &(segments, mesh),

@@ -350,7 +350,7 @@ fn upload_file(app: &mut App, mainboard_id: String) {
         let Some(format) = file
             .extension()
             .and_then(|x| x.to_str())
-            .and_then(Format::from_extention)
+            .and_then(Format::from_extension)
         else {
             app.popup.open(Popup::simple(
                 "Invalid File",

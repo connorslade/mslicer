@@ -225,7 +225,7 @@ impl RemotePrint {
         }
         filename.push_str(&random_string(8));
         filename.push('.');
-        filename.push_str(format.extention());
+        filename.push_str(format.extension());
 
         services.http.add_file(&filename, data.clone());
 

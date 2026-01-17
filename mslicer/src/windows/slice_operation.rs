@@ -78,7 +78,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
 
                             let format = result.file.as_format();
                             if let Some(path) = FileDialog::new()
-                                .add_filter(format.name(), &[format.extention()])
+                                .add_filter(format.name(), &[format.extension()])
                                 .save_file()
                             {
                                 let mut file = File::create(path).unwrap();

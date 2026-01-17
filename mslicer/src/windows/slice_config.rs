@@ -24,7 +24,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
             });
             let format = app.slice_config.format;
             ComboBox::new("slice_format", "")
-                .selected_text(format!("{} (.{})", format.name(), format.extention()))
+                .selected_text(format!("{} (.{})", format.name(), format.extension()))
                 .show_ui(ui, |ui| {
                     for format in Format::ALL {
                         ui.selectable_value(&mut app.slice_config.format, format, format.name());

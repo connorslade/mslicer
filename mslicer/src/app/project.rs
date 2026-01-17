@@ -1,8 +1,10 @@
 use std::{
+    collections::HashMap,
     fs::File,
     io::{Read, Write},
     iter,
     path::{Path, PathBuf},
+    sync::Arc,
 };
 
 use anyhow::Result;
@@ -16,42 +18,23 @@ use crate::{
     ui::popup::{Popup, PopupIcon},
 };
 use common::{color::LinearRgb, config::SliceConfig};
-use slicer::mesh::Mesh;
+use slicer::mesh::{Mesh, MeshInner};
 
-const VERSION: u32 = 1;
+const VERSION: u32 = 2;
 
-#[derive(Serialize)]
-pub struct BorrowedProject<'a> {
-    meshes: Vec<BorrowedProjectMesh<'a>>,
-    slice_config: &'a SliceConfig,
-    post_processing: &'a PostProcessing,
-}
+#[derive(Serialize, Deserialize)]
+pub struct Project {
+    meshes: Vec<Arc<MeshInner>>,
+    models: Vec<ModelInfo>,
 
-#[derive(Deserialize)]
-pub struct OwnedProject {
-    meshes: Vec<OwnedProjectMesh>,
     slice_config: SliceConfig,
     post_processing: PostProcessing,
 }
 
-#[derive(Deserialize)]
-pub struct OwnedProjectMesh {
-    info: ProjectMeshInfo,
-
-    vertices: Vec<Vector3<f32>>,
-    faces: Vec<[u32; 3]>,
-}
-
-#[derive(Serialize)]
-pub struct BorrowedProjectMesh<'a> {
-    info: ProjectMeshInfo,
-
-    vertices: &'a [Vector3<f32>],
-    faces: &'a [[u32; 3]],
-}
-
 #[derive(Serialize, Deserialize)]
-pub struct ProjectMeshInfo {
+pub struct ModelInfo {
+    mesh: u32,
+
     name: String,
     color: LinearRgb<f32>,
     hidden: bool,
@@ -71,13 +54,17 @@ impl App {
     }
 
     fn _save_project(&mut self, path: &Path) -> Result<()> {
-        let meshes = self.models.read();
-        let project = BorrowedProject::new(&meshes, &self.slice_config, &self.post_processing);
+        let models = self.models.read();
+        let project = Project::new(
+            &models,
+            self.slice_config.clone(),
+            self.post_processing.clone(),
+        );
 
         let mut file = File::create(path)?;
         project.serialize(&mut file)?;
 
-        drop(meshes);
+        drop(models);
         self.add_recent_project(path.to_path_buf());
         Ok(())
     }
@@ -95,7 +82,7 @@ impl App {
 
     fn _load_project(&mut self, path: &Path) -> Result<()> {
         let mut file = File::open(path)?;
-        let project = OwnedProject::deserialize(&mut file)?;
+        let project = Project::deserialize(&mut file)?;
 
         self.add_recent_project(path.to_path_buf());
         project.apply(self);
@@ -126,18 +113,34 @@ impl App {
     }
 }
 
-impl<'a> BorrowedProject<'a> {
+impl Project {
     pub fn new(
-        meshes: &'a [Model],
-        slice_config: &'a SliceConfig,
-        post_processing: &'a PostProcessing,
+        rendered_meshes: &[Model],
+        slice_config: SliceConfig,
+        post_processing: PostProcessing,
     ) -> Self {
-        let meshes = (meshes.iter())
-            .map(BorrowedProjectMesh::from_rendered_mesh)
-            .collect();
+        let mut map = HashMap::new();
+        let (mut meshes, mut models) = (Vec::new(), Vec::new());
+
+        for model in rendered_meshes {
+            let id = model.mesh.mesh_id();
+            let mesh = match map.get(&id) {
+                Some(mesh) => *mesh,
+                None => {
+                    let mesh = map.len() as u32;
+                    meshes.push(model.mesh.inner().clone());
+                    map.insert(id, mesh);
+                    mesh
+                }
+            };
+
+            models.push(ModelInfo::from_model(model, mesh));
+        }
 
         Self {
             meshes,
+            models,
+
             slice_config,
             post_processing,
         }
@@ -148,9 +151,7 @@ impl<'a> BorrowedProject<'a> {
         bincode::serde::encode_into_std_write(self, writer, bincode::config::standard())?;
         Ok(())
     }
-}
 
-impl OwnedProject {
     pub fn deserialize<Reader: Read>(reader: &mut Reader) -> Result<Self> {
         let mut version_bytes = [0; 4];
         reader.read_exact(&mut version_bytes)?;
@@ -168,10 +169,8 @@ impl OwnedProject {
 
     pub fn apply(self, app: &mut App) {
         let mut meshes = app.models.write();
-        *meshes = self
-            .meshes
-            .into_iter()
-            .map(|mesh| mesh.into_rendered_mesh(app))
+        *meshes = (self.models.into_iter())
+            .map(|x| x.into_model(app, &self.meshes))
             .collect();
 
         app.slice_config = self.slice_config;
@@ -179,37 +178,11 @@ impl OwnedProject {
     }
 }
 
-impl OwnedProjectMesh {
-    pub fn into_rendered_mesh(self, app: &App) -> Model {
-        let mut mesh = Mesh::new_uncentred(self.vertices, self.faces);
-        mesh.set_position_unchecked(self.info.position);
-        mesh.set_scale_unchecked(self.info.scale);
-        mesh.set_rotation_unchecked(self.info.rotation);
-        mesh.update_transformation_matrix();
-
-        let mut rendered = Model::from_mesh(mesh)
-            .with_name(self.info.name)
-            .with_color(self.info.color)
-            .with_hidden(self.info.hidden);
-        rendered.update_oob(&app.slice_config);
-        rendered
-    }
-}
-
-impl<'a> BorrowedProjectMesh<'a> {
-    pub fn from_rendered_mesh(rendered_mesh: &'a Model) -> Self {
+impl ModelInfo {
+    pub fn from_model(rendered_mesh: &Model, mesh: u32) -> Self {
         Self {
-            info: ProjectMeshInfo::from_rendered_mesh(rendered_mesh),
+            mesh,
 
-            vertices: rendered_mesh.mesh.vertices(),
-            faces: rendered_mesh.mesh.faces(),
-        }
-    }
-}
-
-impl ProjectMeshInfo {
-    pub fn from_rendered_mesh(rendered_mesh: &Model) -> Self {
-        Self {
             name: rendered_mesh.name.clone(),
             color: rendered_mesh.color,
             hidden: rendered_mesh.hidden,
@@ -218,5 +191,20 @@ impl ProjectMeshInfo {
             scale: rendered_mesh.mesh.scale(),
             rotation: rendered_mesh.mesh.rotation(),
         }
+    }
+
+    pub fn into_model(self, app: &App, meshes: &[Arc<MeshInner>]) -> Model {
+        let mut mesh = Mesh::from_inner(meshes[self.mesh as usize].to_owned());
+        mesh.set_position_unchecked(self.position);
+        mesh.set_scale_unchecked(self.scale);
+        mesh.set_rotation_unchecked(self.rotation);
+        mesh.update_transformation_matrix();
+
+        let mut rendered = Model::from_mesh(mesh)
+            .with_name(self.name)
+            .with_color(self.color)
+            .with_hidden(self.hidden);
+        rendered.update_oob(&app.slice_config);
+        rendered
     }
 }

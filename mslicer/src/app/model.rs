@@ -125,14 +125,14 @@ impl Model {
     pub fn align_to_bed(&mut self) {
         let (bottom, _) = self.mesh.bounds();
 
-        let pos = self.mesh.position() - Vector3::new(0.0, 0.0, bottom.z);
+        let pos = self.mesh.position() - Vector3::z() * bottom.z;
         self.mesh.set_position(pos);
     }
 
     pub fn update_oob(&mut self, config: &SliceConfig) {
         let (min, max) = self.mesh.bounds();
         let platform = config.platform_size.map(|x| x);
-        let half = platform.map(|x| x / 2.0);
+        let half = platform / 2.0;
 
         let oob = (min.x < -half.x || min.y < -half.y || min.z < 0.0)
             || (max.x > half.x || max.y > half.y || max.z > platform.z);

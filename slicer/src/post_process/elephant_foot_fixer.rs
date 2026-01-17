@@ -9,7 +9,7 @@ use tracing::info;
 
 use crate::format::FormatSliceFile;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct ElephantFootFixer {
     pub enabled: bool,
     pub inset_distance: f32,

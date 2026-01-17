@@ -7,6 +7,7 @@ use std::{
 use anyhow::{Ok, Result};
 use common::serde::ReaderDeserializer;
 use nalgebra::{Matrix4, Vector3};
+use serde::{Deserialize, Serialize};
 
 /// A mesh made of vertices and triangular faces. It can be scaled, translated,
 /// and rotated.
@@ -22,8 +23,8 @@ pub struct Mesh {
     rotation: Vector3<f32>,
 }
 
-#[derive(Debug)]
-struct MeshInner {
+#[derive(Debug, Serialize, Deserialize)]
+pub struct MeshInner {
     pub vertices: Box<[Vector3<f32>]>,
     pub faces: Box<[[u32; 3]]>,
 }
@@ -47,6 +48,21 @@ impl Mesh {
             }),
             ..Default::default()
         }
+    }
+
+    pub fn from_inner(inner: Arc<MeshInner>) -> Self {
+        Self {
+            inner,
+            ..Default::default()
+        }
+    }
+
+    pub fn mesh_id(&self) -> usize {
+        Arc::as_ptr(&self.inner) as usize
+    }
+
+    pub fn inner(&self) -> &Arc<MeshInner> {
+        &self.inner
     }
 
     pub fn vertices(&self) -> &[Vector3<f32>] {
@@ -82,64 +98,6 @@ impl Mesh {
 
     pub fn face_count(&self) -> usize {
         self.faces().len()
-    }
-
-    /// Intersect the mesh with a plane with linear time complexity. You
-    /// should probably use the [`crate::segments::Segments`] struct as it can
-    /// massively accelerate slicing of high face count triangles.
-    pub fn intersect_plane(&self, height: f32) -> Vec<([Vector3<f32>; 2], bool)> {
-        // Point is the position of the plane and normal is the direction /
-        // rotation of the plane.
-        let point = self.inv_transform(&Vector3::new(0.0, 0.0, height));
-        let normal = (self.inv_transformation_matrix * Vector3::z_axis().to_homogeneous()).xyz();
-
-        let mut intersections = Vec::new();
-
-        let vertices = self.vertices();
-        for (idx, face) in self.faces().iter().enumerate() {
-            // Get the vertices of the face
-            let v0 = vertices[face[0] as usize];
-            let v1 = vertices[face[1] as usize];
-            let v2 = vertices[face[2] as usize];
-
-            // By subtracting the position of the plane and doting it with the
-            // normal, we get a value that is positive if the point is above the
-            // plane and negative if it is below. By checking if any of the line
-            // segments of triangle have one point above the plane and one
-            // below, we find any line segments that are intersecting with the
-            // plane.
-            let (a, b, c) = (
-                (v0 - point).dot(&normal),
-                (v1 - point).dot(&normal),
-                (v2 - point).dot(&normal),
-            );
-            let (a_pos, b_pos, c_pos) = (a > 0.0, b > 0.0, c > 0.0);
-
-            let mut out = [Vector3::zeros(); 2];
-            let mut n = 0;
-
-            // Closure called when the line segment from v0 to v1 is intersecting the
-            // plane. t is how far along the line the intersection is and intersection,
-            // it well the point that is intersecting with the plane.
-            let mut push_intersection = |a: f32, b: f32, v0: Vector3<f32>, v1: Vector3<f32>| {
-                let (v0, v1) = (self.transform(&v0), self.transform(&v1));
-                let t = a / (a - b);
-                let intersection = v0 + t * (v1 - v0);
-                out[n] = intersection;
-                n += 1;
-            };
-
-            (a_pos ^ b_pos).then(|| push_intersection(a, b, v0, v1));
-            (b_pos ^ c_pos).then(|| push_intersection(b, c, v1, v2));
-            (c_pos ^ a_pos).then(|| push_intersection(c, a, v2, v0));
-
-            if n == 2 {
-                let entering = self.transform_normal(&self.normal(idx)).x > 0.0;
-                intersections.push((out, entering));
-            }
-        }
-
-        intersections
     }
 
     pub fn is_manifold(&self) -> bool {

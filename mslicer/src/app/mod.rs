@@ -66,7 +66,7 @@ pub struct FpsTracker {
     last_frame_time: f32,
 }
 
-#[derive(Default, Serialize, Deserialize)]
+#[derive(Default, Clone, Serialize, Deserialize)]
 pub struct PostProcessing {
     pub anti_alias: AntiAlias,
     pub elephant_foot_fixer: ElephantFootFixer,
