@@ -11,7 +11,7 @@ use nalgebra::{Vector2, Vector3};
 use serde::{Deserialize, Serialize};
 use tracing::{info, warn};
 
-use crate::{render::pipelines::model::RenderStyle, windows::Tab};
+use crate::{render::workspace::model::RenderStyle, windows::Tab};
 
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(default)]

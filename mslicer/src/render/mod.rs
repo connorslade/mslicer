@@ -1,10 +1,8 @@
 use std::mem;
 
-use dispatch::line::LineDispatch;
 use eframe::CreationContext;
 use egui_wgpu::RenderState;
 use nalgebra::Vector4;
-use pipelines::{model::ModelPipeline, slice_preview::SlicePreviewPipeline};
 use slicer::mesh::Mesh;
 use wgpu::{
     Buffer, BufferAddress, BufferUsages, Device, Extent3d, Queue, Texture, TextureDescriptor,
@@ -16,17 +14,21 @@ use wgpu::{
 use crate::{
     DEPTH_TEXTURE_FORMAT,
     render::{
-        callback::{SlicePreviewRenderResources, WorkspaceRenderResources},
-        dispatch::point::PointDispatch,
-        pipelines::support::SupportPipeline,
+        slice_preview::{SlicePreviewPipeline, SlicePreviewRenderResources},
+        workspace::{
+            WorkspaceRenderResources, line::LineDispatch, model::ModelPipeline,
+            point::PointDispatch, support::SupportPipeline,
+        },
     },
 };
-pub mod callback;
+
 pub mod camera;
-mod dispatch;
+mod consts;
 pub mod model;
-pub mod pipelines;
 pub mod preview;
+pub mod slice_preview;
+mod util;
+pub mod workspace;
 
 pub const VERTEX_BUFFER_LAYOUT: VertexBufferLayout = VertexBufferLayout {
     array_stride: mem::size_of::<ModelVertex>() as BufferAddress,

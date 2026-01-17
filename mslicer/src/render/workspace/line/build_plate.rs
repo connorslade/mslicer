@@ -1,8 +1,9 @@
 use egui::Theme;
 use nalgebra::Vector3;
 
-use crate::render::{
-    callback::WorkspaceRenderCallback, dispatch::line::LineGenerator, pipelines::line::Line,
+use crate::render::workspace::{
+    WorkspaceRenderCallback,
+    line::{Line, LineGenerator},
 };
 
 pub struct BuildPlateDispatch {

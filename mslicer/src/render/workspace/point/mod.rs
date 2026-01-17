@@ -13,16 +13,28 @@ use crate::{
     include_shader,
     render::{
         Gcx, VERTEX_BUFFER_LAYOUT,
-        callback::WorkspaceRenderCallback,
+        consts::{
+            BASE_BIND_GROUP_LAYOUT_DESCRIPTOR, BASE_UNIFORM_DESCRIPTOR, DEPTH_STENCIL_STATE,
+            bind_group,
+        },
         gpu_mesh_buffers,
-        pipelines::{
-            ResizingBuffer,
-            consts::{DEPTH_STENCIL_STATE, bind_group},
+        util::ResizingBuffer,
+        workspace::{
+            WorkspaceRenderCallback,
+            point::{overhangs::OverhangPointDispatch, target::TargetPointDispatch},
         },
     },
 };
 
-use super::consts::{BASE_BIND_GROUP_LAYOUT_DESCRIPTOR, BASE_UNIFORM_DESCRIPTOR};
+mod overhangs;
+mod target;
+
+pub struct PointDispatch {
+    render_pipeline: PointPipeline,
+
+    target_point: TargetPointDispatch,
+    overhangs: OverhangPointDispatch,
+}
 
 const INSTANCE_BUFFER_LAYOUT: VertexBufferLayout = VertexBufferLayout {
     array_stride: Point::SHADER_SIZE.get(),
@@ -77,6 +89,37 @@ struct PointInstance {
 #[derive(ShaderType)]
 struct PointUniforms {
     transform: Matrix4<f32>,
+}
+
+trait PointGenerator {
+    fn generate_points(&mut self, resources: &WorkspaceRenderCallback);
+    fn points(&self) -> &[Point];
+}
+
+impl PointDispatch {
+    pub fn new(device: &Device, texture: TextureFormat) -> Self {
+        Self {
+            render_pipeline: PointPipeline::new(device, texture),
+
+            target_point: TargetPointDispatch::new(),
+            overhangs: OverhangPointDispatch::new(),
+        }
+    }
+
+    pub fn prepare(&mut self, gcx: &Gcx, resources: &WorkspaceRenderCallback) {
+        let dispatches: &mut [&mut dyn PointGenerator] =
+            &mut [&mut self.target_point, &mut self.overhangs];
+        for dispatch in dispatches.iter_mut() {
+            dispatch.generate_points(resources);
+        }
+
+        let points = &[self.target_point.points(), self.overhangs.points()][..];
+        self.render_pipeline.prepare(gcx, resources, points);
+    }
+
+    pub fn paint(&self, render_pass: &mut RenderPass) {
+        self.render_pipeline.paint(render_pass);
+    }
 }
 
 impl PointPipeline {

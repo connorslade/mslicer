@@ -4,8 +4,11 @@ use nalgebra::{Matrix4, Vector3};
 use parking_lot::RwLock;
 
 use crate::render::{
-    callback::WorkspaceRenderCallback, dispatch::line::LineGenerator, model::Model,
-    pipelines::line::Line,
+    model::Model,
+    workspace::{
+        WorkspaceRenderCallback,
+        line::{Line, LineGenerator},
+    },
 };
 
 type Models = Arc<RwLock<Vec<Model>>>;

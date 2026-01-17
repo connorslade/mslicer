@@ -1,7 +1,8 @@
 use nalgebra::Vector4;
 
-use crate::render::{
-    callback::WorkspaceRenderCallback, dispatch::point::PointGenerator, pipelines::point::Point,
+use crate::render::workspace::{
+    WorkspaceRenderCallback,
+    point::{Point, PointGenerator},
 };
 
 pub struct OverhangPointDispatch {

@@ -11,16 +11,24 @@ use crate::{
     include_shader,
     render::{
         Gcx,
-        callback::WorkspaceRenderCallback,
-        pipelines::{
-            ResizingBuffer,
-            consts::{
-                BASE_BIND_GROUP_LAYOUT_DESCRIPTOR, BASE_UNIFORM_DESCRIPTOR, DEPTH_STENCIL_STATE,
-                bind_group,
+        consts::{
+            BASE_BIND_GROUP_LAYOUT_DESCRIPTOR, BASE_UNIFORM_DESCRIPTOR, DEPTH_STENCIL_STATE,
+            bind_group,
+        },
+        util::ResizingBuffer,
+        workspace::{
+            WorkspaceRenderCallback,
+            line::{
+                build_plate::BuildPlateDispatch, line_support_debug::LineSupportDebugDispatch,
+                normals::NormalsDispatch,
             },
         },
     },
 };
+
+mod build_plate;
+mod line_support_debug;
+mod normals;
 
 const VERTEX_BUFFER_LAYOUT: VertexBufferLayout = VertexBufferLayout {
     array_stride: LineVertex::SHADER_SIZE.get(),
@@ -38,6 +46,14 @@ const VERTEX_BUFFER_LAYOUT: VertexBufferLayout = VertexBufferLayout {
         },
     ],
 };
+
+pub struct LineDispatch {
+    render_pipeline: LinePipeline,
+
+    build_plate: BuildPlateDispatch,
+    normals: NormalsDispatch,
+    line_support_debug: LineSupportDebugDispatch,
+}
 
 pub struct LinePipeline {
     render_pipeline: RenderPipeline,
@@ -68,6 +84,45 @@ struct LineUniforms {
 struct LineVertex {
     pub position: [f32; 4],
     pub color: [f32; 3],
+}
+
+trait LineGenerator {
+    fn generate_lines(&mut self, resources: &WorkspaceRenderCallback);
+    fn lines(&self) -> &[Line];
+}
+
+impl LineDispatch {
+    pub fn new(device: &Device, texture: TextureFormat) -> Self {
+        Self {
+            render_pipeline: LinePipeline::new(device, texture),
+
+            build_plate: BuildPlateDispatch::new(),
+            normals: NormalsDispatch::new(),
+            line_support_debug: LineSupportDebugDispatch::new(),
+        }
+    }
+
+    pub fn prepare(&mut self, gcx: &Gcx, resources: &WorkspaceRenderCallback) {
+        let dispatches: &mut [&mut dyn LineGenerator] = &mut [
+            &mut self.build_plate,
+            &mut self.normals,
+            &mut self.line_support_debug,
+        ];
+        for dispatch in dispatches.iter_mut() {
+            dispatch.generate_lines(resources);
+        }
+
+        let lines = &[
+            self.build_plate.lines(),
+            self.normals.lines(),
+            self.line_support_debug.lines(),
+        ][..];
+        self.render_pipeline.prepare(gcx, resources, lines);
+    }
+
+    pub fn paint(&self, render_pass: &mut RenderPass) {
+        self.render_pipeline.paint(render_pass);
+    }
 }
 
 impl LinePipeline {

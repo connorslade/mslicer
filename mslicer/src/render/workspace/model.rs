@@ -13,12 +13,11 @@ use wgpu::{
 use crate::{
     include_shader,
     render::{
-        Gcx, VERTEX_BUFFER_LAYOUT, callback::WorkspaceRenderCallback,
-        pipelines::consts::DEPTH_STENCIL_STATE,
+        Gcx, VERTEX_BUFFER_LAYOUT,
+        consts::{BASE_BIND_GROUP_LAYOUT_DESCRIPTOR, DEPTH_STENCIL_STATE},
+        workspace::WorkspaceRenderCallback,
     },
 };
-
-use super::consts::BASE_BIND_GROUP_LAYOUT_DESCRIPTOR;
 
 pub struct ModelPipeline {
     render_pipeline: RenderPipeline,

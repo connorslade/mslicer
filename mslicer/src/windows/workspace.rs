@@ -5,7 +5,7 @@ use tracing::error;
 
 use crate::{
     app::App,
-    render::pipelines::model::RenderStyle,
+    render::workspace::model::RenderStyle,
     ui::components::{dragger, vec2_dragger, vec3_dragger},
 };
 

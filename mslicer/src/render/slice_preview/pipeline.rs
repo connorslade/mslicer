@@ -12,12 +12,11 @@ use wgpu::{
 use crate::{
     include_shader,
     render::{
-        ModelVertex, VERTEX_BUFFER_LAYOUT, callback::SlicePreviewRenderCallback,
-        pipelines::consts::DEPTH_STENCIL_STATE,
+        ModelVertex, VERTEX_BUFFER_LAYOUT,
+        consts::{BASE_UNIFORM_DESCRIPTOR, DEPTH_STENCIL_STATE, UNIFORM_BIND_GROUP_LAYOUT_ENTRY},
+        slice_preview::SlicePreviewRenderCallback,
     },
 };
-
-use super::consts::{BASE_UNIFORM_DESCRIPTOR, UNIFORM_BIND_GROUP_LAYOUT_ENTRY};
 
 pub struct SlicePreviewPipeline {
     render_pipeline: RenderPipeline,

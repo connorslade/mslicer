@@ -15,12 +15,11 @@ use crate::{
     app::App,
     render::{
         Gcx,
-        callback::{WorkspaceRenderCallback, WorkspaceRenderResources},
+        camera::Camera,
         init_textures,
+        workspace::{WorkspaceRenderCallback, WorkspaceRenderResources, model::ModelPipeline},
     },
 };
-
-use super::{camera::Camera, pipelines::model::ModelPipeline};
 
 pub fn process_previews(app: &App) {
     match &app.slice_operation {

@@ -12,11 +12,18 @@ use crate::{
     render::{
         Gcx,
         camera::Camera,
-        dispatch::{line::LineDispatch, point::PointDispatch},
         model::Model,
-        pipelines::{model::ModelPipeline, support::SupportPipeline},
+        workspace::{
+            line::LineDispatch, model::ModelPipeline, point::PointDispatch,
+            support::SupportPipeline,
+        },
     },
 };
+
+pub mod line;
+pub mod model;
+pub mod point;
+pub mod support;
 
 pub struct WorkspaceRenderResources {
     pub model: ModelPipeline,

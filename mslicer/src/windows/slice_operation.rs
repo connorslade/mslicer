@@ -13,7 +13,7 @@ use wgpu::COPY_BUFFER_ALIGNMENT;
 
 use crate::{
     app::{App, slice_operation::SliceResult},
-    render::callback::SlicePreviewRenderCallback,
+    render::slice_preview::SlicePreviewRenderCallback,
     ui::{components::vec2_dragger, popup::Popup},
 };
 use common::{format::Format, serde::DynamicSerializer};

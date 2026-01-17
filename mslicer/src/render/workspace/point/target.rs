@@ -2,8 +2,9 @@ use std::slice;
 
 use nalgebra::{Vector3, Vector4};
 
-use crate::render::{
-    callback::WorkspaceRenderCallback, dispatch::point::PointGenerator, pipelines::point::Point,
+use crate::render::workspace::{
+    WorkspaceRenderCallback,
+    point::{Point, PointGenerator},
 };
 
 const UNDEFINED: Vector3<f32> = Vector3::new(f32::NAN, f32::NAN, f32::NAN);
