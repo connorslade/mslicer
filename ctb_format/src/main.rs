@@ -8,11 +8,14 @@ use common::{
     misc::Run,
     serde::{DynamicSerializer, SliceDeserializer},
 };
-use ctb_format::{File, LayerDecoder};
+use ctb_format::{File, LayerDecoder, PreviewImage};
 
 #[derive(Parser)]
 struct Args {
     path: PathBuf,
+
+    #[clap(short, long)]
+    preview: Option<PathBuf>,
 
     #[clap(short, long)]
     layers: Option<PathBuf>,
@@ -29,6 +32,16 @@ fn main() -> Result<()> {
 
     let file = File::deserialize(&mut des)?;
     dbg!(&file);
+
+    if let Some(preview) = args.preview {
+        fs::create_dir_all(&preview)?;
+
+        let small_preview = preview_to_image(&file.small_preview);
+        let large_preview = preview_to_image(&file.large_preview);
+
+        small_preview.save(preview.join("small_preview.png"))?;
+        large_preview.save(preview.join("large_preview.png"))?;
+    }
 
     if let Some(export) = args.export {
         let mut ser = DynamicSerializer::new();
@@ -57,4 +70,18 @@ fn main() -> Result<()> {
     }
 
     Ok(())
+}
+
+fn preview_to_image(preview: &PreviewImage) -> RgbImage {
+    let size = preview.size();
+    let mut out = RgbImage::new(size.x, size.y);
+
+    for y in 0..size.y {
+        for x in 0..size.y {
+            let pixel = preview.get_pixel(x, y);
+            out.put_pixel(x, y, image::Rgb([pixel.x, pixel.y, pixel.z]));
+        }
+    }
+
+    out
 }

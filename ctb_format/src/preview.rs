@@ -1,7 +1,6 @@
 use std::{
     fmt::{self, Debug},
     iter::repeat_n,
-    mem,
 };
 
 use anyhow::Result;
@@ -14,7 +13,7 @@ use crate::Section;
 
 #[derive(Default)]
 pub struct PreviewImage {
-    width: usize,
+    width: u32,
     data: Vec<Vector3<u8>>,
 }
 
@@ -26,7 +25,7 @@ impl PreviewImage {
         }
 
         Self {
-            width: image.width() as usize,
+            width: image.width(),
             data,
         }
     }
@@ -84,7 +83,7 @@ impl PreviewImage {
         }
 
         Ok(Self {
-            width: size.x as usize,
+            width: size.x,
             data,
         })
     }
@@ -133,17 +132,17 @@ impl PreviewImage {
         out
     }
 
-    pub fn inner_data(&self) -> &[u8] {
-        unsafe { mem::transmute(self.data.as_slice()) }
+    pub fn inner_data(&self) -> &[Vector3<u8>] {
+        &self.data
     }
 
     pub fn size(&self) -> Vector2<u32> {
-        Vector2::new(self.width as u32, (self.data.len() / self.width) as u32)
+        Vector2::new(self.width, (self.data.len() / self.width as usize) as u32)
     }
 
-    pub fn get_pixel(&self, x: usize, y: usize) -> Vector3<u8> {
+    pub fn get_pixel(&self, x: u32, y: u32) -> Vector3<u8> {
         let index = y * self.width + x;
-        self.data[index]
+        self.data[index as usize]
     }
 }
 
