@@ -13,6 +13,7 @@
 - Reuse GPU buffers when possible (instead of reallocating)
 - Support generation
   - Visualize overhanging faces and vertices
+- Don't duplicate mesh data in project save file
 
 ## v0.4.0 &mdash; November 25th, 2025
 

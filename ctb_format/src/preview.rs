@@ -1,6 +1,7 @@
 use std::{
     fmt::{self, Debug},
     iter::repeat_n,
+    mem,
 };
 
 use anyhow::Result;
@@ -130,6 +131,10 @@ impl PreviewImage {
         add_run(length, last_color);
 
         out
+    }
+
+    pub fn inner_data(&self) -> &[u8] {
+        unsafe { mem::transmute(self.data.as_slice()) }
     }
 
     pub fn size(&self) -> Vector2<u32> {

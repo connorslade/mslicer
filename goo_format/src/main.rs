@@ -6,7 +6,7 @@ use std::{
 
 use anyhow::Result;
 use clap::Parser;
-use common::misc::Run;
+use common::{misc::Run, serde::SliceDeserializer};
 use goo_format::{File, LayerDecoder, PreviewImage};
 use image::RgbImage;
 
@@ -31,8 +31,9 @@ struct Args {
 fn main() -> Result<()> {
     let args = Args::parse();
 
-    let raw_goo = fs::read(&args.input_file)?;
-    let goo = File::deserialize(&raw_goo)?;
+    let raw = fs::read(&args.input_file)?;
+    let mut des = SliceDeserializer::new(&raw);
+    let goo = File::deserialize(&mut des)?;
 
     if !args.no_header {
         println!("{:#?}", goo.header);

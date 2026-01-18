@@ -84,14 +84,12 @@ impl File {
         ser.write_bytes(ENDING_STRING);
     }
 
-    pub fn deserialize(buf: &[u8]) -> Result<Self> {
-        let mut des = SliceDeserializer::new(buf);
-
-        let header = Header::deserialize(&mut des)?;
+    pub fn deserialize(des: &mut SliceDeserializer) -> Result<Self> {
+        let header = Header::deserialize(des)?;
         let mut layers = Vec::with_capacity(header.layer_count as usize);
 
         for _ in 0..header.layer_count {
-            layers.push(LayerContent::deserialize(&mut des)?);
+            layers.push(LayerContent::deserialize(des)?);
         }
 
         ensure!(des.read_slice(ENDING_STRING.len()) == ENDING_STRING);
