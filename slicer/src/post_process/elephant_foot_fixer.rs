@@ -1,5 +1,6 @@
 use std::{mem, time::Instant};
 
+use common::serde::{Deserializer, Serializer};
 use image::Luma;
 use imageproc::{morphology::Mask, point::Point};
 use itertools::Itertools;
@@ -56,16 +57,6 @@ impl ElephantFootFixer {
     }
 }
 
-impl Default for ElephantFootFixer {
-    fn default() -> Self {
-        Self {
-            enabled: false,
-            inset_distance: 0.5,
-            intensity_multiplier: 30.0,
-        }
-    }
-}
-
 fn generate_mask(width: usize, height: usize) -> Mask {
     let (width, height) = ((width / 2) as i16, (height / 2) as i16);
 
@@ -79,4 +70,30 @@ fn generate_mask(width: usize, height: usize) -> Mask {
 
 fn new_mask_unsafe(points: Vec<Point<i16>>) -> Mask {
     unsafe { mem::transmute(points) }
+}
+
+impl Default for ElephantFootFixer {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            inset_distance: 0.5,
+            intensity_multiplier: 30.0,
+        }
+    }
+}
+
+impl ElephantFootFixer {
+    pub fn serialize<T: Serializer>(&self, ser: &mut T) {
+        ser.write_bool(self.enabled);
+        ser.write_f32_be(self.inset_distance);
+        ser.write_f32_be(self.intensity_multiplier);
+    }
+
+    pub fn deserialize<T: Deserializer>(des: &mut T) -> Self {
+        Self {
+            enabled: des.read_bool(),
+            inset_distance: des.read_f32_be(),
+            intensity_multiplier: des.read_f32_be(),
+        }
+    }
 }

@@ -1,47 +1,43 @@
 use std::{
     collections::HashMap,
     fs::File,
-    io::{Read, Write},
     iter,
     path::{Path, PathBuf},
     sync::Arc,
 };
 
-use anyhow::Result;
+use anyhow::{Result, ensure};
 use itertools::Itertools;
 use nalgebra::Vector3;
-use serde::{Deserialize, Serialize};
 use tracing::{error, info};
 
 use crate::{
-    app::{App, PostProcessing, model::Model},
+    app::{App, model::Model},
     ui::popup::{Popup, PopupIcon},
 };
-use common::{color::LinearRgb, config::SliceConfig};
-use slicer::mesh::{Mesh, MeshInner};
+use common::{
+    config::SliceConfig,
+    serde::{Deserializer, ReaderDeserializer, SerdeExt, Serializer, WriterSerializer},
+};
+use slicer::{
+    format::FormatSliceFile,
+    mesh::{Mesh, MeshInner},
+    post_process::{anti_alias::AntiAlias, elephant_foot_fixer::ElephantFootFixer},
+};
 
-const VERSION: u32 = 2;
+const VERSION: u16 = 2;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Default)]
 pub struct Project {
-    meshes: Vec<Arc<MeshInner>>,
-    models: Vec<ModelInfo>,
-
-    slice_config: SliceConfig,
-    post_processing: PostProcessing,
+    pub slice_config: SliceConfig,
+    pub post_processing: PostProcessing,
+    pub models: Vec<Model>,
 }
 
-#[derive(Serialize, Deserialize)]
-pub struct ModelInfo {
-    mesh: u32,
-
-    name: String,
-    color: LinearRgb<f32>,
-    hidden: bool,
-
-    position: Vector3<f32>,
-    scale: Vector3<f32>,
-    rotation: Vector3<f32>,
+#[derive(Default, Clone)]
+pub struct PostProcessing {
+    pub anti_alias: AntiAlias,
+    pub elephant_foot_fixer: ElephantFootFixer,
 }
 
 impl App {
@@ -54,15 +50,9 @@ impl App {
     }
 
     fn _save_project(&mut self, path: &Path) -> Result<()> {
-        let project = Project::new(
-            &self.models,
-            self.slice_config.clone(),
-            self.post_processing.clone(),
-        );
-
-        let mut file = File::create(path)?;
-        project.serialize(&mut file)?;
-
+        let file = File::create(path)?;
+        let mut ser = WriterSerializer::new(file);
+        self.project.serialize(&mut ser);
         self.add_recent_project(path.to_path_buf());
         Ok(())
     }
@@ -79,16 +69,14 @@ impl App {
     }
 
     fn _load_project(&mut self, path: &Path) -> Result<()> {
-        let mut file = File::open(path)?;
-        let project = Project::deserialize(&mut file)?;
-
-        self.add_recent_project(path.to_path_buf());
-        project.apply(self);
+        let file = File::open(path)?;
+        let mut des = ReaderDeserializer::new(file);
+        let project = Project::deserialize(&mut des)?;
 
         info!("Loaded project from `{}`", path.display());
 
-        let count = self.models.len();
-        for (i, mesh) in self.models.iter().enumerate() {
+        let count = project.models.len();
+        for (i, mesh) in project.models.iter().enumerate() {
             info!(
                 " {} Loaded model `{}` with {} faces",
                 if i + 1 < count { "│" } else { "└" },
@@ -97,6 +85,7 @@ impl App {
             );
         }
 
+        self.project = project;
         Ok(())
     }
 
@@ -112,16 +101,88 @@ impl App {
     }
 }
 
-impl Project {
-    pub fn new(
-        rendered_meshes: &[Model],
-        slice_config: SliceConfig,
-        post_processing: PostProcessing,
-    ) -> Self {
-        let mut map = HashMap::new();
-        let (mut meshes, mut models) = (Vec::new(), Vec::new());
+struct ModelInfo {
+    mesh: u32,
 
-        for model in rendered_meshes {
+    name: String,
+    color: Vector3<f32>,
+    hidden: bool,
+
+    position: Vector3<f32>,
+    scale: Vector3<f32>,
+    rotation: Vector3<f32>,
+}
+
+impl ModelInfo {
+    pub fn new(mesh: u32, model: &Model) -> Self {
+        Self {
+            mesh,
+            name: model.name.to_owned(),
+            color: model.color.into(),
+            hidden: model.hidden,
+            position: model.mesh.position(),
+            scale: model.mesh.scale(),
+            rotation: model.mesh.rotation(),
+        }
+    }
+
+    pub fn into_model(self, inner: Arc<MeshInner>) -> Model {
+        let mut mesh = Mesh::from_inner(inner);
+        mesh.set_position_unchecked(self.position);
+        mesh.set_scale_unchecked(self.scale);
+        mesh.set_rotation_unchecked(self.rotation);
+        mesh.update_transformation_matrix();
+
+        Model::from_mesh(mesh)
+            .with_name(self.name)
+            .with_color(self.color.into())
+            .with_hidden(self.hidden)
+    }
+
+    pub fn serialize<T: Serializer>(&self, ser: &mut T) {
+        // Mesh reference
+        ser.write_u32_be(self.mesh);
+
+        // Model properties
+        ser.write_u32_be(self.name.len() as u32);
+        ser.write_bytes(self.name.as_bytes());
+        Vector3::from(self.color).serialize(ser);
+        ser.write_bool(self.hidden);
+
+        // Mesh properties
+        self.position.serialize(ser);
+        self.scale.serialize(ser);
+        self.rotation.serialize(ser);
+    }
+
+    pub fn deserialize<T: Deserializer>(des: &mut T) -> Self {
+        Self {
+            mesh: des.read_u32_be(),
+            name: {
+                let name_len = des.read_u32_be();
+                let data = des.read_bytes(name_len as usize);
+                String::from_utf8_lossy(&data).into_owned()
+            },
+            color: Vector3::<f32>::deserialize(des),
+            hidden: des.read_bool(),
+            position: Vector3::<f32>::deserialize(des),
+            scale: Vector3::<f32>::deserialize(des),
+            rotation: Vector3::<f32>::deserialize(des),
+        }
+    }
+}
+
+impl Project {
+    pub fn serialize<T: Serializer>(&self, ser: &mut T) {
+        ser.write_u16_be(VERSION);
+        self.slice_config.serialize(ser);
+        self.post_processing.serialize(ser);
+
+        let mut map = HashMap::new();
+        let mut meshes = Vec::new();
+
+        ser.write_u32_be(self.models.len() as u32);
+        for model in self.models.iter() {
             let id = model.mesh.mesh_id();
             let mesh = match map.get(&id) {
                 Some(mesh) => *mesh,
@@ -133,76 +194,90 @@ impl Project {
                 }
             };
 
-            models.push(ModelInfo::from_model(model, mesh));
+            let info = ModelInfo::new(mesh, model);
+            info.serialize(ser);
         }
 
-        Self {
-            meshes,
-            models,
-
-            slice_config,
-            post_processing,
-        }
+        ser.write_u32_be(meshes.len() as u32);
+        (meshes.iter()).for_each(|mesh| serialize_mesh_inner(ser, mesh));
     }
 
-    pub fn serialize<Writer: Write>(&self, writer: &mut Writer) -> Result<()> {
-        writer.write_all(&VERSION.to_le_bytes())?;
-        bincode::serde::encode_into_std_write(self, writer, bincode::config::standard())?;
-        Ok(())
-    }
+    pub fn deserialize<T: Deserializer>(des: &mut T) -> Result<Self> {
+        ensure!(des.read_u16_be() == VERSION, "Save version mismatch.");
+        let slice_config = SliceConfig::deserialize(des)?;
+        let post_processing = PostProcessing::deserialize(des);
 
-    pub fn deserialize<Reader: Read>(reader: &mut Reader) -> Result<Self> {
-        let mut version_bytes = [0; 4];
-        reader.read_exact(&mut version_bytes)?;
-        let version = u32::from_le_bytes(version_bytes);
+        let models = des.read_u32_be();
+        let models = (0..models)
+            .map(|_| ModelInfo::deserialize(des))
+            .collect::<Vec<_>>();
 
-        if version != VERSION {
-            anyhow::bail!("Invalid version: Expected {VERSION} found {version}");
-        }
+        let meshes = des.read_u32_be();
+        let meshes = (0..meshes)
+            .map(|_| Arc::new(deserialize_mesh_inner(des)))
+            .collect::<Vec<_>>();
 
-        Ok(bincode::serde::decode_from_std_read(
-            reader,
-            bincode::config::standard(),
-        )?)
-    }
-
-    pub fn apply(self, app: &mut App) {
-        app.models = (self.models.into_iter())
-            .map(|x| x.into_model(app, &self.meshes))
+        let models = (models.into_iter())
+            .map(|x| {
+                let mesh = meshes[x.mesh as usize].clone();
+                x.into_model(mesh)
+            })
             .collect();
 
-        app.slice_config = self.slice_config;
-        app.post_processing = self.post_processing;
+        Ok(Self {
+            slice_config,
+            post_processing,
+            models,
+        })
     }
 }
 
-impl ModelInfo {
-    pub fn from_model(rendered_mesh: &Model, mesh: u32) -> Self {
-        Self {
-            mesh,
-
-            name: rendered_mesh.name.clone(),
-            color: rendered_mesh.color,
-            hidden: rendered_mesh.hidden,
-
-            position: rendered_mesh.mesh.position(),
-            scale: rendered_mesh.mesh.scale(),
-            rotation: rendered_mesh.mesh.rotation(),
-        }
+impl PostProcessing {
+    pub fn process(&self, file: &mut FormatSliceFile) {
+        self.elephant_foot_fixer.post_slice(file);
+        self.anti_alias.post_slice(file);
     }
 
-    pub fn into_model(self, app: &App, meshes: &[Arc<MeshInner>]) -> Model {
-        let mut mesh = Mesh::from_inner(meshes[self.mesh as usize].to_owned());
-        mesh.set_position_unchecked(self.position);
-        mesh.set_scale_unchecked(self.scale);
-        mesh.set_rotation_unchecked(self.rotation);
-        mesh.update_transformation_matrix();
+    pub fn serialize<T: Serializer>(&self, ser: &mut T) {
+        self.anti_alias.serialize(ser);
+        self.elephant_foot_fixer.serialize(ser);
+    }
 
-        let mut rendered = Model::from_mesh(mesh)
-            .with_name(self.name)
-            .with_color(self.color)
-            .with_hidden(self.hidden);
-        rendered.update_oob(&app.slice_config.platform_size);
-        rendered
+    pub fn deserialize<T: Deserializer>(des: &mut T) -> Self {
+        Self {
+            anti_alias: AntiAlias::deserialize(des),
+            elephant_foot_fixer: ElephantFootFixer::deserialize(des),
+        }
+    }
+}
+
+fn serialize_mesh_inner<T: Serializer>(ser: &mut T, mesh: &Arc<MeshInner>) {
+    ser.write_u32_be(mesh.vertices.len() as u32);
+    for vert in mesh.vertices.iter() {
+        vert.serialize(ser);
+    }
+
+    ser.write_u32_be(mesh.faces.len() as u32);
+    for face in mesh.faces.iter() {
+        ser.write_u32_be(face[0]);
+        ser.write_u32_be(face[1]);
+        ser.write_u32_be(face[2]);
+    }
+}
+
+fn deserialize_mesh_inner<T: Deserializer>(des: &mut T) -> MeshInner {
+    let verts = des.read_u32_be();
+    let verts = (0..verts)
+        .map(|_| Vector3::<f32>::deserialize(des))
+        .collect::<Vec<_>>();
+
+    let faces = des.read_u32_be();
+    let faces = (0..faces)
+        .map(|_| [des.read_u32_be(), des.read_u32_be(), des.read_u32_be()])
+        .collect::<Vec<_>>();
+
+    MeshInner {
+        vertices: verts.into_boxed_slice(),
+        faces: faces.into_boxed_slice(),
     }
 }

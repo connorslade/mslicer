@@ -1,6 +1,8 @@
-use serde::{Deserialize, Serialize};
+use anyhow::{Result, bail};
 
-#[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq)]
+use crate::serde::{Deserializer, Serializer};
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Format {
     Goo,
     Ctb,
@@ -41,5 +43,22 @@ impl Format {
             Format::Ctb => true,
             Format::Svg => false,
         }
+    }
+
+    pub fn serialize<T: Serializer>(&self, ser: &mut T) {
+        ser.write_u8(match self {
+            Format::Goo => 0,
+            Format::Ctb => 1,
+            Format::Svg => 2,
+        });
+    }
+
+    pub fn deserialize<T: Deserializer>(des: &mut T) -> Result<Self> {
+        Ok(match des.read_u8() {
+            0 => Format::Goo,
+            1 => Format::Ctb,
+            2 => Format::Svg,
+            _ => bail!("Invalid slice format ID"),
+        })
     }
 }

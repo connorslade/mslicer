@@ -47,7 +47,7 @@ fn render_preview_image(app: &mut App, size: (u32, u32)) -> RgbaImage {
     let depth_texture_view = depth_texture.create_view(&TextureViewDescriptor::default());
 
     let (mut min, mut max) = (Vector3::repeat(f32::MAX), Vector3::repeat(f32::MIN));
-    for model in app.models.iter() {
+    for model in app.project.models.iter() {
         let (model_min, model_max) = model.mesh.bounds();
         min = min.zip_map(&model_min, f32::min);
         max = max.zip_map(&model_max, f32::max);

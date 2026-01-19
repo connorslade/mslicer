@@ -12,7 +12,7 @@
   - [x] Actually do the BVH
 - [x] Allow saving / loading projects
 - [x] Allow deleting objects
-- [ ] Use instancing both for object mesh storage and rendering
+- [x] Use instancing both for object mesh storage
 - [x] Less internal dependence on GOO format
 - [x] Anti-aliasing
 - [x] Cache transformed points?
@@ -120,6 +120,6 @@
   - [x] Point overhang detection
   - [ ] Support routing
   - [ ] Manual support visualization
-- [ ] Overhaul save format
+- [x] Overhaul save format
 - [ ] Add more printer configs
 - [ ] Antialiasing without post-processing?

@@ -21,7 +21,7 @@ impl PointGenerator for OverhangPointDispatch {
     fn generate_points(&mut self, app: &mut App) {
         self.cached_points.clear();
 
-        for model in app.models.iter() {
+        for model in app.project.models.iter() {
             let Some(overhangs) = &model.overhangs else {
                 continue;
             };

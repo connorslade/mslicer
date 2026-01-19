@@ -5,7 +5,6 @@ edition = "2024"
 
 [dependencies]
 anyhow.workspace = true
-bincode.workspace = true
 bitflags.workspace = true
 bytemuck.workspace = true
 chrono.workspace = true

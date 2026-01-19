@@ -28,7 +28,7 @@ impl BuildPlateDispatch {
 
 impl LineGenerator for BuildPlateDispatch {
     fn generate_lines(&mut self, app: &mut App) {
-        let platform_size = app.slice_config.platform_size;
+        let platform_size = app.project.slice_config.platform_size;
         let grid_size = app.config.grid_size;
         let theme = app.config.theme;
 

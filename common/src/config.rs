@@ -1,9 +1,12 @@
+use anyhow::Result;
 use nalgebra::{Vector2, Vector3};
-use serde::{Deserialize, Serialize};
 
-use crate::format::Format;
+use crate::{
+    format::Format,
+    serde::{Deserializer, SerdeExt, Serializer},
+};
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Clone, Debug)]
 pub struct SliceConfig {
     pub format: Format,
 
@@ -17,7 +20,7 @@ pub struct SliceConfig {
     pub transition_layers: u32,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Clone, Debug)]
 pub struct ExposureConfig {
     pub exposure_time: f32,
     pub lift_distance: f32,
@@ -66,6 +69,52 @@ impl Default for ExposureConfig {
             lift_speed: 65.0,
             retract_distance: 5.0,
             retract_speed: 150.0,
+        }
+    }
+}
+
+impl SliceConfig {
+    pub fn serialize<T: Serializer>(&self, ser: &mut T) {
+        self.format.serialize(ser);
+        self.platform_resolution.serialize(ser);
+        self.platform_size.serialize(ser);
+        ser.write_f32_be(self.slice_height);
+        self.exposure_config.serialize(ser);
+        self.first_exposure_config.serialize(ser);
+        ser.write_u32_be(self.first_layers);
+        ser.write_u32_be(self.transition_layers);
+    }
+
+    pub fn deserialize<T: Deserializer>(des: &mut T) -> Result<Self> {
+        Ok(Self {
+            format: Format::deserialize(des)?,
+            platform_resolution: Vector2::deserialize(des),
+            platform_size: Vector3::deserialize(des),
+            slice_height: des.read_f32_be(),
+            exposure_config: ExposureConfig::deserialize(des),
+            first_exposure_config: ExposureConfig::deserialize(des),
+            first_layers: des.read_u32_be(),
+            transition_layers: des.read_u32_be(),
+        })
+    }
+}
+
+impl ExposureConfig {
+    pub fn serialize<T: Serializer>(&self, ser: &mut T) {
+        ser.write_f32_be(self.exposure_time);
+        ser.write_f32_be(self.lift_distance);
+        ser.write_f32_be(self.lift_speed);
+        ser.write_f32_be(self.retract_distance);
+        ser.write_f32_be(self.retract_speed);
+    }
+
+    pub fn deserialize<T: Deserializer>(des: &mut T) -> Self {
+        Self {
+            exposure_time: des.read_f32_be(),
+            lift_distance: des.read_f32_be(),
+            lift_speed: des.read_f32_be(),
+            retract_distance: des.read_f32_be(),
+            retract_speed: des.read_f32_be(),
         }
     }
 }

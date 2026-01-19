@@ -101,7 +101,7 @@ impl ModelPipeline {
         self.bind_groups.clear();
         let mut to_generate = Vec::new();
 
-        for (idx, model) in app.models.iter().enumerate() {
+        for (idx, model) in app.project.models.iter().enumerate() {
             if model.try_get_buffers().is_none() {
                 to_generate.push(idx);
             }
@@ -114,7 +114,7 @@ impl ModelPipeline {
             let uniforms = ModelUniforms {
                 transform: app.view_projection() * model_transform,
                 model_transform,
-                build_volume: app.slice_config.platform_size,
+                build_volume: app.project.slice_config.platform_size,
                 model_color: model.color.to_srgb().into(),
                 camera_position: app.camera.position(),
                 camera_target: app.camera.target,
@@ -145,7 +145,7 @@ impl ModelPipeline {
 
         if !to_generate.is_empty() {
             for idx in to_generate {
-                app.models[idx].get_buffers(gcx.device);
+                app.project.models[idx].get_buffers(gcx.device);
             }
         }
     }
@@ -153,14 +153,14 @@ impl ModelPipeline {
     pub fn paint(&self, render_pass: &mut RenderPass, app: &mut App) {
         render_pass.set_pipeline(&self.render_pipeline);
 
-        let indexes = (app.models.iter().enumerate())
+        let indexes = (app.project.models.iter().enumerate())
             .filter(|(_, x)| !x.hidden)
             .map(|(idx, _)| idx);
 
         for idx in indexes {
             render_pass.set_bind_group(0, &self.bind_groups[idx], &[]);
 
-            let model = &app.models[idx];
+            let model = &app.project.models[idx];
             let buffers = model.try_get_buffers().unwrap();
             render_pass.set_vertex_buffer(0, buffers.vertex_buffer.slice(..));
             render_pass.set_index_buffer(buffers.index_buffer.slice(..), IndexFormat::Uint32);

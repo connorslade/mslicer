@@ -148,7 +148,7 @@ fn save(app: &mut App) {
 }
 
 fn load(app: &mut App) {
-    app.tasks.add(FileDialog::save_file(
+    app.tasks.add(FileDialog::pick_file(
         ("mslicer project", &["mslicer"]),
         |app, path| app.load_project(path),
     ));

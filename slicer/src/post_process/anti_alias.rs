@@ -1,3 +1,4 @@
+use common::serde::{Deserializer, Serializer};
 use libblur::{
     AnisotropicRadius, BlurImageMut, EdgeMode, EdgeMode2D, FastBlurChannels, ThreadingPolicy,
 };
@@ -38,6 +39,20 @@ impl Default for AntiAlias {
         Self {
             enabled: false,
             radius: 1.0,
+        }
+    }
+}
+
+impl AntiAlias {
+    pub fn serialize<T: Serializer>(&self, ser: &mut T) {
+        ser.write_bool(self.enabled);
+        ser.write_f32_be(self.radius);
+    }
+
+    pub fn deserialize<T: Deserializer>(des: &mut T) -> Self {
+        Self {
+            enabled: des.read_bool(),
+            radius: des.read_f32_be(),
         }
     }
 }

@@ -98,3 +98,17 @@ impl<T> From<SRgb<T>> for Vector3<T> {
         Vector3::new(value.r, value.g, value.b)
     }
 }
+
+impl<T: Copy> From<Vector3<T>> for LinearRgb<T> {
+    fn from(value: Vector3<T>) -> Self {
+        let [r, g, b] = value.data.0[0];
+        Self { r, g, b }
+    }
+}
+
+impl<T: Copy> From<Vector3<T>> for SRgb<T> {
+    fn from(value: Vector3<T>) -> Self {
+        let [r, g, b] = value.data.0[0];
+        Self { r, g, b }
+    }
+}

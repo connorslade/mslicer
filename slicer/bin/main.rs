@@ -38,7 +38,7 @@ fn main() -> Result<()> {
         // Center the model
         let (min, max) = mesh.bounds();
         let mesh_center = (min + max) / 2.0;
-        let center = (slice_config.platform_resolution / 2).map(|x| x as f32);
+        let center = (slice_config.platform_resolution / 2).cast::<f32>();
         mesh.set_position((center - mesh_center.xy()).to_homogeneous() + model.position);
 
         // Scale the model into printer-space (mm => px)

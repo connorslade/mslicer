@@ -7,14 +7,13 @@ use egui_dock::{DockState, NodeIndex, Tree};
 use egui_phosphor::regular::CARET_RIGHT;
 use egui_tracing::EventCollector;
 use egui_wgpu::RenderState;
-use nalgebra::{Vector2, Vector3};
-use serde::{Deserialize, Serialize};
+use nalgebra::Vector2;
 use tracing::{info, warn};
 
 use crate::{
     app::{
         config::Config,
-        model::Model,
+        project::Project,
         remote_print::RemotePrint,
         slice_operation::{SliceOperation, SliceResult},
         task::TaskManager,
@@ -28,11 +27,7 @@ use crate::{
     windows::{self, Tab},
 };
 use common::config::SliceConfig;
-use slicer::{
-    format::FormatSliceFile,
-    post_process::{anti_alias::AntiAlias, elephant_foot_fixer::ElephantFootFixer},
-    slicer::Slicer,
-};
+use slicer::{format::FormatSliceFile, slicer::Slicer};
 
 pub mod config;
 pub mod model;
@@ -43,32 +38,24 @@ pub mod task;
 
 pub struct App {
     pub render_state: RenderState,
-    pub dock_state: DockState<Tab>, // todo: dock state in ui_state?
+    pub dock_state: DockState<Tab>,
     pub fps: FpsTracker,
+    pub config_dir: PathBuf,
+
     pub popup: PopupManager,
     pub tasks: TaskManager,
-
-    pub state: UiState,
-    pub config: Config,
-    pub slice_config: SliceConfig,
-    pub post_processing: PostProcessing,
+    pub remote_print: RemotePrint,
+    pub slice_operation: Option<SliceOperation>,
 
     pub camera: Camera,
-    pub models: Vec<Model>,
-    pub slice_operation: Option<SliceOperation>,
-    pub remote_print: RemotePrint,
-    pub config_dir: PathBuf,
+    pub state: UiState,
+    pub config: Config,
+    pub project: Project,
 }
 
 pub struct FpsTracker {
     last_frame: Instant,
     last_frame_time: f32,
-}
-
-#[derive(Default, Clone, Serialize, Deserialize)]
-pub struct PostProcessing {
-    pub anti_alias: AntiAlias,
-    pub elephant_foot_fixer: ElephantFootFixer,
 }
 
 impl App {
@@ -104,27 +91,28 @@ impl App {
         Self {
             render_state,
             dock_state,
+            fps: FpsTracker::new(),
+            config_dir,
             popup: PopupManager::default(),
             tasks: TaskManager::default(),
+            remote_print: RemotePrint::uninitialized(),
+            slice_operation: None,
+            camera: Camera::default(),
             state: UiState {
                 event_collector,
                 selected_printer,
                 ..Default::default()
             },
             config,
-            camera: Camera::default(),
-            slice_config,
-            post_processing: PostProcessing::default(),
-            fps: FpsTracker::new(),
-            models: Vec::new(),
-            slice_operation: None,
-            remote_print: RemotePrint::uninitialized(),
-            config_dir,
+            project: Project {
+                slice_config,
+                ..Default::default()
+            },
         }
     }
 
     pub fn slice(&mut self) {
-        let meshes = (self.models.iter())
+        let meshes = (self.project.models.iter())
             .filter(|x| !x.hidden)
             .cloned()
             .collect::<Vec<_>>();
@@ -145,36 +133,27 @@ impl App {
 
         info!("Starting slicing operation");
 
-        let slice_config = self.slice_config.clone();
+        let slice_config = self.project.slice_config.clone();
         let mut out = Vec::new();
         let mut preview_scale = f32::MAX;
 
-        let mm_to_px = Vector3::new(
-            self.slice_config.platform_resolution.x as f32 / self.slice_config.platform_size.x,
-            self.slice_config.platform_resolution.y as f32 / self.slice_config.platform_size.y,
-            1.0,
-        );
+        let platform = slice_config.platform_resolution.cast::<f32>();
+        let mm_to_px = platform
+            .component_div(&slice_config.platform_size.xy())
+            .push(1.0);
 
         for mesh in meshes.into_iter() {
             let mut mesh = mesh.mesh;
-
             mesh.set_scale_unchecked(mesh.scale().component_mul(&mm_to_px));
 
             let (min, max) = mesh.bounds();
             preview_scale = preview_scale
-                .min(self.slice_config.platform_size.x / (max.x - min.x))
-                .min(self.slice_config.platform_size.y / (max.y - min.y));
+                .min(slice_config.platform_size.x / (max.x - min.x))
+                .min(slice_config.platform_size.y / (max.y - min.y));
 
             let pos = mesh.position();
-            mesh.set_position_unchecked(
-                pos.component_mul(&mm_to_px)
-                    + Vector3::new(
-                        self.slice_config.platform_resolution.x as f32 / 2.0,
-                        self.slice_config.platform_resolution.y as f32 / 2.0,
-                        -self.slice_config.slice_height,
-                    ),
-            );
-
+            let offset = (platform / 2.0).push(-slice_config.slice_height);
+            mesh.set_position_unchecked(pos.component_mul(&mm_to_px) + offset);
             mesh.update_transformation_matrix();
 
             out.push(mesh);
@@ -275,13 +254,6 @@ impl FpsTracker {
 
     pub fn frame_time(&self) -> f32 {
         self.last_frame_time
-    }
-}
-
-impl PostProcessing {
-    pub fn process(&self, file: &mut FormatSliceFile) {
-        self.elephant_foot_fixer.post_slice(file);
-        self.anti_alias.post_slice(file);
     }
 }
 

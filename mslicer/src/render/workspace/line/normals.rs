@@ -32,11 +32,11 @@ impl LineGenerator for NormalsDispatch {
             return;
         }
 
-        let ids = (app.models.iter())
+        let ids = (app.project.models.iter())
             .filter(|x| x.hidden)
             .map(|x| x.id)
             .collect::<Vec<_>>();
-        let transforms = (app.models.iter())
+        let transforms = (app.project.models.iter())
             .map(|x| *x.mesh.transformation_matrix())
             .collect::<Vec<_>>();
 
@@ -49,7 +49,7 @@ impl LineGenerator for NormalsDispatch {
             self.last_normals = show_normals;
 
             if show_normals {
-                self.cached_lines = generate_normals(&app.models);
+                self.cached_lines = generate_normals(&app.project.models);
             } else {
                 self.cached_lines = Vec::new();
             }

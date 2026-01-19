@@ -23,8 +23,8 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     ui.add_space(8.0);
     ui.menu_button("Detect Overhanging Points", |ui| {
         ui.style_mut().visuals.button_frame = false;
-        for idx in 0..app.models.len() {
-            let model = &mut app.models[idx];
+        for idx in 0..app.project.models.len() {
+            let model = &mut app.project.models[idx];
             if ui.button(&model.name).clicked() {
                 model.find_overhangs();
 
@@ -52,9 +52,9 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                     let mut rendered_mesh = Model::from_mesh(mesh)
                         .with_name("Supports".into())
                         .with_random_color();
-                    rendered_mesh.update_oob(&app.slice_config.platform_size);
+                    rendered_mesh.update_oob(&app.project.slice_config.platform_size);
                     app.tasks.add(MeshManifold::new(&rendered_mesh));
-                    app.models.push(rendered_mesh);
+                    app.project.models.push(rendered_mesh);
                 }
             }
         }
@@ -73,16 +73,16 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
         ui.menu_button("Generate", |ui| {
             ui.style_mut().visuals.button_frame = false;
 
-            for idx in 0..app.models.len() {
-                let mesh = &app.models[idx];
+            for idx in 0..app.project.models.len() {
+                let mesh = &app.project.models[idx];
                 if ui.button(&mesh.name).clicked() {
                     let generator = LineSupportGenerator::new(
                         &app.state.line_support_config,
-                        app.slice_config.platform_size,
+                        app.project.slice_config.platform_size,
                     );
 
                     app.state.line_support_debug =
-                        generate_support(&mut app.models, idx, &generator);
+                        generate_support(&mut app.project.models, idx, &generator);
                 }
             }
         });
@@ -91,11 +91,11 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
             app.state.line_support_debug = Vec::new();
             let generator = LineSupportGenerator::new(
                 &app.state.line_support_config,
-                app.slice_config.platform_size,
+                app.project.slice_config.platform_size,
             );
 
-            for i in 0..app.models.len() {
-                let debug = generate_support(&mut app.models, i, &generator);
+            for i in 0..app.project.models.len() {
+                let debug = generate_support(&mut app.project.models, i, &generator);
                 app.state.line_support_debug.extend_from_slice(&debug);
             }
         }
@@ -160,7 +160,7 @@ fn manual_support_placement(app: &mut App) {
     let (pos, dir) = app.camera.hovered_ray(workspace.aspect, workspace.uv);
 
     let mut builder = MeshBuilder::new();
-    for model in app.models.iter() {
+    for model in app.project.models.iter() {
         let Some(intersection) = model.bvh.intersect_ray(
             &model.mesh,
             model.mesh.inv_transform(&pos),

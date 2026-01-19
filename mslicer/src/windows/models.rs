@@ -24,7 +24,7 @@ enum Action {
 pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     let mut action = Action::None;
 
-    if app.models.is_empty() {
+    if app.project.models.is_empty() {
         ui.vertical_centered(|ui| {
             ui.label("No models loaded yet.");
         });
@@ -32,9 +32,9 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     }
 
     let width = ui.available_width();
-    let platform = &app.slice_config.platform_size;
+    let platform = &app.project.slice_config.platform_size;
 
-    for (i, model) in app.models.iter_mut().enumerate() {
+    for (i, model) in app.project.models.iter_mut().enumerate() {
         let id = Id::new(format!("model_show_{}", model.id));
         let open = ui.data_mut(|map| *map.get_temp_mut_or_insert_with(id, || false));
 
@@ -166,13 +166,13 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
 
     match action {
         Action::Remove(i) => {
-            let id = app.models.remove(i).id;
+            let id = app.project.models.remove(i).id;
             let id = Id::new(format!("model_show_{id}",));
             ui.data_mut(|map| map.remove::<bool>(id));
         }
         Action::Duplicate(i) => {
-            let model = app.models[i].clone();
-            app.models.push(model);
+            let model = app.project.models[i].clone();
+            app.project.models.push(model);
         }
         Action::None => {}
     }

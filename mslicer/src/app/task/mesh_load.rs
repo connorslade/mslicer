@@ -73,9 +73,9 @@ impl Task for MeshLoad {
             let mut rendered_mesh = Model::from_mesh(mesh)
                 .with_name(mem::take(&mut self.name))
                 .with_random_color();
-            rendered_mesh.update_oob(&app.slice_config.platform_size);
+            rendered_mesh.update_oob(&app.project.slice_config.platform_size);
             app.tasks.add(MeshManifold::new(&rendered_mesh));
-            app.models.push(rendered_mesh);
+            app.project.models.push(rendered_mesh);
             return true;
         }
 

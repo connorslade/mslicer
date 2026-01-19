@@ -32,7 +32,7 @@ impl Task for MeshManifold {
     fn poll(&mut self, app: &mut App, _ctx: &Context) -> bool {
         if self.join.as_ref().unwrap().is_finished() {
             let result = mem::take(&mut self.join).unwrap().join().unwrap();
-            if let Some(model) = app.models.iter_mut().find(|x| x.id == self.mesh) {
+            if let Some(model) = app.project.models.iter_mut().find(|x| x.id == self.mesh) {
                 model.warnings.set(MeshWarnings::NonManifold, !result);
             }
 

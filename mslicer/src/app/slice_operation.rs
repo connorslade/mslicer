@@ -95,7 +95,7 @@ impl SliceOperation {
         }
 
         let file = &mut result.as_mut().unwrap().file;
-        app.post_processing.process(file);
+        app.project.post_processing.process(file);
         self.has_post_processed = true;
     }
 

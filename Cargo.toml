@@ -14,7 +14,6 @@ members = [
 aes = "0.8.4"
 afire = "3.0.0-alpha.3"
 anyhow = "1.0.99"
-bincode = { version = "2.0.1", features = ["serde"] }
 bitflags = "2.9.4"
 bytemuck = "1.23.2"
 cbc = "0.1.2"

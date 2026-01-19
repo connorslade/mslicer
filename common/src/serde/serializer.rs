@@ -1,8 +1,11 @@
-use std::iter::repeat_n;
+use std::{
+    io::{Seek, Write},
+    iter::repeat_n,
+};
 
 #[rustfmt::skip]
 pub trait Serializer {
-    fn pos(&self) -> usize;
+    fn pos(&mut self) -> usize;
     fn write_bytes(&mut self, data: &[u8]);
     fn reserve(&mut self, length: usize) -> usize;
     fn execute_at(&mut self, offset: usize, f: impl FnOnce(&mut SizedSerializer));
@@ -31,6 +34,10 @@ pub struct DynamicSerializer {
     buffer: Vec<u8>,
 }
 
+pub struct WriterSerializer<T: Write + Seek> {
+    stream: T,
+}
+
 impl<'a> SizedSerializer<'a> {
     pub fn new(buffer: &'a mut [u8]) -> Self {
         Self { buffer, offset: 0 }
@@ -47,8 +54,14 @@ impl DynamicSerializer {
     }
 }
 
+impl<T: Write + Seek> WriterSerializer<T> {
+    pub fn new(stream: T) -> Self {
+        Self { stream }
+    }
+}
+
 impl Serializer for SizedSerializer<'_> {
-    fn pos(&self) -> usize {
+    fn pos(&mut self) -> usize {
         self.offset
     }
 
@@ -74,7 +87,7 @@ impl Serializer for SizedSerializer<'_> {
 }
 
 impl Serializer for DynamicSerializer {
-    fn pos(&self) -> usize {
+    fn pos(&mut self) -> usize {
         self.buffer.len()
     }
 
@@ -95,6 +108,28 @@ impl Serializer for DynamicSerializer {
 
     fn view_mut(&mut self, offset: usize, size: usize) -> &mut [u8] {
         &mut self.buffer[offset..(offset + size)]
+    }
+}
+
+impl<T: Write + Seek> Serializer for WriterSerializer<T> {
+    fn pos(&mut self) -> usize {
+        self.stream.stream_position().unwrap() as usize
+    }
+
+    fn write_bytes(&mut self, data: &[u8]) {
+        self.stream.write_all(data).unwrap();
+    }
+
+    fn reserve(&mut self, _length: usize) -> usize {
+        unimplemented!()
+    }
+
+    fn execute_at(&mut self, _offset: usize, _f: impl FnOnce(&mut SizedSerializer)) {
+        unimplemented!()
+    }
+
+    fn view_mut(&mut self, _offset: usize, _size: usize) -> &mut [u8] {
+        unimplemented!()
     }
 }
 

@@ -13,6 +13,7 @@ const SLICE_FORMAT_TOOLTIP: &str =
     "Only .goo and .ctb files can be sent with the 'Remote Print' module.";
 
 pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
+    let slice_config = &mut app.project.slice_config;
     Grid::new("slice_config")
         .num_columns(2)
         .spacing([40.0, 4.0])
@@ -22,12 +23,12 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                 ui.label("Slice Format");
                 ui.label(INFO).on_hover_text(SLICE_FORMAT_TOOLTIP);
             });
-            let format = app.slice_config.format;
+            let format = slice_config.format;
             ComboBox::new("slice_format", "")
                 .selected_text(format!("{} (.{})", format.name(), format.extension()))
                 .show_ui(ui, |ui| {
                     for format in Format::ALL {
-                        ui.selectable_value(&mut app.slice_config.format, format, format.name());
+                        ui.selectable_value(&mut slice_config.format, format, format.name());
                     }
                 });
             ui.end_row();
@@ -51,11 +52,11 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                 });
             ui.end_row();
 
-            let platform = &mut app.slice_config.platform_size;
+            let platform = &mut slice_config.platform_size;
             let prev = *platform;
             if app.state.selected_printer == 0 {
                 ui.label("Platform Resolution");
-                vec2_dragger(ui, app.slice_config.platform_resolution.as_mut(), |x| x);
+                vec2_dragger(ui, slice_config.platform_resolution.as_mut(), |x| x);
                 ui.end_row();
 
                 ui.label("Platform Size (mm)");
@@ -63,51 +64,51 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                 ui.end_row();
             } else {
                 let printer = &app.config.printers[app.state.selected_printer - 1];
-                app.slice_config.platform_resolution = printer.resolution;
+                slice_config.platform_resolution = printer.resolution;
                 *platform = printer.size;
             }
 
             if *platform != prev {
-                app.models
-                    .iter_mut()
-                    .for_each(|model| model.update_oob(&app.slice_config.platform_size));
+                (app.project.models.iter_mut())
+                    .for_each(|model| model.update_oob(&slice_config.platform_size));
             }
 
             ui.label("Slice Height (mm)");
             ui.horizontal(|ui| {
-                ui.add(DragValue::new(&mut app.slice_config.slice_height));
+                ui.add(DragValue::new(&mut slice_config.slice_height));
                 ui.add_space(ui.available_width());
             });
             ui.end_row();
 
             ui.label("First Layers");
-            ui.add(DragValue::new(&mut app.slice_config.first_layers));
+            ui.add(DragValue::new(&mut slice_config.first_layers));
             ui.end_row();
 
             ui.horizontal(|ui| {
                 ui.label("Transition Layers");
                 ui.label(INFO).on_hover_text(TRANSITION_LAYER_TOOLTIP);
             });
-            ui.add(DragValue::new(&mut app.slice_config.transition_layers));
+            ui.add(DragValue::new(&mut slice_config.transition_layers));
             ui.end_row();
         });
 
     ui.collapsing("Exposure Config", |ui| {
-        exposure_config_grid(ui, &mut app.slice_config.exposure_config);
+        exposure_config_grid(ui, &mut slice_config.exposure_config);
     });
 
     ui.collapsing("First Exposure Config", |ui| {
-        exposure_config_grid(ui, &mut app.slice_config.first_exposure_config);
+        exposure_config_grid(ui, &mut slice_config.first_exposure_config);
     });
 
     ui.add_space(16.0);
     ui.heading("Post Processing");
 
+    let post_processing = &mut app.project.post_processing;
     ui.collapsing("Anti Alias", |ui| {
-        anti_alias(&mut app.post_processing.anti_alias, ui)
+        anti_alias(&mut post_processing.anti_alias, ui)
     });
     ui.collapsing("Elephant Foot Fixer", |ui| {
-        elephant_foot_fixer(&mut app.post_processing.elephant_foot_fixer, ui)
+        elephant_foot_fixer(&mut post_processing.elephant_foot_fixer, ui)
     });
 }
 
