@@ -8,7 +8,7 @@ use egui::Context;
 
 use crate::app::{
     App,
-    model::{MeshWarnings, Model},
+    project::model::{MeshWarnings, Model},
     task::Task,
 };
 

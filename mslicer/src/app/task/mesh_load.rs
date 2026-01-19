@@ -14,7 +14,7 @@ use tracing::info;
 use crate::{
     app::{
         App,
-        model::Model,
+        project::model::Model,
         task::{MeshManifold, Task},
     },
     ui::popup::{Popup, PopupIcon},

@@ -1,7 +1,7 @@
 use nalgebra::{Matrix4, Vector3};
 
 use crate::{
-    app::{App, model::Model},
+    app::{App, project::model::Model},
     render::workspace::line::{Line, LineGenerator},
 };
 

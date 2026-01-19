@@ -30,7 +30,6 @@ use common::config::SliceConfig;
 use slicer::{format::FormatSliceFile, slicer::Slicer};
 
 pub mod config;
-pub mod model;
 pub mod project;
 pub mod remote_print;
 pub mod slice_operation;

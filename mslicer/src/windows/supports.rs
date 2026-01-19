@@ -6,7 +6,7 @@ use slicer::{
 };
 
 use crate::{
-    app::{App, model::Model, task::MeshManifold},
+    app::{App, project::model::Model, task::MeshManifold},
     ui::components::dragger,
 };
 

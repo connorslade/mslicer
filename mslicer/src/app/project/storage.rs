@@ -1,105 +1,23 @@
-use std::{
-    collections::HashMap,
-    fs::File,
-    iter,
-    path::{Path, PathBuf},
-    sync::Arc,
-};
+use std::{collections::HashMap, fs::File, path::Path, sync::Arc};
 
 use anyhow::{Result, ensure};
-use itertools::Itertools;
 use nalgebra::Vector3;
-use tracing::{error, info};
+use tracing::info;
 
-use crate::{
-    app::{App, model::Model},
-    ui::popup::{Popup, PopupIcon},
+use crate::app::{
+    App,
+    project::{PostProcessing, Project, model::Model},
 };
 use common::{
     config::SliceConfig,
     serde::{Deserializer, ReaderDeserializer, SerdeExt, Serializer, WriterSerializer},
 };
 use slicer::{
-    format::FormatSliceFile,
     mesh::{Mesh, MeshInner},
     post_process::{anti_alias::AntiAlias, elephant_foot_fixer::ElephantFootFixer},
 };
 
 const VERSION: u16 = 2;
-
-#[derive(Default)]
-pub struct Project {
-    pub slice_config: SliceConfig,
-    pub post_processing: PostProcessing,
-    pub models: Vec<Model>,
-}
-
-#[derive(Default, Clone)]
-pub struct PostProcessing {
-    pub anti_alias: AntiAlias,
-    pub elephant_foot_fixer: ElephantFootFixer,
-}
-
-impl App {
-    fn add_recent_project(&mut self, path: PathBuf) {
-        self.config.recent_projects = iter::once(path)
-            .chain(self.config.recent_projects.iter().cloned())
-            .unique()
-            .take(5)
-            .collect()
-    }
-
-    fn _save_project(&mut self, path: &Path) -> Result<()> {
-        let file = File::create(path)?;
-        let mut ser = WriterSerializer::new(file);
-        self.project.serialize(&mut ser);
-        self.add_recent_project(path.to_path_buf());
-        Ok(())
-    }
-
-    pub fn save_project(&mut self, path: &Path) {
-        if let Err(error) = self._save_project(path) {
-            error!("Error saving project: {:?}", error);
-            self.popup.open(Popup::simple(
-                "Error Saving Project",
-                PopupIcon::Error,
-                error.to_string(),
-            ));
-        }
-    }
-
-    fn _load_project(&mut self, path: &Path) -> Result<()> {
-        let file = File::open(path)?;
-        let mut des = ReaderDeserializer::new(file);
-        let project = Project::deserialize(&mut des)?;
-
-        info!("Loaded project from `{}`", path.display());
-
-        let count = project.models.len();
-        for (i, mesh) in project.models.iter().enumerate() {
-            info!(
-                " {} Loaded model `{}` with {} faces",
-                if i + 1 < count { "│" } else { "└" },
-                mesh.name,
-                mesh.mesh.face_count()
-            );
-        }
-
-        self.project = project;
-        Ok(())
-    }
-
-    pub fn load_project(&mut self, path: &Path) {
-        if let Err(error) = self._load_project(path) {
-            error!("Error loading project: {:?}", error);
-            self.popup.open(Popup::simple(
-                "Error Loading Project",
-                PopupIcon::Error,
-                error.to_string(),
-            ));
-        }
-    }
-}
 
 struct ModelInfo {
     mesh: u32,
@@ -111,6 +29,35 @@ struct ModelInfo {
     position: Vector3<f32>,
     scale: Vector3<f32>,
     rotation: Vector3<f32>,
+}
+
+pub fn save_project(this: &mut App, path: &Path) -> Result<()> {
+    let file = File::create(path)?;
+    let mut ser = WriterSerializer::new(file);
+    this.project.serialize(&mut ser);
+    this.add_recent_project(path.to_path_buf());
+    Ok(())
+}
+
+pub fn load_project(this: &mut App, path: &Path) -> Result<()> {
+    let file = File::open(path)?;
+    let mut des = ReaderDeserializer::new(file);
+    let project = Project::deserialize(&mut des)?;
+
+    info!("Loaded project from `{}`", path.display());
+
+    let count = project.models.len();
+    for (i, mesh) in project.models.iter().enumerate() {
+        info!(
+            " {} Loaded model `{}` with {} faces",
+            if i + 1 < count { "│" } else { "└" },
+            mesh.name,
+            mesh.mesh.face_count()
+        );
+    }
+
+    this.project = project;
+    Ok(())
 }
 
 impl ModelInfo {
@@ -233,11 +180,6 @@ impl Project {
 }
 
 impl PostProcessing {
-    pub fn process(&self, file: &mut FormatSliceFile) {
-        self.elephant_foot_fixer.post_slice(file);
-        self.anti_alias.post_slice(file);
-    }
-
     pub fn serialize<T: Serializer>(&self, ser: &mut T) {
         self.anti_alias.serialize(ser);
         self.elephant_foot_fixer.serialize(ser);

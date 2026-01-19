@@ -8,7 +8,7 @@ use egui_phosphor::regular::{
 use nalgebra::Vector3;
 
 use crate::{
-    app::{App, model::MeshWarnings},
+    app::{App, project::model::MeshWarnings},
     ui::components::{vec3_dragger, vec3_dragger_proportional},
 };
 
