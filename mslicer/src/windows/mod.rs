@@ -6,9 +6,8 @@ use egui_wgpu::Callback;
 use nalgebra::Matrix4;
 use parking_lot::MappedRwLockWriteGuard;
 use serde::{Deserialize, Serialize};
-use slicer::{builder::MeshBuilder, supports::route_support};
 
-use crate::{app::App, render::workspace::WorkspaceRenderCallback};
+use crate::{app::App, render::workspace::WorkspaceRenderCallback, ui::state::WorkspaceHover};
 
 mod about;
 mod logs;
@@ -143,40 +142,11 @@ pub fn ui(app: &mut App, ctx: &Context) {
 fn viewport(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     let (rect, response) = ui.allocate_exact_size(ui.available_size(), Sense::drag());
     app.camera.handle_movement(&response, ui);
+
     let is_moving = response.dragged();
-
-    let hover_pos = response.hover_pos().unwrap_or_default();
     let aspect = rect.width() / rect.height();
-    let uv = (hover_pos - rect.min) / rect.size();
-
-    let (pos, dir) = app.camera.hovered_ray(aspect, (uv.x, uv.y));
-
-    if !is_moving {
-        let mut builder = MeshBuilder::new();
-        for model in app.models.read().iter() {
-            let Some(intersection) = model.bvh.intersect_ray(
-                &model.mesh,
-                model.mesh.inv_transform(&pos),
-                model.mesh.inv_transform_normal(&dir),
-            ) else {
-                continue;
-            };
-
-            let normal = (model.mesh).transform_normal(&model.mesh.normal(intersection.face));
-            let start = intersection.position + normal * 0.1;
-            if let Some(lines) = route_support(&model.mesh, &model.bvh, start) {
-                let (r, p) = (1.0, 100);
-                builder.add_cylinder((intersection.position, start), (0.2, r), p);
-                builder.add_cylinder((lines[0], lines[1]), (r, r), p);
-                builder.add_cylinder((lines[1], lines[2]), (r, r), p);
-
-                builder.add_sphere(intersection.position, 0.2, p);
-                builder.add_sphere(lines[0], r, p);
-                builder.add_sphere(lines[1], r, p);
-            }
-        }
-        app.state.support_preview = (!builder.is_empty()).then(|| builder.build());
-    }
+    let uv = (response.hover_pos().unwrap_or_default() - rect.min) / rect.size();
+    app.state.workspace = WorkspaceHover::new(is_moving, aspect, uv);
 
     let view_projection = app.camera.view_projection_matrix(aspect);
     let callback = app.get_workspace_render_callback(view_projection, is_moving);

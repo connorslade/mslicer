@@ -27,9 +27,9 @@ impl Camera {
     }
 
     // returns ray pos (camera pos) and ray dir
-    pub fn hovered_ray(&self, aspect: f32, (u, v): (f32, f32)) -> (Vector3<f32>, Vector3<f32>) {
+    pub fn hovered_ray(&self, aspect: f32, uv: Vector2<f32>) -> (Vector3<f32>, Vector3<f32>) {
         let camera_pos = self.position() + self.target;
-        let pos = 2.0 * Vector2::new(u, 1.0 - v) - Vector2::repeat(1.0);
+        let pos = 2.0 * Vector2::new(uv.x, 1.0 - uv.y) - Vector2::repeat(1.0);
 
         let forward = (self.target - camera_pos).normalize();
         let right = forward.cross(&Vector3::z()).normalize();

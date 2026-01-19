@@ -12,8 +12,8 @@ use crate::{
 
 pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     ui.label("This feature is still very early in development.");
-    ui.add_space(8.0);
 
+    ui.add_space(8.0);
     ui.heading("Overhang Detection");
 
     let overhang = &mut app.config.overhang_visualization;
@@ -60,6 +60,11 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
             }
         }
     });
+
+    ui.add_space(8.0);
+    ui.heading("Manual Supports");
+
+    ui.checkbox(&mut app.state.support_placement, "Support Placement");
 
     ui.add_space(8.0);
     ui.heading("Automatic Supports");
@@ -127,6 +132,8 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
             |x| x,
         );
     });
+
+    (app.state.support_placement).then(|| manual_support_placement(app));
 }
 
 fn generate_support(
@@ -143,4 +150,39 @@ fn generate_support(
 
     meshes.push(mesh);
     debug
+}
+
+fn manual_support_placement(app: &mut App) {
+    let workspace = &app.state.workspace;
+    if workspace.is_moving {
+        return;
+    }
+
+    let (pos, dir) = app.camera.hovered_ray(workspace.aspect, workspace.uv);
+
+    let mut builder = MeshBuilder::new();
+    for model in app.models.read().iter() {
+        let Some(intersection) = model.bvh.intersect_ray(
+            &model.mesh,
+            model.mesh.inv_transform(&pos),
+            model.mesh.inv_transform_normal(&dir),
+        ) else {
+            continue;
+        };
+
+        let normal = (model.mesh).transform_normal(&model.mesh.normal(intersection.face));
+        let start = intersection.position + normal * 0.1;
+        if let Some(lines) = route_support(&model.mesh, &model.bvh, start) {
+            let (r, p) = (1.0, 100);
+            builder.add_cylinder((intersection.position, start), (0.2, r), p);
+            builder.add_cylinder((lines[0], lines[1]), (r, r), p);
+            builder.add_cylinder((lines[1], lines[2]), (r, r), p);
+
+            builder.add_sphere(intersection.position, 0.2, p);
+            builder.add_sphere(lines[0], r, p);
+            builder.add_sphere(lines[1], r, p);
+        }
+    }
+
+    app.state.support_preview = (!builder.is_empty()).then(|| builder.build());
 }
