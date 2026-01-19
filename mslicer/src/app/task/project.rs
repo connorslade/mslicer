@@ -1,7 +1,7 @@
 use std::{
     fs::File,
     io::{BufReader, BufWriter},
-    path::{Path, PathBuf},
+    path::PathBuf,
     thread::{self, JoinHandle},
 };
 
@@ -10,30 +10,27 @@ use common::{
     progress::Progress,
     serde::{ReaderDeserializer, WriterSerializer},
 };
-use egui::{Context, Id};
+use egui::Context;
 use tracing::info;
 
 use crate::app::{
     App,
     project::Project,
-    task::{Task, progress_window},
+    task::{Task, TaskStatus},
 };
 
 pub struct ProjectLoad {
     progress: Progress,
     handle: Option<JoinHandle<Project>>,
-    name: String,
 }
 
 pub struct ProjectSave {
     progress: Progress,
-    name: String,
 }
 
 impl ProjectLoad {
     pub fn new(path: PathBuf) -> Self {
         let progress = Progress::new();
-        let name = file_name(&path);
 
         info!("Loading project from `{}`", path.display());
         let handle = thread::spawn(clone!([progress], move || {
@@ -45,7 +42,6 @@ impl ProjectLoad {
         Self {
             progress,
             handle: Some(handle),
-            name,
         }
     }
 }
@@ -53,7 +49,6 @@ impl ProjectLoad {
 impl ProjectSave {
     pub fn new(project: Project, path: PathBuf) -> Self {
         let progress = Progress::new();
-        let name = file_name(&path);
 
         info!("Saving project to `{}`", path.display());
         thread::spawn(clone!([progress], move || {
@@ -62,12 +57,12 @@ impl ProjectSave {
             project.serialize(&mut ser, progress);
         }));
 
-        Self { progress, name }
+        Self { progress }
     }
 }
 
 impl Task for ProjectLoad {
-    fn poll(&mut self, app: &mut App, ctx: &Context) -> bool {
+    fn poll(&mut self, app: &mut App, _ctx: &Context) -> bool {
         if self.progress.complete() {
             app.project = self.handle.take().unwrap().join().unwrap();
 
@@ -84,42 +79,26 @@ impl Task for ProjectLoad {
             return true;
         }
 
-        progress_window(
-            ctx,
-            Id::new(&self.name),
-            &self.progress,
-            "Loading Project",
-            |ui| {
-                ui.horizontal(|ui| {
-                    ui.label("Saving");
-                    ui.monospace(&self.name);
-                });
-            },
-        );
-
         false
+    }
+
+    fn status(&self) -> Option<TaskStatus<'_>> {
+        Some(TaskStatus {
+            name: "Loading Project".into(),
+            progress: self.progress.progress(),
+        })
     }
 }
 
 impl Task for ProjectSave {
-    fn poll(&mut self, _app: &mut App, ctx: &Context) -> bool {
-        progress_window(
-            ctx,
-            Id::new(&self.name),
-            &self.progress,
-            "Saving Project",
-            |ui| {
-                ui.horizontal(|ui| {
-                    ui.label("Saving");
-                    ui.monospace(&self.name);
-                });
-            },
-        );
-
+    fn poll(&mut self, _app: &mut App, _ctx: &Context) -> bool {
         self.progress.complete()
     }
-}
 
-fn file_name(path: &Path) -> String {
-    path.file_name().unwrap().to_string_lossy().into_owned()
+    fn status(&self) -> Option<TaskStatus<'_>> {
+        Some(TaskStatus {
+            name: "Saving Project".into(),
+            progress: self.progress.progress(),
+        })
+    }
 }

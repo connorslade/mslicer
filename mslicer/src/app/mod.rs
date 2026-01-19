@@ -206,7 +206,7 @@ impl eframe::App for App {
         // todo: probably dont do this
         let app = unsafe { &mut *(self as *mut _) };
         self.popup.render(app, ctx);
-        self.tasks.render(app, ctx);
+        self.tasks.poll(app, ctx);
 
         // only update the visuals if the theme has changed
         match self.config.theme {
@@ -257,7 +257,9 @@ impl FpsTracker {
 }
 
 fn default_dock_layout(surface: &mut Tree<Tab>) {
-    surface.split_right(NodeIndex::root(), 0.7, vec![Tab::About]);
+    let [_old_node, new_node] = surface.split_right(NodeIndex::root(), 0.7, vec![Tab::About]);
+    surface.split_below(new_node, 0.9, vec![Tab::Tasks]);
+
     let [_old_node, new_node] = surface.split_left(NodeIndex::root(), 0.2, vec![Tab::Models]);
     let [_old_node, new_node] =
         surface.split_below(new_node, 0.5, vec![Tab::SliceConfig, Tab::Supports]);

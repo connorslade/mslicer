@@ -5,7 +5,7 @@ use common::{
     progress::Progress,
     serde::{ReaderDeserializer, SliceDeserializer},
 };
-use egui::{Context, Id};
+use egui::Context;
 use mesh_format::load_mesh;
 
 use slicer::mesh::Mesh;
@@ -15,7 +15,7 @@ use crate::{
     app::{
         App,
         project::model::Model,
-        task::{MeshManifold, Task, progress_window},
+        task::{MeshManifold, Task, TaskStatus},
     },
     ui::popup::{Popup, PopupIcon},
 };
@@ -48,7 +48,7 @@ impl MeshLoad {
 }
 
 impl Task for MeshLoad {
-    fn poll(&mut self, app: &mut App, ctx: &Context) -> bool {
+    fn poll(&mut self, app: &mut App, _ctx: &Context) -> bool {
         if self.progress.complete() {
             let handle = mem::take(&mut self.join).unwrap();
             let mesh = match handle.join().unwrap() {
@@ -79,19 +79,13 @@ impl Task for MeshLoad {
             return true;
         }
 
-        progress_window(
-            ctx,
-            Id::new(&self.name),
-            &self.progress,
-            "Loading Model",
-            |ui| {
-                ui.horizontal(|ui| {
-                    ui.label("Loading");
-                    ui.monospace(&self.name);
-                });
-            },
-        );
-
         false
+    }
+
+    fn status(&self) -> Option<TaskStatus<'_>> {
+        Some(TaskStatus {
+            name: "Loading Model".into(),
+            progress: self.progress.progress(),
+        })
     }
 }

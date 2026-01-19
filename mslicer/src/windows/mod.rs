@@ -16,6 +16,7 @@ mod remote_print;
 mod slice_config;
 mod slice_operation;
 mod supports;
+mod tasks;
 mod top_bar;
 mod workspace;
 
@@ -33,12 +34,13 @@ pub enum Tab {
     SliceConfig,
     SliceOperation,
     Supports,
+    Tasks,
     Viewport,
     Workspace,
 }
 
 impl Tab {
-    const ALL: [Tab; 8] = [
+    const ALL: [Tab; 9] = [
         Tab::About,
         Tab::Logs,
         Tab::Models,
@@ -46,6 +48,7 @@ impl Tab {
         Tab::SliceConfig,
         Tab::SliceOperation,
         Tab::Supports,
+        Tab::Tasks,
         Tab::Workspace,
     ];
 
@@ -58,6 +61,7 @@ impl Tab {
             Tab::SliceConfig => "Slice Config",
             Tab::SliceOperation => "Slice Operation",
             Tab::Supports => "Supports",
+            Tab::Tasks => "Tasks",
             Tab::Viewport => "Viewport",
             Tab::Workspace => "Workspace",
         }
@@ -80,6 +84,7 @@ impl TabViewer for Tabs<'_> {
             Tab::SliceConfig => slice_config::ui(self.app, ui, self.ctx),
             Tab::SliceOperation => slice_operation::ui(self.app, ui, self.ctx),
             Tab::Supports => supports::ui(self.app, ui, self.ctx),
+            Tab::Tasks => tasks::ui(self.app, ui, self.ctx),
             Tab::Viewport => viewport(self.app, ui, self.ctx),
             Tab::Workspace => workspace::ui(self.app, ui, self.ctx),
         }
