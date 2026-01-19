@@ -10,11 +10,11 @@ use wgpu::{
 };
 
 use crate::{
+    app::App,
     include_shader,
     render::{
         Gcx, VERTEX_BUFFER_LAYOUT,
         consts::{BASE_BIND_GROUP_LAYOUT_DESCRIPTOR, DEPTH_STENCIL_STATE},
-        workspace::WorkspaceRenderCallback,
     },
 };
 
@@ -94,27 +94,31 @@ impl ModelPipeline {
 }
 
 impl ModelPipeline {
-    pub fn prepare(&mut self, gcx: &Gcx, resources: &WorkspaceRenderCallback) {
+    pub fn prepare(&mut self, gcx: &Gcx, app: &mut App) {
+        let (show_overhang, overhang_angle) = app.config.overhang_visualization;
+        let overhang_angle = show_overhang.then_some(overhang_angle);
+
         self.bind_groups.clear();
         let mut to_generate = Vec::new();
 
-        for (idx, model) in resources.models.read().iter().enumerate() {
+        for (idx, model) in app.models.iter().enumerate() {
             if model.try_get_buffers().is_none() {
                 to_generate.push(idx);
             }
 
             let model_transform = *model.mesh.transformation_matrix();
-            let overhang_angle = (resources.overhang_angle)
+            let overhang_angle = overhang_angle
                 .map(|x| x.to_radians())
                 .unwrap_or(f32::from_bits(u32::MAX));
+
             let uniforms = ModelUniforms {
-                transform: resources.transform * model_transform,
+                transform: app.view_projection() * model_transform,
                 model_transform,
-                build_volume: resources.bed_size,
+                build_volume: app.slice_config.platform_size,
                 model_color: model.color.to_srgb().into(),
-                camera_position: resources.camera.position(),
-                camera_target: resources.camera.target,
-                render_style: resources.config.render_style as u32,
+                camera_position: app.camera.position(),
+                camera_target: app.camera.target,
+                render_style: app.config.render_style as u32,
                 overhang_angle,
             };
 
@@ -140,26 +144,23 @@ impl ModelPipeline {
         }
 
         if !to_generate.is_empty() {
-            let mut meshes = resources.models.write();
             for idx in to_generate {
-                meshes[idx].get_buffers(gcx.device);
+                app.models[idx].get_buffers(gcx.device);
             }
         }
     }
 
-    pub fn paint(&self, render_pass: &mut RenderPass, resources: &WorkspaceRenderCallback) {
+    pub fn paint(&self, render_pass: &mut RenderPass, app: &mut App) {
         render_pass.set_pipeline(&self.render_pipeline);
 
-        let models = resources.models.read();
-        let indexes = (models.iter())
-            .enumerate()
+        let indexes = (app.models.iter().enumerate())
             .filter(|(_, x)| !x.hidden)
             .map(|(idx, _)| idx);
 
         for idx in indexes {
             render_pass.set_bind_group(0, &self.bind_groups[idx], &[]);
 
-            let model = &models[idx];
+            let model = &app.models[idx];
             let buffers = model.try_get_buffers().unwrap();
             render_pass.set_vertex_buffer(0, buffers.vertex_buffer.slice(..));
             render_pass.set_index_buffer(buffers.index_buffer.slice(..), IndexFormat::Uint32);

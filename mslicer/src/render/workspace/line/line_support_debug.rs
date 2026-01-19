@@ -1,8 +1,8 @@
 use nalgebra::Vector3;
 
-use crate::render::workspace::{
-    WorkspaceRenderCallback,
-    line::{Line, LineGenerator},
+use crate::{
+    app::App,
+    render::workspace::line::{Line, LineGenerator},
 };
 
 pub struct LineSupportDebugDispatch {
@@ -18,10 +18,8 @@ impl LineSupportDebugDispatch {
 }
 
 impl LineGenerator for LineSupportDebugDispatch {
-    fn generate_lines(&mut self, resources: &WorkspaceRenderCallback) {
-        self.cached_lines = resources
-            .line_support_debug
-            .iter()
+    fn generate_lines(&mut self, app: &mut App) {
+        self.cached_lines = (app.state.line_support_debug.iter())
             .map(|[vertex, normal]| {
                 Line::new(*vertex, *vertex + normal).color(Vector3::new(1.0, 0.0, 0.0))
             })

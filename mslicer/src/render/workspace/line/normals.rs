@@ -1,17 +1,9 @@
-use std::sync::Arc;
-
 use nalgebra::{Matrix4, Vector3};
-use parking_lot::RwLock;
 
 use crate::{
-    app::model::Model,
-    render::workspace::{
-        WorkspaceRenderCallback,
-        line::{Line, LineGenerator},
-    },
+    app::{App, model::Model},
+    render::workspace::line::{Line, LineGenerator},
 };
-
-type Models = Arc<RwLock<Vec<Model>>>;
 
 pub struct NormalsDispatch {
     last_models: Vec<u32>,
@@ -34,18 +26,17 @@ impl NormalsDispatch {
 }
 
 impl LineGenerator for NormalsDispatch {
-    fn generate_lines(&mut self, resources: &WorkspaceRenderCallback) {
-        let show_normals = resources.config.show_normals;
+    fn generate_lines(&mut self, app: &mut App) {
+        let show_normals = app.config.show_normals;
         if !show_normals && show_normals == self.last_normals {
             return;
         }
 
-        let models = resources.models.read();
-        let ids = (models.iter())
+        let ids = (app.models.iter())
             .filter(|x| x.hidden)
             .map(|x| x.id)
             .collect::<Vec<_>>();
-        let transforms = (models.iter())
+        let transforms = (app.models.iter())
             .map(|x| *x.mesh.transformation_matrix())
             .collect::<Vec<_>>();
 
@@ -58,7 +49,7 @@ impl LineGenerator for NormalsDispatch {
             self.last_normals = show_normals;
 
             if show_normals {
-                self.cached_lines = generate_normals(resources.models.clone());
+                self.cached_lines = generate_normals(&app.models);
             } else {
                 self.cached_lines = Vec::new();
             }
@@ -70,11 +61,11 @@ impl LineGenerator for NormalsDispatch {
     }
 }
 
-fn generate_normals(models: Models) -> Vec<Line> {
+fn generate_normals(models: &[Model]) -> Vec<Line> {
     let color = Vector3::new(0.5, 0.5, 1.0);
     let mut lines = Vec::new();
 
-    for model in models.read().iter().filter(|x| !x.hidden) {
+    for model in models.iter().filter(|x| !x.hidden) {
         let (face, vertices) = (model.mesh.faces(), model.mesh.vertices());
 
         for (idx, &face) in face.iter().enumerate() {

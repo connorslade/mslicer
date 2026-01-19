@@ -1,9 +1,9 @@
 use egui::Theme;
 use nalgebra::Vector3;
 
-use crate::render::workspace::{
-    WorkspaceRenderCallback,
-    line::{Line, LineGenerator},
+use crate::{
+    app::App,
+    render::workspace::line::{Line, LineGenerator},
 };
 
 pub struct BuildPlateDispatch {
@@ -27,19 +27,19 @@ impl BuildPlateDispatch {
 }
 
 impl LineGenerator for BuildPlateDispatch {
-    fn generate_lines(&mut self, resources: &WorkspaceRenderCallback) {
-        let bed_size = resources.bed_size;
-        let grid_size = resources.grid_size;
-        let theme = resources.config.theme;
+    fn generate_lines(&mut self, app: &mut App) {
+        let platform_size = app.slice_config.platform_size;
+        let grid_size = app.config.grid_size;
+        let theme = app.config.theme;
 
-        if bed_size != self.last_bed_size
+        if platform_size != self.last_bed_size
             || grid_size != self.last_grid_size
             || theme != self.last_theme
         {
-            self.last_bed_size = bed_size;
+            self.last_bed_size = platform_size;
             self.last_grid_size = grid_size;
             self.last_theme = theme;
-            self.cached_lines = generate_mesh(bed_size, grid_size, theme);
+            self.cached_lines = generate_mesh(platform_size, grid_size, theme);
         }
     }
 

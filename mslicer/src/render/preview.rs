@@ -1,7 +1,7 @@
 use std::f32::consts::PI;
 
 use image::{Rgba, RgbaImage};
-use nalgebra::{Matrix4, Vector2, Vector3};
+use nalgebra::{Vector2, Vector3};
 use tracing::{error, info};
 use wgpu::{
     BufferAddress, BufferDescriptor, BufferUsages, Color, CommandEncoderDescriptor, Device,
@@ -16,27 +16,29 @@ use crate::render::{
     Gcx,
     camera::Camera,
     util::init_textures,
-    workspace::{WorkspaceRenderCallback, WorkspaceRenderResources, model::ModelPipeline},
+    workspace::{WorkspaceRenderResources, model::ModelPipeline},
 };
 
-pub fn process_previews(app: &App) {
+pub fn process_previews(app: &mut App) {
     match &app.slice_operation {
         Some(slice_operation) if slice_operation.needs_preview_image() => {
             let image = render_preview_image(app, (512, 512));
-            slice_operation.add_preview_image(image);
+            (app.slice_operation.as_ref().unwrap()).add_preview_image(image);
         }
         _ => {}
     }
 }
 
 // TODO: Allow rendering multiple preview images at once
-fn render_preview_image(app: &App, size: (u32, u32)) -> RgbaImage {
+// todo: this is just so bad with all the unsafe casts sob. please rework this.
+fn render_preview_image(app: &mut App, size: (u32, u32)) -> RgbaImage {
     info!("Generating {}x{} preview image", size.0, size.1);
 
-    let mut resources = app.get_callback_resource_mut::<WorkspaceRenderResources>();
-    let (device, queue) = (&app.render_state.device, &app.render_state.queue);
-
-    let mut workspace = app.get_workspace_render_callback(Matrix4::zeros(), false);
+    let (device, queue) = (
+        unsafe { &*(&app.render_state.device as *const _) },
+        unsafe { &*(&app.render_state.queue as *const _) },
+    );
+    let gcx = Gcx { device, queue };
 
     let format = app.render_state.target_format;
     let (texture, resolved_texture, depth_texture) = init_textures(device, format, size);
@@ -45,7 +47,7 @@ fn render_preview_image(app: &App, size: (u32, u32)) -> RgbaImage {
     let depth_texture_view = depth_texture.create_view(&TextureViewDescriptor::default());
 
     let (mut min, mut max) = (Vector3::repeat(f32::MAX), Vector3::repeat(f32::MIN));
-    for model in workspace.models.read().iter() {
+    for model in app.models.iter() {
         let (model_min, model_max) = model.mesh.bounds();
         min = min.zip_map(&model_min, f32::min);
         max = max.zip_map(&model_max, f32::max);
@@ -54,36 +56,36 @@ fn render_preview_image(app: &App, size: (u32, u32)) -> RgbaImage {
     let target = (min + max) / 2.0;
     let distance = (min - max).magnitude() / 2.0;
 
-    workspace.camera = Camera {
+    let old_camera = app.camera.clone();
+    app.camera = Camera {
         target,
         distance,
         angle: Vector2::new(0.0, PI / 10.0),
-        ..workspace.camera
+        ..app.camera
     };
 
-    let aspect = size.0 as f32 / size.1 as f32;
-    workspace.transform = workspace.camera.view_projection_matrix(aspect);
-
-    resources.model.prepare(&Gcx { device, queue }, &workspace);
+    let app2 = unsafe { &mut *(app as *mut _) };
+    let mut resources = app.get_callback_resource_mut::<WorkspaceRenderResources>();
+    let pipeline: &mut ModelPipeline = unsafe { &mut *(&mut resources.model as *mut _) };
+    pipeline.prepare(&gcx, app2);
 
     render_preview(
-        device,
-        queue,
+        app2,
+        &gcx,
         &resources.model,
-        &workspace,
         &texture_view,
         &resolved_texture_view,
         &depth_texture_view,
     );
 
+    app2.camera = old_camera;
     download_preview(device, format, queue, &resolved_texture)
 }
 
 fn render_preview(
-    device: &Device,
-    queue: &Queue,
+    app: &mut App,
+    Gcx { device, queue }: &Gcx,
     model_pipeline: &ModelPipeline,
-    workspace: &WorkspaceRenderCallback,
     texture_view: &TextureView,
     resolved_texture_view: &TextureView,
     depth_texture_view: &TextureView,
@@ -112,7 +114,7 @@ fn render_preview(
         occlusion_query_set: None,
     });
 
-    model_pipeline.paint(&mut preview_render_pass, workspace);
+    model_pipeline.paint(&mut preview_render_pass, app);
     drop(preview_render_pass);
     queue.submit(std::iter::once(encoder.finish()));
 }

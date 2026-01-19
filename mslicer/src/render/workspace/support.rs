@@ -7,6 +7,7 @@ use wgpu::{
 };
 
 use crate::{
+    app::App,
     include_shader,
     render::{
         Gcx, VERTEX_BUFFER_LAYOUT,
@@ -15,7 +16,6 @@ use crate::{
             bind_group,
         },
         util::{ResizingBuffer, gpu_mesh},
-        workspace::WorkspaceRenderCallback,
     },
 };
 
@@ -99,8 +99,8 @@ impl SupportPipeline {
 }
 
 impl SupportPipeline {
-    pub fn prepare(&mut self, gcx: &Gcx, resources: &WorkspaceRenderCallback) {
-        let Some(mesh) = &resources.support_model else {
+    pub fn prepare(&mut self, gcx: &Gcx, app: &mut App) {
+        let Some(mesh) = &app.state.support_preview else {
             self.index_count = 0;
             return;
         };
@@ -111,8 +111,8 @@ impl SupportPipeline {
         self.index_count = indices.len() as u32;
 
         let uniform = SupportUniforms {
-            transform: resources.transform,
-            camera_direction: resources.camera.position() / resources.camera.distance,
+            transform: app.view_projection(),
+            camera_direction: app.camera.position() / app.camera.distance,
         };
 
         let mut buffer = UniformBuffer::new(Vec::new());

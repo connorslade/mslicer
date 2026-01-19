@@ -8,6 +8,7 @@ use wgpu::{
 };
 
 use crate::{
+    app::App,
     include_shader,
     render::{
         Gcx,
@@ -16,12 +17,9 @@ use crate::{
             bind_group,
         },
         util::ResizingBuffer,
-        workspace::{
-            WorkspaceRenderCallback,
-            line::{
-                build_plate::BuildPlateDispatch, line_support_debug::LineSupportDebugDispatch,
-                normals::NormalsDispatch,
-            },
+        workspace::line::{
+            build_plate::BuildPlateDispatch, line_support_debug::LineSupportDebugDispatch,
+            normals::NormalsDispatch,
         },
     },
 };
@@ -87,7 +85,7 @@ struct LineVertex {
 }
 
 trait LineGenerator {
-    fn generate_lines(&mut self, resources: &WorkspaceRenderCallback);
+    fn generate_lines(&mut self, app: &mut App);
     fn lines(&self) -> &[Line];
 }
 
@@ -102,14 +100,14 @@ impl LineDispatch {
         }
     }
 
-    pub fn prepare(&mut self, gcx: &Gcx, resources: &WorkspaceRenderCallback) {
+    pub fn prepare(&mut self, gcx: &Gcx, app: &mut App) {
         let dispatches: &mut [&mut dyn LineGenerator] = &mut [
             &mut self.build_plate,
             &mut self.normals,
             &mut self.line_support_debug,
         ];
         for dispatch in dispatches.iter_mut() {
-            dispatch.generate_lines(resources);
+            dispatch.generate_lines(app);
         }
 
         let lines = &[
@@ -117,7 +115,7 @@ impl LineDispatch {
             self.normals.lines(),
             self.line_support_debug.lines(),
         ][..];
-        self.render_pipeline.prepare(gcx, resources, lines);
+        self.render_pipeline.prepare(gcx, app, lines);
     }
 
     pub fn paint(&self, render_pass: &mut RenderPass) {
@@ -192,7 +190,7 @@ impl LinePipeline {
 }
 
 impl LinePipeline {
-    pub fn prepare(&mut self, gcx: &Gcx, resources: &WorkspaceRenderCallback, lines: &[&[Line]]) {
+    pub fn prepare(&mut self, gcx: &Gcx, app: &mut App, lines: &[&[Line]]) {
         let vertex = (lines.iter())
             .flat_map(|x| x.iter())
             .flat_map(Line::to_vertex)
@@ -204,7 +202,7 @@ impl LinePipeline {
         self.index_buffer.write_slice(gcx, &index);
 
         let mut buffer = UniformBuffer::new(Vec::new());
-        let transform = resources.transform;
+        let transform = app.view_projection();
         buffer.write(&LineUniforms { transform }).unwrap();
         gcx.queue
             .write_buffer(&self.uniform_buffer, 0, &buffer.into_inner());

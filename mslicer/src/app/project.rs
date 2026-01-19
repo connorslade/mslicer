@@ -54,9 +54,8 @@ impl App {
     }
 
     fn _save_project(&mut self, path: &Path) -> Result<()> {
-        let models = self.models.read();
         let project = Project::new(
-            &models,
+            &self.models,
             self.slice_config.clone(),
             self.post_processing.clone(),
         );
@@ -64,7 +63,6 @@ impl App {
         let mut file = File::create(path)?;
         project.serialize(&mut file)?;
 
-        drop(models);
         self.add_recent_project(path.to_path_buf());
         Ok(())
     }
@@ -88,11 +86,12 @@ impl App {
         project.apply(self);
 
         info!("Loaded project from `{}`", path.display());
-        let meshes = self.models.read();
-        for (i, mesh) in meshes.iter().enumerate() {
+
+        let count = self.models.len();
+        for (i, mesh) in self.models.iter().enumerate() {
             info!(
                 " {} Loaded model `{}` with {} faces",
-                if i + 1 < meshes.len() { "│" } else { "└" },
+                if i + 1 < count { "│" } else { "└" },
                 mesh.name,
                 mesh.mesh.face_count()
             );
@@ -168,8 +167,7 @@ impl Project {
     }
 
     pub fn apply(self, app: &mut App) {
-        let mut meshes = app.models.write();
-        *meshes = (self.models.into_iter())
+        app.models = (self.models.into_iter())
             .map(|x| x.into_model(app, &self.meshes))
             .collect();
 
@@ -204,7 +202,7 @@ impl ModelInfo {
             .with_name(self.name)
             .with_color(self.color)
             .with_hidden(self.hidden);
-        rendered.update_oob(&app.slice_config);
+        rendered.update_oob(&app.slice_config.platform_size);
         rendered
     }
 }

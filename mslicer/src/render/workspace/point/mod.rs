@@ -10,6 +10,7 @@ use wgpu::{
 };
 
 use crate::{
+    app::App,
     include_shader,
     render::{
         Gcx, VERTEX_BUFFER_LAYOUT,
@@ -18,10 +19,7 @@ use crate::{
             bind_group,
         },
         util::{ResizingBuffer, gpu_mesh_buffers},
-        workspace::{
-            WorkspaceRenderCallback,
-            point::{overhangs::OverhangPointDispatch, target::TargetPointDispatch},
-        },
+        workspace::point::{overhangs::OverhangPointDispatch, target::TargetPointDispatch},
     },
 };
 
@@ -91,7 +89,7 @@ struct PointUniforms {
 }
 
 trait PointGenerator {
-    fn generate_points(&mut self, resources: &WorkspaceRenderCallback);
+    fn generate_points(&mut self, app: &mut App);
     fn points(&self) -> &[Point];
 }
 
@@ -105,15 +103,15 @@ impl PointDispatch {
         }
     }
 
-    pub fn prepare(&mut self, gcx: &Gcx, resources: &WorkspaceRenderCallback) {
+    pub fn prepare(&mut self, gcx: &Gcx, app: &mut App) {
         let dispatches: &mut [&mut dyn PointGenerator] =
             &mut [&mut self.target_point, &mut self.overhangs];
         for dispatch in dispatches.iter_mut() {
-            dispatch.generate_points(resources);
+            dispatch.generate_points(app);
         }
 
         let points = &[self.target_point.points(), self.overhangs.points()][..];
-        self.render_pipeline.prepare(gcx, resources, points);
+        self.render_pipeline.prepare(gcx, app, points);
     }
 
     pub fn paint(&self, render_pass: &mut RenderPass) {
@@ -197,7 +195,7 @@ impl PointPipeline {
 }
 
 impl PointPipeline {
-    pub fn prepare(&mut self, gcx: &Gcx, resources: &WorkspaceRenderCallback, points: &[&[Point]]) {
+    pub fn prepare(&mut self, gcx: &Gcx, app: &mut App, points: &[&[Point]]) {
         let points = (points.iter())
             .flat_map(|x| x.iter())
             .map(|x| x.to_instance())
@@ -206,7 +204,7 @@ impl PointPipeline {
         self.instance_buffer.write_slice(gcx, &points);
 
         let mut buffer = UniformBuffer::new(Vec::new());
-        let transform = resources.transform;
+        let transform = app.view_projection();
         buffer.write(&PointUniforms { transform }).unwrap();
         gcx.queue
             .write_buffer(&self.uniform_buffer, 0, &buffer.into_inner());

@@ -22,10 +22,9 @@ enum Action {
 }
 
 pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
-    let mut meshes = app.models.write();
     let mut action = Action::None;
 
-    if meshes.is_empty() {
+    if app.models.is_empty() {
         ui.vertical_centered(|ui| {
             ui.label("No models loaded yet.");
         });
@@ -33,8 +32,9 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     }
 
     let width = ui.available_width();
+    let platform = &app.slice_config.platform_size;
 
-    for (i, model) in meshes.iter_mut().enumerate() {
+    for (i, model) in app.models.iter_mut().enumerate() {
         let id = Id::new(format!("model_show_{}", model.id));
         let open = ui.data_mut(|map| *map.get_temp_mut_or_insert_with(id, || false));
 
@@ -97,7 +97,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                                 .clicked()
                                 .then(|| {
                                     model.align_to_bed();
-                                    model.update_oob(&app.slice_config);
+                                    model.update_oob(platform);
                                 });
                         });
                     });
@@ -111,7 +111,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                         let mut position = model.mesh.position();
                         vec3_dragger(ui, position.as_mut(), |x| x);
                         (model.mesh.position() != position)
-                            .then(|| model.set_position(app, position));
+                            .then(|| model.set_position(platform, position));
                         ui.add_space(width);
                     });
                     ui.end_row();
@@ -129,7 +129,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                                 x.speed(0.01).range(0.001..=f32::MAX)
                             });
                         }
-                        (model.mesh.scale() != scale).then(|| model.set_scale(app, scale));
+                        (model.mesh.scale() != scale).then(|| model.set_scale(platform, scale));
 
                         model.locked_scale ^= ui
                             .button(if model.locked_scale {
@@ -146,7 +146,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                     let original_rotation = rotation;
                     vec3_dragger(ui, rotation.as_mut(), |x| x.suffix("°"));
                     (original_rotation != rotation)
-                        .then(|| model.set_rotation(app, deg_to_rad(rotation)));
+                        .then(|| model.set_rotation(platform, deg_to_rad(rotation)));
                     ui.end_row();
 
                     ui.label("Color");
@@ -166,13 +166,13 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
 
     match action {
         Action::Remove(i) => {
-            let id = meshes.remove(i).id;
+            let id = app.models.remove(i).id;
             let id = Id::new(format!("model_show_{id}",));
             ui.data_mut(|map| map.remove::<bool>(id));
         }
         Action::Duplicate(i) => {
-            let mesh = meshes[i].clone();
-            meshes.push(mesh);
+            let model = app.models[i].clone();
+            app.models.push(model);
         }
         Action::None => {}
     }

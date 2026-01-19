@@ -148,41 +148,22 @@ fn viewport(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     let uv = (response.hover_pos().unwrap_or_default() - rect.min) / rect.size();
     app.state.workspace = WorkspaceHover::new(is_moving, aspect, uv);
 
-    let view_projection = app.camera.view_projection_matrix(aspect);
-    let callback = app.get_workspace_render_callback(view_projection, is_moving);
-    let callback = Callback::new_paint_callback(rect, callback);
-
     let painter = ui.painter();
     let color = match app.config.theme {
         Theme::Dark => Color32::from_rgb(9, 9, 9),
         Theme::Light => Color32::from_rgb(255, 255, 255),
     };
-
     painter.rect_filled(rect, 0.0, color);
+
+    let callback = app.get_workspace_render_callback();
+    let callback = Callback::new_paint_callback(rect, callback);
     painter.add(callback);
 }
 
 impl App {
-    pub fn get_workspace_render_callback(
-        &self,
-        view_projection: Matrix4<f32>,
-        is_moving: bool,
-    ) -> WorkspaceRenderCallback {
-        let (show_overhang, overhang_angle) = self.config.overhang_visualization;
+    pub fn get_workspace_render_callback(&mut self) -> WorkspaceRenderCallback {
         WorkspaceRenderCallback {
-            camera: self.camera.clone(),
-            transform: view_projection,
-
-            bed_size: self.slice_config.platform_size,
-            grid_size: self.config.grid_size,
-
-            is_moving,
-            models: self.models.clone(),
-            config: self.config.clone(),
-
-            line_support_debug: self.state.line_support_debug.clone(),
-            support_model: self.state.support_preview.clone(),
-            overhang_angle: show_overhang.then_some(overhang_angle),
+            app: self as *mut _,
         }
     }
 
@@ -190,5 +171,10 @@ impl App {
         MappedRwLockWriteGuard::map(self.render_state.renderer.write(), |x| {
             x.callback_resources.get_mut::<T>().unwrap()
         })
+    }
+
+    pub fn view_projection(&self) -> Matrix4<f32> {
+        let aspect = self.state.workspace.aspect;
+        self.camera.view_projection_matrix(aspect)
     }
 }

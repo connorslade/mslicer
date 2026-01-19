@@ -1,8 +1,8 @@
 use nalgebra::Vector4;
 
-use crate::render::workspace::{
-    WorkspaceRenderCallback,
-    point::{Point, PointGenerator},
+use crate::{
+    app::App,
+    render::workspace::point::{Point, PointGenerator},
 };
 
 pub struct OverhangPointDispatch {
@@ -18,10 +18,10 @@ impl OverhangPointDispatch {
 }
 
 impl PointGenerator for OverhangPointDispatch {
-    fn generate_points(&mut self, resources: &WorkspaceRenderCallback) {
+    fn generate_points(&mut self, app: &mut App) {
         self.cached_points.clear();
 
-        for model in resources.models.read().iter() {
+        for model in app.models.iter() {
             let Some(overhangs) = &model.overhangs else {
                 continue;
             };

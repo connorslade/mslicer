@@ -68,8 +68,9 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
             }
 
             if *platform != prev {
-                (app.models.write().iter_mut())
-                    .for_each(|model| model.update_oob(&app.slice_config));
+                app.models
+                    .iter_mut()
+                    .for_each(|model| model.update_oob(&app.slice_config.platform_size));
             }
 
             ui.label("Slice Height (mm)");

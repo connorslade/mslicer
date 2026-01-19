@@ -1,4 +1,4 @@
-use std::{mem, path::PathBuf, sync::Arc, thread, time::Instant};
+use std::{mem, path::PathBuf, thread, time::Instant};
 
 use clone_macro::clone;
 use const_format::concatcp;
@@ -8,7 +8,6 @@ use egui_phosphor::regular::CARET_RIGHT;
 use egui_tracing::EventCollector;
 use egui_wgpu::RenderState;
 use nalgebra::{Vector2, Vector3};
-use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
 use tracing::{info, warn};
 
@@ -55,7 +54,7 @@ pub struct App {
     pub post_processing: PostProcessing,
 
     pub camera: Camera,
-    pub models: Arc<RwLock<Vec<Model>>>,
+    pub models: Vec<Model>,
     pub slice_operation: Option<SliceOperation>,
     pub remote_print: RemotePrint,
     pub config_dir: PathBuf,
@@ -117,7 +116,7 @@ impl App {
             slice_config,
             post_processing: PostProcessing::default(),
             fps: FpsTracker::new(),
-            models: Arc::new(RwLock::new(Vec::new())),
+            models: Vec::new(),
             slice_operation: None,
             remote_print: RemotePrint::uninitialized(),
             config_dir,
@@ -125,7 +124,7 @@ impl App {
     }
 
     pub fn slice(&mut self) {
-        let meshes = (self.models.read().iter())
+        let meshes = (self.models.iter())
             .filter(|x| !x.hidden)
             .cloned()
             .collect::<Vec<_>>();

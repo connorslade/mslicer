@@ -1,17 +1,11 @@
-use std::sync::Arc;
-
 use egui::PaintCallbackInfo;
 use egui_wgpu::{CallbackResources, CallbackTrait, ScreenDescriptor};
-use nalgebra::{Matrix4, Vector3};
-use parking_lot::RwLock;
-use slicer::mesh::Mesh;
 use wgpu::{CommandBuffer, CommandEncoder, Device, Queue, RenderPass};
 
 use crate::{
-    app::{config::Config, model::Model},
+    app::App,
     render::{
         Gcx,
-        camera::Camera,
         workspace::{
             line::LineDispatch, model::ModelPipeline, point::PointDispatch,
             support::SupportPipeline,
@@ -32,21 +26,8 @@ pub struct WorkspaceRenderResources {
     pub solid_line: LineDispatch,
 }
 
-#[derive(Clone)]
 pub struct WorkspaceRenderCallback {
-    pub camera: Camera,
-    pub transform: Matrix4<f32>,
-    pub is_moving: bool,
-
-    pub bed_size: Vector3<f32>,
-    pub grid_size: f32,
-
-    pub models: Arc<RwLock<Vec<Model>>>,
-    pub config: Config,
-
-    pub line_support_debug: Vec<[Vector3<f32>; 2]>,
-    pub support_model: Option<Mesh>,
-    pub overhang_angle: Option<f32>,
+    pub app: *mut App,
 }
 
 impl CallbackTrait for WorkspaceRenderCallback {
@@ -60,10 +41,12 @@ impl CallbackTrait for WorkspaceRenderCallback {
     ) -> Vec<CommandBuffer> {
         let workspace = resources.get_mut::<WorkspaceRenderResources>().unwrap();
         let gcx = Gcx { device, queue };
-        workspace.model.prepare(&gcx, self);
-        workspace.support.prepare(&gcx, self);
-        workspace.solid_line.prepare(&gcx, self);
-        workspace.point.prepare(&gcx, self);
+        let app = self.app();
+
+        workspace.model.prepare(&gcx, app);
+        workspace.support.prepare(&gcx, app);
+        workspace.solid_line.prepare(&gcx, app);
+        workspace.point.prepare(&gcx, app);
 
         Vec::new()
     }
@@ -75,9 +58,21 @@ impl CallbackTrait for WorkspaceRenderCallback {
         resources: &CallbackResources,
     ) {
         let workspace = resources.get::<WorkspaceRenderResources>().unwrap();
+        let app = self.app();
+
         workspace.solid_line.paint(render_pass);
-        workspace.model.paint(render_pass, self);
+        workspace.model.paint(render_pass, app);
         workspace.point.paint(render_pass);
         workspace.support.paint(render_pass);
     }
 }
+
+impl WorkspaceRenderCallback {
+    #[allow(clippy::mut_from_ref)]
+    pub fn app(&self) -> &mut App {
+        unsafe { &mut *self.app }
+    }
+}
+
+unsafe impl Send for WorkspaceRenderCallback {}
+unsafe impl Sync for WorkspaceRenderCallback {}

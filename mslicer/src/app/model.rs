@@ -4,10 +4,7 @@ use std::{
 };
 
 use bitflags::bitflags;
-use common::{
-    color::{LinearRgb, START_COLOR},
-    config::SliceConfig,
-};
+use common::color::{LinearRgb, START_COLOR};
 use nalgebra::Vector3;
 use wgpu::{Buffer, Device};
 
@@ -16,7 +13,7 @@ use slicer::{
     supports::overhangs::detect_point_overhangs,
 };
 
-use crate::{app::App, render::util::gpu_mesh_buffers};
+use crate::render::util::gpu_mesh_buffers;
 
 pub struct Model {
     pub name: String,
@@ -129,9 +126,8 @@ impl Model {
         self.mesh.set_position(pos);
     }
 
-    pub fn update_oob(&mut self, config: &SliceConfig) {
+    pub fn update_oob(&mut self, platform: &Vector3<f32>) {
         let (min, max) = self.mesh.bounds();
-        let platform = config.platform_size.map(|x| x);
         let half = platform / 2.0;
 
         let oob = (min.x < -half.x || min.y < -half.y || min.z < 0.0)
@@ -139,20 +135,20 @@ impl Model {
         self.warnings.set(MeshWarnings::OutOfBounds, oob);
     }
 
-    pub fn set_position(&mut self, app: &App, pos: Vector3<f32>) {
+    pub fn set_position(&mut self, platform: &Vector3<f32>, pos: Vector3<f32>) {
         self.mesh.set_position(pos);
-        self.update_oob(&app.slice_config);
+        self.update_oob(platform);
     }
 
-    pub fn set_scale(&mut self, app: &App, scale: Vector3<f32>) {
+    pub fn set_scale(&mut self, platform: &Vector3<f32>, scale: Vector3<f32>) {
         self.mesh.set_scale(scale);
-        self.update_oob(&app.slice_config);
+        self.update_oob(platform);
         self.overhangs = None;
     }
 
-    pub fn set_rotation(&mut self, app: &App, rotation: Vector3<f32>) {
+    pub fn set_rotation(&mut self, platform: &Vector3<f32>, rotation: Vector3<f32>) {
         self.mesh.set_rotation(rotation);
-        self.update_oob(&app.slice_config);
+        self.update_oob(platform);
         self.overhangs = None;
     }
 }

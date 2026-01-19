@@ -2,9 +2,9 @@ use std::slice;
 
 use nalgebra::{Vector3, Vector4};
 
-use crate::render::workspace::{
-    WorkspaceRenderCallback,
-    point::{Point, PointGenerator},
+use crate::{
+    app::App,
+    render::workspace::point::{Point, PointGenerator},
 };
 
 const UNDEFINED: Vector3<f32> = Vector3::new(f32::NAN, f32::NAN, f32::NAN);
@@ -26,8 +26,9 @@ impl TargetPointDispatch {
 }
 
 impl PointGenerator for TargetPointDispatch {
-    fn generate_points(&mut self, resources: &WorkspaceRenderCallback) {
-        self.point.position = [UNDEFINED, resources.camera.target][resources.is_moving as usize];
+    fn generate_points(&mut self, app: &mut App) {
+        let is_moving = app.state.workspace.is_moving;
+        self.point.position = [UNDEFINED, app.camera.target][is_moving as usize];
     }
 
     fn points(&self) -> &[Point] {
