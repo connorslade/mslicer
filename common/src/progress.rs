@@ -45,6 +45,10 @@ impl Progress {
         self.0.complete.store(complete, Ordering::Relaxed);
     }
 
+    pub fn add_complete(&self, delta: u64) {
+        self.0.complete.fetch_add(delta, Ordering::Relaxed);
+    }
+
     pub fn set_finished(&self) {
         let total = self.0.total.load(Ordering::Relaxed);
         self.0.complete.store(total, Ordering::Relaxed);

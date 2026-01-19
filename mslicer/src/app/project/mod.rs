@@ -4,11 +4,11 @@ use std::{
 };
 
 use itertools::Itertools;
-use tracing::error;
 
-use crate::{
-    app::{App, project::model::Model},
-    ui::popup::{Popup, PopupIcon},
+use crate::app::{
+    App,
+    project::model::Model,
+    task::{ProjectLoad, ProjectSave},
 };
 use common::config::SliceConfig;
 use slicer::{
@@ -17,9 +17,9 @@ use slicer::{
 };
 
 pub mod model;
-mod storage;
+pub mod storage;
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct Project {
     pub slice_config: SliceConfig,
     pub post_processing: PostProcessing,
@@ -42,25 +42,14 @@ impl App {
     }
 
     pub fn save_project(&mut self, path: &Path) {
-        if let Err(error) = storage::save_project(self, path) {
-            error!("Error saving project: {:?}", error);
-            self.popup.open(Popup::simple(
-                "Error Saving Project",
-                PopupIcon::Error,
-                error.to_string(),
-            ));
-        }
+        self.add_recent_project(path.to_path_buf());
+        self.tasks
+            .add(ProjectSave::new(self.project.clone(), path.to_path_buf()));
     }
 
     pub fn load_project(&mut self, path: &Path) {
-        if let Err(error) = storage::load_project(self, path) {
-            error!("Error loading project: {:?}", error);
-            self.popup.open(Popup::simple(
-                "Error Loading Project",
-                PopupIcon::Error,
-                error.to_string(),
-            ));
-        }
+        self.add_recent_project(path.to_path_buf());
+        self.tasks.add(ProjectLoad::new(path.to_path_buf()));
     }
 }
 

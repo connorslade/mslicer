@@ -5,7 +5,7 @@ use common::{
     progress::Progress,
     serde::{ReaderDeserializer, SliceDeserializer},
 };
-use egui::{Context, Id, ProgressBar, Window, vec2};
+use egui::{Context, Id};
 use mesh_format::load_mesh;
 
 use slicer::mesh::Mesh;
@@ -15,7 +15,7 @@ use crate::{
     app::{
         App,
         project::model::Model,
-        task::{MeshManifold, Task},
+        task::{MeshManifold, Task, progress_window},
     },
     ui::popup::{Popup, PopupIcon},
 };
@@ -79,25 +79,18 @@ impl Task for MeshLoad {
             return true;
         }
 
-        let size = vec2(400.0, 0.0);
-        Window::new("")
-            .id(Id::new(&self.name))
-            .title_bar(false)
-            .resizable(false)
-            .default_size(size)
-            .default_pos((ctx.content_rect().size() - size).to_pos2() / 2.0)
-            .show(ctx, |ui| {
-                ui.set_height(50.0);
-                ui.vertical_centered(|ui| {
-                    ui.heading("Loading Model");
-                });
-                ui.separator();
+        progress_window(
+            ctx,
+            Id::new(&self.name),
+            &self.progress,
+            "Loading Model",
+            |ui| {
                 ui.horizontal(|ui| {
                     ui.label("Loading");
                     ui.monospace(&self.name);
                 });
-                ui.add(ProgressBar::new(self.progress.progress()).show_percentage())
-            });
+            },
+        );
 
         false
     }

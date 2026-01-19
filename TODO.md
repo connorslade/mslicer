@@ -80,7 +80,7 @@
 - [x] Close file menu if button clicked
 - [x] Allow dragging in project to load them
 - [ ] Remember the file that was opened for future save operations
-- [ ] Save on remote thread
+- [x] Save on remote thread
 - [x] Printer profiles
 - [x] Save config on quit
 - [x] Refactor plugins to post processors

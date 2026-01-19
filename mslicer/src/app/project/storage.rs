@@ -1,16 +1,13 @@
-use std::{collections::HashMap, fs::File, path::Path, sync::Arc};
+use std::{collections::HashMap, sync::Arc};
 
 use anyhow::{Result, ensure};
 use nalgebra::Vector3;
-use tracing::info;
 
-use crate::app::{
-    App,
-    project::{PostProcessing, Project, model::Model},
-};
+use crate::app::project::{PostProcessing, Project, model::Model};
 use common::{
     config::SliceConfig,
-    serde::{Deserializer, ReaderDeserializer, SerdeExt, Serializer, WriterSerializer},
+    progress::Progress,
+    serde::{Deserializer, SerdeExt, Serializer},
 };
 use slicer::{
     mesh::{Mesh, MeshInner},
@@ -29,35 +26,6 @@ struct ModelInfo {
     position: Vector3<f32>,
     scale: Vector3<f32>,
     rotation: Vector3<f32>,
-}
-
-pub fn save_project(this: &mut App, path: &Path) -> Result<()> {
-    let file = File::create(path)?;
-    let mut ser = WriterSerializer::new(file);
-    this.project.serialize(&mut ser);
-    this.add_recent_project(path.to_path_buf());
-    Ok(())
-}
-
-pub fn load_project(this: &mut App, path: &Path) -> Result<()> {
-    let file = File::open(path)?;
-    let mut des = ReaderDeserializer::new(file);
-    let project = Project::deserialize(&mut des)?;
-
-    info!("Loaded project from `{}`", path.display());
-
-    let count = project.models.len();
-    for (i, mesh) in project.models.iter().enumerate() {
-        info!(
-            " {} Loaded model `{}` with {} faces",
-            if i + 1 < count { "│" } else { "└" },
-            mesh.name,
-            mesh.mesh.face_count()
-        );
-    }
-
-    this.project = project;
-    Ok(())
 }
 
 impl ModelInfo {
@@ -120,11 +88,12 @@ impl ModelInfo {
 }
 
 impl Project {
-    pub fn serialize<T: Serializer>(&self, ser: &mut T) {
+    pub fn serialize<T: Serializer>(&self, ser: &mut T, progress: Progress) {
         ser.write_u16_be(VERSION);
         self.slice_config.serialize(ser);
         self.post_processing.serialize(ser);
 
+        let mut total = 0;
         let mut map = HashMap::new();
         let mut meshes = Vec::new();
 
@@ -136,6 +105,7 @@ impl Project {
                 None => {
                     let mesh = map.len() as u32;
                     meshes.push(model.mesh.inner().clone());
+                    total += model.mesh.vertex_count() + model.mesh.face_count();
                     map.insert(id, mesh);
                     mesh
                 }
@@ -145,11 +115,13 @@ impl Project {
             info.serialize(ser);
         }
 
+        progress.set_total(total as u64);
         ser.write_u32_be(meshes.len() as u32);
-        (meshes.iter()).for_each(|mesh| serialize_mesh_inner(ser, mesh));
+        (meshes.iter()).for_each(|mesh| serialize_mesh_inner(ser, mesh, &progress));
+        progress.set_finished();
     }
 
-    pub fn deserialize<T: Deserializer>(des: &mut T) -> Result<Self> {
+    pub fn deserialize<T: Deserializer>(des: &mut T, progress: Progress) -> Result<Self> {
         ensure!(des.read_u16_be() == VERSION, "Save version mismatch.");
         let slice_config = SliceConfig::deserialize(des)?;
         let post_processing = PostProcessing::deserialize(des);
@@ -160,8 +132,9 @@ impl Project {
             .collect::<Vec<_>>();
 
         let meshes = des.read_u32_be();
+        progress.set_total((des.size() - des.pos()) as u64);
         let meshes = (0..meshes)
-            .map(|_| Arc::new(deserialize_mesh_inner(des)))
+            .map(|_| Arc::new(deserialize_mesh_inner(des, &progress)))
             .collect::<Vec<_>>();
 
         let models = (models.into_iter())
@@ -171,6 +144,7 @@ impl Project {
             })
             .collect();
 
+        progress.set_finished();
         Ok(Self {
             slice_config,
             post_processing,
@@ -193,10 +167,11 @@ impl PostProcessing {
     }
 }
 
-fn serialize_mesh_inner<T: Serializer>(ser: &mut T, mesh: &Arc<MeshInner>) {
+fn serialize_mesh_inner<T: Serializer>(ser: &mut T, mesh: &Arc<MeshInner>, progress: &Progress) {
     ser.write_u32_be(mesh.vertices.len() as u32);
     for vert in mesh.vertices.iter() {
         vert.serialize(ser);
+        progress.add_complete(1);
     }
 
     ser.write_u32_be(mesh.faces.len() as u32);
@@ -204,18 +179,21 @@ fn serialize_mesh_inner<T: Serializer>(ser: &mut T, mesh: &Arc<MeshInner>) {
         ser.write_u32_be(face[0]);
         ser.write_u32_be(face[1]);
         ser.write_u32_be(face[2]);
+        progress.add_complete(3);
     }
 }
 
-fn deserialize_mesh_inner<T: Deserializer>(des: &mut T) -> MeshInner {
+fn deserialize_mesh_inner<T: Deserializer>(des: &mut T, progress: &Progress) -> MeshInner {
     let verts = des.read_u32_be();
     let verts = (0..verts)
         .map(|_| Vector3::<f32>::deserialize(des))
+        .inspect(|_| progress.add_complete(4 * 3))
         .collect::<Vec<_>>();
 
     let faces = des.read_u32_be();
     let faces = (0..faces)
         .map(|_| [des.read_u32_be(), des.read_u32_be(), des.read_u32_be()])
+        .inspect(|_| progress.add_complete(4 * 3))
         .collect::<Vec<_>>();
 
     MeshInner {
