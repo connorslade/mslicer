@@ -10,7 +10,7 @@ use crate::app::{
     project::model::Model,
     task::{ProjectLoad, ProjectSave},
 };
-use common::config::SliceConfig;
+use common::{config::SliceConfig, progress::CombinedProgress};
 use slicer::{
     format::FormatSliceFile,
     post_process::{anti_alias::AntiAlias, elephant_foot_fixer::ElephantFootFixer},
@@ -54,8 +54,9 @@ impl App {
 }
 
 impl PostProcessing {
-    pub fn process(&self, file: &mut FormatSliceFile) {
-        self.elephant_foot_fixer.post_slice(file);
-        self.anti_alias.post_slice(file);
+    pub fn process(&self, file: &mut FormatSliceFile, progress: CombinedProgress<2>) {
+        self.elephant_foot_fixer
+            .post_slice(file, progress[0].clone());
+        self.anti_alias.post_slice(file, progress[1].clone());
     }
 }

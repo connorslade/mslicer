@@ -1,4 +1,7 @@
-use common::serde::{Deserializer, Serializer};
+use common::{
+    progress::Progress,
+    serde::{Deserializer, Serializer},
+};
 use libblur::{
     AnisotropicRadius, BlurImageMut, EdgeMode, EdgeMode2D, FastBlurChannels, ThreadingPolicy,
 };
@@ -14,23 +17,27 @@ pub struct AntiAlias {
 }
 
 impl AntiAlias {
-    pub fn post_slice(&self, file: &mut FormatSliceFile) {
+    pub fn post_slice(&self, file: &mut FormatSliceFile, progress: Progress) {
         if !self.enabled {
             return;
         }
 
+        progress.set_total(file.info().layers as u64);
         file.iter_mut_layers().par_bridge().for_each(|mut layer| {
+            progress.add_complete(1);
             let (width, height) = (layer.width(), layer.height());
             let mut image =
                 BlurImageMut::borrow(&mut layer, width, height, FastBlurChannels::Plane);
             libblur::fast_gaussian_next(
                 &mut image,
                 AnisotropicRadius::new(self.radius as u32),
-                ThreadingPolicy::Adaptive,
+                ThreadingPolicy::Single,
                 EdgeMode2D::new(EdgeMode::Clamp),
             )
             .unwrap();
         });
+
+        progress.set_finished();
     }
 }
 

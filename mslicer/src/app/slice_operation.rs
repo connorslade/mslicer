@@ -6,22 +6,20 @@ use std::{
     time::{Duration, Instant},
 };
 
-use common::misc::human_duration;
+use common::{misc::human_duration, progress::CombinedProgress};
 use image::RgbaImage;
 use nalgebra::Vector2;
 use parking_lot::{Condvar, MappedMutexGuard, Mutex, MutexGuard};
 use slicer::{format::FormatSliceFile, slicer::Progress as SliceProgress};
 use tracing::info;
 
-use crate::app::App;
-
 #[derive(Clone)]
 pub struct SliceOperation {
     start_time: Instant,
     completion: Arc<AtomicU32>,
-    has_post_processed: bool,
 
     pub progress: SliceProgress,
+    pub post_processing_progress: CombinedProgress<2>,
     pub result: Arc<Mutex<Option<SliceResult>>>,
 
     pub preview_image: Arc<Mutex<Option<RgbaImage>>>,
@@ -39,14 +37,15 @@ pub struct SliceResult {
 }
 
 impl SliceOperation {
-    pub fn new(progress: SliceProgress) -> Self {
+    pub fn new(slice: SliceProgress, post_process: CombinedProgress<2>) -> Self {
         Self {
             start_time: Instant::now(),
             completion: Arc::new(AtomicU32::new(0)),
-            has_post_processed: false,
 
-            progress,
+            progress: slice,
+            post_processing_progress: post_process,
             result: Arc::new(Mutex::new(None)),
+
             preview_image: Arc::new(Mutex::new(None)),
             preview_condvar: Arc::new(Condvar::new()),
         }
@@ -82,21 +81,6 @@ impl SliceOperation {
 
         info!("Slice operation completed in {:?}", elapsed);
         self.result.lock().replace(result);
-    }
-
-    pub fn post_process_if_needed(&mut self, app: &mut App) {
-        if self.has_post_processed {
-            return;
-        }
-
-        let mut result = self.result.lock();
-        if result.is_none() {
-            return;
-        }
-
-        let file = &mut result.as_mut().unwrap().file;
-        app.project.post_processing.process(file);
-        self.has_post_processed = true;
     }
 
     pub fn result(&self) -> MutexGuard<'_, Option<SliceResult>> {

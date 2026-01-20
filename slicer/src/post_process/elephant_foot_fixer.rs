@@ -1,6 +1,9 @@
 use std::{mem, time::Instant};
 
-use common::serde::{Deserializer, Serializer};
+use common::{
+    progress::Progress,
+    serde::{Deserializer, Serializer},
+};
 use image::Luma;
 use imageproc::{morphology::Mask, point::Point};
 use itertools::Itertools;
@@ -18,7 +21,7 @@ pub struct ElephantFootFixer {
 }
 
 impl ElephantFootFixer {
-    pub fn post_slice(&self, file: &mut FormatSliceFile) {
+    pub fn post_slice(&self, file: &mut FormatSliceFile, progress: Progress) {
         if !self.enabled {
             return;
         }
@@ -41,10 +44,12 @@ impl ElephantFootFixer {
         let darken = |value: u8| (value as f32 * intensity).round() as u8;
 
         let start = Instant::now();
+        progress.set_total(info.bottom_layers as u64);
         file.iter_mut_layers()
             .take(info.bottom_layers as usize)
             .par_bridge()
             .for_each(|mut layer| {
+                progress.add_complete(1);
                 let erode = imageproc::morphology::grayscale_erode(&layer, &mask);
                 for (x, y, pixel) in layer.enumerate_pixels_mut() {
                     if erode.get_pixel(x, y)[0] == 0 && pixel[0] != 0 {
@@ -53,6 +58,7 @@ impl ElephantFootFixer {
                 }
             });
 
+        progress.set_finished();
         info!("Eroded bottom layers in {:?}", start.elapsed());
     }
 }

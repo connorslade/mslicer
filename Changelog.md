@@ -20,6 +20,7 @@
 - Don't duplicate mesh data in project save file
 - Custom project and mesh (de)serialization with progress monitoring
 - Added task panel to view the progress of running async tasks
+- Run post processing operations asynchronously
 
 ## v0.4.0 &mdash; November 25th, 2025
 

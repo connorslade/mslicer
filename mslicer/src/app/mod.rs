@@ -26,7 +26,7 @@ use crate::{
     },
     windows::{self, Tab},
 };
-use common::config::SliceConfig;
+use common::{config::SliceConfig, progress::CombinedProgress};
 use slicer::{format::FormatSliceFile, slicer::Slicer};
 
 pub mod config;
@@ -159,8 +159,9 @@ impl App {
         }
 
         let slicer = Slicer::new(slice_config, out);
-        self.slice_operation
-            .replace(SliceOperation::new(slicer.progress()));
+        let post_process = CombinedProgress::new();
+        let slice_operation = SliceOperation::new(slicer.progress(), post_process.clone());
+        self.slice_operation.replace(slice_operation);
 
         if let Some(panel) = self.dock_state.find_tab(&Tab::SliceOperation) {
             self.dock_state.set_active_tab(panel);
@@ -171,12 +172,16 @@ impl App {
         }
 
         thread::spawn(clone!(
-            [{ self.slice_operation } as slice_operation],
+            [
+                { self.slice_operation } as slice_operation,
+                { self.project.post_processing } as post_processing
+            ],
             move || {
                 let slice_operation = slice_operation.as_ref().unwrap();
                 let slice_result = slicer.slice_format();
                 let preview_image = slice_operation.preview_image();
-                let file = FormatSliceFile::from_slice_result(preview_image, slice_result);
+                let mut file = FormatSliceFile::from_slice_result(preview_image, slice_result);
+                post_processing.process(&mut file, post_process);
 
                 let layers = file.info().layers as usize;
                 slice_operation.add_result(SliceResult {
@@ -212,10 +217,6 @@ impl eframe::App for App {
         match self.config.theme {
             Theme::Dark => ctx.set_visuals(Visuals::dark()),
             Theme::Light => ctx.set_visuals(Visuals::light()),
-        }
-
-        if let Some(operation) = &mut self.slice_operation {
-            operation.post_process_if_needed(app);
         }
 
         self.remote_print.tick(app);

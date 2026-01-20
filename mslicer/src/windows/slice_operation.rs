@@ -21,11 +21,9 @@ use common::{format::Format, serde::DynamicSerializer};
 const FILENAME_POPUP_TEXT: &str =
     "To ensure the file name is unique, some extra random characters will be added on the end.";
 
-pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
+pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     if let Some(slice_operation) = &app.slice_operation {
         let progress = &slice_operation.progress;
-
-        let (current, total) = (progress.completed(), progress.total());
 
         if let Some(completion) = slice_operation.completion() {
             ui.horizontal(|ui| {
@@ -136,13 +134,27 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
                 });
             }
         } else {
-            ui.add(
-                ProgressBar::new(current as f32 / total as f32)
-                    .text(format!("{:.2}%", current as f32 / total as f32 * 100.0)),
-            );
+            let (current, total) = (progress.completed(), progress.total());
+            Grid::new("slice_operation")
+                .num_columns(2)
+                .striped(true)
+                .show(ui, |ui| {
+                    let progress = current as f32 / total as f32;
+                    ui.label("Slicing");
+                    ui.add(ProgressBar::new(progress).show_percentage());
+                    ui.end_row();
 
-            ui.label(format!("Slicing... {current}/{total}"));
-            ctx.request_repaint();
+                    let post_process = &slice_operation.post_processing_progress;
+                    for i in 0..post_process.count() {
+                        let progress = post_process[i].progress();
+                        let name = ["Elephant Foot Fixer", "Anti Aliasing"][i];
+                        if progress > 0.0 {
+                            ui.label(name);
+                            ui.add(ProgressBar::new(progress).show_percentage());
+                            ui.end_row();
+                        }
+                    }
+                });
         }
     } else {
         ui.horizontal_wrapped(|ui| {

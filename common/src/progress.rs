@@ -1,6 +1,10 @@
-use std::sync::{
-    Arc,
-    atomic::{AtomicU64, Ordering},
+use std::{
+    array,
+    ops::Index,
+    sync::{
+        Arc,
+        atomic::{AtomicU64, Ordering},
+    },
 };
 
 #[derive(Clone)]
@@ -9,6 +13,11 @@ pub struct Progress(Arc<ProgressInner>);
 struct ProgressInner {
     complete: AtomicU64,
     total: AtomicU64,
+}
+
+#[derive(Clone)]
+pub struct CombinedProgress<const N: usize> {
+    inner: [Progress; N],
 }
 
 impl Progress {
@@ -55,7 +64,41 @@ impl Progress {
     }
 }
 
+impl<const N: usize> CombinedProgress<N> {
+    pub fn new() -> Self {
+        Self {
+            inner: array::from_fn(|_| Progress::new()),
+        }
+    }
+
+    pub fn count(&self) -> usize {
+        N
+    }
+
+    pub fn progress(&self) -> f32 {
+        self.inner.iter().map(|x| x.progress()).sum::<f32>() / N as f32
+    }
+
+    pub fn complete(&self) -> bool {
+        self.inner.iter().all(|x| x.complete())
+    }
+}
+
+impl<const N: usize> Index<usize> for CombinedProgress<N> {
+    type Output = Progress;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.inner[index]
+    }
+}
+
 impl Default for Progress {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl<const N: usize> Default for CombinedProgress<N> {
     fn default() -> Self {
         Self::new()
     }
