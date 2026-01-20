@@ -27,6 +27,7 @@ pub trait Task {
 
 pub struct TaskStatus<'a> {
     pub name: Cow<'a, str>,
+    pub details: Option<String>,
     pub progress: f32,
 }
 
@@ -42,6 +43,10 @@ impl TaskManager {
 
     pub fn iter(&self) -> impl Iterator<Item = &Box<dyn Task>> {
         self.tasks.iter()
+    }
+
+    pub fn any_with_status(&self) -> bool {
+        self.iter().any(|x| x.status().is_some())
     }
 
     pub(super) fn poll(&mut self, app: &mut App, ctx: &Context) {

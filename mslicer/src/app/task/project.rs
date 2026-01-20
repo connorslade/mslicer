@@ -1,7 +1,7 @@
 use std::{
     fs::File,
     io::{BufReader, BufWriter},
-    path::PathBuf,
+    path::{Path, PathBuf},
     thread::{self, JoinHandle},
 };
 
@@ -21,16 +21,19 @@ use crate::app::{
 
 pub struct ProjectLoad {
     progress: Progress,
+    name: String,
     handle: Option<JoinHandle<Project>>,
 }
 
 pub struct ProjectSave {
     progress: Progress,
+    name: String,
 }
 
 impl ProjectLoad {
     pub fn new(path: PathBuf) -> Self {
         let progress = Progress::new();
+        let name = file_name(&path);
 
         info!("Loading project from `{}`", path.display());
         let handle = thread::spawn(clone!([progress], move || {
@@ -41,6 +44,7 @@ impl ProjectLoad {
 
         Self {
             progress,
+            name,
             handle: Some(handle),
         }
     }
@@ -49,6 +53,7 @@ impl ProjectLoad {
 impl ProjectSave {
     pub fn new(project: Project, path: PathBuf) -> Self {
         let progress = Progress::new();
+        let name = file_name(&path);
 
         info!("Saving project to `{}`", path.display());
         thread::spawn(clone!([progress], move || {
@@ -57,7 +62,7 @@ impl ProjectSave {
             project.serialize(&mut ser, progress);
         }));
 
-        Self { progress }
+        Self { progress, name }
     }
 }
 
@@ -85,6 +90,7 @@ impl Task for ProjectLoad {
     fn status(&self) -> Option<TaskStatus<'_>> {
         Some(TaskStatus {
             name: "Loading Project".into(),
+            details: Some(format!("Loading `{}`", self.name)),
             progress: self.progress.progress(),
         })
     }
@@ -98,7 +104,12 @@ impl Task for ProjectSave {
     fn status(&self) -> Option<TaskStatus<'_>> {
         Some(TaskStatus {
             name: "Saving Project".into(),
+            details: Some(format!("Saving `{}`", self.name)),
             progress: self.progress.progress(),
         })
     }
+}
+
+fn file_name(path: &Path) -> String {
+    path.file_name().unwrap().to_string_lossy().into_owned()
 }

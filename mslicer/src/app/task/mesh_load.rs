@@ -85,6 +85,7 @@ impl Task for MeshLoad {
     fn status(&self) -> Option<TaskStatus<'_>> {
         Some(TaskStatus {
             name: "Loading Model".into(),
+            details: Some(format!("Loading `{}`", self.name)),
             progress: self.progress.progress(),
         })
     }
