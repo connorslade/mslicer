@@ -1,6 +1,9 @@
 use std::{
     f32::consts::TAU,
-    sync::atomic::{AtomicU32, Ordering},
+    sync::{
+        Arc,
+        atomic::{AtomicU32, Ordering},
+    },
 };
 
 use bitflags::bitflags;
@@ -20,8 +23,8 @@ pub struct Model {
     pub id: u32,
 
     pub mesh: Mesh,
-    pub bvh: Bvh,
-    pub half_edge: HalfEdgeMesh,
+    pub bvh: Option<Arc<Bvh>>,
+    pub half_edge: Option<Arc<HalfEdgeMesh>>,
 
     pub warnings: MeshWarnings,
     pub overhangs: Option<Vec<u32>>,
@@ -52,8 +55,8 @@ impl Model {
             name: String::new(),
             id: next_id(),
 
-            bvh: Bvh::from_mesh(&mesh),
-            half_edge: HalfEdgeMesh::from_mesh(&mesh),
+            bvh: None,
+            half_edge: None,
             mesh,
 
             warnings: MeshWarnings::empty(),
@@ -96,7 +99,7 @@ impl Model {
     pub fn find_overhangs(&mut self) {
         self.overhangs = Some(detect_point_overhangs(
             &self.mesh,
-            &self.half_edge,
+            self.half_edge.as_ref().unwrap(),
             |origin, _, _| origin.origin_vertex,
         ));
     }

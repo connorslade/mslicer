@@ -5,7 +5,6 @@ use common::{
     progress::Progress,
     serde::{ReaderDeserializer, SliceDeserializer},
 };
-use egui::Context;
 use mesh_format::load_mesh;
 
 use slicer::mesh::Mesh;
@@ -15,7 +14,10 @@ use crate::{
     app::{
         App,
         project::model::Model,
-        task::{MeshManifold, Task, TaskStatus},
+        task::{
+            MeshManifold, PollResult, Task, TaskStatus,
+            acceleration_structures::BuildAccelerationStructures,
+        },
     },
     ui::popup::{Popup, PopupIcon},
 };
@@ -48,7 +50,7 @@ impl MeshLoad {
 }
 
 impl Task for MeshLoad {
-    fn poll(&mut self, app: &mut App, _ctx: &Context) -> bool {
+    fn poll(&mut self, app: &mut App) -> PollResult {
         if self.progress.complete() {
             let handle = mem::take(&mut self.join).unwrap();
             let mesh = match handle.join().unwrap() {
@@ -59,7 +61,7 @@ impl Task for MeshLoad {
                         PopupIcon::Error,
                         e.to_string(),
                     ));
-                    return true;
+                    return PollResult::complete();
                 }
             };
 
@@ -70,16 +72,18 @@ impl Task for MeshLoad {
                 mesh.face_count()
             );
 
-            let mut rendered_mesh = Model::from_mesh(mesh)
+            let mut model = Model::from_mesh(mesh)
                 .with_name(mem::take(&mut self.name))
                 .with_random_color();
-            rendered_mesh.update_oob(&app.project.slice_config.platform_size);
-            app.tasks.add(MeshManifold::new(&rendered_mesh));
-            app.project.models.push(rendered_mesh);
-            return true;
+            model.update_oob(&app.project.slice_config.platform_size);
+            let result = PollResult::complete()
+                .with_task(MeshManifold::new(&model))
+                .with_task(BuildAccelerationStructures::new(&model));
+            app.project.models.push(model);
+            return result;
         }
 
-        false
+        PollResult::pending()
     }
 
     fn status(&self) -> Option<TaskStatus<'_>> {

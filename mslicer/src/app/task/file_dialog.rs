@@ -1,10 +1,12 @@
 use std::path::Path;
 
-use egui::Context;
 use poll_promise::Promise;
 use rfd::{AsyncFileDialog, FileHandle};
 
-use crate::app::{App, task::Task};
+use crate::app::{
+    App,
+    task::{PollResult, Task},
+};
 
 type Callback = Box<dyn FnOnce(&mut App, &Path)>;
 
@@ -47,7 +49,7 @@ impl FileDialog {
 }
 
 impl Task for FileDialog {
-    fn poll(&mut self, app: &mut App, _ctx: &Context) -> bool {
+    fn poll(&mut self, app: &mut App) -> PollResult {
         let result = self.promise.ready();
         if let Some(data) = result
             && let Some(handle) = data
@@ -56,6 +58,6 @@ impl Task for FileDialog {
             self.func.take().unwrap()(app, path);
         }
 
-        result.is_some()
+        PollResult::from_bool(result.is_some())
     }
 }

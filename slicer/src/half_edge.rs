@@ -1,6 +1,9 @@
-use std::collections::{HashMap, HashSet};
+use std::{
+    collections::{HashMap, HashSet},
+    sync::Arc,
+};
 
-use crate::mesh::Mesh;
+use crate::mesh::MeshInner;
 
 #[derive(Clone)]
 pub struct HalfEdgeMesh {
@@ -19,11 +22,11 @@ pub struct HalfEdge {
 }
 
 impl HalfEdgeMesh {
-    pub fn from_mesh(mesh: &Mesh) -> Self {
+    pub fn build(mesh: &Arc<MeshInner>) -> Self {
         let mut half_edges = Vec::new();
         let mut edge_map = HashMap::new();
 
-        for (face_idx, face) in mesh.faces().iter().enumerate() {
+        for (face_idx, face) in mesh.faces.iter().enumerate() {
             let first_edge = half_edges.len() as u32;
             for i in 0..3 {
                 let next = first_edge + (i as u32 + 1) % 3;

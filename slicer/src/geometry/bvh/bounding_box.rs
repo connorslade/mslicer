@@ -1,8 +1,10 @@
+use std::sync::Arc;
+
 use nalgebra::Vector3;
 
 use crate::{
     geometry::{Primitive, bvh::Ray},
-    mesh::Mesh,
+    mesh::MeshInner,
 };
 
 pub struct BoundingBox {
@@ -49,13 +51,11 @@ impl BoundingBox {
         );
     }
 
-    pub fn expand_face(&mut self, mesh: &Mesh, face_idx: usize) {
-        let verts = mesh.vertices();
-        let face = mesh.face(face_idx);
-
-        self.expand(verts[face[0] as usize]);
-        self.expand(verts[face[1] as usize]);
-        self.expand(verts[face[2] as usize]);
+    pub fn expand_face(&mut self, mesh: &Arc<MeshInner>, face_idx: usize) {
+        let face = mesh.faces[face_idx];
+        self.expand(mesh.vertices[face[0] as usize]);
+        self.expand(mesh.vertices[face[1] as usize]);
+        self.expand(mesh.vertices[face[2] as usize]);
     }
 
     // Returns first intersection point. (Closer to ray origin)

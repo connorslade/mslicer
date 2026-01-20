@@ -4,12 +4,11 @@ use std::{
 };
 
 use clone_macro::clone;
-use egui::Context;
 
 use crate::app::{
     App,
     project::model::{MeshWarnings, Model},
-    task::Task,
+    task::{PollResult, Task},
 };
 
 pub struct MeshManifold {
@@ -29,16 +28,16 @@ impl MeshManifold {
 }
 
 impl Task for MeshManifold {
-    fn poll(&mut self, app: &mut App, _ctx: &Context) -> bool {
+    fn poll(&mut self, app: &mut App) -> PollResult {
         if self.join.as_ref().unwrap().is_finished() {
             let result = mem::take(&mut self.join).unwrap().join().unwrap();
             if let Some(model) = app.project.models.iter_mut().find(|x| x.id == self.mesh) {
                 model.warnings.set(MeshWarnings::NonManifold, !result);
             }
 
-            true
+            PollResult::complete()
         } else {
-            false
+            PollResult::pending()
         }
     }
 }

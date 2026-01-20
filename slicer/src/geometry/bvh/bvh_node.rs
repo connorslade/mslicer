@@ -1,18 +1,19 @@
+use std::sync::Arc;
+
+use common::progress::Progress;
 use nalgebra::Vector3;
 use ordered_float::OrderedFloat;
 
 use crate::{
     geometry::{
         Hit, Primitive,
-        bvh::Ray,
+        bvh::{LEAF_SIZE, Ray},
         triangle::{closest_point, triangle_intersection},
     },
-    mesh::Mesh,
+    mesh::{Mesh, MeshInner},
 };
 
 use super::bounding_box::BoundingBox;
-
-const LEAF_SIZE: usize = 8;
 
 pub enum BvhNode {
     Leaf {
@@ -108,7 +109,8 @@ impl BvhNode {
 // One leaf node for each triangle and n - 1 non-leaf nodes.
 pub fn build_bvh_node(
     arena: &mut Vec<BvhNode>,
-    mesh: &Mesh,
+    mesh: &Arc<MeshInner>,
+    progress: &Progress,
     mut face_indices: Vec<usize>,
 ) -> BvhNode {
     let mut bounds = BoundingBox::new();
@@ -117,6 +119,7 @@ pub fn build_bvh_node(
     }
 
     if face_indices.len() <= LEAF_SIZE {
+        progress.add_complete(face_indices.len() as u64);
         return BvhNode::Leaf {
             faces: face_indices.into_boxed_slice(),
             bounds,
@@ -137,10 +140,10 @@ pub fn build_bvh_node(
         arena.len() - 1
     };
 
-    let left = build_bvh_node(arena, mesh, left_indices.to_vec());
+    let left = build_bvh_node(arena, mesh, progress, left_indices.to_vec());
     let left = push_idx(arena, left);
 
-    let right = build_bvh_node(arena, mesh, right_indices.to_vec());
+    let right = build_bvh_node(arena, mesh, progress, right_indices.to_vec());
     let right = push_idx(arena, right);
 
     BvhNode::Node {

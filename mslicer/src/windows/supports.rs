@@ -6,7 +6,11 @@ use slicer::{
 };
 
 use crate::{
-    app::{App, project::model::Model, task::MeshManifold},
+    app::{
+        App,
+        project::model::Model,
+        task::{BuildAccelerationStructures, MeshManifold},
+    },
     ui::components::dragger,
 };
 
@@ -27,6 +31,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
             let model = &mut app.project.models[idx];
             if ui.button(&model.name).clicked() {
                 model.find_overhangs();
+                let bvh = model.bvh.as_ref().unwrap();
 
                 let verts = model.mesh.vertices();
                 let mut builder = MeshBuilder::new();
@@ -35,7 +40,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                     let point = model.mesh.transform(&verts[*overhang as usize]);
 
                     let start = point - Vector3::z();
-                    if let Some(lines) = route_support(&model.mesh, &model.bvh, start) {
+                    if let Some(lines) = route_support(&model.mesh, bvh, start) {
                         let (r, p) = (1.0, 10);
                         builder.add_cylinder((point, start), (0.2, r), p);
                         builder.add_cylinder((lines[0], lines[1]), (r, r), p);
@@ -49,12 +54,13 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
 
                 if !builder.is_empty() {
                     let mesh = builder.build();
-                    let mut rendered_mesh = Model::from_mesh(mesh)
+                    let mut model = Model::from_mesh(mesh)
                         .with_name("Supports".into())
                         .with_random_color();
-                    rendered_mesh.update_oob(&app.project.slice_config.platform_size);
-                    app.tasks.add(MeshManifold::new(&rendered_mesh));
-                    app.project.models.push(rendered_mesh);
+                    model.update_oob(&app.project.slice_config.platform_size);
+                    app.tasks.add(MeshManifold::new(&model));
+                    app.tasks.add(BuildAccelerationStructures::new(&model));
+                    app.project.models.push(model);
                 }
             }
         }
@@ -142,7 +148,8 @@ fn generate_support(
 ) -> Vec<[Vector3<f32>; 2]> {
     let mesh = &meshes[idx];
 
-    let (supports, debug) = support.generate_line_supports(&mesh.mesh);
+    let half_edge = mesh.half_edge.as_ref().unwrap();
+    let (supports, debug) = support.generate_line_supports(&mesh.mesh, half_edge);
     let mesh = Model::from_mesh(supports)
         .with_name(format!("Supports {}", mesh.name))
         .with_random_color();
@@ -161,7 +168,8 @@ fn manual_support_placement(app: &mut App) {
 
     let mut builder = MeshBuilder::new();
     for model in app.project.models.iter() {
-        let Some(intersection) = model.bvh.intersect_ray(
+        let bvh = model.bvh.as_ref().unwrap();
+        let Some(intersection) = bvh.intersect_ray(
             &model.mesh,
             model.mesh.inv_transform(&pos),
             model.mesh.inv_transform_normal(&dir),
@@ -171,7 +179,7 @@ fn manual_support_placement(app: &mut App) {
 
         let normal = (model.mesh).transform_normal(&model.mesh.normal(intersection.face));
         let start = intersection.position + normal * 0.1;
-        if let Some(lines) = route_support(&model.mesh, &model.bvh, start) {
+        if let Some(lines) = route_support(&model.mesh, bvh, start) {
             let (r, p) = (1.0, 100);
             builder.add_cylinder((intersection.position, start), (0.2, r), p);
             builder.add_cylinder((lines[0], lines[1]), (r, r), p);

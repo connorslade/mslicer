@@ -10,13 +10,12 @@ use common::{
     progress::Progress,
     serde::{ReaderDeserializer, WriterSerializer},
 };
-use egui::Context;
 use tracing::info;
 
 use crate::app::{
     App,
     project::Project,
-    task::{Task, TaskStatus},
+    task::{BuildAccelerationStructures, MeshManifold, PollResult, Task, TaskStatus},
 };
 
 pub struct ProjectLoad {
@@ -67,24 +66,28 @@ impl ProjectSave {
 }
 
 impl Task for ProjectLoad {
-    fn poll(&mut self, app: &mut App, _ctx: &Context) -> bool {
+    fn poll(&mut self, app: &mut App) -> PollResult {
         if self.progress.complete() {
             app.project = self.handle.take().unwrap().join().unwrap();
 
             let count = app.project.models.len();
-            for (i, mesh) in app.project.models.iter().enumerate() {
+            for (i, model) in app.project.models.iter_mut().enumerate() {
+                model.update_oob(&app.project.slice_config.platform_size);
+                app.tasks.add(MeshManifold::new(model));
+                app.tasks.add(BuildAccelerationStructures::new(model));
+
                 info!(
                     " {} Loaded model `{}` with {} faces",
                     if i + 1 < count { "│" } else { "└" },
-                    mesh.name,
-                    mesh.mesh.face_count()
+                    model.name,
+                    model.mesh.face_count()
                 );
             }
 
-            return true;
+            return PollResult::complete();
         }
 
-        false
+        PollResult::pending()
     }
 
     fn status(&self) -> Option<TaskStatus<'_>> {
@@ -97,8 +100,8 @@ impl Task for ProjectLoad {
 }
 
 impl Task for ProjectSave {
-    fn poll(&mut self, _app: &mut App, _ctx: &Context) -> bool {
-        self.progress.complete()
+    fn poll(&mut self, _app: &mut App) -> PollResult {
+        PollResult::from_bool(self.progress.complete())
     }
 
     fn status(&self) -> Option<TaskStatus<'_>> {

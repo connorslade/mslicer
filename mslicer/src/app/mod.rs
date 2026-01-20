@@ -206,7 +206,7 @@ impl eframe::App for App {
         // todo: probably dont do this
         let app = unsafe { &mut *(self as *mut _) };
         self.popup.render(app, ctx);
-        self.tasks.poll(app, ctx);
+        self.tasks.poll(app);
 
         // only update the visuals if the theme has changed
         match self.config.theme {

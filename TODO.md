@@ -123,3 +123,4 @@
 - [x] Overhaul save format
 - [ ] Add more printer configs
 - [ ] Antialiasing without post-processing?
+- [ ] Reference count BVH and half_edge meshes

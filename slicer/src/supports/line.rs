@@ -39,12 +39,15 @@ impl<'a> LineSupportGenerator<'a> {
         Self { config, bed_size }
     }
 
-    pub fn generate_line_supports(&self, mesh: &Mesh) -> (Mesh, Vec<[Vector3<f32>; 2]>) {
+    pub fn generate_line_supports(
+        &self,
+        mesh: &Mesh,
+        half_edge: &HalfEdgeMesh,
+    ) -> (Mesh, Vec<[Vector3<f32>; 2]>) {
         let mut overhangs = Vec::new();
-        let half_edge_mesh = HalfEdgeMesh::from_mesh(mesh);
 
         let point_overhangs =
-            detect_point_overhangs(mesh, &half_edge_mesh, |_, pos, normal| [pos, normal]);
+            detect_point_overhangs(mesh, half_edge, |_, pos, normal| [pos, normal]);
         overhangs.extend_from_slice(&point_overhangs);
 
         let face_overhangs = self.detect_face_overhangs(mesh);

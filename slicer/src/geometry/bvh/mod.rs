@@ -1,16 +1,19 @@
 use std::sync::Arc;
 
+use common::progress::Progress;
 use nalgebra::Vector3;
 
 use super::{Hit, Ray};
 use crate::{
     geometry::{Primitive, primitive},
-    mesh::Mesh,
+    mesh::{Mesh, MeshInner},
 };
 use bvh_node::{BvhNode, build_bvh_node};
 
 mod bounding_box;
 mod bvh_node;
+
+const LEAF_SIZE: usize = 8;
 
 #[derive(Clone, Default)]
 pub struct Bvh {
@@ -18,17 +21,21 @@ pub struct Bvh {
 }
 
 impl Bvh {
-    pub fn from_mesh(mesh: &Mesh) -> Self {
-        if mesh.face_count() == 0 {
+    pub fn build(mesh: &Arc<MeshInner>, progress: Progress) -> Self {
+        let faces = mesh.faces.len();
+        progress.set_total(faces as u64);
+
+        if faces == 0 {
             return Self::default();
         }
 
-        let mut arena = Vec::with_capacity(mesh.face_count() * 2 - 1);
-        let face_indices = (0..mesh.face_count()).collect::<Vec<_>>();
+        let mut arena = Vec::new();
+        let face_indices = (0..faces).collect::<Vec<_>>();
 
-        let root = build_bvh_node(&mut arena, mesh, face_indices);
+        let root = build_bvh_node(&mut arena, mesh, &progress, face_indices);
         arena.push(root);
 
+        progress.set_finished();
         Self {
             nodes: Arc::new(arena),
         }
