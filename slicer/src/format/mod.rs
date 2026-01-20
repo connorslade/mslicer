@@ -167,10 +167,7 @@ impl FormatSliceFile {
         ) {
             let (width, height) = (info.resolution.x as usize, info.resolution.y as usize);
             let image = Image::from_raw(width, height, image.into_raw());
-
-            for run in image.runs() {
-                encoder.add_run(run.length, run.value)
-            }
+            (image.runs()).for_each(|run| encoder.add_run(run.length, run.value));
         }
 
         match self {

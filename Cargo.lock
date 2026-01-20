@@ -2696,9 +2696,9 @@ checksum = "7a79a3332a6609480d7d0c9eab957bca6b455b91bb84e66d19f5ff66294b85b8"
 
 [[package]]
 name = "libblur"
-version = "0.21.0"
+version = "0.22.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "683d04abd65a3b648c0786df24a4d2eb18fcaa10ccabc568054e2990b17b388b"
+checksum = "a2fae5566fc2c7d09fdcb903eda50e2db35c529bbd1023756b2f523105daae58"
 dependencies = [
  "novtb",
  "num-complex",

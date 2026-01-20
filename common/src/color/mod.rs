@@ -8,7 +8,7 @@ pub use self::{
 
 /// A good starting color for hue shifting
 pub const START_COLOR: OkLab<f32> = OkLab {
-    l: 0.65,
-    a: 0.178,
-    b: -0.116,
+    l: 0.65, // lightness
+    a: 0.2,  // the magnitude of ⟨a, b⟩ is like the saturation
+    b: 0.0,
 };

@@ -76,7 +76,7 @@ fn outside_build_volume(pos: vec3f) -> bool {
     let build = context.build_volume / 2.0;
     return pos.x < -build.x || pos.x > build.x
         || pos.y < -build.y || pos.y > build.y
-        || pos.z < 0.0 || pos.x > context.build_volume.z;
+        || pos.z < -0.01 || pos.x > context.build_volume.z;
 }
 
 var<private> seed: u32 = 0u;
