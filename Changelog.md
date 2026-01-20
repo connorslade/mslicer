@@ -2,18 +2,24 @@
 
 ## v0.5.0 &mdash; Coming Soon™
 
-- Detect and show warning for non-manifold meshes
-- Show warning for meshes that extend outside the printable volume
+- Detect and show warnings for
+  - Non-manifold meshes
+  - Meshes that extend outside the printable volume
+- Support generation
+  - Visualize overhanging faces and vertices
+- Use async tasks for more operations
+  - Loading meshes
+  - Saving and loading projects
+  - Building acceleration structures
+  - File pick/save dialogs
 - Color backfaces grey in rendered view
-- Load models async and show progress (required custom format implementations sob)
-- Async file pick/save dialog
 - Don't show multiple copies of layer in slice preview when panning far to the right
 - Printer presets (print volume, resolution)
 - Reduce memory usage of loaded models
 - Reuse GPU buffers when possible (instead of reallocating)
-- Support generation
-  - Visualize overhanging faces and vertices
 - Don't duplicate mesh data in project save file
+- Custom project and mesh (de)serialization with progress monitoring
+- Added task panel to view the progress of running async tasks
 
 ## v0.4.0 &mdash; November 25th, 2025
 

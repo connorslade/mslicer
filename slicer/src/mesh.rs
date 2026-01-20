@@ -5,7 +5,7 @@ use std::{
 };
 
 use anyhow::{Ok, Result};
-use common::serde::ReaderDeserializer;
+use common::{progress::Progress, serde::ReaderDeserializer};
 use nalgebra::{Matrix4, Vector3};
 use serde::{Deserialize, Serialize};
 
@@ -100,15 +100,18 @@ impl Mesh {
         self.faces().len()
     }
 
-    pub fn is_manifold(&self) -> bool {
+    pub fn is_manifold(&self, progress: Progress) -> bool {
         let mut edges = HashMap::<_, u8>::new();
 
+        progress.set_total(self.face_count() as u64);
         for [a, b, c] in self.faces() {
+            progress.add_complete(1);
             for (a, b) in [(a, b), (b, c), (c, a)] {
                 *edges.entry((a.min(b), a.max(b))).or_default() += 1;
             }
         }
 
+        progress.set_finished();
         for count in edges.values() {
             if *count != 2 {
                 return false;
