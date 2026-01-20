@@ -69,13 +69,16 @@ pub struct LayerEncoder {
 }
 
 impl LayerEncoder {
-    pub fn add_run(&mut self, length: u64, mut value: u8) {
-        if length >= 1 {
-            value |= 0x80;
+    pub fn add_run(&mut self, length: u64, value: u8) {
+        if length == 0 {
+            return;
         }
-        self.data.push(value);
 
-        if length <= 0x7F {
+        self.data.push((value >> 1) | (0x80 * (length > 1) as u8));
+
+        if length <= 1 {
+            // pass
+        } else if length <= 0x7F {
             self.data.push(length as u8);
         } else if length <= 0x3FFF {
             self.data.push((length >> 8) as u8 | 0x80);
@@ -106,7 +109,7 @@ impl EncodableLayer for LayerEncoder {
 
     fn finish(self, layer: u64, config: &SliceConfig) -> Self::Output {
         let layer_exposure = config.exposure_config(layer);
-        // note that retract_distnace is not used...
+        // note that retract_distance is not used...
 
         Layer {
             position_z: config.slice_height * (layer + 1) as f32,
