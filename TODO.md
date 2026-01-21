@@ -123,4 +123,5 @@
 - [x] Overhaul save format
 - [ ] Add more printer configs
 - [ ] Antialiasing without post-processing?
+  - [ ] Explore 3D post processing (mentioned in #7)
 - [ ] Reference count BVH and half_edge meshes
