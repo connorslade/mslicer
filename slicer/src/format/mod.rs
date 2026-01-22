@@ -18,6 +18,7 @@ pub mod svg;
 pub enum FormatSliceResult<'a> {
     Goo(SliceResult<'a, goo_format::LayerContent>),
     Ctb(SliceResult<'a, ctb_format::Layer>),
+    NanoDLP(SliceResult<'a, nanodlp_format::Layer>),
     Svg(VectorSliceResult<'a>),
 }
 
@@ -25,6 +26,7 @@ pub enum FormatSliceResult<'a> {
 pub enum FormatSliceFile {
     Goo(Box<goo_format::File>),
     Ctb(Box<ctb_format::File>),
+    NanoDLP(Box<nanodlp_format::File>),
     Svg(svg::SvgFile),
 }
 
@@ -61,6 +63,11 @@ impl FormatSliceFile {
 
                 Self::Ctb(Box::new(file))
             }
+            FormatSliceResult::NanoDLP(result) => {
+                let mut file = nanodlp_format::File::from_slice_result(result);
+                file.preview = (*preview).to_owned().into();
+                Self::NanoDLP(Box::new(file))
+            }
             FormatSliceResult::Svg(result) => Self::Svg(SvgFile::new(result)),
         }
     }
@@ -69,6 +76,7 @@ impl FormatSliceFile {
         match self {
             FormatSliceFile::Goo(file) => file.serialize(ser),
             FormatSliceFile::Ctb(file) => file.serialize(ser),
+            FormatSliceFile::NanoDLP(file) => file.serialize(ser).unwrap(),
             FormatSliceFile::Svg(file) => file.serialize(ser),
         }
     }
@@ -91,6 +99,12 @@ impl FormatSliceFile {
                 size: file.size,
                 bottom_layers: file.bottom_layer_count,
             },
+            FormatSliceFile::NanoDLP(file) => SliceInfo {
+                layers: file.layer_info.len() as u32,
+                resolution: Vector2::new(file.slicer.p_width, file.slicer.p_height),
+                size: Vector3::zeros(), // todo: implement this
+                bottom_layers: file.profile.support_layer_number,
+            },
             FormatSliceFile::Svg(file) => SliceInfo {
                 layers: file.layer_count(),
 
@@ -106,6 +120,7 @@ impl FormatSliceFile {
         match self {
             FormatSliceFile::Goo(_) => Format::Goo,
             FormatSliceFile::Ctb(_) => Format::Ctb,
+            FormatSliceFile::NanoDLP(_) => Format::NanoDLP,
             FormatSliceFile::Svg(_) => Format::Svg,
         }
     }
@@ -122,14 +137,19 @@ impl FormatSliceFile {
 
         match self {
             FormatSliceFile::Goo(file) => {
-                let layer_data = &file.layers[layer].data;
-                let decoder = goo_format::LayerDecoder::new(layer_data);
+                let data = &file.layers[layer].data;
+                let decoder = goo_format::LayerDecoder::new(data);
                 rle_decode(decoder, image);
             }
             FormatSliceFile::Ctb(file) => {
                 let data = &file.layers[layer].data;
                 let decoder = ctb_format::LayerDecoder::new(data);
                 rle_decode(decoder, image);
+            }
+            FormatSliceFile::NanoDLP(file) => {
+                let data = &file.layers[layer];
+                let decoder = nanodlp_format::LayerDecoder::new(data);
+                image.copy_from_slice(&decoder.into_inner());
             }
             FormatSliceFile::Svg(_file) => {
                 // todo: rasterize svg??
@@ -184,6 +204,10 @@ impl FormatSliceFile {
                 let mut encoder = ctb_format::LayerEncoder::default();
                 rle_encode(info, image, &mut encoder);
                 file.layers[layer].data = encoder.into_inner();
+            }
+            FormatSliceFile::NanoDLP(file) => {
+                let encoder = nanodlp_format::LayerEncoder::from_gray_image(image);
+                file.layers[layer] = encoder.image_data();
             }
             FormatSliceFile::Svg(_file) => {}
         }

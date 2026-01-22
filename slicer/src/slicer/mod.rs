@@ -69,9 +69,14 @@ impl Slicer {
     }
 
     pub fn slice_format(&self) -> FormatSliceResult<'_> {
+        type GooEncoder = goo_format::LayerEncoder;
+        type CtbEncoder = ctb_format::LayerEncoder;
+        type NanoDLPEncoder = nanodlp_format::LayerEncoder;
+
         match self.slice_config.format {
-            Format::Goo => FormatSliceResult::Goo(self.slice::<goo_format::LayerEncoder>()),
-            Format::Ctb => FormatSliceResult::Ctb(self.slice::<ctb_format::LayerEncoder>()),
+            Format::Goo => FormatSliceResult::Goo(self.slice::<GooEncoder>()),
+            Format::Ctb => FormatSliceResult::Ctb(self.slice::<CtbEncoder>()),
+            Format::NanoDLP => FormatSliceResult::NanoDLP(self.slice::<NanoDLPEncoder>()),
             Format::Svg => FormatSliceResult::Svg(self.slice_vector()),
         }
     }

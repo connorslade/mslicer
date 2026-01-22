@@ -1,10 +1,15 @@
 use std::io::{Cursor, Read};
 
 use anyhow::{Ok, Result};
-use image::{DynamicImage, codecs::png::PngDecoder};
+use image::{DynamicImage, ImageFormat, codecs::png::PngDecoder};
 
-pub mod file;
+mod file;
+mod layer;
 mod types;
+pub use crate::{
+    file::File,
+    layer::{Layer, LayerDecoder, LayerEncoder},
+};
 
 fn read_to_bytes<T: Read>(mut reader: T) -> Result<Vec<u8>> {
     let mut buf = Vec::new();
@@ -16,4 +21,10 @@ fn decode_png(png: &[u8]) -> Result<DynamicImage> {
     let decoder = PngDecoder::new(Cursor::new(png))?;
     let image = DynamicImage::from_decoder(decoder)?;
     Ok(image)
+}
+
+fn encode_png(image: &DynamicImage) -> Result<Vec<u8>> {
+    let mut bytes = Vec::new();
+    image.write_to(&mut Cursor::new(&mut bytes), ImageFormat::Png)?;
+    Ok(bytes)
 }

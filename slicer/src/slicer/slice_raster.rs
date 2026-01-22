@@ -19,9 +19,7 @@ impl Slicer {
         // splitting the mesh into segments, not all triangles need to be tested
         // to find all intersections. This massively speeds up the slicing
         // operation and actually makes it faster than most other slicers. :p
-        let segments = self
-            .models
-            .iter()
+        let segments = (self.models.iter())
             .map(|x| Segments1D::from_mesh(x, SEGMENT_LAYERS))
             .collect::<Vec<_>>();
 
@@ -44,7 +42,7 @@ impl Slicer {
                 // use some sort of compression scheme to resolve this issue, so
                 // to use a little memory as needed, the layers are compressed
                 // as they are made.
-                let mut encoder = Layer::default();
+                let mut encoder = Layer::new(self.slice_config.platform_resolution);
                 let mut last = 0;
 
                 // For each row of pixels, we find all line segments that go

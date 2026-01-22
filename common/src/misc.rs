@@ -25,9 +25,10 @@ pub struct Run {
     pub value: u8,
 }
 
-pub trait EncodableLayer: Default {
+pub trait EncodableLayer {
     type Output: Send;
 
+    fn new(platform: Vector2<u32>) -> Self;
     fn add_run(&mut self, length: u64, value: u8);
     fn finish(self, layer: u64, config: &SliceConfig) -> Self::Output;
 }

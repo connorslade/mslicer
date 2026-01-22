@@ -2248,6 +2248,7 @@ dependencies = [
  "clap",
  "common",
  "image",
+ "nalgebra 0.34.1",
 ]
 
 [[package]]
@@ -3134,8 +3135,9 @@ name = "nanodlp_format"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "common",
  "image",
- "png",
+ "nalgebra 0.34.1",
  "serde",
  "serde_json",
  "zip",
@@ -4650,6 +4652,7 @@ dependencies = [
  "libblur",
  "mesh_format",
  "nalgebra 0.34.1",
+ "nanodlp_format",
  "num-traits",
  "ordered-float",
  "parking_lot",

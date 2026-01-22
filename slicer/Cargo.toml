@@ -24,6 +24,7 @@ common = { path = "../common" }
 ctb_format = { path = "../ctb_format" }
 goo_format = { path = "../goo_format" }
 mesh_format = { path = "../mesh_format" }
+nanodlp_format = { path = "../nanodlp_format" }
 
 [dev-dependencies]
 criterion.workspace = true

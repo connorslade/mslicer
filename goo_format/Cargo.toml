@@ -8,5 +8,6 @@ anyhow.workspace = true
 chrono.workspace = true
 clap.workspace = true
 image.workspace = true
+nalgebra.workspace = true
 
 common = { path = "../common" }

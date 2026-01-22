@@ -6,16 +6,18 @@ use crate::serde::{Deserializer, Serializer};
 pub enum Format {
     Goo,
     Ctb,
+    NanoDLP,
     Svg,
 }
 
 impl Format {
-    pub const ALL: [Format; 3] = [Format::Goo, Format::Ctb, Format::Svg];
+    pub const ALL: [Format; 4] = [Format::Goo, Format::Ctb, Format::NanoDLP, Format::Svg];
 
     pub fn from_extension(extension: &str) -> Option<Self> {
         Some(match extension.to_lowercase().as_str() {
             "goo" => Format::Goo,
             "ctb" => Format::Ctb,
+            "nanodlp" => Format::NanoDLP,
             "svg" => Format::Svg,
             _ => return None,
         })
@@ -25,6 +27,7 @@ impl Format {
         match self {
             Format::Goo => "Elegoo",
             Format::Ctb => "Chitu Encrypted",
+            Format::NanoDLP => "NanoDLP",
             Format::Svg => "Vector",
         }
     }
@@ -33,14 +36,14 @@ impl Format {
         match self {
             Format::Goo => "goo",
             Format::Ctb => "ctb",
+            Format::NanoDLP => "nanodlp",
             Format::Svg => "svg",
         }
     }
 
     pub fn supports_preview(&self) -> bool {
         match self {
-            Format::Goo => true,
-            Format::Ctb => true,
+            Format::Goo | Format::Ctb | Format::NanoDLP => true,
             Format::Svg => false,
         }
     }
@@ -49,6 +52,7 @@ impl Format {
         ser.write_u8(match self {
             Format::Goo => 0,
             Format::Ctb => 1,
+            Format::NanoDLP => 3,
             Format::Svg => 2,
         });
     }
@@ -57,6 +61,7 @@ impl Format {
         Ok(match des.read_u8() {
             0 => Format::Goo,
             1 => Format::Ctb,
+            3 => Format::NanoDLP,
             2 => Format::Svg,
             _ => bail!("Invalid slice format ID"),
         })

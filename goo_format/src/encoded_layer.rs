@@ -2,6 +2,7 @@ use common::{
     config::SliceConfig,
     misc::{EncodableLayer, Run},
 };
+use nalgebra::Vector2;
 
 use crate::{LayerContent, layer_content::calculate_checksum};
 
@@ -107,6 +108,10 @@ impl LayerEncoder {
 
 impl EncodableLayer for LayerEncoder {
     type Output = LayerContent;
+
+    fn new(_platform: Vector2<u32>) -> Self {
+        Self::default()
+    }
 
     fn add_run(&mut self, length: u64, value: u8) {
         self.add_run(length, value);

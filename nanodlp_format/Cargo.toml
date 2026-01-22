@@ -6,7 +6,9 @@ edition = "2024"
 [dependencies]
 anyhow.workspace = true
 image.workspace = true
-png.workspace = true
+nalgebra.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 zip.workspace = true
+
+common = { path = "../common" }
