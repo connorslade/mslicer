@@ -3136,6 +3136,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "common",
+ "crc32fast",
  "image",
  "nalgebra 0.34.1",
  "serde",

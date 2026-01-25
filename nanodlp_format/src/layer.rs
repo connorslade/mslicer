@@ -1,10 +1,14 @@
-use std::io::Cursor;
+use std::iter;
 
-use common::{config::SliceConfig, misc::EncodableLayer};
-use image::{ExtendedColorType, GrayImage, ImageEncoder, RgbImage, codecs::png::PngEncoder};
+use common::{config::SliceConfig, misc::EncodableLayer, serde::DynamicSerializer};
+use image::{GrayImage, RgbImage};
 use nalgebra::Vector2;
 
-use crate::{decode_png, types::LayerInfo};
+use crate::{
+    decode_png,
+    png::{PngEncoder, PngInfo},
+    types::LayerInfo,
+};
 
 pub struct Layer {
     pub inner: Vec<u8>,
@@ -12,8 +16,8 @@ pub struct Layer {
 }
 
 pub struct LayerEncoder {
-    image: RgbImage,
-    index: usize,
+    image: Vec<u8>,
+    platform: Vector2<u32>,
 }
 
 pub struct LayerDecoder {
@@ -22,23 +26,26 @@ pub struct LayerDecoder {
 
 impl LayerEncoder {
     pub fn from_gray_image(image: GrayImage) -> Self {
-        let (width, height) = (image.width(), image.height());
-        let image = RgbImage::from_raw(width / 3, height, image.into_raw()).unwrap();
-        let index = (width * height) as usize;
-        Self { image, index }
+        Self {
+            platform: Vector2::new(image.width(), image.height()),
+            image: image.into_raw(),
+        }
     }
 
     pub fn image_data(self) -> Vec<u8> {
-        let mut bytes = Vec::new();
-        let writer = Cursor::new(&mut bytes);
-        let encoder = PngEncoder::new(writer);
+        let mut ser = DynamicSerializer::new();
 
-        let (width, height) = (self.image.width(), self.image.height());
-        encoder
-            .write_image(&self.image, width, height, ExtendedColorType::Rgb8)
-            .unwrap();
+        let info = PngInfo {
+            width: self.platform.x / 3,
+            height: self.platform.y,
+            bit_depth: 8,
+            color_type: 2,
+        };
 
-        bytes
+        let mut encoder = PngEncoder::new(&mut ser, &info, 3);
+        encoder.write_image(&self.image);
+        encoder.write_end();
+        ser.into_inner()
     }
 }
 
@@ -47,14 +54,13 @@ impl EncodableLayer for LayerEncoder {
 
     fn new(platform: Vector2<u32>) -> Self {
         Self {
-            image: RgbImage::new(platform.x / 3, platform.y),
-            index: 0,
+            image: Vec::new(),
+            platform,
         }
     }
 
     fn add_run(&mut self, length: u64, value: u8) {
-        (*self.image)[self.index..(self.index + length as usize)].fill(value);
-        self.index += length as usize;
+        self.image.extend(iter::repeat_n(value, length as usize));
     }
 
     fn finish(self, _layer: u64, _config: &SliceConfig) -> Self::Output {
