@@ -1,3 +1,4 @@
+pub mod bitvec;
 pub mod color;
 pub mod config;
 pub mod format;
