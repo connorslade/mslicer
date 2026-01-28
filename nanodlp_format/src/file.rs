@@ -131,7 +131,10 @@ impl File {
     pub fn deserialize<T: Read + Seek>(reader: T) -> Result<Self> {
         let mut zip = ZipArchive::new(reader)?;
 
-        let meta = serde_json::from_reader::<_, Meta>(zip.by_name("meta.json")?)?;
+        let meta = (zip.by_name("meta.json").ok())
+            .map(serde_json::from_reader::<_, Meta>)
+            .transpose()?
+            .unwrap_or_default();
         let layer_info = serde_json::from_reader::<_, Vec<LayerInfo>>(zip.by_name("info.json")?)?;
         let plate = serde_json::from_reader::<_, Plate>(zip.by_name("plate.json")?)?;
         let slicer = serde_json::from_reader::<_, Options>(zip.by_name("options.json")?)?;

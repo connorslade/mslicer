@@ -3,7 +3,7 @@ use std::env;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "PascalCase")]
+#[serde(default, rename_all = "PascalCase")]
 pub struct Meta {
     pub format_version: u32,
     pub distro: String,
@@ -29,7 +29,7 @@ pub struct LayerInfo {
 }
 
 #[derive(Debug, Default, Serialize, Deserialize)]
-#[serde(rename_all = "PascalCase")]
+#[serde(default, rename_all = "PascalCase")]
 pub struct Plate {
     #[serde(rename = "PlateID")]
     pub plate_id: u32,
@@ -81,7 +81,7 @@ pub struct Plate {
 }
 
 #[derive(Debug, Default, Serialize, Deserialize)]
-#[serde(rename_all = "PascalCase")]
+#[serde(default, rename_all = "PascalCase")]
 pub struct PlateMc {
     start_x: u32,
     start_y: u32,
@@ -94,7 +94,7 @@ pub struct PlateMc {
 }
 
 #[derive(Debug, Default, Serialize, Deserialize)]
-#[serde(rename_all = "PascalCase")]
+#[serde(default, rename_all = "PascalCase")]
 pub struct Options {
     pub _type: String,
     #[serde(rename = "URL")]
@@ -166,9 +166,9 @@ pub struct Options {
     pub image_rotate: u32,
     pub ignore_mask: u32,
     #[serde(rename = "XYRes")]
-    pub xy_res: u32,
-    pub x_res: u32,
-    pub y_res: u32,
+    pub xy_res: f32,
+    pub x_res: f32,
+    pub y_res: f32,
     pub z_res_perc: u32,
     pub preview_width: u32,
     pub preview_height: u32,
@@ -197,7 +197,7 @@ pub struct Options {
 }
 
 #[derive(Debug, Default, Serialize, Deserialize)]
-#[serde(rename_all = "PascalCase")]
+#[serde(default, rename_all = "PascalCase")]
 pub struct Boundary {
     x_min: f32,
     x_max: f32,
@@ -208,7 +208,7 @@ pub struct Boundary {
 }
 
 #[derive(Debug, Default, Serialize, Deserialize)]
-#[serde(rename_all = "PascalCase")]
+#[serde(default, rename_all = "PascalCase")]
 pub struct Color {
     r: u32,
     g: u32,
@@ -231,7 +231,7 @@ pub const SHIELD_BEFORE_LAYER: &str = r#"G90\r\nSET_PROGRESS_BAR CL=[[LayerNumbe
 pub const SHIELD_AFTER_LAYER: &str = r#"[JS]if ([[LayerNumber]]==1||[[LayerNumber]]%3==0) output=\"TRIGGER\";[/JS]\r\n[JS]if ([[LayerNumber]]==1||[[LayerNumber]]%5==0) output=\"M105\";[/JS]\r\n[[MoveCounterSet 0]]\r\nUVLED_ON PWM=[[_UvPwmValue]]\r\nDWELL P={[[CureTime]]*1000}\r\n[[MoveWait 1]]\r\nUVLED_OFF \r\n[[GPIOHigh 10]]\r\n[[SeparationDetectionStart]]\r\nG91\r\n[[MoveCounterSet 0]]\r\nMOVE_PLATE_FSS Z=[[ZLiftDistance]] F={120-([[LayerNumber]]\u003c5)*70}\r\n[[MoveWait 1]]\r\n\r\n[[SeparationDetectionStop]]\r\n\r\n[[PositionChange [[ZLiftDistance]]]]\r\n[JS]if ([[LayerNumber]]==1||[[LayerNumber]]%100==0) output=\"G4 P2000\";[/JS]\r\n[JS]if ([[LayerNumber]]==1||[[LayerNumber]]%100==0) output=\"[[PressureWrite 1]]\";[/JS]"#;
 
 #[derive(Debug, Default, Serialize, Deserialize)]
-#[serde(rename_all = "PascalCase")]
+#[serde(default, rename_all = "PascalCase")]
 pub struct Profile {
     #[serde(rename = "ResinID")]
     pub resin_id: u32,
@@ -322,7 +322,7 @@ pub struct Profile {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "PascalCase")]
+#[serde(default, rename_all = "PascalCase")]
 pub struct ProfileCustomValues {
     cd_threshold: String,
     dw_flow_end_slope: String,
