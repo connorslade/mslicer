@@ -8,7 +8,7 @@ pub struct Adler32 {
 #[derive(Debug, PartialEq, Eq)]
 pub enum LZ77Token {
     Literal(u8),
-    Match { distance: u16, length: u16 },
+    Match { length: u16 }, // distance is assumed to be 1
 }
 
 pub fn lz77_compress(rle: impl Iterator<Item = Run>) -> Vec<LZ77Token> {
@@ -22,7 +22,6 @@ pub fn lz77_compress(rle: impl Iterator<Item = Run>) -> Vec<LZ77Token> {
             let match_len = remaining.min(258);
             remaining -= match_len;
             out.push(LZ77Token::Match {
-                distance: 1,
                 length: match_len as u16,
             });
         }
@@ -33,7 +32,7 @@ pub fn lz77_compress(rle: impl Iterator<Item = Run>) -> Vec<LZ77Token> {
     out
 }
 
-pub fn tokens_to_stream(out: &mut BitVec, tokens: &[LZ77Token]) {
+pub fn huffman(out: &mut BitVec, tokens: &[LZ77Token]) {
     out.extend(0x78, 8);
     out.extend(0x01, 8);
     out.extend(0b011, 3);
@@ -41,14 +40,15 @@ pub fn tokens_to_stream(out: &mut BitVec, tokens: &[LZ77Token]) {
     for token in tokens {
         match token {
             LZ77Token::Literal(val) => huffman_code(out, *val as u32),
-            LZ77Token::Match { distance, length } => {
+            LZ77Token::Match { length } => {
                 let (code, ebits, nbits) = length_code(*length);
                 huffman_code(out, code as u32);
                 (nbits >= 1).then(|| out.extend(ebits as u32, nbits));
 
-                let (code, ebits, nbits) = distance_code(*distance);
-                out.extend(code as u32, 5);
-                (nbits >= 1).then(|| out.extend(ebits as u32, nbits));
+                // For a more general encoder, we would have to get the distance
+                // code + extra bits. But since we are only handling Matches
+                // with a distance of 1, we can inline the values you would get.
+                out.advance(5);
             }
         }
     }
@@ -90,13 +90,19 @@ impl Adler32 {
     }
 }
 
+impl Default for Adler32 {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 fn huffman_code(vec: &mut BitVec, val: u32) {
     match val {
         0..144 => vec.extend_rev(val + 0x30, 8),
         144..256 => vec.extend_rev(val - 144 + 0x190, 9),
         256..280 => vec.extend_rev(val - 256, 7),
         280..288 => vec.extend_rev(val - 280 + 0xC0, 8),
-        _ => panic!(),
+        _ => unreachable!(),
     }
 }
 
@@ -110,36 +116,6 @@ fn length_code(n: u16) -> (u16, u16, u8) {
         67..=130 => (277 + (n - 67) / 16, (n - 67) % 16, 4),
         131..258 => (281 + (n - 131) / 32, (n - 131) % 32, 5),
         258 => (285, 0, 0),
-        _ => panic!(),
+        _ => unreachable!(),
     }
-}
-
-fn distance_code(n: u16) -> (u16, u16, u8) {
-    match n {
-        0..=4 => (n - 1, 0, 0),
-        5..=8 => ((n - 5) / 2 + 4, (n - 5), 1),
-        9..=16 => ((n - 9) / 4 + 6, (n - 9), 2),
-        17..=32 => ((n - 17) / 8 + 8, (n - 17), 3),
-        33..=64 => ((n - 33) / 16 + 10, (n - 33), 4),
-        65..=128 => ((n - 65) / 32 + 12, (n - 65), 5),
-        129..=256 => ((n - 129) / 64 + 14, (n - 129), 6),
-        257..=512 => ((n - 257) / 128 + 16, (n - 257), 7),
-        513..=1024 => ((n - 513) / 256 + 18, (n - 513), 8),
-        1025..=2048 => ((n - 1025) / 512 + 20, (n - 1025), 9),
-        2049..=4096 => ((n - 2049) / 1024 + 22, (n - 2049), 10),
-        4097..=8192 => ((n - 4097) / 2048 + 24, (n - 4097), 11),
-        8193..=16384 => ((n - 8193) / 4096 + 26, (n - 8193), 12),
-        16385..=32768 => ((n - 16385) / 8192 + 28, (n - 16385), 13),
-        _ => panic!(),
-    }
-}
-
-#[test]
-fn test() {
-    let mut check = Adler32::new();
-    check.update_run(&Run {
-        length: 100_000,
-        value: 12,
-    });
-    assert_eq!(check.finish(), 2674741391);
 }

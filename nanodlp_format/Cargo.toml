@@ -13,3 +13,10 @@ serde_json.workspace = true
 zip.workspace = true
 
 common = { path = "../common" }
+
+[dev-dependencies]
+criterion.workspace = true
+
+[[bench]]
+name = "benchmark"
+harness = false

@@ -6,6 +6,7 @@
 //!
 //! - PNG
 //!   - https://www.bamfordresearch.com/2021/one-hour-png
+//!   - https://www.libpng.org/pub/png/book/chapter11.html
 //! - Deflate
 //!   - https://www.rfc-editor.org/rfc/rfc1951
 //!   - https://github.com/image-rs/fdeflate/blob/c365c7e6ffa81feb2e1fb762eed7299f05c9b0ca/src/compress.rs
@@ -17,8 +18,8 @@ use common::{
     serde::{DynamicSerializer, Serializer},
 };
 
-use deflate::{Adler32, lz77_compress, tokens_to_stream};
-mod deflate;
+use deflate::{Adler32, huffman, lz77_compress};
+pub mod deflate;
 
 const MAGIC: &[u8] = &[137, 80, 78, 71, 13, 10, 26, 10];
 
@@ -85,8 +86,8 @@ impl<'a> PngEncoder<'a> {
         self.write_chunk(b"IDAT", |ser| {
             let bytes = ser.inner_mut();
             let mut bits = BitVec::new(bytes, 8);
-            tokens_to_stream(&mut bits, &tokens);
-            bytes.extend_from_slice(&check.to_be_bytes());
+            huffman(&mut bits, &tokens);
+            ser.write_u32_be(check);
         });
     }
 
@@ -107,7 +108,7 @@ impl PngInfo {
     }
 }
 
-fn insert_runs(runs: &mut Vec<Run>, value: u8, spacing: u64) {
+pub fn insert_runs(runs: &mut Vec<Run>, value: u8, spacing: u64) {
     let mut i = 0; // The current run being processed
     let mut pos = 0; // The current position in bytes
     let mut next = 0; // Next byte index to insert `value`
@@ -123,25 +124,35 @@ fn insert_runs(runs: &mut Vec<Run>, value: u8, spacing: u64) {
         // But if it is, split the run into parts left and right of the
         // insertion point with the inserted run between.
         if (start..end).contains(&next) {
-            let run = runs.remove(i);
-
-            let length_left = next - start;
-            let length_right = run.length - length_left;
-            next += spacing;
-            pos += length_left;
-
-            if length_left > 0 {
-                let (length, value) = (length_left, run.value);
-                runs.insert(i, Run { length, value });
+            // Avoid splitting run into parts if possible. When the values are
+            // the same, the length can just be updated.
+            if run.value == value {
+                let n = 1 + (end - next - 1) / spacing;
+                pos += run.length;
+                next += spacing * n;
+                run.length += n;
                 i += 1;
-            }
+            } else {
+                let run = runs.remove(i);
 
-            runs.insert(i, Run { length: 1, value });
-            i += 1;
+                let length_left = next - start;
+                let length_right = run.length - length_left;
+                next += spacing;
+                pos += length_left;
 
-            if length_right > 0 {
-                let (length, value) = (length_right, run.value);
-                runs.insert(i, Run { length, value });
+                if length_left > 0 {
+                    let (length, value) = (length_left, run.value);
+                    runs.insert(i, Run { length, value });
+                    i += 1;
+                }
+
+                runs.insert(i, Run { length: 1, value });
+                i += 1;
+
+                if length_right > 0 {
+                    let (length, value) = (length_right, run.value);
+                    runs.insert(i, Run { length, value });
+                }
             }
         } else {
             pos += run.length;

@@ -3137,6 +3137,7 @@ dependencies = [
  "anyhow",
  "common",
  "crc32fast",
+ "criterion",
  "image",
  "nalgebra 0.34.1",
  "serde",
