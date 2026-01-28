@@ -1,4 +1,7 @@
-use std::io::{Cursor, Read, Seek, Write};
+use std::{
+    io::{Cursor, Read, Seek, Write},
+    time::{SystemTime, UNIX_EPOCH},
+};
 
 use anyhow::{Ok, Result};
 use common::{misc::SliceResult, serde::Serializer};
@@ -8,13 +11,15 @@ use zip::{ZipArchive, ZipWriter, write::FileOptions};
 
 use crate::{
     Layer, decode_png, encode_png, read_to_bytes,
-    types::{LayerInfo, Meta, Plate, Profile, Slicer},
+    types::{
+        Color, LayerInfo, Meta, Options, Plate, Profile, SHIELD_AFTER_LAYER, SHIELD_BEFORE_LAYER,
+    },
 };
 
 pub struct File {
     pub meta: Meta,
     pub plate: Plate,
-    pub slicer: Slicer,
+    pub options: Options,
     pub profile: Profile,
     pub preview: DynamicImage,
 
@@ -24,18 +29,66 @@ pub struct File {
 
 impl File {
     pub fn from_slice_result(result: SliceResult<Layer>) -> Self {
-        let (layers, layer_info) = result.layers.into_iter().map(|x| (x.inner, x.info)).unzip();
+        let (layers, layer_info): (Vec<_>, Vec<_>) =
+            result.layers.into_iter().map(|x| (x.inner, x.info)).unzip();
+
+        let config = result.slice_config;
+        let pixel_size =
+            (config.platform_size.xy()).component_div(&config.platform_resolution.cast());
+
+        let timestamp = (SystemTime::now().duration_since(UNIX_EPOCH).unwrap()).as_secs();
 
         Self {
-            meta: Default::default(),
-            plate: Default::default(),
-            slicer: Slicer {
-                p_width: result.slice_config.platform_resolution.x,
-                p_height: result.slice_config.platform_resolution.y,
+            meta: Meta {
+                version: "0.4.0".into(),
                 ..Default::default()
             },
-            profile: Default::default(),
-            preview: Default::default(),
+            plate: Plate {
+                processed: true,
+                total_solid_area: Default::default(), // ←
+                layers_count: layers.len() as u32,
+                x_min: Default::default(), // ←
+                x_max: Default::default(), // ←
+                y_min: Default::default(), // ←
+                y_max: Default::default(), // ←
+                z_min: Default::default(), // ←
+                z_max: Default::default(), // ←
+                ..Default::default()
+            },
+            options: Options {
+                p_width: config.platform_resolution.x,
+                p_height: config.platform_resolution.y,
+                thickness: config.slice_height * 1000.0,
+                x_offset: config.platform_resolution.x / 2,
+                y_offset: config.platform_resolution.y / 2,
+                x_pixel_size: pixel_size.x,
+                y_pixel_size: pixel_size.y,
+                ignore_mask: 1,
+                image_mirror: 1,
+                display_controller: 1,
+                support_layer_number: config.first_layers,
+                fill_color: "#ffffff".into(),
+                blank_color: "#000000".into(),
+                fill_color_rgb: Color::repeat(255),
+                blank_color_rgb: Color::repeat(0),
+                ..Default::default()
+            },
+            profile: Profile {
+                title: "mslicer Config".into(),
+                depth: config.slice_height * 1000.0,
+                support_depth: config.slice_height * 1000.0,
+                transitional_layer: config.transition_layers,
+                updated: timestamp as u32,
+                cure_time: config.exposure_config.exposure_time,
+                support_cure_time: config.first_exposure_config.exposure_time,
+                fill_color: "#ffffff".into(),
+                blank_color: "#000000".into(),
+                ignore_mask: 1,
+                shield_before_layer: SHIELD_BEFORE_LAYER.into(),
+                shield_after_layer: SHIELD_AFTER_LAYER.into(),
+                ..Default::default()
+            },
+            preview: Default::default(), // overwritten later
 
             layer_info,
             layers,
@@ -59,7 +112,7 @@ impl File {
         serialize_file(&mut zip, "meta.json", &self.meta)?;
         serialize_file(&mut zip, "info.json", &self.layer_info)?;
         serialize_file(&mut zip, "plate.json", &self.plate)?;
-        serialize_file(&mut zip, "slicer.json", &self.slicer)?;
+        serialize_file(&mut zip, "options.json", &self.options)?;
         serialize_file(&mut zip, "profile.json", &self.profile)?;
 
         zip.start_file("3d.png", FileOptions::DEFAULT)?;
@@ -81,7 +134,7 @@ impl File {
         let meta = serde_json::from_reader::<_, Meta>(zip.by_name("meta.json")?)?;
         let layer_info = serde_json::from_reader::<_, Vec<LayerInfo>>(zip.by_name("info.json")?)?;
         let plate = serde_json::from_reader::<_, Plate>(zip.by_name("plate.json")?)?;
-        let slicer = serde_json::from_reader::<_, Slicer>(zip.by_name("slicer.json")?)?;
+        let slicer = serde_json::from_reader::<_, Options>(zip.by_name("options.json")?)?;
         let profile = serde_json::from_reader::<_, Profile>(zip.by_name("profile.json")?)?;
 
         let preview = decode_png(&read_to_bytes(zip.by_name("3d.png")?)?)?;
@@ -92,7 +145,7 @@ impl File {
         Ok(File {
             meta,
             plate,
-            slicer,
+            options: slicer,
             profile,
             preview,
 

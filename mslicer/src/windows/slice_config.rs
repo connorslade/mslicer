@@ -103,6 +103,10 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     ui.add_space(16.0);
     ui.heading("Post Processing");
 
+    ui.label(
+        "These effects are currently not optimized and will significancy increase slicing time.",
+    );
+
     let post_processing = &mut app.project.post_processing;
     ui.collapsing("Anti Alias", |ui| {
         anti_alias(&mut post_processing.anti_alias, ui)

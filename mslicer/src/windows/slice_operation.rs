@@ -8,11 +8,10 @@ use egui::{
 use egui_phosphor::regular::{FLOPPY_DISK_BACK, PAPER_PLANE_TILT};
 use egui_wgpu::Callback;
 use nalgebra::Vector2;
-use rfd::FileDialog;
 use wgpu::COPY_BUFFER_ALIGNMENT;
 
 use crate::{
-    app::{App, slice_operation::SliceResult},
+    app::{App, slice_operation::SliceResult, task::FileDialog},
     render::slice_preview::SlicePreviewRenderCallback,
     ui::{components::vec2_dragger, popup::Popup},
 };
@@ -73,17 +72,20 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                         if ui.button(concatcp!(FLOPPY_DISK_BACK, " Save")).clicked() {
                             let result = app.slice_operation.as_ref().unwrap().result();
                             let result = result.as_ref().unwrap();
-
                             let format = result.file.as_format();
-                            if let Some(path) = FileDialog::new()
-                                .add_filter(format.name(), &[format.extension()])
-                                .save_file()
-                            {
-                                let mut file = File::create(path).unwrap();
-                                let mut serializer = DynamicSerializer::new();
-                                result.file.serialize(&mut serializer);
-                                file.write_all(&serializer.into_inner()).unwrap();
-                            }
+
+                            let mut serializer = DynamicSerializer::new();
+                            result.file.serialize(&mut serializer);
+                            let bytes = serializer.into_inner();
+
+                            app.tasks.add(FileDialog::save_file(
+                                (format.name(), &[format.extension()]),
+                                move |_app, path| {
+                                    let path = path.with_extension(format.extension());
+                                    let mut file = File::create(path).unwrap();
+                                    file.write_all(&bytes).unwrap();
+                                },
+                            ));
                         }
                     })
                 });

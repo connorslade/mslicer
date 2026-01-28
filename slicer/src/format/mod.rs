@@ -101,7 +101,7 @@ impl FormatSliceFile {
             },
             FormatSliceFile::NanoDLP(file) => SliceInfo {
                 layers: file.layer_info.len() as u32,
-                resolution: Vector2::new(file.slicer.p_width, file.slicer.p_height),
+                resolution: Vector2::new(file.options.p_width, file.options.p_height),
                 size: Vector3::zeros(), // todo: implement this
                 bottom_layers: file.profile.support_layer_number,
             },
