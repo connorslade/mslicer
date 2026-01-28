@@ -49,6 +49,10 @@ impl DynamicSerializer {
         Self { buffer: Vec::new() }
     }
 
+    pub fn inner_mut(&mut self) -> &mut Vec<u8> {
+        &mut self.buffer
+    }
+
     pub fn into_inner(self) -> Vec<u8> {
         self.buffer
     }

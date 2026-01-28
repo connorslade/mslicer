@@ -19,7 +19,7 @@ pub struct VectorLayer {
     pub polygons: Vec<Vec<Vector2<f32>>>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct Run {
     pub length: u64,
     pub value: u8,
