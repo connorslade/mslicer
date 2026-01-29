@@ -1,12 +1,4 @@
-use std::{
-    ops::Deref,
-    sync::{
-        Arc, Condvar, Mutex,
-        atomic::{AtomicU32, Ordering},
-    },
-};
-
-use common::{config::SliceConfig, format::Format};
+use common::{config::SliceConfig, format::Format, progress::Progress};
 
 use crate::{format::FormatSliceResult, mesh::Mesh};
 
@@ -19,21 +11,8 @@ const SEGMENT_LAYERS: usize = 100;
 pub struct Slicer {
     slice_config: SliceConfig,
     models: Vec<Mesh>,
+    layers: u32,
     progress: Progress,
-}
-
-/// Allows checking the progress of a slicing operation.
-#[derive(Clone)]
-pub struct Progress {
-    inner: Arc<ProgressInner>,
-}
-
-pub struct ProgressInner {
-    completed: AtomicU32,
-    total: u32,
-
-    notify: Condvar,
-    last_completed: Mutex<u32>,
 }
 
 impl Slicer {
@@ -45,22 +24,22 @@ impl Slicer {
             max.max(z)
         });
 
-        let layers = (max_z / slice_config.slice_height).ceil() as u32;
         let max_layers = (slice_config.platform_size.z / slice_config.slice_height).ceil() as u32;
+        let layers = ((max_z / slice_config.slice_height).ceil() as u32).min(max_layers);
+
+        let progress = Progress::new();
+        progress.set_total(layers as u64);
 
         Self {
             slice_config,
             models,
-            progress: Progress {
-                inner: Arc::new(ProgressInner {
-                    completed: AtomicU32::new(0),
-                    total: layers.min(max_layers),
-
-                    notify: Condvar::new(),
-                    last_completed: Mutex::new(0),
-                }),
-            },
+            layers,
+            progress,
         }
+    }
+
+    pub fn layer_count(&self) -> u32 {
+        self.layers
     }
 
     /// Gets an instance of the slicing [`Progress`] struct.
@@ -79,41 +58,5 @@ impl Slicer {
             Format::NanoDLP => FormatSliceResult::NanoDLP(self.slice::<NanoDLPEncoder>()),
             Format::Svg => FormatSliceResult::Svg(self.slice_vector()),
         }
-    }
-}
-
-impl Deref for Progress {
-    type Target = ProgressInner;
-
-    fn deref(&self) -> &Self::Target {
-        &self.inner
-    }
-}
-
-impl Progress {
-    /// Waits until the next layer is complete, returning the current count of
-    /// sliced layers.
-    pub fn wait(&self) -> u32 {
-        let mut last_completed = self
-            .notify
-            .wait(self.last_completed.lock().unwrap())
-            .unwrap();
-
-        let current = self.completed.load(Ordering::Relaxed);
-        if *last_completed < current {
-            *last_completed = current;
-        }
-
-        current
-    }
-
-    /// Returns the count of sliced layers.
-    pub fn completed(&self) -> u32 {
-        self.completed.load(Ordering::Relaxed)
-    }
-
-    /// Returns the count of layers in the current slicing operation.
-    pub fn total(&self) -> u32 {
-        self.total
     }
 }

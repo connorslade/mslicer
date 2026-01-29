@@ -1,4 +1,4 @@
-use std::{collections::HashSet, sync::atomic::Ordering};
+use std::collections::HashSet;
 
 use common::misc::{VectorLayer, VectorSliceResult};
 use nalgebra::Vector2;
@@ -18,12 +18,9 @@ impl Slicer {
             .map(|x| Segments1D::from_mesh(x, SEGMENT_LAYERS))
             .collect::<Vec<_>>();
 
-        let layers = (0..self.progress.total)
+        let layers = (0..self.layers)
             .into_par_iter()
-            .inspect(|_| {
-                self.progress.completed.fetch_add(1, Ordering::Relaxed);
-                self.progress.notify.notify_all();
-            })
+            .inspect(|_| self.progress.add_complete(1))
             .map(|layer| {
                 let height = layer as f32 * self.slice_config.slice_height;
 
@@ -42,8 +39,7 @@ impl Slicer {
             })
             .collect::<Vec<_>>();
 
-        self.progress.notify.notify_all();
-
+        self.progress.set_finished();
         VectorSliceResult {
             layers,
             slice_config: &self.slice_config,

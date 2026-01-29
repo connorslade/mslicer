@@ -2,7 +2,7 @@ use std::{
     fs::{self, File},
     io::{BufReader, Write, stdout},
     thread,
-    time::Instant,
+    time::{Duration, Instant},
 };
 
 use anyhow::Result;
@@ -70,18 +70,15 @@ fn main() -> Result<()> {
 
     let slicer = Slicer::new(slice_config.clone(), meshes);
     let progress = slicer.progress();
+    let total = slicer.layer_count();
 
     let goo = thread::spawn(move || GooFile::from_slice_result(slicer.slice::<LayerEncoder>()));
 
-    let mut completed = 0;
-    while completed < progress.total() {
-        completed = progress.wait();
-        print!(
-            "\rLayer: {}/{}, {:.1}%",
-            completed,
-            progress.total(),
-            completed as f32 / progress.total() as f32 * 100.0
-        );
+    while !progress.complete() {
+        thread::sleep(Duration::from_millis(100));
+        let completed = progress.get_complete();
+        let percent = progress.progress() * 100.0;
+        print!("\rLayer: {completed}/{total}, {percent:.1}%");
         stdout().flush()?;
     }
 

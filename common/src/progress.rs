@@ -28,6 +28,10 @@ impl Progress {
         }))
     }
 
+    pub fn get_complete(&self) -> u64 {
+        self.0.complete.load(Ordering::Relaxed)
+    }
+
     pub fn progress(&self) -> f32 {
         let total = self.0.total.load(Ordering::Relaxed);
         if total == 0 {

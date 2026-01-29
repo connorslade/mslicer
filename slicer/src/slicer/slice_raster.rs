@@ -1,5 +1,3 @@
-use std::sync::atomic::Ordering;
-
 use common::misc::{EncodableLayer, SliceResult};
 use ordered_float::OrderedFloat;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
@@ -23,7 +21,7 @@ impl Slicer {
             .map(|x| Segments1D::from_mesh(x, SEGMENT_LAYERS))
             .collect::<Vec<_>>();
 
-        let layers = (0..self.progress.total)
+        let layers = (0..self.layers)
             .into_par_iter()
             .map(|layer| {
                 let height = layer as f32 * self.slice_config.slice_height;
@@ -114,15 +112,10 @@ impl Slicer {
                 // Finished encoding the layer
                 encoder.finish(layer as u64, &self.slice_config)
             })
-            .inspect(|_| {
-                // Updates the slice progress
-                self.progress.completed.fetch_add(1, Ordering::Relaxed);
-                self.progress.notify.notify_all();
-            })
+            .inspect(|_| self.progress.add_complete(1))
             .collect::<Vec<_>>();
 
-        self.progress.notify.notify_all();
-
+        self.progress.set_finished();
         SliceResult {
             layers,
             slice_config: &self.slice_config,

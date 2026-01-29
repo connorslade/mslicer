@@ -1,4 +1,5 @@
 use std::{
+    ops::Deref,
     sync::{
         Arc,
         atomic::{AtomicU32, Ordering},
@@ -6,24 +7,31 @@ use std::{
     time::{Duration, Instant},
 };
 
-use common::{misc::human_duration, progress::CombinedProgress};
+use common::{
+    misc::human_duration,
+    progress::{CombinedProgress, Progress},
+};
 use image::RgbaImage;
 use nalgebra::Vector2;
 use parking_lot::{Condvar, MappedMutexGuard, Mutex, MutexGuard};
-use slicer::{format::FormatSliceFile, slicer::Progress as SliceProgress};
+use slicer::format::FormatSliceFile;
 use tracing::info;
 
 #[derive(Clone)]
 pub struct SliceOperation {
+    inner: Arc<SliceOperationInner>,
+}
+
+pub struct SliceOperationInner {
     start_time: Instant,
-    completion: Arc<AtomicU32>,
+    completion: AtomicU32,
 
-    pub progress: SliceProgress,
+    pub progress: Progress,
     pub post_processing_progress: CombinedProgress<2>,
-    pub result: Arc<Mutex<Option<SliceResult>>>,
+    pub result: Mutex<Option<SliceResult>>,
 
-    pub preview_image: Arc<Mutex<Option<RgbaImage>>>,
-    preview_condvar: Arc<Condvar>,
+    preview_image: Mutex<Option<RgbaImage>>,
+    preview_condvar: Condvar,
 }
 
 pub struct SliceResult {
@@ -37,20 +45,24 @@ pub struct SliceResult {
 }
 
 impl SliceOperation {
-    pub fn new(slice: SliceProgress, post_process: CombinedProgress<2>) -> Self {
+    pub fn new(slice: Progress, post_process: CombinedProgress<2>) -> Self {
         Self {
-            start_time: Instant::now(),
-            completion: Arc::new(AtomicU32::new(0)),
+            inner: Arc::new(SliceOperationInner {
+                start_time: Instant::now(),
+                completion: AtomicU32::new(0),
 
-            progress: slice,
-            post_processing_progress: post_process,
-            result: Arc::new(Mutex::new(None)),
+                progress: slice,
+                post_processing_progress: post_process,
+                result: Mutex::new(None),
 
-            preview_image: Arc::new(Mutex::new(None)),
-            preview_condvar: Arc::new(Condvar::new()),
+                preview_image: Mutex::new(None),
+                preview_condvar: Condvar::new(),
+            }),
         }
     }
+}
 
+impl SliceOperationInner {
     pub fn completion(&self) -> Option<String> {
         let time = self.completion.load(Ordering::Relaxed);
         (time != 0).then(|| human_duration(Duration::from_millis(time as u64)))
@@ -85,5 +97,13 @@ impl SliceOperation {
 
     pub fn result(&self) -> MutexGuard<'_, Option<SliceResult>> {
         self.result.lock()
+    }
+}
+
+impl Deref for SliceOperation {
+    type Target = SliceOperationInner;
+
+    fn deref(&self) -> &Self::Target {
+        &self.inner
     }
 }

@@ -135,14 +135,12 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                 });
             }
         } else {
-            let (current, total) = (progress.completed(), progress.total());
             Grid::new("slice_operation")
                 .num_columns(2)
                 .striped(true)
                 .show(ui, |ui| {
-                    let progress = current as f32 / total as f32;
                     ui.label("Slicing");
-                    ui.add(ProgressBar::new(progress).show_percentage());
+                    ui.add(ProgressBar::new(progress.progress()).show_percentage());
                     ui.end_row();
 
                     let post_process = &slice_operation.post_processing_progress;

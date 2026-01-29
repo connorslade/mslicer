@@ -84,7 +84,7 @@ pub fn ui(app: &mut App, ctx: &Context) {
             });
 
             let slicing = (app.slice_operation.as_ref())
-                .map(|x| x.progress.completed() < x.progress.total())
+                .map(|x| !x.progress.complete())
                 .unwrap_or_default();
             ui.add_enabled_ui(!slicing, |ui| {
                 let slice_button = ui.add(
