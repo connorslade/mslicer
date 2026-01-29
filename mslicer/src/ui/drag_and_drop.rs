@@ -23,7 +23,7 @@ pub fn update(app: &mut App, ctx: &Context) {
                     app.load_project(path);
                 } else {
                     let file = File::open(path).unwrap();
-                    app.tasks.add(MeshLoad::file(file, name, &format));
+                    app.tasks.add(MeshLoad::file(file, name, format.into()));
                 }
             }
         }

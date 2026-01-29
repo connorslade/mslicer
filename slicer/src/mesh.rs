@@ -235,11 +235,7 @@ impl Mesh {
 /// Supported formats include `.stl` and `.obj`.
 pub fn load_mesh<T: Read + Seek + Send + 'static>(reader: T, format: &str) -> Result<Mesh> {
     let des = ReaderDeserializer::new(reader);
-    let format = format.to_ascii_lowercase();
-
-    let job = mesh_format::load_mesh(des, &format).1;
-    let mesh = job.join().unwrap()?;
-
+    let mesh = mesh_format::load_mesh(des, format, Progress::new())?;
     Ok(Mesh::new(mesh.verts, mesh.faces))
 }
 

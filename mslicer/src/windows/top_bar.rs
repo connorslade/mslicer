@@ -118,7 +118,7 @@ fn import_model(app: &mut App) {
             let format = ext.unwrap_or_default().to_string_lossy();
 
             let file = File::open(path).unwrap();
-            app.tasks.add(MeshLoad::file(file, name, &format));
+            app.tasks.add(MeshLoad::file(file, name, format.into()));
         },
     ));
 }
@@ -127,7 +127,7 @@ fn import_teapot(app: &mut App) {
     app.tasks.add(MeshLoad::buffer(
         include_asset!("teapot.stl"),
         "Utah Teapot".into(),
-        "stl",
+        "stl".into(),
     ));
 }
 

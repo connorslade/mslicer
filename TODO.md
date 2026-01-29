@@ -127,5 +127,5 @@
 - [ ] Reference count BVH and half_edge meshes
 - [x] Make sliced file serialization an async task
 - [x] Redo the while slice operating thing, its gotten out of hand...
-- [ ] Error handling in async tasks
+- [x] Error handling in async tasks
 - [ ] Auto open tasks panel when there are pending tasks

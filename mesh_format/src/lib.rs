@@ -1,7 +1,4 @@
-use std::thread::{self, JoinHandle};
-
 use anyhow::Result;
-use clone_macro::clone;
 use common::{progress::Progress, serde::Deserializer};
 use nalgebra::Vector3;
 
@@ -18,20 +15,16 @@ pub struct Mesh {
 pub fn load_mesh<T: Deserializer + Send + 'static>(
     mut des: T,
     format: &str,
-) -> (Progress, JoinHandle<Result<Mesh>>) {
-    let progress = Progress::new();
-
+    progress: Progress,
+) -> Result<Mesh> {
     let format = format.to_ascii_lowercase();
-    let join = thread::spawn(clone!([progress], move || {
-        let mesh = match format.as_str() {
-            "stl" => stl::parse(&mut des, progress.clone()),
-            "obj" => obj::parse(&mut des, progress.clone()),
-            _ => panic!("Unsupported format: {}", format),
-        };
 
-        progress.set_finished();
-        mesh
-    }));
+    let mesh = match format.as_str() {
+        "stl" => stl::parse(&mut des, progress.clone()),
+        "obj" => obj::parse(&mut des, progress.clone()),
+        _ => panic!("Unsupported format: {}", format),
+    };
 
-    (progress, join)
+    progress.set_finished();
+    mesh
 }

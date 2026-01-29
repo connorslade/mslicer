@@ -8,6 +8,7 @@ mod mesh_load;
 mod mesh_manifold;
 mod project;
 mod save_result;
+mod thread;
 pub use self::{
     acceleration_structures::BuildAccelerationStructures,
     file_dialog::FileDialog,

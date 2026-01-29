@@ -1,4 +1,4 @@
-use std::{sync::Arc, thread};
+use std::sync::Arc;
 
 use clone_macro::clone;
 use common::{progress::Progress, serde::DynamicSerializer};
@@ -6,12 +6,13 @@ use slicer::format::FormatSliceFile;
 
 use crate::app::{
     App,
-    task::{PollResult, Task, TaskStatus},
+    task::{PollResult, Task, TaskStatus, thread::TaskThread},
 };
 
 pub struct SaveResult {
     progress: Progress,
     file_name: String,
+    handle: TaskThread<()>,
 }
 
 impl SaveResult {
@@ -20,7 +21,7 @@ impl SaveResult {
         callback: impl FnOnce(Vec<u8>) + Send + 'static,
     ) -> Self {
         let progress = Progress::new();
-        thread::spawn(clone!([progress], move || {
+        let handle = TaskThread::spawn(clone!([progress], move || {
             let mut serializer = DynamicSerializer::new();
             file.serialize(&mut serializer, progress);
             callback(serializer.into_inner());
@@ -28,13 +29,16 @@ impl SaveResult {
         SaveResult {
             progress,
             file_name,
+            handle,
         }
     }
 }
 
 impl Task for SaveResult {
-    fn poll(&mut self, _app: &mut App) -> PollResult {
-        PollResult::from_bool(self.progress.complete())
+    fn poll(&mut self, app: &mut App) -> PollResult {
+        self.handle
+            .poll(app, "Failed to Write Slice Result")
+            .into_poll_result(|_| PollResult::complete())
     }
 
     fn status(&self) -> Option<TaskStatus<'_>> {
