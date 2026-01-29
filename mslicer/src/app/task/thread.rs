@@ -17,8 +17,12 @@ pub enum TaskResult<T> {
 
 impl<T: Send + 'static> TaskThread<T> {
     pub fn spawn(f: impl FnOnce() -> T + Send + 'static) -> Self {
+        let handle = thread::Builder::new()
+            .name("task_thread".into())
+            .spawn(f)
+            .unwrap();
         Self {
-            handle: Some(thread::spawn(f)),
+            handle: Some(handle),
         }
     }
 

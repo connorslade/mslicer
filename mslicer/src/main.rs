@@ -1,6 +1,6 @@
 #![windows_subsystem = "windows"]
 
-use std::sync::Arc;
+use std::{panic, sync::Arc, thread};
 
 use anyhow::Result;
 use eframe::NativeOptions;
@@ -22,6 +22,12 @@ use app::{App, config::Config};
 const ICON: &[u8] = include_asset!("icon.png");
 
 fn main() -> Result<()> {
+    // Don't print panics on threads that are handled by the task system.
+    let old_panic = panic::take_hook();
+    panic::set_hook(Box::new(move |panic| {
+        (thread::current().name() != Some("task_thread")).then(|| old_panic(panic));
+    }));
+
     let filter = filter::Targets::new()
         .with_default(LevelFilter::OFF)
         .with_target("mslicer", LevelFilter::TRACE)
