@@ -121,7 +121,7 @@ pub fn ui(app: &mut App, ctx: &Context) {
 fn import_model(app: &mut App) {
     app.tasks.add(FileDialog::pick_file(
         ("Mesh", &["stl", "obj"]),
-        |app, path| {
+        |app, path, _| {
             let name = path.file_name().unwrap().to_str().unwrap().to_string();
             let ext = path.extension();
             let format = ext.unwrap_or_default().to_string_lossy();
@@ -143,14 +143,14 @@ fn import_teapot(app: &mut App) {
 fn save(app: &mut App) {
     app.tasks.add(FileDialog::save_file(
         ("mslicer project", &["mslicer"]),
-        |app, path| app.save_project(&path.with_extension("mslicer")),
+        |app, path, _| app.save_project(&path.with_extension("mslicer")),
     ));
 }
 
 fn load(app: &mut App) {
     app.tasks.add(FileDialog::pick_file(
         ("mslicer project", &["mslicer"]),
-        |app, path| app.load_project(path),
+        |app, path, _| app.load_project(path),
     ));
 }
 

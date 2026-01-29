@@ -12,6 +12,7 @@
   - Saving and loading projects
   - Building acceleration structures
   - File pick/save dialogs
+  - Exporting sliced files (mostly needed for compressing .nanodlp)
 - Color backfaces grey in rendered view
 - Don't show multiple copies of layer in slice preview when panning far to the right
 - Printer presets (print volume, resolution)

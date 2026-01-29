@@ -7,6 +7,7 @@ use common::{
     format::Format,
     image::Image,
     misc::{EncodableLayer, Run, SliceResult, VectorSliceResult},
+    progress::Progress,
     serde::Serializer,
 };
 
@@ -72,13 +73,16 @@ impl FormatSliceFile {
         }
     }
 
-    pub fn serialize<T: Serializer>(&self, ser: &mut T) {
+    pub fn serialize<T: Serializer>(&self, ser: &mut T, progress: Progress) {
         match self {
             FormatSliceFile::Goo(file) => file.serialize(ser),
             FormatSliceFile::Ctb(file) => file.serialize(ser),
-            FormatSliceFile::NanoDLP(file) => file.serialize(ser).unwrap(),
+            FormatSliceFile::NanoDLP(file) => file.serialize(ser, progress.clone()).unwrap(),
             FormatSliceFile::Svg(file) => file.serialize(ser),
         }
+
+        progress.set_total(1);
+        progress.set_finished();
     }
 
     pub fn info(&self) -> SliceInfo {

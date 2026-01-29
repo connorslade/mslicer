@@ -11,11 +11,15 @@ use nalgebra::Vector2;
 use wgpu::COPY_BUFFER_ALIGNMENT;
 
 use crate::{
-    app::{App, slice_operation::SliceResult, task::FileDialog},
+    app::{
+        App,
+        slice_operation::SliceResult,
+        task::{FileDialog, SaveResult},
+    },
     render::slice_preview::SlicePreviewRenderCallback,
     ui::{components::vec2_dragger, popup::Popup},
 };
-use common::{format::Format, serde::DynamicSerializer};
+use common::{format::Format, progress::Progress, serde::DynamicSerializer};
 
 const FILENAME_POPUP_TEXT: &str =
     "To ensure the file name is unique, some extra random characters will be added on the end.";
@@ -25,12 +29,18 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
         let progress = &slice_operation.progress;
 
         if let Some(completion) = slice_operation.completion() {
+            let mut result = app.slice_operation.as_ref().unwrap().result();
+            let result = result.as_mut().unwrap();
+            let format = result.file.as_format();
+
             ui.horizontal(|ui| {
                 ui.label(format!("Slicing completed in {completion}!"));
 
                 ui.with_layout(Layout::default().with_cross_align(Align::Max), |ui| {
                     ui.horizontal(|ui| {
-                        ui.add_enabled_ui(app.remote_print.is_initialized(), |ui| {
+                        let enabled =
+                            app.remote_print.is_initialized() && format.supports_preview();
+                        ui.add_enabled_ui(enabled, |ui| {
                             ui.menu_button(concatcp!(PAPER_PLANE_TILT, " Send to Printer"), |ui| {
                                 let mqtt = app.remote_print.mqtt();
                                 for printer in app.remote_print.printers().iter() {
@@ -53,16 +63,12 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                                             Align::LEFT,
                                         );
 
-                                    let result = app.slice_operation.as_ref().unwrap().result();
-                                    let result = result.as_ref().unwrap();
-
                                     let mut serializer = DynamicSerializer::new();
-                                    result.file.serialize(&mut serializer);
+                                    result.file.serialize(&mut serializer, Progress::new());
                                     let data = Arc::new(serializer.into_inner());
 
                                     let mainboard_id = printer.mainboard_id.clone();
                                     if ui.button(layout_job).clicked() {
-                                        let format = result.file.as_format();
                                         app.popup.open(name_popup(mainboard_id, data, format));
                                     }
                                 }
@@ -70,33 +76,26 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                         });
 
                         if ui.button(concatcp!(FLOPPY_DISK_BACK, " Save")).clicked() {
-                            let result = app.slice_operation.as_ref().unwrap().result();
-                            let result = result.as_ref().unwrap();
-                            let format = result.file.as_format();
-
-                            let mut serializer = DynamicSerializer::new();
-                            result.file.serialize(&mut serializer);
-                            let bytes = serializer.into_inner();
-
-                            app.tasks.add(FileDialog::save_file(
+                            let file = result.file.clone();
+                            let task = FileDialog::save_file(
                                 (format.name(), &[format.extension()]),
-                                move |_app, path| {
+                                move |_app, path, tasks| {
                                     let path = path.with_extension(format.extension());
-                                    let mut file = File::create(path).unwrap();
-                                    file.write_all(&bytes).unwrap();
+                                    let file_name = path.file_name().unwrap().to_string_lossy();
+                                    let mut out = File::create(&path).unwrap();
+
+                                    tasks.push(Box::new(SaveResult::new(
+                                        (file, file_name.into_owned()),
+                                        move |bytes| out.write_all(&bytes).unwrap(),
+                                    )));
                                 },
-                            ));
+                            );
+                            app.tasks.add(task);
                         }
                     })
                 });
             });
 
-            let mut result = slice_operation.result();
-            let Some(result) = result.as_mut() else {
-                return;
-            };
-
-            let format = result.file.as_format();
             if !format.supports_preview() {
                 ui.add_space(8.0);
                 ui.label(format!(

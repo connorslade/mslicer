@@ -1,4 +1,4 @@
-use std::{mem, path::PathBuf, thread, time::Instant};
+use std::{mem, path::PathBuf, sync::Arc, thread, time::Instant};
 
 use clone_macro::clone;
 use const_format::concatcp;
@@ -185,7 +185,7 @@ impl App {
 
                 let layers = file.info().layers as usize;
                 slice_operation.add_result(SliceResult {
-                    file,
+                    file: Arc::new(file),
                     slice_preview_layer: 0,
                     last_preview_layer: 0,
                     preview_offset: Vector2::new(0.0, 0.0),

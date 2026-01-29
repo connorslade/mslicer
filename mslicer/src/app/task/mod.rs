@@ -7,12 +7,14 @@ mod file_dialog;
 mod mesh_load;
 mod mesh_manifold;
 mod project;
+mod save_result;
 pub use self::{
     acceleration_structures::BuildAccelerationStructures,
     file_dialog::FileDialog,
     mesh_load::MeshLoad,
     mesh_manifold::MeshManifold,
     project::{ProjectLoad, ProjectSave},
+    save_result::SaveResult,
 };
 
 // Async operation that can be polled every frame.
@@ -87,6 +89,11 @@ impl PollResult {
 
     pub fn with_task(mut self, task: impl Task + 'static) -> Self {
         self.new_tasks.push(Box::new(task));
+        self
+    }
+
+    pub fn with_tasks(mut self, task: Vec<Box<dyn Task>>) -> Self {
+        self.new_tasks.extend(task);
         self
     }
 }

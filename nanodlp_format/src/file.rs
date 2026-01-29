@@ -4,7 +4,7 @@ use std::{
 };
 
 use anyhow::Result;
-use common::{misc::SliceResult, serde::Serializer};
+use common::{misc::SliceResult, progress::Progress, serde::Serializer};
 use image::DynamicImage;
 use serde::Serialize;
 use zip::{ZipArchive, ZipWriter, write::FileOptions};
@@ -95,7 +95,7 @@ impl File {
         }
     }
 
-    pub fn serialize<T: Serializer>(&self, ser: &mut T) -> Result<()> {
+    pub fn serialize<T: Serializer>(&self, ser: &mut T, progress: Progress) -> Result<()> {
         let mut bytes = Vec::new();
         let mut zip = ZipWriter::new(Cursor::new(&mut bytes));
 
@@ -124,7 +124,9 @@ impl File {
         zip.start_file("3d.png", FileOptions::DEFAULT)?;
         zip.write_all(&encode_png(&self.preview)?)?;
 
+        progress.set_total(self.layers.len() as u64);
         for (i, layer) in self.layers.iter().enumerate() {
+            progress.set_complete(i as u64);
             zip.start_file(format!("{}.png", i + 1), FileOptions::DEFAULT)?;
             zip.write_all(layer)?;
         }

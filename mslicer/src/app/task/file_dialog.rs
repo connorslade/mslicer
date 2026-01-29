@@ -8,7 +8,7 @@ use crate::app::{
     task::{PollResult, Task},
 };
 
-type Callback = Box<dyn FnOnce(&mut App, &Path)>;
+type Callback = Box<dyn FnOnce(&mut App, &Path, &mut Vec<Box<dyn Task>>)>;
 
 pub struct FileDialog {
     func: Option<Callback>,
@@ -18,7 +18,7 @@ pub struct FileDialog {
 impl FileDialog {
     fn new(
         file: impl Future<Output = Option<FileHandle>> + Send + 'static,
-        callback: impl FnMut(&mut App, &Path) + 'static,
+        callback: impl FnOnce(&mut App, &Path, &mut Vec<Box<dyn Task>>) + 'static,
     ) -> Self {
         let promise = Promise::spawn_async(file);
         FileDialog {
@@ -29,7 +29,7 @@ impl FileDialog {
 
     pub fn pick_file(
         (name, extensions): (impl Into<String>, &[impl ToString]),
-        callback: impl FnMut(&mut App, &Path) + 'static,
+        callback: impl FnOnce(&mut App, &Path, &mut Vec<Box<dyn Task>>) + 'static,
     ) -> Self {
         let file = AsyncFileDialog::new()
             .add_filter(name, extensions)
@@ -39,7 +39,7 @@ impl FileDialog {
 
     pub fn save_file(
         (name, extensions): (impl Into<String>, &[impl ToString]),
-        callback: impl FnMut(&mut App, &Path) + 'static,
+        callback: impl FnOnce(&mut App, &Path, &mut Vec<Box<dyn Task>>) + 'static,
     ) -> Self {
         let file = AsyncFileDialog::new()
             .add_filter(name, extensions)
@@ -55,9 +55,11 @@ impl Task for FileDialog {
             && let Some(handle) = data
         {
             let path = handle.path();
-            self.func.take().unwrap()(app, path);
+            let mut tasks = Vec::new();
+            self.func.take().unwrap()(app, path, &mut tasks);
+            PollResult::complete().with_tasks(tasks)
+        } else {
+            PollResult::pending()
         }
-
-        PollResult::from_bool(result.is_some())
     }
 }

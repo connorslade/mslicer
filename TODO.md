@@ -126,3 +126,5 @@
   - [ ] Explore 3D post processing (mentioned in #7)
 - [ ] Reference count BVH and half_edge meshes
 - [ ] Make sliced file serialization an async task
+- [ ] Redo the while slice operating thing, its gotten out of hand...
+- [ ] Error handling in async tasks

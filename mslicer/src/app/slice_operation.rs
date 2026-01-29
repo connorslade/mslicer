@@ -27,7 +27,7 @@ pub struct SliceOperation {
 }
 
 pub struct SliceResult {
-    pub file: FormatSliceFile,
+    pub file: Arc<FormatSliceFile>,
 
     pub slice_preview_layer: usize,
     pub last_preview_layer: usize,

@@ -42,10 +42,11 @@ impl Format {
     }
 
     pub fn supports_preview(&self) -> bool {
-        match self {
-            Format::Goo | Format::Ctb | Format::NanoDLP => true,
-            Format::Svg => false,
-        }
+        matches!(self, Format::Goo | Format::Ctb | Format::NanoDLP)
+    }
+
+    pub fn supports_remote_send(&self) -> bool {
+        matches!(self, Format::Goo | Format::Ctb)
     }
 
     pub fn serialize<T: Serializer>(&self, ser: &mut T) {
