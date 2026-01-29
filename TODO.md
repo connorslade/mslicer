@@ -1,6 +1,7 @@
 # Todo
 
 - [ ] Verify slicer on more models
+  - [ ] Systematic testing to fix bad slicing / polygon filling
 - [x] Preprocess mesh to remove self-intersections?
 - [x] Separate each surface from a mesh before slicing to fix the self intersection problem?
 - [x] Integrate remote send into ui
@@ -68,7 +69,7 @@
 - [x] Don't allow adding the same printer multiple times
 - [x] Drag and drop to load models
 - [x] Look into mqtt server resource leak on disable
-- [ ] Run post-slice plugins on slice thread
+- [x] Run post-slice plugins on slice thread
 - [x] Allow dragging slice operation preview
 - [x] Fix rotation on Z axis
 - [x] Fix Z translation being doubled
@@ -79,13 +80,13 @@
 - [ ] Undo / Redo
 - [x] Close file menu if button clicked
 - [x] Allow dragging in project to load them
-- [ ] Remember the file that was opened for future save operations
+- [x] Remember the file that was opened for future save operations
 - [x] Save on remote thread
 - [x] Printer profiles
 - [x] Save config on quit
 - [x] Refactor plugins to post processors
 - [x] Update readme
-- [ ] Make post processing async
+- [x] Make post processing async
 - [x] Allow recalculating normals
 - [x] Cleanup self intersection resolution
 - [x] Don't fail to load an stl without normals
@@ -103,8 +104,7 @@
 - [ ] Tools for working with lots of models
 - [x] Bounds checking in slice preview
 - [ ] Allow loading .goo files to use with the preview and remote send
-- [ ] Allow inspecting / manually editing goo files?
-- [ ] Systematic testing to fix bad slicing / polygon filling
+  - [ ] Allow manually editing the pixels
 - [x] Recompute normals by default...
 - [x] Don't show normals for hidden models
 - [ ] Fix low overall fps when scrubbing through layers, upload async?
@@ -125,6 +125,7 @@
 - [ ] Antialiasing without post-processing?
   - [ ] Explore 3D post processing (mentioned in #7)
 - [ ] Reference count BVH and half_edge meshes
-- [ ] Make sliced file serialization an async task
+- [x] Make sliced file serialization an async task
 - [ ] Redo the while slice operating thing, its gotten out of hand...
 - [ ] Error handling in async tasks
+- [ ] Auto open tasks panel when there are pending tasks

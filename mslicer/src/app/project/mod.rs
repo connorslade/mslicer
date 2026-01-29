@@ -21,6 +21,7 @@ pub mod storage;
 
 #[derive(Default, Clone)]
 pub struct Project {
+    pub path: Option<PathBuf>,
     pub slice_config: SliceConfig,
     pub post_processing: PostProcessing,
     pub models: Vec<Model>,
@@ -50,6 +51,15 @@ impl App {
     pub fn load_project(&mut self, path: &Path) {
         self.add_recent_project(path.to_path_buf());
         self.tasks.add(ProjectLoad::new(path.to_path_buf()));
+    }
+}
+
+impl Project {
+    pub fn with_path(self, path: PathBuf) -> Self {
+        Self {
+            path: Some(path),
+            ..self
+        }
     }
 }
 

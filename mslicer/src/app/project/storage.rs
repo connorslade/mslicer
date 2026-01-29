@@ -146,6 +146,7 @@ impl Project {
 
         progress.set_finished();
         Ok(Self {
+            path: None,
             slice_config,
             post_processing,
             models,

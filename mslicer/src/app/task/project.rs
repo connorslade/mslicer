@@ -36,9 +36,11 @@ impl ProjectLoad {
 
         info!("Loading project from `{}`", path.display());
         let handle = thread::spawn(clone!([progress], move || {
-            let file = File::open(path).unwrap();
+            let file = File::open(&path).unwrap();
             let mut des = ReaderDeserializer::new(BufReader::new(file));
-            Project::deserialize(&mut des, progress).unwrap()
+            Project::deserialize(&mut des, progress)
+                .unwrap()
+                .with_path(path)
         }));
 
         Self {
@@ -70,11 +72,13 @@ impl Task for ProjectLoad {
         if self.progress.complete() {
             app.project = self.handle.take().unwrap().join().unwrap();
 
+            let mut result = PollResult::complete();
             let count = app.project.models.len();
             for (i, model) in app.project.models.iter_mut().enumerate() {
                 model.update_oob(&app.project.slice_config.platform_size);
-                app.tasks.add(MeshManifold::new(model));
-                app.tasks.add(BuildAccelerationStructures::new(model));
+                result = result
+                    .with_task(MeshManifold::new(model))
+                    .with_task(BuildAccelerationStructures::new(model));
 
                 info!(
                     " {} Loaded model `{}` with {} faces",
@@ -84,7 +88,7 @@ impl Task for ProjectLoad {
                 );
             }
 
-            return PollResult::complete();
+            return result;
         }
 
         PollResult::pending()

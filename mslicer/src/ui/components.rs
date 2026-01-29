@@ -1,5 +1,21 @@
-use egui::{Align, DragValue, Layout, Ui, emath::Numeric};
+use egui::{Align, Color32, DragValue, FontId, Layout, Separator, Ui, emath::Numeric};
 use egui_phosphor::regular::INFO;
+
+pub fn labeled_separator(ui: &mut Ui, text: &str) {
+    ui.horizontal(|ui| {
+        let width = ui.fonts_mut(|f| {
+            f.layout_no_wrap(text.into(), FontId::default(), Color32::default())
+                .rect
+                .width()
+        });
+        let spacing = ui.style().spacing.item_spacing.x;
+        let bar = (ui.available_width() - width) / 2.0 - spacing;
+
+        ui.add_sized([bar, 1.0], Separator::default().horizontal());
+        ui.label(text);
+        ui.add_sized([bar, 1.0], Separator::default().horizontal());
+    });
+}
 
 pub fn dragger<Num: Numeric>(
     ui: &mut Ui,
