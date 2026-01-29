@@ -3,7 +3,7 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
-use anyhow::{Ok, Result};
+use anyhow::Result;
 use common::{misc::SliceResult, serde::Serializer};
 use image::DynamicImage;
 use serde::Serialize;
@@ -112,8 +112,14 @@ impl File {
         serialize_file(&mut zip, "meta.json", &self.meta)?;
         serialize_file(&mut zip, "info.json", &self.layer_info)?;
         serialize_file(&mut zip, "plate.json", &self.plate)?;
-        serialize_file(&mut zip, "options.json", &self.options)?;
         serialize_file(&mut zip, "profile.json", &self.profile)?;
+
+        // The actual NanoDLP software seems to work with options.json, but this
+        // is not currently recognized by UVTools like slicer.json is. Not sure
+        // whats going on here, but to maximize compatibility Ill just output
+        // both?
+        serialize_file(&mut zip, "options.json", &self.options)?;
+        serialize_file(&mut zip, "slicer.json", &self.options)?;
 
         zip.start_file("3d.png", FileOptions::DEFAULT)?;
         zip.write_all(&encode_png(&self.preview)?)?;
@@ -137,8 +143,15 @@ impl File {
             .unwrap_or_default();
         let layer_info = serde_json::from_reader::<_, Vec<LayerInfo>>(zip.by_name("info.json")?)?;
         let plate = serde_json::from_reader::<_, Plate>(zip.by_name("plate.json")?)?;
-        let slicer = serde_json::from_reader::<_, Options>(zip.by_name("options.json")?)?;
         let profile = serde_json::from_reader::<_, Profile>(zip.by_name("profile.json")?)?;
+
+        let mut options = zip.by_name("options.json");
+        if options.is_err() {
+            drop(options);
+            options = zip.by_name("slicer.json");
+        }
+
+        let options = serde_json::from_reader::<_, Options>(options?)?;
 
         let preview = decode_png(&read_to_bytes(zip.by_name("3d.png")?)?)?;
         let layers = (0..layer_info.len())
@@ -148,7 +161,7 @@ impl File {
         Ok(File {
             meta,
             plate,
-            options: slicer,
+            options,
             profile,
             preview,
 
