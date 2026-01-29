@@ -76,7 +76,7 @@ impl<'a> PngEncoder<'a> {
 
     pub fn write_image_data(&mut self, mut rgb: Vec<Run>) {
         let width = self.header.width as u64 * self.planes as u64;
-        insert_runs(&mut rgb, 0, width);
+        intersperse_runs(&mut rgb, 0, width);
 
         let mut check = Adler32::new();
         rgb.iter().for_each(|run| check.update_run(run));
@@ -108,7 +108,7 @@ impl PngInfo {
     }
 }
 
-pub fn insert_runs(runs: &mut Vec<Run>, value: u8, spacing: u64) {
+pub fn intersperse_runs(runs: &mut Vec<Run>, value: u8, spacing: u64) {
     let mut i = 0; // The current run being processed
     let mut pos = 0; // The current position in bytes
     let mut next = 0; // Next byte index to insert `value`

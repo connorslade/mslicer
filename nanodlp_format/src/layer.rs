@@ -1,3 +1,5 @@
+use std::mem;
+
 use common::{
     config::SliceConfig,
     image::Image,
@@ -73,7 +75,7 @@ impl EncodableLayer for LayerEncoder {
         self.runs.push(Run { length, value });
     }
 
-    fn finish(self, _layer: u64, _config: &SliceConfig) -> Self::Output {
+    fn finish(self, _layer: u64, config: &SliceConfig) -> Self::Output {
         let mut area = 0;
         let mut pos = 0;
 
@@ -96,16 +98,37 @@ impl EncodableLayer for LayerEncoder {
             }
         }
 
+        let chunks = RunChunks::new(&self.runs, config.platform_resolution.x);
+        let mut prev = vec![];
+        let mut area_count = 0i32;
+
+        for row in chunks {
+            let condensed = condense_nonzero_runs(&row);
+            if prev.is_empty() {
+                area_count += (condensed.len() / 2) as i32;
+                prev = condensed;
+                continue;
+            }
+
+            area_count += unmatched_runs(&prev, &condensed);
+            prev = condensed;
+        }
+
+        let area = area as f32
+            * (config.platform_size.x / config.platform_resolution.x as f32)
+            * (config.platform_size.y / config.platform_resolution.y as f32);
+
         Layer {
             info: LayerInfo {
-                total_solid_area: area as f32,
-                largest_area: area as f32,  // todo
-                smallest_area: area as f32, // todo
+                // todo: correctly set largest and smallest area
+                total_solid_area: area,
+                largest_area: area,
+                smallest_area: area / area_count as f32,
                 min_x: min.x as u32,
                 min_y: min.y as u32,
                 max_x: max.x as u32,
                 max_y: max.y as u32,
-                area_count: 1,
+                area_count: area_count as u32,
             },
             inner: self.image_data(),
         }
@@ -122,4 +145,111 @@ impl LayerDecoder {
     pub fn into_inner(self) -> RgbImage {
         self.image
     }
+}
+
+struct RunChunks<'a> {
+    runs: &'a [Run],
+    width: u64,
+
+    index: usize,
+    offset: u64,
+}
+
+impl<'a> RunChunks<'a> {
+    pub fn new(runs: &'a [Run], width: u32) -> Self {
+        Self {
+            runs,
+            width: width as u64,
+
+            index: 0,
+            offset: 0,
+        }
+    }
+}
+
+impl<'a> Iterator for RunChunks<'a> {
+    type Item = Vec<Run>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.index >= self.runs.len() {
+            return None;
+        }
+
+        let mut out = Vec::new();
+        let mut length = 0;
+
+        while length < self.width && self.index < self.runs.len() {
+            let run = self.runs[self.index];
+            let run_length = run.length - self.offset;
+            let clamped_run_length = run_length.min(self.width - length);
+            length += clamped_run_length;
+            out.push(Run {
+                length: clamped_run_length,
+                value: run.value,
+            });
+
+            if clamped_run_length == run_length {
+                self.index += 1;
+                self.offset = 0;
+            } else {
+                self.offset += clamped_run_length;
+            }
+        }
+
+        Some(out)
+    }
+}
+
+/// Returns a list of lengths, starting with zero and alternating. So `[0, 23,
+/// 7]` would mean the run starts with 23 non-zero bytes, then 7 zero bytes.
+fn condense_nonzero_runs(runs: &[Run]) -> Vec<u64> {
+    let mut out = Vec::new();
+
+    let mut value = false;
+    let mut length = 0;
+    for run in runs {
+        let this_value = run.value > 0;
+        if this_value ^ value {
+            out.push(mem::replace(&mut length, run.length));
+            value = this_value;
+        } else {
+            length += run.length;
+        }
+    }
+
+    (length > 0).then(|| out.push(length));
+    out
+}
+
+fn unmatched_runs(prev: &[u64], next: &[u64]) -> i32 {
+    let mut next_pos = 0;
+    let mut next_idx = 0;
+    let mut sum = 0;
+
+    while next_idx < next.len() {
+        let next_len = next[next_idx];
+        if next_idx % 2 == 1 {
+            let next_end = next_pos + next_len;
+            let mut touched_count = 0;
+            let mut prev_pos = 0;
+
+            for (prev_idx, &prev_run_length) in prev.iter().enumerate() {
+                touched_count += (prev_idx % 2 == 1
+                    && next_pos < prev_pos + prev_run_length
+                    && prev_pos < next_end) as i32;
+                prev_pos += prev_run_length;
+
+                if prev_pos >= next_end {
+                    break;
+                }
+            }
+
+            sum += 1 - touched_count;
+        }
+
+        next_pos += next_len;
+        next_idx += 1;
+    }
+
+    sum
 }
