@@ -6,7 +6,7 @@ use crate::{
     serde::{Deserializer, SerdeExt, Serializer},
 };
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct SliceConfig {
     pub format: Format,
 
@@ -20,7 +20,7 @@ pub struct SliceConfig {
     pub transition_layers: u32,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct ExposureConfig {
     pub exposure_time: f32,
     pub lift_distance: f32,

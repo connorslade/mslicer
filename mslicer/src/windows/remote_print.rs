@@ -37,7 +37,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
         ui.add_space(8.0);
 
         ui.vertical_centered(|ui| {
-            if ui.button("Initialize").clicked() {
+            if ui.button(concatcp!(NETWORK, " Initialize")).clicked() {
                 app.remote_print.init().unwrap();
                 app.remote_print
                     .set_network_timeout(Duration::from_secs_f32(app.config.network_timeout));

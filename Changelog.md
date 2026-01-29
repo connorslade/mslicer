@@ -23,6 +23,7 @@
 - Added task panel to view the progress of running async tasks
 - Run post processing operations asynchronously
 - Added support for the NanoDLP format (.nanodlp)
+- Allow setting/updating default slice config (#5)
 
 ## v0.4.0 &mdash; November 25th, 2025
 

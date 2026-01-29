@@ -1,5 +1,6 @@
+use const_format::concatcp;
 use egui::{Align, ComboBox, Context, DragValue, Grid, Layout, Ui};
-use egui_phosphor::regular::{INFO, WARNING};
+use egui_phosphor::regular::{ARROW_COUNTER_CLOCKWISE, INFO, NOTE_PENCIL, WARNING};
 use slicer::post_process::{anti_alias::AntiAlias, elephant_foot_fixer::ElephantFootFixer};
 
 use crate::{
@@ -13,6 +14,22 @@ const SLICE_FORMAT_TOOLTIP: &str =
     "Only .goo and .ctb files can be sent with the 'Remote Print' module.";
 
 pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
+    ui.heading("Slice Config");
+
+    ui.add_enabled_ui(
+        app.project.slice_config != app.config.default_slice_config,
+        |ui| {
+            ui.horizontal(|ui| {
+                ui.button(concatcp!(ARROW_COUNTER_CLOCKWISE, " Reset to Default"))
+                    .clicked()
+                    .then(|| app.project.slice_config = app.config.default_slice_config.clone());
+                (ui.button(concatcp!(NOTE_PENCIL, " Set Default")).clicked())
+                    .then(|| app.config.default_slice_config = app.project.slice_config.clone());
+            });
+        },
+    );
+    ui.add_space(8.0);
+
     let slice_config = &mut app.project.slice_config;
     Grid::new("slice_config")
         .num_columns(2)

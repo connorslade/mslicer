@@ -5,6 +5,7 @@ use std::{
 };
 
 use anyhow::Result;
+use common::config::SliceConfig;
 use egui::Theme;
 use egui_dock::Tree;
 use nalgebra::{Vector2, Vector3};
@@ -21,6 +22,7 @@ pub struct Config {
     pub overhang_visualization: (bool, f32),
     pub recent_projects: Vec<PathBuf>,
     pub panels: Option<Tree<Tab>>,
+    pub default_slice_config: SliceConfig,
 
     // Remote print settings
     pub alert_print_completion: bool,
@@ -84,6 +86,7 @@ impl Default for Config {
             grid_size: 12.16,
             theme: Theme::Dark,
             overhang_visualization: (false, 30.0),
+            default_slice_config: SliceConfig::default(),
 
             recent_projects: Vec::new(),
             panels: None,

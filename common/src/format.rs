@@ -1,8 +1,9 @@
 use anyhow::{Result, bail};
+use serde::{Deserialize, Serialize};
 
 use crate::serde::{Deserializer, Serializer};
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Format {
     Goo,
     Ctb,
