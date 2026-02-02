@@ -11,10 +11,9 @@ use slicer::mesh::Mesh;
 use tracing::info;
 
 use crate::app::{
-    App,
     project::model::Model,
     task::{
-        MeshManifold, PollResult, Task, TaskStatus,
+        MeshManifold, PollResult, Task, TaskApp, TaskStatus,
         acceleration_structures::BuildAccelerationStructures, thread::TaskThread,
     },
 };
@@ -52,7 +51,7 @@ impl MeshLoad {
 }
 
 impl Task for MeshLoad {
-    fn poll(&mut self, app: &mut App) -> PollResult {
+    fn poll(&mut self, app: &mut TaskApp) -> PollResult {
         (self.join.poll(app, "Failed to Load Model")).into_poll_result(|mesh| {
             let mesh = Mesh::new(mesh.verts, mesh.faces);
             info!(

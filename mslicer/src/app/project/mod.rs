@@ -1,15 +1,6 @@
-use std::{
-    iter,
-    path::{Path, PathBuf},
-};
+use std::path::PathBuf;
 
-use itertools::Itertools;
-
-use crate::app::{
-    App,
-    project::model::Model,
-    task::{ProjectLoad, ProjectSave},
-};
+use crate::app::project::model::Model;
 use common::{config::SliceConfig, progress::CombinedProgress};
 use slicer::{
     format::FormatSliceFile,
@@ -31,27 +22,6 @@ pub struct Project {
 pub struct PostProcessing {
     pub anti_alias: AntiAlias,
     pub elephant_foot_fixer: ElephantFootFixer,
-}
-
-impl App {
-    fn add_recent_project(&mut self, path: PathBuf) {
-        self.config.recent_projects = iter::once(path)
-            .chain(self.config.recent_projects.iter().cloned())
-            .unique()
-            .take(5)
-            .collect()
-    }
-
-    pub fn save_project(&mut self, path: &Path) {
-        self.add_recent_project(path.to_path_buf());
-        self.tasks
-            .add(ProjectSave::new(self.project.clone(), path.to_path_buf()));
-    }
-
-    pub fn load_project(&mut self, path: &Path) {
-        self.add_recent_project(path.to_path_buf());
-        self.tasks.add(ProjectLoad::new(path.to_path_buf()));
-    }
 }
 
 impl Project {

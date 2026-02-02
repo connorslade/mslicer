@@ -2,9 +2,8 @@ use clone_macro::clone;
 use common::progress::Progress;
 
 use crate::app::{
-    App,
     project::model::{MeshWarnings, Model},
-    task::{PollResult, Task, TaskStatus, thread::TaskThread},
+    task::{PollResult, Task, TaskApp, TaskStatus, thread::TaskThread},
 };
 
 pub struct MeshManifold {
@@ -29,7 +28,7 @@ impl MeshManifold {
 }
 
 impl Task for MeshManifold {
-    fn poll(&mut self, app: &mut App) -> PollResult {
+    fn poll(&mut self, app: &mut TaskApp) -> PollResult {
         self.handle
             .poll(app, "Failed to Check Mesh Manifold")
             .into_poll_result(|result| {

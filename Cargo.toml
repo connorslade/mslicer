@@ -21,6 +21,7 @@ cbc = "0.1.2"
 chrono = "0.4.42"
 clap = { version = "4.5.47", features = ["derive"] }
 clone-macro = "1.0.0"
+concat-idents = "1.1.5"
 const_format = "0.2.34"
 crc32fast = "1.5.0"
 criterion = "0.8.1"

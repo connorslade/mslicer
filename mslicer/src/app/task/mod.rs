@@ -1,6 +1,10 @@
 use std::borrow::Cow;
 
-use crate::app::App;
+use crate::{
+    app::{App, config::Config, project::Project},
+    app_ref_type,
+    ui::popup::PopupManager,
+};
 
 mod acceleration_structures;
 mod file_dialog;
@@ -21,7 +25,7 @@ pub use self::{
 // Async operation that can be polled every frame.
 pub trait Task {
     /// Returns true if the task has completed.
-    fn poll(&mut self, app: &mut App) -> PollResult;
+    fn poll(&mut self, app: &mut TaskApp) -> PollResult;
 
     fn status(&self) -> Option<TaskStatus<'_>> {
         None
@@ -44,6 +48,17 @@ pub struct TaskManager {
     tasks: Vec<Box<dyn Task>>,
 }
 
+/// A subset of App fields, excluding `tasks`. This allows mutable access to
+/// these fields in task callbacks without two mutable references to the
+/// TaskManager.
+pub struct TaskApp<'a> {
+    pub popup: &'a mut PopupManager,
+    pub config: &'a mut Config,
+    pub project: &'a mut Project,
+}
+
+app_ref_type!(TaskManager, tasks);
+
 impl TaskManager {
     pub fn add(&mut self, task: impl Task + 'static) {
         self.tasks.push(Box::new(task));
@@ -56,18 +71,27 @@ impl TaskManager {
     pub fn any_with_status(&self) -> bool {
         self.iter().any(|x| x.status().is_some())
     }
+}
 
-    pub(super) fn poll(&mut self, app: &mut App) {
+impl<'a> TaskManagerRef<'a> {
+    pub(super) fn poll(&mut self) {
+        let this = &mut self.app.tasks;
+        let mut app = TaskApp {
+            popup: &mut self.app.popup,
+            config: &mut self.app.config,
+            project: &mut self.app.project,
+        };
+
         let mut i = 0;
-        while i < self.tasks.len() {
-            let result = self.tasks[i].poll(app);
+        while i < this.tasks.len() {
+            let result = this.tasks[i].poll(&mut app);
             if result.complete {
-                self.tasks.remove(i);
+                this.tasks.remove(i);
             } else {
                 i += 1;
             }
 
-            self.tasks.extend(result.new_tasks);
+            this.tasks.extend(result.new_tasks);
         }
     }
 }

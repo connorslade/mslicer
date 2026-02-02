@@ -4,10 +4,7 @@ use clone_macro::clone;
 use common::{progress::Progress, serde::DynamicSerializer};
 use slicer::format::FormatSliceFile;
 
-use crate::app::{
-    App,
-    task::{PollResult, Task, TaskStatus, thread::TaskThread},
-};
+use crate::app::task::{PollResult, Task, TaskApp, TaskStatus, thread::TaskThread};
 
 pub struct SaveResult {
     progress: Progress,
@@ -35,7 +32,7 @@ impl SaveResult {
 }
 
 impl Task for SaveResult {
-    fn poll(&mut self, app: &mut App) -> PollResult {
+    fn poll(&mut self, app: &mut TaskApp) -> PollResult {
         self.handle
             .poll(app, "Failed to Write Slice Result")
             .into_poll_result(|_| PollResult::complete())

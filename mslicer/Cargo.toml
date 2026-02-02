@@ -9,6 +9,7 @@ bitflags.workspace = true
 bytemuck.workspace = true
 chrono.workspace = true
 clone-macro.workspace = true
+concat-idents.workspace = true
 const_format.workspace = true
 dirs.workspace = true
 eframe.workspace = true

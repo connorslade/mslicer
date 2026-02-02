@@ -3,12 +3,9 @@ use std::path::Path;
 use poll_promise::Promise;
 use rfd::{AsyncFileDialog, FileHandle};
 
-use crate::app::{
-    App,
-    task::{PollResult, Task},
-};
+use crate::app::task::{PollResult, Task, TaskApp};
 
-type Callback = Box<dyn FnOnce(&mut App, &Path, &mut Vec<Box<dyn Task>>)>;
+type Callback = Box<dyn FnOnce(&mut TaskApp, &Path, &mut Vec<Box<dyn Task>>)>;
 
 pub struct FileDialog {
     func: Option<Callback>,
@@ -18,7 +15,7 @@ pub struct FileDialog {
 impl FileDialog {
     fn new(
         file: impl Future<Output = Option<FileHandle>> + Send + 'static,
-        callback: impl FnOnce(&mut App, &Path, &mut Vec<Box<dyn Task>>) + 'static,
+        callback: impl FnOnce(&mut TaskApp, &Path, &mut Vec<Box<dyn Task>>) + 'static,
     ) -> Self {
         let promise = Promise::spawn_async(file);
         FileDialog {
@@ -29,7 +26,7 @@ impl FileDialog {
 
     pub fn pick_file(
         (name, extensions): (impl Into<String>, &[impl ToString]),
-        callback: impl FnOnce(&mut App, &Path, &mut Vec<Box<dyn Task>>) + 'static,
+        callback: impl FnOnce(&mut TaskApp, &Path, &mut Vec<Box<dyn Task>>) + 'static,
     ) -> Self {
         let file = AsyncFileDialog::new()
             .add_filter(name, extensions)
@@ -39,7 +36,7 @@ impl FileDialog {
 
     pub fn save_file(
         (name, extensions): (impl Into<String>, &[impl ToString]),
-        callback: impl FnOnce(&mut App, &Path, &mut Vec<Box<dyn Task>>) + 'static,
+        callback: impl FnOnce(&mut TaskApp, &Path, &mut Vec<Box<dyn Task>>) + 'static,
     ) -> Self {
         let file = AsyncFileDialog::new()
             .add_filter(name, extensions)
@@ -49,7 +46,7 @@ impl FileDialog {
 }
 
 impl Task for FileDialog {
-    fn poll(&mut self, app: &mut App) -> PollResult {
+    fn poll(&mut self, app: &mut TaskApp) -> PollResult {
         let result = self.promise.ready();
         if let Some(data) = result
             && let Some(handle) = data

@@ -24,6 +24,7 @@ use remote_send::{
 
 use crate::{
     app::App,
+    app_ref_type,
     ui::{
         popup::{Popup, PopupIcon},
         state::{RemotePrintConnectStatus, UiState},
@@ -36,6 +37,8 @@ pub struct RemotePrint {
     printers: Arc<Mutex<Vec<Printer>>>,
     jobs: Vec<AsyncJob>,
 }
+
+app_ref_type!(RemotePrint, remote_print);
 
 struct Services {
     mqtt: Mqtt,
@@ -125,42 +128,6 @@ impl RemotePrint {
             info!("Shutting down remote print services");
             services.http.shutdown();
             services.mqtt.shutdown();
-        }
-    }
-
-    pub fn tick(&mut self, app: &mut App) {
-        let config = &app.config;
-
-        if !self.been_started && !self.is_initialized() && config.init_remote_print_at_startup {
-            self.init().unwrap();
-            self.set_network_timeout(Duration::from_secs_f32(config.network_timeout));
-
-            let services = self.services.as_ref().unwrap();
-            services.http.set_proxy_enabled(config.http_status_proxy);
-        }
-
-        let mut i = 0;
-        while i < self.jobs.len() {
-            if self.jobs[i].is_finished() {
-                let AsyncJob { handle, action } = self.jobs.remove(i);
-                action(&mut app.state);
-                if let Err(e) = handle.join().unwrap() {
-                    let mut body = String::new();
-                    for link in e.chain() {
-                        body.push_str(&link.to_string());
-                        body.push(' ');
-                    }
-
-                    app.popup.open(Popup::simple(
-                        "Remote Print Error",
-                        PopupIcon::Error,
-                        &body[..body.len() - 1],
-                    ));
-                }
-                continue;
-            }
-
-            i += 1;
         }
     }
 
@@ -255,6 +222,47 @@ impl RemotePrint {
             .unwrap();
 
         Ok(())
+    }
+}
+
+impl<'a> RemotePrintRef<'a> {
+    pub fn tick(&mut self) {
+        if !self.been_started
+            && !self.is_initialized()
+            && self.app.config.init_remote_print_at_startup
+        {
+            self.init().unwrap();
+            self.set_network_timeout(Duration::from_secs_f32(self.app.config.network_timeout));
+
+            let services = self.services.as_ref().unwrap();
+            services
+                .http
+                .set_proxy_enabled(self.app.config.http_status_proxy);
+        }
+
+        let mut i = 0;
+        while i < self.jobs.len() {
+            if self.jobs[i].is_finished() {
+                let AsyncJob { handle, action } = self.jobs.remove(i);
+                action(&mut self.app.state);
+                if let Err(e) = handle.join().unwrap() {
+                    let mut body = String::new();
+                    for link in e.chain() {
+                        body.push_str(&link.to_string());
+                        body.push(' ');
+                    }
+
+                    self.app.popup.open(Popup::simple(
+                        "Remote Print Error",
+                        PopupIcon::Error,
+                        &body[..body.len() - 1],
+                    ));
+                }
+                continue;
+            }
+
+            i += 1;
+        }
     }
 }
 

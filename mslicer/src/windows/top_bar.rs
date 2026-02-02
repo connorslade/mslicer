@@ -4,12 +4,12 @@ use const_format::concatcp;
 use egui::{
     Button, Context, Key, KeyboardShortcut, Modifiers, TopBottomPanel, Ui, ViewportCommand,
 };
-use egui_phosphor::regular::STACK;
+use egui_phosphor::regular::{FILE_TEXT, GIT_DIFF, STACK};
 
 use crate::{
     app::{
         App,
-        task::{FileDialog, MeshLoad},
+        task::{FileDialog, MeshLoad, ProjectLoad, ProjectSave},
     },
     include_asset,
     ui::components::labeled_separator,
@@ -24,6 +24,8 @@ const SAVE_AS_PROJECT_SHORTCUT: KeyboardShortcut = KeyboardShortcut::new(CTRL_SH
 const LOAD_PROJECT_SHORTCUT: KeyboardShortcut = KeyboardShortcut::new(Modifiers::CTRL, Key::O);
 const QUIT_SHORTCUT: KeyboardShortcut = KeyboardShortcut::new(Modifiers::CTRL, Key::Q);
 const SLICE_SHORTCUT: KeyboardShortcut = KeyboardShortcut::new(Modifiers::CTRL, Key::R);
+const UNDO_SHORTCUT: KeyboardShortcut = KeyboardShortcut::new(Modifiers::CTRL, Key::Z);
+const REDO_SHORTCUT: KeyboardShortcut = KeyboardShortcut::new(CTRL_SHIFT, Key::Z);
 
 type ShortcutCallback = fn(&mut App, &Context);
 const SHORTCUTS: &[(KeyboardShortcut, ShortcutCallback)] = &[
@@ -33,6 +35,8 @@ const SHORTCUTS: &[(KeyboardShortcut, ShortcutCallback)] = &[
     (SAVE_PROJECT_SHORTCUT, |app, _ctx| save(app)),
     (SAVE_AS_PROJECT_SHORTCUT, |app, _ctx| save_as(app)),
     (QUIT_SHORTCUT, |_app, ctx| quit(ctx)),
+    (UNDO_SHORTCUT, |app, _| app.history().undo()),
+    (REDO_SHORTCUT, |app, _| app.history().redo()),
     (SLICE_SHORTCUT, |app, _ctx| app.slice()),
 ];
 
@@ -47,8 +51,7 @@ pub fn ui(app: &mut App, ctx: &Context) {
             ui.heading("mslicer");
             ui.separator();
 
-            ui.menu_button("🖹 File", |ui| {
-                ui.style_mut().visuals.button_frame = false;
+            ui.menu_button(concatcp!(FILE_TEXT, " File"), |ui| {
                 ui.set_width(150.0);
 
                 labeled_separator(ui, "Model");
@@ -73,14 +76,22 @@ pub fn ui(app: &mut App, ctx: &Context) {
                             }
                         }
 
-                        if let Some(load) = load {
-                            app.load_project(&load);
+                        if let Some(path) = load {
+                            app.tasks.add(ProjectLoad::new(path));
                         }
                     });
                 });
 
                 labeled_separator(ui, "Misc");
                 menu_button((ui, app, ctx), SHORTCUTS[5], "Quit");
+            });
+
+            ui.menu_button(concatcp!(GIT_DIFF, " Edit"), |ui| {
+                ui.set_width(150.0);
+
+                labeled_separator(ui, "History");
+                menu_button((ui, app, ctx), SHORTCUTS[6], "Undo");
+                menu_button((ui, app, ctx), SHORTCUTS[7], "Redo");
             });
 
             let slicing = (app.slice_operation.as_ref())
@@ -112,13 +123,13 @@ fn menu_button(
 fn import_model(app: &mut App) {
     app.tasks.add(FileDialog::pick_file(
         ("Mesh", &["stl", "obj"]),
-        |app, path, _| {
+        |_app, path, tasks| {
             let name = path.file_name().unwrap().to_str().unwrap().to_string();
             let ext = path.extension();
             let format = ext.unwrap_or_default().to_string_lossy();
 
             let file = File::open(path).unwrap();
-            app.tasks.add(MeshLoad::file(file, name, format.into()));
+            tasks.push(Box::new(MeshLoad::file(file, name, format.into())));
         },
     ));
 }
@@ -133,7 +144,9 @@ fn import_teapot(app: &mut App) {
 
 fn save(app: &mut App) {
     if let Some(path) = app.project.path.clone() {
-        app.save_project(path.as_path());
+        let project = app.project.clone();
+        app.tasks()
+            .add(ProjectSave::new(project, path.to_path_buf()));
     } else {
         save_as(app);
     }
@@ -142,9 +155,12 @@ fn save(app: &mut App) {
 fn save_as(app: &mut App) {
     app.tasks.add(FileDialog::save_file(
         ("mslicer project", &["mslicer"]),
-        |app, path, _| {
+        |app, path, tasks| {
             let path = path.with_extension("mslicer");
-            app.save_project(&path);
+            tasks.push(Box::new(ProjectSave::new(
+                app.project.clone(),
+                path.to_path_buf(),
+            )));
             app.project.path = Some(path);
         },
     ));
@@ -153,7 +169,7 @@ fn save_as(app: &mut App) {
 fn load(app: &mut App) {
     app.tasks.add(FileDialog::pick_file(
         ("mslicer project", &["mslicer"]),
-        |app, path, _| app.load_project(path),
+        |_app, path, tasks| tasks.push(Box::new(ProjectLoad::new(path.to_path_buf()))),
     ));
 }
 

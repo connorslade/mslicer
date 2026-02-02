@@ -1,6 +1,6 @@
 use egui::{Color32, Context, Grid, Id, Label, RichText, Ui, WidgetText, Window, vec2};
 
-use crate::app::App;
+use crate::{app::App, app_ref_type};
 
 type UiFunction = dyn FnMut(&mut App, &mut Ui) -> bool;
 
@@ -8,6 +8,8 @@ type UiFunction = dyn FnMut(&mut App, &mut Ui) -> bool;
 pub struct PopupManager {
     popups: Vec<Popup>,
 }
+
+app_ref_type!(PopupManager, popup);
 
 pub struct Popup {
     title: String,
@@ -27,10 +29,16 @@ impl PopupManager {
     pub fn open(&mut self, popup: Popup) {
         self.popups.push(popup);
     }
+}
 
-    pub fn render(&mut self, app: &mut App, ctx: &Context) {
+impl<'a> PopupManagerRef<'a> {
+    pub fn render(&mut self, ctx: &Context) {
         let mut i = 0;
         let mut close = false;
+
+        // Right now an unsafe cast is used here because the ui function could
+        // access popup, but wont (i promise).
+        let app = unsafe { &mut *(self.app as *mut _) };
 
         while i < self.popups.len() {
             let popup = &mut self.popups[i];

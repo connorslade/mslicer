@@ -5,9 +5,8 @@ use common::progress::Progress;
 use slicer::{geometry::bvh::Bvh, half_edge::HalfEdgeMesh};
 
 use crate::app::{
-    App,
     project::model::Model,
-    task::{PollResult, Task, TaskStatus, thread::TaskThread},
+    task::{PollResult, Task, TaskApp, TaskStatus, thread::TaskThread},
 };
 
 pub struct BuildAccelerationStructures {
@@ -36,7 +35,7 @@ impl BuildAccelerationStructures {
 }
 
 impl Task for BuildAccelerationStructures {
-    fn poll(&mut self, app: &mut App) -> PollResult {
+    fn poll(&mut self, app: &mut TaskApp) -> PollResult {
         const FAILURE: &str = "Failed to Build Acceleration Structure";
         (self.handle.poll(app, FAILURE)).into_poll_result(|(bvh, half_edge)| {
             if let Some(model) = app.project.models.iter_mut().find(|x| x.id == self.mesh) {

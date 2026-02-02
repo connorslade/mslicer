@@ -1,7 +1,7 @@
 use std::thread::{self, JoinHandle};
 
 use crate::{
-    app::{App, task::PollResult},
+    app::task::{PollResult, TaskApp},
     ui::popup::{Popup, PopupIcon},
 };
 
@@ -26,7 +26,7 @@ impl<T: Send + 'static> TaskThread<T> {
         }
     }
 
-    pub fn poll(&mut self, app: &mut App, failure: &str) -> TaskResult<T> {
+    pub fn poll(&mut self, app: &mut TaskApp, failure: &str) -> TaskResult<T> {
         let handle = self.handle.as_ref().unwrap();
         if handle.is_finished() {
             let handle = self.handle.take().unwrap();

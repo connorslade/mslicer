@@ -1,0 +1,99 @@
+use std::{collections::VecDeque, mem};
+
+use common::{color::LinearRgb, config::SliceConfig};
+use nalgebra::Vector3;
+
+use crate::{app::App, app_ref_type};
+
+const MAX_HISTORY: usize = 0x80; // random number i picked
+
+#[derive(Default)]
+pub struct History {
+    history: VecDeque<Action>,
+    future: VecDeque<Action>,
+}
+
+app_ref_type!(History, history);
+
+#[derive(Debug)]
+pub enum Action {
+    Model { id: u32, action: ModelAction },
+    SliceConfig { config: SliceConfig },
+}
+
+#[derive(Debug)]
+pub enum ModelAction {
+    Name(String),
+    Color(LinearRgb<f32>),
+    Hidden(bool),
+    Position(Vector3<f32>),
+    Scale(Vector3<f32>),
+    Rotation(Vector3<f32>),
+}
+
+impl History {
+    pub fn track(&mut self, action: Action) {
+        self.history.push_back(action);
+        self.future.clear();
+    }
+
+    pub fn track_model(&mut self, id: u32, action: ModelAction) {
+        self.track(Action::Model { id, action });
+        dbg!(&self.history);
+    }
+}
+
+impl<'a> HistoryRef<'a> {
+    pub fn undo(&mut self) {
+        if let Some(redo) = (self.history.pop_back()).and_then(|action| action.undo(self.app)) {
+            self.future.push_back(redo);
+        }
+    }
+
+    pub fn redo(&mut self) {
+        if let Some(redo) = (self.future.pop_back()).and_then(|action| action.undo(self.app)) {
+            self.history.push_back(redo);
+        }
+    }
+}
+
+impl Action {
+    pub fn undo(self, app: &mut App) -> Option<Action> {
+        match self {
+            Action::Model { id, action } => action
+                .undo(app, id)
+                .map(|action| Action::Model { id, action }),
+            Action::SliceConfig { .. } => unimplemented!(),
+        }
+    }
+}
+
+impl ModelAction {
+    /// Undoes the model action on the specified model, returning an action to
+    /// revert the undo (redo) if the model was found.
+    pub fn undo(self, app: &mut App, model: u32) -> Option<ModelAction> {
+        let model = app.project.models.iter_mut().find(|x| x.id == model)?;
+        let platform_size = &app.project.slice_config.platform_size;
+
+        Some(match self {
+            ModelAction::Name(name) => ModelAction::Name(mem::replace(&mut model.name, name)),
+            ModelAction::Color(color) => ModelAction::Color(mem::replace(&mut model.color, color)),
+            ModelAction::Hidden(hide) => ModelAction::Hidden(mem::replace(&mut model.hidden, hide)),
+            ModelAction::Position(matrix) => {
+                let old = model.mesh.position();
+                model.set_position(platform_size, matrix);
+                ModelAction::Position(old)
+            }
+            ModelAction::Scale(matrix) => {
+                let old = model.mesh.scale();
+                model.set_scale(platform_size, matrix);
+                ModelAction::Scale(old)
+            }
+            ModelAction::Rotation(matrix) => {
+                let old = model.mesh.rotation();
+                model.set_rotation(platform_size, matrix);
+                ModelAction::Rotation(old)
+            }
+        })
+    }
+}

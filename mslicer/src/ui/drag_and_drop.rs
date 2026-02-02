@@ -4,7 +4,10 @@ use egui::{Align2, Color32, Context, FontFamily, FontId, Id, LayerId, Order, pos
 use egui_phosphor::regular::{FILE_TEXT, FILES};
 use itertools::Itertools;
 
-use crate::app::{App, task::MeshLoad};
+use crate::app::{
+    App,
+    task::{MeshLoad, ProjectLoad},
+};
 
 const HOVER_BACKGROUND: Color32 = Color32::from_rgba_premultiplied(0, 0, 0, 200);
 
@@ -20,7 +23,7 @@ pub fn update(app: &mut App, ctx: &Context) {
         {
             if let Some(path) = &file.path {
                 if format == "mslicer" {
-                    app.load_project(path);
+                    app.tasks.add(ProjectLoad::new(path.to_path_buf()));
                 } else {
                     let file = File::open(path).unwrap();
                     app.tasks.add(MeshLoad::file(file, name, format.into()));

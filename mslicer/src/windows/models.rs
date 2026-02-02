@@ -8,7 +8,7 @@ use egui_phosphor::regular::{
 use nalgebra::Vector3;
 
 use crate::{
-    app::{App, project::model::MeshWarnings},
+    app::{App, history::ModelAction, project::model::MeshWarnings},
     ui::components::{vec3_dragger, vec3_dragger_proportional},
 };
 
@@ -35,17 +35,23 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     let platform = &app.project.slice_config.platform_size;
 
     for (i, model) in app.project.models.iter_mut().enumerate() {
-        let id = Id::new(format!("model_show_{}", model.id));
-        let open = ui.data_mut(|map| *map.get_temp_mut_or_insert_with(id, || false));
+        let id = model.id;
+        let data_id = Id::new("model_show").with(id);
+        let open = ui.data_mut(|map| *map.get_temp_mut_or_insert_with(data_id, || false));
 
         ui.horizontal(|ui| {
-            if ui.button(if open { "⏷" } else { "⏵" }).clicked() {
-                ui.data_mut(|map| map.insert_temp(id, !open));
-            }
-            model.hidden ^= ui
+            (ui.button(if open { "⏷" } else { "⏵" }).clicked())
+                .then(|| ui.data_mut(|map| map.insert_temp(data_id, !open)));
+
+            let toggle_history = ui
                 .button(if model.hidden { EYE_SLASH } else { EYE })
                 .on_hover_text(if model.hidden { "Show" } else { "Hide" })
                 .clicked();
+            if toggle_history {
+                app.history
+                    .track_model(model.id, ModelAction::Hidden(model.hidden))
+            }
+            model.hidden ^= toggle_history;
 
             if !model.warnings.is_empty() {
                 let count = model.warnings.bits().count_ones();

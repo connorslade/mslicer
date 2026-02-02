@@ -13,6 +13,7 @@ use tracing::{info, warn};
 use crate::{
     app::{
         config::Config,
+        history::History,
         project::Project,
         remote_print::RemotePrint,
         slice_operation::{SliceOperation, SliceResult},
@@ -30,6 +31,7 @@ use common::progress::CombinedProgress;
 use slicer::{format::FormatSliceFile, slicer::Slicer};
 
 pub mod config;
+pub mod history;
 pub mod project;
 pub mod remote_print;
 pub mod slice_operation;
@@ -48,6 +50,8 @@ pub struct App {
 
     pub camera: Camera,
     pub state: UiState,
+    pub history: History,
+
     pub config: Config,
     pub project: Project,
 }
@@ -102,6 +106,7 @@ impl App {
                 selected_printer,
                 ..Default::default()
             },
+            history: History::default(),
             config,
             project: Project {
                 slice_config,
@@ -207,11 +212,8 @@ impl eframe::App for App {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         ctx.request_repaint();
         self.fps.update();
-
-        // todo: probably dont do this
-        let app = unsafe { &mut *(self as *mut _) };
-        self.popup.render(app, ctx);
-        self.tasks.poll(app);
+        self.popup().render(ctx);
+        self.tasks().poll();
 
         // only update the visuals if the theme has changed
         match self.config.theme {
@@ -219,8 +221,8 @@ impl eframe::App for App {
             Theme::Light => ctx.set_visuals(Visuals::light()),
         }
 
-        self.remote_print.tick(app);
-        preview::process_previews(app);
+        self.remote_print().tick();
+        preview::process_previews(self);
         drag_and_drop::update(self, ctx);
         windows::ui(self, ctx);
     }

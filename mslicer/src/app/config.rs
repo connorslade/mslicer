@@ -1,5 +1,5 @@
 use std::{
-    fs,
+    fs, iter,
     net::{IpAddr, Ipv4Addr},
     path::{Path, PathBuf},
 };
@@ -8,6 +8,7 @@ use anyhow::Result;
 use common::config::SliceConfig;
 use egui::Theme;
 use egui_dock::Tree;
+use itertools::Itertools;
 use nalgebra::{Vector2, Vector3};
 use serde::{Deserialize, Serialize};
 use tracing::{info, warn};
@@ -77,6 +78,16 @@ impl Config {
         let string = toml::to_string(self)?;
         fs::write(config_file, string)?;
         Ok(())
+    }
+}
+
+impl Config {
+    pub fn add_recent_project(&mut self, path: PathBuf) {
+        self.recent_projects = iter::once(path)
+            .chain(self.recent_projects.iter().cloned())
+            .unique()
+            .take(5)
+            .collect()
     }
 }
 
