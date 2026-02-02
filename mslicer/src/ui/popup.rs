@@ -1,8 +1,12 @@
 use egui::{Color32, Context, Grid, Id, Label, RichText, Ui, WidgetText, Window, vec2};
 
-use crate::{app::App, app_ref_type};
+use crate::{
+    app::{App, remote_print::RemotePrint},
+    app_ref_type,
+    ui::state::UiState,
+};
 
-type UiFunction = dyn FnMut(&mut App, &mut Ui) -> bool;
+type UiFunction = dyn FnMut(&mut PopupApp, &mut Ui) -> bool;
 
 #[derive(Default)]
 pub struct PopupManager {
@@ -15,6 +19,11 @@ pub struct Popup {
     title: String,
     id: Id,
     ui: Box<UiFunction>,
+}
+
+pub struct PopupApp<'a> {
+    pub state: &'a mut UiState,
+    pub remote_print: &'a mut RemotePrint,
 }
 
 #[allow(dead_code)]
@@ -36,12 +45,14 @@ impl<'a> PopupManagerRef<'a> {
         let mut i = 0;
         let mut close = false;
 
-        // Right now an unsafe cast is used here because the ui function could
-        // access popup, but wont (i promise).
-        let app = unsafe { &mut *(self.app as *mut _) };
+        let this = &mut self.app.popup;
+        let mut app = PopupApp {
+            state: &mut self.app.state,
+            remote_print: &mut self.app.remote_print,
+        };
 
-        while i < self.popups.len() {
-            let popup = &mut self.popups[i];
+        while i < this.popups.len() {
+            let popup = &mut this.popups[i];
             let size = vec2(400.0, 0.0);
             Window::new("")
                 .id(popup.id)
@@ -55,11 +66,11 @@ impl<'a> PopupManagerRef<'a> {
                         ui.heading(popup.title.clone());
                     });
                     ui.separator();
-                    close = (popup.ui)(app, ui);
+                    close = (popup.ui)(&mut app, ui);
                 });
 
             if close {
-                self.popups.remove(i);
+                this.popups.remove(i);
             } else {
                 i += 1;
             }
@@ -71,7 +82,7 @@ impl Popup {
     fn new_with_id(
         id: Id,
         title: String,
-        ui: impl FnMut(&mut App, &mut Ui) -> bool + 'static,
+        ui: impl FnMut(&mut PopupApp, &mut Ui) -> bool + 'static,
     ) -> Self {
         Self {
             title,
@@ -82,7 +93,7 @@ impl Popup {
 
     pub fn new(
         title: impl AsRef<str>,
-        ui: impl FnMut(&mut App, &mut Ui) -> bool + 'static,
+        ui: impl FnMut(&mut PopupApp, &mut Ui) -> bool + 'static,
     ) -> Self {
         Self::new_with_id(
             Id::new(rand::random::<u64>()),
