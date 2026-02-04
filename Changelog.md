@@ -26,7 +26,8 @@
 - Allow setting/updating default slice config ([#5](https://github.com/connorslade/mslicer/issues/5))
 - Remember the file that was opened for future save operations
 - Track changes to settings for undo and redo (under edit in the top bar)
-- Use metric prefixes in slice height dragger
+- Use metric prefixes for slice config draggers
+- Allow using any supported output format with the CLI slicer
 
 ## v0.4.0 &mdash; November 25th, 2025
 

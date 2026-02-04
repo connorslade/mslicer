@@ -118,6 +118,7 @@ impl EncodableLayer for LayerEncoder {
             * (config.platform_size.x / config.platform_resolution.x as f32)
             * (config.platform_size.y / config.platform_resolution.y as f32);
 
+        let area_count = area_count.max(1);
         Layer {
             info: LayerInfo {
                 // todo: correctly set largest and smallest area

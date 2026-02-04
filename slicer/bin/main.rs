@@ -1,18 +1,22 @@
 use std::{
     fs::{self, File},
-    io::{BufReader, Write, stdout},
-    thread,
+    io::{BufReader, Read, Seek, Write, stdout},
+    thread::{self, JoinHandle},
     time::{Duration, Instant},
 };
 
-use anyhow::Result;
+use anyhow::{Context, Ok, Result};
 use args::{Args, Model};
 use clap::{CommandFactory, FromArgMatches};
-use image::{ImageReader, imageops::FilterType};
+use clone_macro::clone;
+use image::{ImageReader, RgbaImage};
 
-use common::serde::DynamicSerializer;
-use goo_format::{File as GooFile, LayerEncoder, PreviewImage};
-use slicer::{mesh::load_mesh, slicer::Slicer};
+use common::{
+    config::SliceConfig,
+    progress::Progress,
+    serde::{DynamicSerializer, ReaderDeserializer},
+};
+use slicer::{format::FormatSliceFile, mesh::Mesh, slicer::Slicer};
 
 mod args;
 
@@ -21,11 +25,13 @@ fn main() -> Result<()> {
     let args = Args::from_arg_matches(&matches)?;
     let models = Model::from_matches(&matches);
 
-    let slice_config = args.slice_config();
+    let extension = (args.output.extension())
+        .context("Output file has no extension")?
+        .to_string_lossy();
+    let slice_config = args.slice_config(&extension)?;
     let mm_to_px = args.mm_to_px();
 
     let mut meshes = Vec::new();
-
     for model in models {
         let ext = model.path.extension().unwrap().to_string_lossy();
         let buf = BufReader::new(File::open(&model.path)?);
@@ -51,51 +57,82 @@ fn main() -> Result<()> {
             mesh.face_count()
         );
 
-        let (min, max) = mesh.bounds();
-        if min.x < 0.0
-            || min.y < 0.0
-            || min.z < 0.0
-            || max.x > slice_config.platform_resolution.x as f32
-            || max.y > slice_config.platform_resolution.y as f32
-            || max.z > slice_config.platform_size.z
-        {
+        if is_oob(&mesh, &slice_config) {
             println!(" \\ Model extends outsize of print volume and will be cut off.",);
         }
 
         meshes.push(mesh);
     }
 
-    // Actually slice it on another thread (the slicing is multithreaded)
-    let now = Instant::now();
-
     let slicer = Slicer::new(slice_config.clone(), meshes);
     let progress = slicer.progress();
     let total = slicer.layer_count();
 
-    let goo = thread::spawn(move || GooFile::from_slice_result(slicer.slice::<LayerEncoder>()));
+    let now = Instant::now();
+    let preview = if let Some(path) = args.preview {
+        ImageReader::open(path)?.decode()?.to_rgba8()
+    } else {
+        RgbaImage::new(290, 290)
+    };
 
-    while !progress.complete() {
-        thread::sleep(Duration::from_millis(100));
-        let completed = progress.get_complete();
-        let percent = progress.progress() * 100.0;
-        print!("\rLayer: {completed}/{total}, {percent:.1}%");
-        stdout().flush()?;
-    }
+    let file = thread::spawn(move || {
+        let result = slicer.slice_format();
+        FormatSliceFile::from_slice_result(&preview, result)
+    });
 
-    // Once slicing is complete write to a .goo file
-    let mut goo = goo.join().unwrap();
+    let file = monitor_progress(file, progress, |progress| {
+        format!(
+            "\rLayer: {}/{total}, {:.1}%",
+            progress.get_complete(),
+            progress.progress() * 100.0
+        )
+    })?;
 
-    if let Some(path) = args.preview {
-        let image = ImageReader::open(path)?.decode()?.to_rgba8();
-        goo.header.small_preview = PreviewImage::from_image_scaled(&image, FilterType::Triangle);
-        goo.header.big_preview = PreviewImage::from_image_scaled(&image, FilterType::Triangle);
-    }
+    println!();
+    let progress = Progress::new();
+    let handle = thread::spawn(clone!([progress], move || {
+        let mut serializer = DynamicSerializer::new();
+        file.serialize(&mut serializer, progress);
+        fs::write(args.output, serializer.into_inner()).unwrap();
+    }));
 
-    let mut serializer = DynamicSerializer::new();
-    goo.serialize(&mut serializer);
-    fs::write(args.output, serializer.into_inner())?;
+    monitor_progress(handle, progress, |progress| {
+        format!("\rSaving {:.1}%", progress.progress() * 100.0)
+    })?;
 
     println!("\nDone. Elapsed: {:.1}s", now.elapsed().as_secs_f32());
 
     Ok(())
+}
+
+fn load_mesh<T: Read + Seek + Send + 'static>(reader: T, format: &str) -> Result<Mesh> {
+    let des = ReaderDeserializer::new(reader);
+    let mesh = mesh_format::load_mesh(des, format, Progress::new())?;
+    Ok(Mesh::new(mesh.verts, mesh.faces))
+}
+
+fn is_oob(mesh: &Mesh, slice_config: &SliceConfig) -> bool {
+    let (min, max) = mesh.bounds();
+    min.x < 0.0
+        || min.y < 0.0
+        || min.z < 0.0
+        || max.x > slice_config.platform_resolution.x as f32
+        || max.y > slice_config.platform_resolution.y as f32
+        || max.z > slice_config.platform_size.z
+}
+
+fn monitor_progress<T>(
+    handle: JoinHandle<T>,
+    progress: Progress,
+    callback: impl Fn(&Progress) -> String,
+) -> Result<T> {
+    let mut stdout = stdout();
+    while !handle.is_finished() {
+        thread::sleep(Duration::from_millis(50));
+        let msg = callback(&progress);
+        stdout.write_all(msg.as_bytes())?;
+        stdout.flush()?;
+    }
+
+    Ok(handle.join().unwrap())
 }

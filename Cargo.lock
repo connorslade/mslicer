@@ -4654,9 +4654,9 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "clap",
+ "clone-macro",
  "common",
  "const_format",
- "criterion",
  "ctb_format",
  "goo_format",
  "image",

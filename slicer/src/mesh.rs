@@ -1,11 +1,6 @@
-use std::{
-    collections::HashMap,
-    io::{Read, Seek},
-    sync::Arc,
-};
+use std::{collections::HashMap, sync::Arc};
 
-use anyhow::{Ok, Result};
-use common::{progress::Progress, serde::ReaderDeserializer};
+use common::progress::Progress;
 use nalgebra::{Matrix4, Vector3};
 use serde::{Deserialize, Serialize};
 
@@ -229,14 +224,6 @@ impl Mesh {
     pub fn rotation(&self) -> Vector3<f32> {
         self.rotation
     }
-}
-
-/// Loads a buffer into a mesh in a blocking manner.
-/// Supported formats include `.stl` and `.obj`.
-pub fn load_mesh<T: Read + Seek + Send + 'static>(reader: T, format: &str) -> Result<Mesh> {
-    let des = ReaderDeserializer::new(reader);
-    let mesh = mesh_format::load_mesh(des, format, Progress::new())?;
-    Ok(Mesh::new(mesh.verts, mesh.faces))
 }
 
 impl Default for Mesh {

@@ -1,7 +1,6 @@
 use image::{GrayImage, RgbaImage, imageops::FilterType};
 use iter::SliceLayerIterator;
 use nalgebra::{Vector2, Vector3};
-use parking_lot::MappedMutexGuard;
 
 use common::{
     format::Format,
@@ -40,26 +39,23 @@ pub struct SliceInfo {
 }
 
 impl FormatSliceFile {
-    pub fn from_slice_result(
-        preview: MappedMutexGuard<'_, RgbaImage>,
-        slice_result: FormatSliceResult,
-    ) -> Self {
+    pub fn from_slice_result(preview: &RgbaImage, slice_result: FormatSliceResult) -> Self {
         match slice_result {
             FormatSliceResult::Goo(result) => {
                 let mut file = goo_format::File::from_slice_result(result);
                 file.header.big_preview =
-                    goo_format::PreviewImage::from_image_scaled(&preview, FilterType::Nearest);
+                    goo_format::PreviewImage::from_image_scaled(preview, FilterType::Nearest);
                 file.header.small_preview =
-                    goo_format::PreviewImage::from_image_scaled(&preview, FilterType::Nearest);
+                    goo_format::PreviewImage::from_image_scaled(preview, FilterType::Nearest);
                 Self::Goo(Box::new(file))
             }
             FormatSliceResult::Ctb(result) => {
                 let mut file = ctb_format::File::from_slice_result(result);
-                file.large_preview = ctb_format::PreviewImage::from_image(&preview);
+                file.large_preview = ctb_format::PreviewImage::from_image(preview);
 
                 let (width, height) = (preview.width() * 3 / 4, preview.height() * 3 / 4);
                 let small_preview =
-                    image::imageops::resize(&*preview, width, height, FilterType::Nearest);
+                    image::imageops::resize(preview, width, height, FilterType::Nearest);
                 file.small_preview = ctb_format::PreviewImage::from_image(&small_preview);
 
                 Self::Ctb(Box::new(file))

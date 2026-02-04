@@ -1,5 +1,5 @@
 use const_format::concatcp;
-use egui::{Align, ComboBox, Context, DragValue, Grid, Layout, Ui, emath::Numeric};
+use egui::{Align, ComboBox, Context, DragValue, Grid, Layout, Ui};
 use egui_phosphor::regular::{ARROW_COUNTER_CLOCKWISE, INFO, NOTE_PENCIL, WARNING};
 use slicer::post_process::{anti_alias::AntiAlias, elephant_foot_fixer::ElephantFootFixer};
 

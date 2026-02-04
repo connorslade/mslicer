@@ -67,8 +67,8 @@ pub struct Args {
     #[command(flatten)]
     pub model: ModelArgs,
 
-    /// File to save sliced result to. Currently only .goo files can be
-    /// generated.
+    /// File to save sliced result to. The extension must be .goo, .ctb, or
+    /// .nanodlp.
     pub output: PathBuf,
 }
 
@@ -102,9 +102,11 @@ pub struct Model {
 }
 
 impl Args {
-    pub fn slice_config(&self) -> SliceConfig {
-        SliceConfig {
-            format: Format::Goo,
+    pub fn slice_config(&self, extension: &str) -> Result<SliceConfig> {
+        let format = Format::from_extension(extension).context("Unknown output format")?;
+
+        Ok(SliceConfig {
+            format,
             platform_resolution: self.platform_resolution,
             platform_size: self.platform_size,
             slice_height: self.layer_height,
@@ -124,7 +126,7 @@ impl Args {
             },
             first_layers: self.first_layers,
             transition_layers: self.transition_layers,
-        }
+        })
     }
 
     pub fn mm_to_px(&self) -> Vector3<f32> {

@@ -185,7 +185,7 @@ impl App {
                 let slice_operation = slice_operation.as_ref().unwrap();
                 let slice_result = slicer.slice_format();
                 let preview_image = slice_operation.preview_image();
-                let mut file = FormatSliceFile::from_slice_result(preview_image, slice_result);
+                let mut file = FormatSliceFile::from_slice_result(&preview_image, slice_result);
                 post_processing.process(&mut file, post_process);
 
                 let layers = file.info().layers as usize;
