@@ -1,11 +1,11 @@
 use const_format::concatcp;
-use egui::{Align, ComboBox, Context, DragValue, Grid, Layout, Ui};
+use egui::{Align, ComboBox, Context, DragValue, Grid, Layout, Ui, emath::Numeric};
 use egui_phosphor::regular::{ARROW_COUNTER_CLOCKWISE, INFO, NOTE_PENCIL, WARNING};
 use slicer::post_process::{anti_alias::AntiAlias, elephant_foot_fixer::ElephantFootFixer};
 
 use crate::{
     app::App,
-    ui::components::{dragger, dragger_tip, vec2_dragger, vec3_dragger},
+    ui::components::{dragger, dragger_tip, metric_dragger, vec2_dragger, vec3_dragger},
 };
 use common::{config::ExposureConfig, format::Format};
 
@@ -90,9 +90,9 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                     .for_each(|model| model.update_oob(&slice_config.platform_size));
             }
 
-            ui.label("Slice Height (mm)");
+            ui.label("Slice Height");
             ui.horizontal(|ui| {
-                ui.add(DragValue::new(&mut slice_config.slice_height));
+                ui.add(metric_dragger(&mut slice_config.slice_height, -3));
                 ui.add_space(ui.available_width());
             });
             ui.end_row();

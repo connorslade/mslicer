@@ -50,6 +50,35 @@ pub fn dragger_tip<Num: Numeric>(
     });
 }
 
+pub fn metric_dragger<Num: Numeric>(value: &mut Num, base: i32) -> DragValue<'_> {
+    const METRIX_PREFIX: &[(&str, i32)] = &[("", 0), ("c", -2), ("m", -3), ("μ", -6), ("n", -9)];
+
+    let exp = value.to_f64().abs().log10().floor() as i32 + base;
+    let (prefix, scale) = (METRIX_PREFIX.iter())
+        .find(|(_, scale)| exp >= *scale)
+        .unwrap_or(&METRIX_PREFIX[0]);
+    let scale = f64::powi(10.0, base - scale);
+
+    DragValue::new(value)
+        .speed(0.1 / scale)
+        .custom_formatter(move |value, _range| {
+            let value = value * scale;
+            format!("{value:.1} {prefix}m",)
+        })
+        .custom_parser(move |s| {
+            let last_digit = (s.bytes())
+                .position(|x| !matches!(x, b'0'..=b'9' | b'.' | b'-'))
+                .unwrap_or(s.len());
+            let (number, unit) = s.split_at(last_digit);
+            let unit = unit.trim_start();
+
+            let mantissa = number.parse::<f64>().ok()?;
+            let (_, scale) = METRIX_PREFIX.iter().rfind(|(x, _)| unit.starts_with(x))?;
+
+            Some(mantissa * f64::powi(10.0, scale - base))
+        })
+}
+
 pub fn vec2_dragger<Num: Numeric>(
     ui: &mut Ui,
     val: &mut [Num; 2],
