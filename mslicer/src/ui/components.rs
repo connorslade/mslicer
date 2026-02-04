@@ -50,7 +50,11 @@ pub fn dragger_tip<Num: Numeric>(
     });
 }
 
-pub fn metric_dragger<Num: Numeric>(value: &mut Num, base: i32) -> DragValue<'_> {
+pub fn metric_dragger<'a, Num: Numeric>(
+    value: &'a mut Num,
+    unit: &'static str,
+    base: i32,
+) -> DragValue<'a> {
     const METRIX_PREFIX: &[(&str, i32)] = &[("", 0), ("c", -2), ("m", -3), ("μ", -6), ("n", -9)];
 
     let exp = value.to_f64().abs().log10().floor() as i32 + base;
@@ -63,7 +67,7 @@ pub fn metric_dragger<Num: Numeric>(value: &mut Num, base: i32) -> DragValue<'_>
         .speed(0.1 / scale)
         .custom_formatter(move |value, _range| {
             let value = value * scale;
-            format!("{value:.1} {prefix}m",)
+            format!("{value:.1} {prefix}{unit}")
         })
         .custom_parser(move |s| {
             let last_digit = (s.bytes())

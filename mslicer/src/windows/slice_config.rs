@@ -76,7 +76,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                 vec2_dragger(ui, slice_config.platform_resolution.as_mut(), |x| x);
                 ui.end_row();
 
-                ui.label("Platform Size (mm)");
+                ui.label("Platform Size");
                 vec3_dragger(ui, platform.as_mut(), |x| x);
                 ui.end_row();
             } else {
@@ -92,7 +92,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
 
             ui.label("Slice Height");
             ui.horizontal(|ui| {
-                ui.add(metric_dragger(&mut slice_config.slice_height, -3));
+                ui.add(metric_dragger(&mut slice_config.slice_height, "m", -3));
                 ui.add_space(ui.available_width());
             });
             ui.end_row();
@@ -139,24 +139,24 @@ fn exposure_config_grid(ui: &mut Ui, config: &mut ExposureConfig) {
         .spacing([40.0, 4.0])
         .striped(true)
         .show(ui, |ui| {
-            ui.label("Exposure Time (s)");
-            ui.add(DragValue::new(&mut config.exposure_time).range(0.0..=f32::MAX));
+            ui.label("Exposure Time");
+            ui.add(metric_dragger(&mut config.exposure_time, "s", 0).range(0.0..=f32::MAX));
             ui.end_row();
 
-            ui.label("Lift Distance (mm)");
-            ui.add(DragValue::new(&mut config.lift_distance).range(0.0..=f32::MAX));
+            ui.label("Lift Distance ");
+            ui.add(metric_dragger(&mut config.lift_distance, "m", -3).range(0.0..=f32::MAX));
             ui.end_row();
 
-            ui.label("Lift Speed (cm/min)");
-            ui.add(DragValue::new(&mut config.lift_speed).range(0.0..=f32::MAX));
+            ui.label("Lift Speed");
+            ui.add(metric_dragger(&mut config.lift_speed, "m/s", -2).range(0.0..=f32::MAX));
             ui.end_row();
 
-            ui.label("Retract Distance (mm)");
-            ui.add(DragValue::new(&mut config.retract_distance).range(0.0..=f32::MAX));
+            ui.label("Retract Distance");
+            ui.add(metric_dragger(&mut config.retract_distance, "m", -3).range(0.0..=f32::MAX));
             ui.end_row();
 
-            ui.label("Retract Speed (cm/min)");
-            ui.add(DragValue::new(&mut config.retract_speed).range(0.0..=f32::MAX));
+            ui.label("Retract Speed");
+            ui.add(metric_dragger(&mut config.retract_speed, "m/s", -2).range(0.0..=f32::MAX));
             ui.end_row();
         });
 }
@@ -177,9 +177,8 @@ pub fn elephant_foot_fixer(this: &mut ElephantFootFixer, ui: &mut Ui) {
 
     ui.add_space(8.0);
     ui.horizontal(|ui| {
-        dragger(ui, "Inset Distance", &mut this.inset_distance, |x| {
-            x.speed(0.1).suffix("mm")
-        });
+        ui.label("Inset Distance");
+        ui.add(metric_dragger(&mut this.inset_distance, "m", -3));
         ui.with_layout(Layout::right_to_left(Align::Min), |ui| {
             ui.label(INFO).on_hover_text(
                 "The distance in from the edges that will have a reduced intensity.",

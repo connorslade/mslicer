@@ -11,8 +11,8 @@ pub struct SliceConfig {
     pub format: Format,
 
     pub platform_resolution: Vector2<u32>,
-    pub platform_size: Vector3<f32>,
-    pub slice_height: f32,
+    pub platform_size: Vector3<f32>, // mm
+    pub slice_height: f32,           // mm
 
     pub exposure_config: ExposureConfig,
     pub first_exposure_config: ExposureConfig,
@@ -22,11 +22,11 @@ pub struct SliceConfig {
 
 #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct ExposureConfig {
-    pub exposure_time: f32,
-    pub lift_distance: f32,
-    pub lift_speed: f32,
-    pub retract_distance: f32,
-    pub retract_speed: f32,
+    pub exposure_time: f32,    // s
+    pub lift_distance: f32,    // mm
+    pub lift_speed: f32,       // cm/min
+    pub retract_distance: f32, // mm
+    pub retract_speed: f32,    // cm/min
 }
 
 impl SliceConfig {
@@ -66,9 +66,9 @@ impl Default for ExposureConfig {
         Self {
             exposure_time: 3.0,
             lift_distance: 5.0,
-            lift_speed: 65.0,
+            lift_speed: 1.1,
             retract_distance: 5.0,
-            retract_speed: 150.0,
+            retract_speed: 2.5,
         }
     }
 }
