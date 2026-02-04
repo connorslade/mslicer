@@ -25,7 +25,7 @@ const LOAD_PROJECT_SHORTCUT: KeyboardShortcut = KeyboardShortcut::new(Modifiers:
 const QUIT_SHORTCUT: KeyboardShortcut = KeyboardShortcut::new(Modifiers::CTRL, Key::Q);
 const SLICE_SHORTCUT: KeyboardShortcut = KeyboardShortcut::new(Modifiers::CTRL, Key::R);
 const UNDO_SHORTCUT: KeyboardShortcut = KeyboardShortcut::new(Modifiers::CTRL, Key::Z);
-const REDO_SHORTCUT: KeyboardShortcut = KeyboardShortcut::new(CTRL_SHIFT, Key::Z);
+const REDO_SHORTCUT: KeyboardShortcut = KeyboardShortcut::new(Modifiers::CTRL, Key::Y);
 
 type ShortcutCallback = fn(&mut App, &Context);
 const SHORTCUTS: &[(KeyboardShortcut, ShortcutCallback)] = &[
@@ -90,8 +90,12 @@ pub fn ui(app: &mut App, ctx: &Context) {
                 ui.set_width(150.0);
 
                 labeled_separator(ui, "History");
-                menu_button((ui, app, ctx), SHORTCUTS[6], "Undo");
-                menu_button((ui, app, ctx), SHORTCUTS[7], "Redo");
+                ui.add_enabled_ui(app.history.can_undo(), |ui| {
+                    menu_button((ui, app, ctx), SHORTCUTS[6], "Undo")
+                });
+                ui.add_enabled_ui(app.history.can_redo(), |ui| {
+                    menu_button((ui, app, ctx), SHORTCUTS[7], "Redo");
+                });
             });
 
             let slicing = (app.slice_operation.as_ref())

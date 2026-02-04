@@ -1,6 +1,6 @@
 use common::misc::subscript_number;
 use const_format::concatcp;
-use egui::{Context, Grid, Id, Ui};
+use egui::{Context, Grid, Id, Popup, Ui};
 use egui_phosphor::regular::{
     ARROW_LINE_DOWN, CIRCLES_THREE, COPY, DICE_THREE, EYE, EYE_SLASH, LINK_BREAK, LINK_SIMPLE,
     TRASH, TRIANGLE, WARNING,
@@ -9,7 +9,9 @@ use nalgebra::Vector3;
 
 use crate::{
     app::{App, history::ModelAction, project::model::MeshWarnings},
-    ui::components::{vec3_dragger, vec3_dragger_proportional},
+    ui::components::{
+        being_edited, history_tracked_value, vec3_dragger, vec3_dragger_proportional,
+    },
 };
 
 const WARN_NON_MANIFOLD: &str = "This mesh is non-manifold, it may produce unexpected results when sliced.\nConsider running it through a mesh repair tool.";
@@ -21,7 +23,7 @@ enum Action {
     Duplicate(usize),
 }
 
-pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
+pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
     let mut action = Action::None;
 
     if app.project.models.is_empty() {
@@ -67,7 +69,12 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
             }
 
             if open {
-                ui.text_edit_singleline(&mut model.name);
+                let text_edit = ui.text_edit_singleline(&mut model.name);
+                let editing = being_edited(&text_edit);
+                history_tracked_value(
+                    (editing, ui, &mut app.history),
+                    (id, || ModelAction::Name(model.name.clone())),
+                )
             } else {
                 ui.label(&model.name);
             }
@@ -93,11 +100,9 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                     ui.label("Actions");
                     ui.vertical(|ui| {
                         ui.horizontal_wrapped(|ui| {
-                            ui.button(concatcp!(TRASH, " Delete"))
-                                .clicked()
+                            (ui.button(concatcp!(TRASH, " Delete")).clicked())
                                 .then(|| action = Action::Remove(i));
-                            ui.button(concatcp!(COPY, " Duplicate"))
-                                .clicked()
+                            (ui.button(concatcp!(COPY, " Duplicate")).clicked())
                                 .then(|| action = Action::Duplicate(i));
                             ui.button(concatcp!(ARROW_LINE_DOWN, " Align to Bed"))
                                 .clicked()
@@ -115,7 +120,11 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                     });
                     ui.horizontal(|ui| {
                         let mut position = model.mesh.position();
-                        vec3_dragger(ui, position.as_mut(), |x| x);
+                        let editing = vec3_dragger(ui, position.as_mut(), |x| x);
+                        history_tracked_value(
+                            (editing, ui, &mut app.history),
+                            (id, || ModelAction::Position(model.mesh.position())),
+                        );
                         (model.mesh.position() != position)
                             .then(|| model.set_position(platform, position));
                         ui.add_space(width);
@@ -126,46 +135,53 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
 
                     ui.horizontal(|ui| {
                         let mut scale = model.mesh.scale();
-                        if model.locked_scale {
+                        let editing = if model.locked_scale {
                             vec3_dragger_proportional(ui, scale.as_mut(), |x| {
                                 x.speed(0.01).range(0.001..=f32::MAX)
-                            });
+                            })
                         } else {
                             vec3_dragger(ui, scale.as_mut(), |x| {
                                 x.speed(0.01).range(0.001..=f32::MAX)
-                            });
-                        }
+                            })
+                        };
+                        history_tracked_value(
+                            (editing, ui, &mut app.history),
+                            (id, || ModelAction::Scale(model.mesh.scale())),
+                        );
                         (model.mesh.scale() != scale).then(|| model.set_scale(platform, scale));
 
                         model.locked_scale ^= ui
-                            .button(if model.locked_scale {
-                                LINK_SIMPLE
-                            } else {
-                                LINK_BREAK
-                            })
+                            .button([LINK_BREAK, LINK_SIMPLE][model.locked_scale as usize])
                             .clicked();
                     });
                     ui.end_row();
 
                     ui.label("Rotation");
                     let mut rotation = rad_to_deg(model.mesh.rotation());
-                    let original_rotation = rotation;
-                    vec3_dragger(ui, rotation.as_mut(), |x| x.suffix("°"));
-                    (original_rotation != rotation)
+                    let editing = vec3_dragger(ui, rotation.as_mut(), |x| x.suffix("°"));
+                    history_tracked_value(
+                        (editing, ui, &mut app.history),
+                        (id, || ModelAction::Rotation(model.mesh.rotation())),
+                    );
+                    (model.mesh.rotation() != rotation)
                         .then(|| model.set_rotation(platform, deg_to_rad(rotation)));
                     ui.end_row();
 
                     ui.label("Color");
                     ui.horizontal(|ui| {
+                        let editing = Popup::is_id_open(ctx, ui.auto_id_with("popup"));
+                        let original_color = model.color;
                         ui.color_edit_button_rgb(model.color.as_slice_mut());
-                        ui.button(concatcp!(DICE_THREE, " Random"))
-                            .clicked()
-                            .then(|| model.randomize_color());
-                    });
+                        history_tracked_value(
+                            (editing, ui, &mut app.history),
+                            (id, || ModelAction::Color(original_color)),
+                        );
 
-                    ui.label("Name");
-                    ui.text_edit_singleline(&mut model.name);
-                    ui.end_row();
+                        if ui.button(concatcp!(DICE_THREE, " Random")).clicked() {
+                            app.history.track_model(id, ModelAction::Color(model.color));
+                            model.randomize_color();
+                        }
+                    });
                 });
         }
     }

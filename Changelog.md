@@ -25,6 +25,7 @@
 - Added support for the NanoDLP format (.nanodlp)
 - Allow setting/updating default slice config ([#5](https://github.com/connorslade/mslicer/issues/5))
 - Remember the file that was opened for future save operations
+- Track changes to settings for undo and redo (under edit in the top bar)
 
 ## v0.4.0 &mdash; November 25th, 2025
 

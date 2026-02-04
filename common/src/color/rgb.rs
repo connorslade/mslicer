@@ -5,14 +5,14 @@ use std::mem;
 use nalgebra::Vector3;
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
 pub struct LinearRgb<T> {
     pub r: T,
     pub g: T,
     pub b: T,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
 pub struct SRgb<T> {
     pub r: T,
     pub g: T,

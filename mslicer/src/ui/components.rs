@@ -1,5 +1,9 @@
+use std::mem;
+
 use egui::{Align, Color32, DragValue, FontId, Layout, Response, Separator, Ui, emath::Numeric};
 use egui_phosphor::regular::INFO;
+
+use crate::app::history::{History, ModelAction};
 
 pub fn labeled_separator(ui: &mut Ui, text: &str) {
     ui.horizontal(|ui| {
@@ -110,6 +114,26 @@ pub fn vec3_dragger_proportional(
 }
 
 /// Returns if the supplied widget response is being dragged or has focus.
-fn being_edited(response: &Response) -> bool {
+pub fn being_edited(response: &Response) -> bool {
     response.dragged() || response.has_focus()
+}
+
+// todo: don't think the data stored through egui is ever being freed...
+pub fn history_tracked_value(
+    (edited, ui, history): (bool, &mut Ui, &mut History),
+    (model, value): (u32, impl Fn() -> ModelAction),
+) {
+    let id = ui.next_auto_id().with(model);
+    let old = ui.data_mut(|data| mem::replace(data.get_temp_mut_or(id, edited), edited));
+
+    let data_id = id.with("data");
+    (edited && !old).then(|| ui.data_mut(|data| data.insert_temp(data_id, value())));
+
+    if (old && !edited)
+        && let Some(old_value) = ui.data_mut(|data| data.get_temp::<ModelAction>(data_id))
+        && old_value != value()
+    {
+        ui.data_mut(|data| data.remove::<ModelAction>(data_id));
+        history.track_model(model, old_value);
+    }
 }

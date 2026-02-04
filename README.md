@@ -24,5 +24,5 @@ The video is also hosted on YouTube ([here](https://youtu.be/_Xu0jFAEYLc)) if th
 
 ## Related Projects
 
-- [msla-thumbs](https://github.com/connorslade/msla-thumbs) &mdash; Adds thumbnail support to KDE for sliced .goo and .ctb files
+- [msla-thumbs](https://github.com/connorslade/msla-thumbs) &mdash; Adds thumbnail support to KDE for sliced .goo, .ctb, and .nanodlp files
 - [Runebrace](https://www.tarabella.it/Runebrace/) &mdash; Closed-source support placement software. The recommended way to get support in mslicer for now.

@@ -10,7 +10,7 @@ macro_rules! include_asset {
 #[macro_export]
 macro_rules! app_ref_type {
     ($type:ident, $field:ident) => {
-        ::concat_idents::concat_idents!(type_ref = $type, Ref {
+        concat_idents::concat_idents!(type_ref = $type, Ref {
             pub struct type_ref<'a> {
                 app: &'a mut App,
             }

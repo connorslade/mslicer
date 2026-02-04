@@ -21,7 +21,7 @@ pub enum Action {
     SliceConfig { config: SliceConfig },
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum ModelAction {
     Name(String),
     Color(LinearRgb<f32>),
@@ -32,26 +32,48 @@ pub enum ModelAction {
 }
 
 impl History {
+    pub fn can_undo(&self) -> bool {
+        !self.history.is_empty()
+    }
+
+    pub fn can_redo(&self) -> bool {
+        !self.future.is_empty()
+    }
+
+    /// Ensure the list of past and future actions is not greater than
+    /// MAX_HISTORY.
+    fn constrain_size(&mut self) {
+        while self.history.len() >= MAX_HISTORY {
+            self.history.pop_front();
+        }
+
+        while self.future.len() >= MAX_HISTORY {
+            self.future.pop_front();
+        }
+    }
+
     pub fn track(&mut self, action: Action) {
+        self.constrain_size();
         self.history.push_back(action);
         self.future.clear();
     }
 
     pub fn track_model(&mut self, id: u32, action: ModelAction) {
         self.track(Action::Model { id, action });
-        dbg!(&self.history);
     }
 }
 
 impl<'a> HistoryRef<'a> {
     pub fn undo(&mut self) {
         if let Some(redo) = (self.history.pop_back()).and_then(|action| action.undo(self.app)) {
+            self.constrain_size();
             self.future.push_back(redo);
         }
     }
 
     pub fn redo(&mut self) {
         if let Some(redo) = (self.future.pop_back()).and_then(|action| action.undo(self.app)) {
+            self.constrain_size();
             self.history.push_back(redo);
         }
     }
