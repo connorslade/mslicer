@@ -77,7 +77,7 @@
 - [x] Implement .ctb format (see <https://github.com/cbiffle/catibo/blob/master/doc/cbddlp-ctb.adoc>)
   - [x] Generic format system
   - [x] Fix plugins / post processes
-- [ ] Undo / Redo
+- [x] Undo / Redo
 - [x] Close file menu if button clicked
 - [x] Allow dragging in project to load them
 - [x] Remember the file that was opened for future save operations
