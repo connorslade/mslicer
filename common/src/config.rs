@@ -24,9 +24,9 @@ pub struct SliceConfig {
 pub struct ExposureConfig {
     pub exposure_time: f32,    // s
     pub lift_distance: f32,    // mm
-    pub lift_speed: f32,       // cm/min
+    pub lift_speed: f32,       // cm/s
     pub retract_distance: f32, // mm
-    pub retract_speed: f32,    // cm/min
+    pub retract_speed: f32,    // cm/s
 }
 
 impl SliceConfig {
@@ -66,9 +66,9 @@ impl Default for ExposureConfig {
         Self {
             exposure_time: 3.0,
             lift_distance: 5.0,
-            lift_speed: 1.1,
+            lift_speed: 0.55, // 330 mm/min
             retract_distance: 5.0,
-            retract_speed: 2.5,
+            retract_speed: 0.55, // 330 mm/min
         }
     }
 }

@@ -25,14 +25,15 @@ impl File {
         } = result;
 
         let layer_time = slice_config.exposure_config.exposure_time
-            + slice_config.exposure_config.lift_distance / slice_config.exposure_config.lift_speed
+            + slice_config.exposure_config.lift_distance
+                / (slice_config.exposure_config.lift_speed * 600.0)
             + slice_config.exposure_config.retract_distance
-                / slice_config.exposure_config.retract_speed;
+                / (slice_config.exposure_config.retract_speed * 600.0);
         let bottom_layer_time = slice_config.first_exposure_config.exposure_time
             + slice_config.first_exposure_config.lift_distance
-                / slice_config.first_exposure_config.lift_speed
+                / (slice_config.first_exposure_config.lift_speed * 600.0)
             + slice_config.first_exposure_config.retract_distance
-                / slice_config.first_exposure_config.retract_speed;
+                / (slice_config.first_exposure_config.retract_speed * 600.0);
         let total_time = (layers.len() as u32 - slice_config.first_layers) as f32 * layer_time
             + slice_config.first_layers as f32 * bottom_layer_time;
 
@@ -51,9 +52,9 @@ impl File {
 
                 exposure_time: slice_config.exposure_config.exposure_time,
                 lift_distance: slice_config.exposure_config.lift_distance,
-                lift_speed: slice_config.exposure_config.lift_speed,
+                lift_speed: slice_config.exposure_config.lift_speed * 600.0,
                 retract_distance: slice_config.exposure_config.retract_distance,
-                retract_speed: slice_config.exposure_config.retract_speed,
+                retract_speed: slice_config.exposure_config.retract_speed * 600.0,
 
                 bottom_exposure_time: slice_config.first_exposure_config.exposure_time,
                 bottom_lift_distance: slice_config.first_exposure_config.lift_distance,
