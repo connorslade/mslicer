@@ -1,13 +1,11 @@
 use const_format::concatcp;
-use egui::{Align, ComboBox, Context, DragValue, Grid, Layout, Ui};
+use egui::{ComboBox, Context, DragValue, Grid, Ui};
 use egui_phosphor::regular::{ARROW_COUNTER_CLOCKWISE, INFO, NOTE_PENCIL, WARNING};
 use slicer::post_process::{anti_alias::AntiAlias, elephant_foot_fixer::ElephantFootFixer};
 
 use crate::{
     app::{App, history::ConfigAction},
-    ui::components::{
-        dragger, dragger_tip, history_tracked_value, metric_dragger, vec2_dragger, vec3_dragger,
-    },
+    ui::components::{dragger, history_tracked_value, metric_dragger, vec2_dragger, vec3_dragger},
 };
 use common::{config::ExposureConfig, format::Format};
 
@@ -155,7 +153,10 @@ fn exposure_config_grid(ui: &mut Ui, config: &mut ExposureConfig) {
         .striped(true)
         .show(ui, |ui| {
             ui.label("Exposure Time");
-            ui.add(metric_dragger(&mut config.exposure_time, "s", 0).range(0.0..=f32::MAX));
+            ui.horizontal(|ui| {
+                ui.add(metric_dragger(&mut config.exposure_time, "s", 0).range(0.0..=f32::MAX));
+                ui.add_space(ui.available_width());
+            });
             ui.end_row();
 
             ui.label("Lift Distance ");
@@ -189,26 +190,40 @@ pub fn anti_alias(this: &mut AntiAlias, ui: &mut Ui) {
 pub fn elephant_foot_fixer(this: &mut ElephantFootFixer, ui: &mut Ui) {
     ui.label("Fixes the 'Elephant Foot' effect by exposing the edges of the bottom layers at a lower intensity. You may have to make a few test prints to find the right settings for your printer and resin.");
     ui.checkbox(&mut this.enabled, "Enabled");
-
     ui.add_space(8.0);
-    ui.horizontal(|ui| {
-        ui.label("Inset Distance");
-        ui.add(metric_dragger(&mut this.inset_distance, "m", -3));
-        ui.with_layout(Layout::right_to_left(Align::Min), |ui| {
-            ui.label(INFO).on_hover_text(
-                "The distance in from the edges that will have a reduced intensity.",
-            );
-            ui.label(WARNING)
-                .on_hover_text("Larger values will drastically increase post-processing time.");
-            ui.add_space(ui.available_width());
-        })
-    });
 
-    dragger_tip(
-        ui,
-        "Intensity",
-        "This percent will be multiplied by the pixel values of the edge pixels.",
-        &mut this.intensity_multiplier,
-        |x| x.range(0.0..=100.0).speed(1).suffix("%"),
-    );
+    const INSET_TIP: &str = "The distance in from the edges that will have a reduced intensity.";
+    const INSET_WARNING: &str = "Larger values will drastically increase post-processing time.";
+    const INTENSITY_TIP: &str =
+        "This percent will be multiplied by the pixel values of the edge pixels.";
+
+    Grid::new("exposure_config")
+        .num_columns(2)
+        .spacing([40.0, 4.0])
+        .striped(true)
+        .show(ui, |ui| {
+            ui.horizontal(|ui| {
+                ui.label("Inset Distance");
+                ui.label(INFO).on_hover_text(INSET_TIP);
+                ui.label(WARNING).on_hover_text(INSET_WARNING);
+            });
+            ui.horizontal(|ui| {
+                ui.add(metric_dragger(&mut this.inset_distance, "m", -3));
+                ui.add_space(ui.available_width());
+            });
+            ui.end_row();
+
+            ui.horizontal(|ui| {
+                ui.label("Intensity");
+                ui.label(INFO).on_hover_text(INTENSITY_TIP);
+            });
+            ui.horizontal(|ui| {
+                ui.add(
+                    DragValue::new(&mut this.intensity_multiplier)
+                        .range(0.0..=100.0)
+                        .speed(1)
+                        .suffix("%"),
+                );
+            });
+        });
 }

@@ -1,6 +1,6 @@
 use const_format::concatcp;
 use egui::{ComboBox, Context, DragValue, Grid, Theme, Ui};
-use egui_phosphor::regular::{ARROW_COUNTER_CLOCKWISE, FOLDER, LAYOUT};
+use egui_phosphor::regular::{ARROW_COUNTER_CLOCKWISE, FOLDER, INFO, LAYOUT};
 use tracing::error;
 
 use crate::{
@@ -32,30 +32,49 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     });
     ui.add_space(8.0);
 
-    ComboBox::new("theme", "Theme")
-        .selected_text(match app.config.theme {
-            Theme::Dark => "Dark",
-            Theme::Light => "Light",
-        })
-        .show_ui(ui, |ui| {
-            ui.selectable_value(&mut app.config.theme, Theme::Dark, "Dark");
-            ui.selectable_value(&mut app.config.theme, Theme::Light, "Light");
-        });
+    Grid::new("theme")
+        .spacing([40.0, 4.0])
+        .striped(true)
+        .num_columns(2)
+        .show(ui, |ui| {
+            ui.label("Theme");
+            ComboBox::new("theme", "")
+                .selected_text(match app.config.theme {
+                    Theme::Dark => "Dark",
+                    Theme::Light => "Light",
+                })
+                .show_ui(ui, |ui| {
+                    ui.selectable_value(&mut app.config.theme, Theme::Dark, "Dark");
+                    ui.selectable_value(&mut app.config.theme, Theme::Light, "Light");
+                });
+            ui.end_row();
 
-    dragger(ui, "Grid Size", &mut app.config.grid_size, |x| {
-        x.speed(0.1).range(1.0..=f32::MAX)
-    });
+            ui.horizontal(|ui| {
+                ui.label("Render Style");
+                ui.label(INFO)
+                    .on_hover_text("This setting is really only intended for debugging.");
+            });
+            ComboBox::new("render_style", "")
+                .selected_text(app.config.render_style.name())
+                .show_ui(ui, |ui| {
+                    for style in RenderStyle::ALL {
+                        ui.selectable_value(&mut app.config.render_style, style, style.name());
+                    }
+                });
+            ui.end_row();
+
+            ui.label("Grid Size");
+            ui.horizontal(|ui| {
+                dragger(ui, "", &mut app.config.grid_size, |x| {
+                    x.speed(0.1).range(1.0..=f32::MAX)
+                });
+                ui.add_space(ui.available_width());
+            });
+            ui.end_row();
+        });
 
     ui.add_space(16.0);
     ui.heading("Advanced");
-
-    ComboBox::new("render_style", "Render Style")
-        .selected_text(app.config.render_style.name())
-        .show_ui(ui, |ui| {
-            for style in RenderStyle::ALL {
-                ui.selectable_value(&mut app.config.render_style, style, style.name());
-            }
-        });
 
     ui.checkbox(&mut app.config.show_normals, "Show Normals");
 

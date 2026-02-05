@@ -1,7 +1,6 @@
 use std::{hash::Hash, mem};
 
-use egui::{Align, Color32, DragValue, FontId, Layout, Response, Separator, Ui, emath::Numeric};
-use egui_phosphor::regular::INFO;
+use egui::{Color32, DragValue, FontId, Response, Separator, Ui, emath::Numeric};
 
 use crate::app::history::{Action, History, ModelAction};
 
@@ -30,23 +29,6 @@ pub fn dragger<Num: Numeric>(
     ui.horizontal(|ui| {
         ui.add(func(DragValue::new(value)));
         ui.label(label);
-    });
-}
-
-pub fn dragger_tip<Num: Numeric>(
-    ui: &mut Ui,
-    label: &str,
-    tip: &str,
-    value: &mut Num,
-    func: fn(DragValue) -> DragValue,
-) {
-    ui.horizontal(|ui| {
-        ui.add(func(DragValue::new(value)));
-        ui.label(label);
-        ui.with_layout(Layout::right_to_left(Align::Min), |ui| {
-            ui.label(INFO).on_hover_text(tip);
-            ui.add_space(ui.available_width());
-        })
     });
 }
 
