@@ -10,7 +10,7 @@ use nalgebra::Vector3;
 use crate::{
     app::{App, history::ModelAction, project::model::MeshWarnings},
     ui::components::{
-        being_edited, history_tracked_value, vec3_dragger, vec3_dragger_proportional,
+        being_edited, history_tracked_model, vec3_dragger, vec3_dragger_proportional,
     },
 };
 
@@ -71,7 +71,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
             if open {
                 let text_edit = ui.text_edit_singleline(&mut model.name);
                 let editing = being_edited(&text_edit);
-                history_tracked_value(
+                history_tracked_model(
                     (editing, ui, &mut app.history),
                     (id, || ModelAction::Name(model.name.clone())),
                 )
@@ -121,7 +121,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
                     ui.horizontal(|ui| {
                         let mut position = model.mesh.position();
                         let editing = vec3_dragger(ui, position.as_mut(), |x| x);
-                        history_tracked_value(
+                        history_tracked_model(
                             (editing, ui, &mut app.history),
                             (id, || ModelAction::Position(model.mesh.position())),
                         );
@@ -144,7 +144,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
                                 x.speed(0.01).range(0.001..=f32::MAX)
                             })
                         };
-                        history_tracked_value(
+                        history_tracked_model(
                             (editing, ui, &mut app.history),
                             (id, || ModelAction::Scale(model.mesh.scale())),
                         );
@@ -159,7 +159,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
                     ui.label("Rotation");
                     let mut rotation = rad_to_deg(model.mesh.rotation());
                     let editing = vec3_dragger(ui, rotation.as_mut(), |x| x.suffix("°"));
-                    history_tracked_value(
+                    history_tracked_model(
                         (editing, ui, &mut app.history),
                         (id, || ModelAction::Rotation(model.mesh.rotation())),
                     );
@@ -172,7 +172,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
                         let editing = Popup::is_id_open(ctx, ui.auto_id_with("popup"));
                         let original_color = model.color;
                         ui.color_edit_button_rgb(model.color.as_slice_mut());
-                        history_tracked_value(
+                        history_tracked_model(
                             (editing, ui, &mut app.history),
                             (id, || ModelAction::Color(original_color)),
                         );

@@ -4,8 +4,10 @@ use egui_phosphor::regular::{ARROW_COUNTER_CLOCKWISE, INFO, NOTE_PENCIL, WARNING
 use slicer::post_process::{anti_alias::AntiAlias, elephant_foot_fixer::ElephantFootFixer};
 
 use crate::{
-    app::App,
-    ui::components::{dragger, dragger_tip, metric_dragger, vec2_dragger, vec3_dragger},
+    app::{App, history::ConfigAction},
+    ui::components::{
+        dragger, dragger_tip, history_tracked_value, metric_dragger, vec2_dragger, vec3_dragger,
+    },
 };
 use common::{config::ExposureConfig, format::Format};
 
@@ -57,6 +59,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                     i => &app.config.printers[i - 1].name,
                 })
                 .show_ui(ui, |ui| {
+                    let printer = app.state.selected_printer;
                     ui.selectable_value(&mut app.state.selected_printer, 0, "Custom");
                     for (i, printer) in app.config.printers.iter().enumerate() {
                         let (res, size) = (printer.resolution, printer.size);
@@ -66,6 +69,11 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                                 res.x, res.y, size.x, size.y, size.z
                             ));
                     }
+
+                    (app.state.selected_printer != printer).then(|| {
+                        app.history
+                            .track_config(ConfigAction::SelectedPrinter(printer))
+                    });
                 });
             ui.end_row();
 
@@ -73,7 +81,14 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
             let prev = *platform;
             if app.state.selected_printer == 0 {
                 ui.label("Platform Resolution");
-                vec2_dragger(ui, slice_config.platform_resolution.as_mut(), |x| x);
+                let original_resolution = slice_config.platform_resolution;
+                let editing = vec2_dragger(ui, slice_config.platform_resolution.as_mut(), |x| x);
+                history_tracked_value(
+                    (editing, ui, &mut app.history),
+                    (0, || {
+                        ConfigAction::PrinterResolution(original_resolution).into()
+                    }),
+                );
                 ui.end_row();
 
                 ui.label("Platform Size");

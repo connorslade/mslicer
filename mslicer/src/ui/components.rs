@@ -1,9 +1,9 @@
-use std::mem;
+use std::{hash::Hash, mem};
 
 use egui::{Align, Color32, DragValue, FontId, Layout, Response, Separator, Ui, emath::Numeric};
 use egui_phosphor::regular::INFO;
 
-use crate::app::history::{History, ModelAction};
+use crate::app::history::{Action, History, ModelAction};
 
 pub fn labeled_separator(ui: &mut Ui, text: &str) {
     ui.horizontal(|ui| {
@@ -55,7 +55,13 @@ pub fn metric_dragger<'a, Num: Numeric>(
     unit: &'static str,
     base: i32,
 ) -> DragValue<'a> {
-    const METRIX_PREFIX: &[(&str, i32)] = &[("", 0), ("c", -2), ("m", -3), ("μ", -6), ("n", -9)];
+    const METRIX_PREFIX: &[(&[char], i32)] = &[
+        (&[], 0),
+        (&['c'], -2),
+        (&['m'], -3),
+        (&['μ', 'u'], -6),
+        (&['n'], -9),
+    ];
 
     let exp = value.to_f64().abs().log10().floor() as i32 + base;
     let (prefix, scale) = (METRIX_PREFIX.iter())
@@ -67,6 +73,7 @@ pub fn metric_dragger<'a, Num: Numeric>(
         .speed(0.1 / scale)
         .custom_formatter(move |value, _range| {
             let value = value * scale;
+            let prefix = prefix.get(0).copied().unwrap_or_default();
             format!("{value:.1} {prefix}{unit}")
         })
         .custom_parser(move |s| {
@@ -77,7 +84,8 @@ pub fn metric_dragger<'a, Num: Numeric>(
             let unit = unit.trim_start();
 
             let mantissa = number.parse::<f64>().ok()?;
-            let (_, scale) = METRIX_PREFIX.iter().rfind(|(x, _)| unit.starts_with(x))?;
+            let (_, scale) = (METRIX_PREFIX.iter())
+                .rfind(|(x, _)| x.is_empty() || x.iter().any(|x| unit.starts_with(*x)))?;
 
             Some(mantissa * f64::powi(10.0, scale - base))
         })
@@ -88,12 +96,14 @@ pub fn vec2_dragger<Num: Numeric>(
     val: &mut [Num; 2],
 
     func: fn(DragValue) -> DragValue,
-) {
+) -> bool {
+    let mut edit = false;
     ui.horizontal(|ui| {
-        ui.add(func(DragValue::new(&mut val[0])));
+        edit |= being_edited(&ui.add(func(DragValue::new(&mut val[0]))));
         ui.label("×");
-        ui.add(func(DragValue::new(&mut val[1])));
+        edit |= being_edited(&ui.add(func(DragValue::new(&mut val[1]))));
     });
+    edit
 }
 
 /// Returns weather the widget is being edited.
@@ -154,19 +164,32 @@ pub fn being_edited(response: &Response) -> bool {
 // todo: don't think the data stored through egui is ever being freed...
 pub fn history_tracked_value(
     (edited, ui, history): (bool, &mut Ui, &mut History),
-    (model, value): (u32, impl Fn() -> ModelAction),
+    (salt, value): (impl Hash, impl Fn() -> Action),
 ) {
-    let id = ui.next_auto_id().with(model);
+    let id = ui.next_auto_id().with(salt);
     let old = ui.data_mut(|data| mem::replace(data.get_temp_mut_or(id, edited), edited));
 
     let data_id = id.with("data");
     (edited && !old).then(|| ui.data_mut(|data| data.insert_temp(data_id, value())));
 
     if (old && !edited)
-        && let Some(old_value) = ui.data_mut(|data| data.get_temp::<ModelAction>(data_id))
+        && let Some(old_value) = ui.data_mut(|data| data.get_temp::<Action>(data_id))
         && old_value != value()
     {
         ui.data_mut(|data| data.remove::<ModelAction>(data_id));
-        history.track_model(model, old_value);
+        history.track(old_value);
     }
+}
+
+pub fn history_tracked_model(
+    (edited, ui, history): (bool, &mut Ui, &mut History),
+    (model, value): (u32, impl Fn() -> ModelAction),
+) {
+    history_tracked_value(
+        (edited, ui, history),
+        (model, || Action::Model {
+            id: model,
+            action: value(),
+        }),
+    );
 }
