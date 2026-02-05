@@ -1,4 +1,4 @@
-# mslicer [![Build][actions-badge]][actions]
+# mslicer [![Build][actions-badge]][actions] ![][download-badge]
 
 An experimental open-source slicer for masked stereolithography (resin) printers.
 Supports the following output formats: Chitu (.ctb), Elegoo (.goo), NanoDLP (.nanodlp), and Vector (.svg).
@@ -40,9 +40,11 @@ The video is also hosted on YouTube ([here][demo-yt]) if the one below doesn't p
 <!-- Links -->
 
 [actions-success]: https://github.com/connorslade/mslicer/actions/workflows/build.yml?query=branch%3Amain%20is%3Asuccess
-[actions-badge]: https://github.com/connorslade/mslicer/actions/workflows/build.yml/badge.svg
 [actions]: https://github.com/connorslade/mslicer/actions/workflows/build.yml
 [releases]: https://github.com/connorslade/mslicer/releases
+
+[actions-badge]: https://github.com/connorslade/mslicer/actions/workflows/build.yml/badge.svg
+[download-badge]: https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fconnorcode.com%2Fapi%2Fdownloads%3Fgithub%3Dconnorslade%252Fmslicer%26flathub%3Dcom.connorcode.mslicer&query=%24%5B%27total-human%27%5D&label=downloads&color=limegreen;
 
 [hero-image]: https://github.com/user-attachments/assets/ca282fea-680d-4825-aca1-36d9e29fc1fe
 [demo-yt]: https://youtu.be/_Xu0jFAEYLc
