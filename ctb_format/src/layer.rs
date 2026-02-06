@@ -18,17 +18,17 @@ pub struct LayerRef {
 pub struct Layer {
     pub position_z: Milimeters,
     pub exposure_time: Seconds,
-    pub light_off_delay: f32,
+    pub light_off_delay: Seconds,
     pub lift_height: Milimeters,
     pub lift_speed: MilimetersPerMinute,
-    pub lift_height_2: f32,
-    pub lift_speed_2: f32,
+    pub lift_height_2: Milimeters,
+    pub lift_speed_2: MilimetersPerMinute,
     pub retract_speed: MilimetersPerMinute,
-    pub retract_height_2: f32,
-    pub retract_speed_2: f32,
-    pub rest_time_before_lift: f32,
-    pub rest_time_after_lift: f32,
-    pub rest_time_after_retract: f32,
+    pub retract_height_2: Milimeters,
+    pub retract_speed_2: MilimetersPerMinute,
+    pub rest_time_before_lift: Seconds,
+    pub rest_time_after_lift: Seconds,
+    pub rest_time_after_retract: Seconds,
     pub light_pwm: f32,
     pub data: Vec<u8>,
 }
@@ -59,7 +59,7 @@ impl Layer {
 
         let position_z = Milimeters::new(des.read_f32_le());
         let exposure_time = Seconds::new(des.read_f32_le());
-        let light_off_delay = des.read_f32_le();
+        let light_off_delay = Seconds::new(des.read_f32_le());
         let layer_offset = des.read_u32_le();
         let _page_number = des.read_u32_le();
 
@@ -86,14 +86,14 @@ impl Layer {
             light_off_delay,
             lift_height: Milimeters::new(des.read_f32_le()),
             lift_speed: MilimetersPerMinute::new(des.read_f32_le()),
-            lift_height_2: des.read_f32_le(),
-            lift_speed_2: des.read_f32_le(),
+            lift_height_2: Milimeters::new(des.read_f32_le()),
+            lift_speed_2: MilimetersPerMinute::new(des.read_f32_le()),
             retract_speed: MilimetersPerMinute::new(des.read_f32_le()),
-            retract_height_2: des.read_f32_le(),
-            retract_speed_2: des.read_f32_le(),
-            rest_time_before_lift: des.read_f32_le(),
-            rest_time_after_lift: des.read_f32_le(),
-            rest_time_after_retract: des.read_f32_le(),
+            retract_height_2: Milimeters::new(des.read_f32_le()),
+            retract_speed_2: MilimetersPerMinute::new(des.read_f32_le()),
+            rest_time_before_lift: Seconds::new(des.read_f32_le()),
+            rest_time_after_lift: Seconds::new(des.read_f32_le()),
+            rest_time_after_retract: Seconds::new(des.read_f32_le()),
             light_pwm: des.read_f32_le(),
             data,
         })
@@ -109,7 +109,7 @@ impl Layer {
         ser.write_u32_le(0x58);
         ser.write_f32_le(self.position_z.raw());
         ser.write_f32_le(self.exposure_time.raw());
-        ser.write_f32_le(self.light_off_delay);
+        ser.write_f32_le(self.light_off_delay.raw());
         let layer_offset = ser.reserve(4);
         ser.write_u32_le(page_number);
         ser.write_u32_le(self.data.len() as u32);
@@ -117,14 +117,14 @@ impl Layer {
         Section::new(0, 0).serialize(ser); // TODO: Not sure if the data can always just be left unencrypted
         ser.write_f32_le(self.lift_height.raw());
         ser.write_f32_le(self.lift_speed.raw());
-        ser.write_f32_le(self.lift_height_2);
-        ser.write_f32_le(self.lift_speed_2);
+        ser.write_f32_le(self.lift_height_2.raw());
+        ser.write_f32_le(self.lift_speed_2.raw());
         ser.write_f32_le(self.retract_speed.raw());
-        ser.write_f32_le(self.retract_height_2);
-        ser.write_f32_le(self.retract_speed_2);
-        ser.write_f32_le(self.rest_time_before_lift);
-        ser.write_f32_le(self.rest_time_after_lift);
-        ser.write_f32_le(self.rest_time_after_retract);
+        ser.write_f32_le(self.retract_height_2.raw());
+        ser.write_f32_le(self.retract_speed_2.raw());
+        ser.write_f32_le(self.rest_time_before_lift.raw());
+        ser.write_f32_le(self.rest_time_after_lift.raw());
+        ser.write_f32_le(self.rest_time_after_retract.raw());
         ser.write_f32_le(self.light_pwm);
         ser.write_u32_le(0);
 

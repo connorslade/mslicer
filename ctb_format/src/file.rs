@@ -63,31 +63,31 @@ pub struct File {
     // Layer config
     pub exposure_time: Seconds,
     pub bottom_exposure_time: Seconds,
-    pub light_off_delay: f32,
+    pub light_off_delay: Seconds,
     pub bottom_layer_count: u32,
     pub bottom_lift_height: Milimeters,
     pub bottom_lift_speed: MilimetersPerMinute,
     pub lift_height: Milimeters,
     pub lift_speed: MilimetersPerMinute,
     pub retract_speed: MilimetersPerMinute,
-    pub bottom_light_off_delay: f32,
+    pub bottom_light_off_delay: Seconds,
     pub light_pwm: u16,
     pub bottom_light_pwm: u16,
-    pub bottom_lift_height_2: f32,
-    pub bottom_lift_speed_2: f32,
-    pub lift_height_2: f32,
-    pub lift_speed_2: f32,
-    pub retract_height_2: f32,
-    pub retract_speed_2: f32,
-    pub rest_time_after_lift: f32,
+    pub bottom_lift_height_2: Milimeters,
+    pub bottom_lift_speed_2: MilimetersPerMinute,
+    pub lift_height_2: Milimeters,
+    pub lift_speed_2: MilimetersPerMinute,
+    pub retract_height_2: Milimeters,
+    pub retract_speed_2: MilimetersPerMinute,
+    pub rest_time_after_lift: Seconds,
     pub bottom_retract_speed: MilimetersPerMinute,
-    pub bottom_retract_speed_2: f32,
-    pub rest_time_after_retract_2: f32,
-    pub rest_time_after_lift_3: f32,
-    pub rest_time_before_lift: f32,
-    pub bottom_retract_height_2: f32,
-    pub rest_time_after_retract: f32,
-    pub rest_time_after_lift_2: f32,
+    pub bottom_retract_speed_2: MilimetersPerMinute,
+    pub rest_time_after_retract_2: Seconds,
+    pub rest_time_after_lift_3: Seconds,
+    pub rest_time_before_lift: Seconds,
+    pub bottom_retract_height_2: Milimeters,
+    pub rest_time_after_retract: Seconds,
+    pub rest_time_after_lift_2: Seconds,
 }
 
 impl File {
@@ -125,7 +125,7 @@ impl File {
             layer_height: Milimeters::new(des.read_f32_le()),
             exposure_time: Seconds::new(des.read_f32_le()),
             bottom_exposure_time: Seconds::new(des.read_f32_le()),
-            light_off_delay: des.read_f32_le(),
+            light_off_delay: Seconds::new(des.read_f32_le()),
             bottom_layer_count: des.read_u32_le(),
             resolution: Vector2::new(des.read_u32_le(), des.read_u32_le()),
             large_preview: {
@@ -147,7 +147,7 @@ impl File {
             material_milliliters: des.read_f32_le(),
             material_grams: des.read_f32_le(),
             material_cost: des.read_f32_le(),
-            bottom_light_off_delay: des.read_f32_le(),
+            bottom_light_off_delay: Seconds::new(des.read_f32_le()),
             light_pwm: {
                 des.advance_by(4);
                 des.read_u16_le()
@@ -171,13 +171,13 @@ impl File {
 
                 layers
             },
-            bottom_lift_height_2: des.read_f32_le(),
-            bottom_lift_speed_2: des.read_f32_le(),
-            lift_height_2: des.read_f32_le(),
-            lift_speed_2: des.read_f32_le(),
-            retract_height_2: des.read_f32_le(),
-            retract_speed_2: des.read_f32_le(),
-            rest_time_after_lift: des.read_f32_le(),
+            bottom_lift_height_2: Milimeters::new(des.read_f32_le()),
+            bottom_lift_speed_2: MilimetersPerMinute::new(des.read_f32_le()),
+            lift_height_2: Milimeters::new(des.read_f32_le()),
+            lift_speed_2: MilimetersPerMinute::new(des.read_f32_le()),
+            retract_height_2: Milimeters::new(des.read_f32_le()),
+            retract_speed_2: MilimetersPerMinute::new(des.read_f32_le()),
+            rest_time_after_lift: Seconds::new(des.read_f32_le()),
             machine_name: {
                 let section = Section::deserialize(&mut des)?;
                 let machine_name = main_des.execute_at(section.offset as usize, |des| {
@@ -192,18 +192,18 @@ impl File {
             },
             modified: des.read_u32_le(),
             anti_alias_level: des.read_u32_le(),
-            rest_time_after_retract: des.read_f32_le(),
-            rest_time_after_lift_2: des.read_f32_le(),
+            rest_time_after_retract: Seconds::new(des.read_f32_le()),
+            rest_time_after_lift_2: Seconds::new(des.read_f32_le()),
             transition_layer_count: des.read_u32_le(),
             bottom_retract_speed: MilimetersPerMinute::new(des.read_f32_le()),
-            bottom_retract_speed_2: des.read_f32_le(),
+            bottom_retract_speed_2: MilimetersPerMinute::new(des.read_f32_le()),
             rest_time_after_retract_2: {
                 des.advance_by(4 * 4);
-                des.read_f32_le()
+                Seconds::new(des.read_f32_le())
             },
-            rest_time_after_lift_3: des.read_f32_le(),
-            rest_time_before_lift: des.read_f32_le(),
-            bottom_retract_height_2: des.read_f32_le(),
+            rest_time_after_lift_3: Seconds::new(des.read_f32_le()),
+            rest_time_before_lift: Seconds::new(des.read_f32_le()),
+            bottom_retract_height_2: Milimeters::new(des.read_f32_le()),
             last_layer_index: {
                 des.advance_by(4 * 3);
                 des.read_u32_le()
@@ -250,7 +250,7 @@ impl File {
         ser.write_f32_le(self.layer_height.raw());
         ser.write_f32_le(self.exposure_time.raw());
         ser.write_f32_le(self.bottom_exposure_time.raw());
-        ser.write_f32_le(self.light_off_delay);
+        ser.write_f32_le(self.light_off_delay.raw());
         ser.write_u32_le(self.bottom_layer_count);
         ser.write_u32_le(self.resolution.x);
         ser.write_u32_le(self.resolution.y);
@@ -267,37 +267,37 @@ impl File {
         ser.write_f32_le(self.material_milliliters);
         ser.write_f32_le(self.material_grams);
         ser.write_f32_le(self.material_cost);
-        ser.write_f32_le(self.bottom_light_off_delay);
+        ser.write_f32_le(self.bottom_light_off_delay.raw());
         ser.write_u32_le(1);
         ser.write_u16_le(self.light_pwm);
         ser.write_u16_le(self.bottom_light_pwm);
         ser.write_u32_le(DEFAULT_XOR_KEY);
-        ser.write_f32_le(self.bottom_lift_height_2);
-        ser.write_f32_le(self.bottom_lift_speed_2);
-        ser.write_f32_le(self.lift_height_2);
-        ser.write_f32_le(self.lift_speed_2);
-        ser.write_f32_le(self.retract_height_2);
-        ser.write_f32_le(self.retract_speed_2);
-        ser.write_f32_le(self.rest_time_after_lift);
+        ser.write_f32_le(self.bottom_lift_height_2.raw());
+        ser.write_f32_le(self.bottom_lift_speed_2.raw());
+        ser.write_f32_le(self.lift_height_2.raw());
+        ser.write_f32_le(self.lift_speed_2.raw());
+        ser.write_f32_le(self.retract_height_2.raw());
+        ser.write_f32_le(self.retract_speed_2.raw());
+        ser.write_f32_le(self.rest_time_after_lift.raw());
         let machine_name = ser.reserve(8);
         ser.write_u8(self.anti_alias_flag);
         ser.write_u16_le(0);
         ser.write_u8(self.per_layer_settings);
         ser.write_u32_le(self.modified);
         ser.write_u32_le(self.anti_alias_level);
-        ser.write_f32_le(self.rest_time_after_retract);
-        ser.write_f32_le(self.rest_time_after_lift_2);
+        ser.write_f32_le(self.rest_time_after_retract.raw());
+        ser.write_f32_le(self.rest_time_after_lift_2.raw());
         ser.write_u32_le(self.transition_layer_count);
         ser.write_f32_le(self.bottom_retract_speed.raw());
-        ser.write_f32_le(self.bottom_retract_speed_2);
+        ser.write_f32_le(self.bottom_retract_speed_2.raw());
         ser.write_u32_le(0);
         ser.write_f32_le(4.0);
         ser.write_u32_le(0);
         ser.write_f32_le(4.0);
-        ser.write_f32_le(self.rest_time_after_retract_2);
-        ser.write_f32_le(self.rest_time_after_lift_3);
-        ser.write_f32_le(self.rest_time_before_lift);
-        ser.write_f32_le(self.bottom_retract_height_2);
+        ser.write_f32_le(self.rest_time_after_retract_2.raw());
+        ser.write_f32_le(self.rest_time_after_lift_3.raw());
+        ser.write_f32_le(self.rest_time_before_lift.raw());
+        ser.write_f32_le(self.bottom_retract_height_2.raw());
         ser.reserve(4 * 2);
         ser.write_u32_le(4);
         ser.write_u32_le(self.last_layer_index);
@@ -416,31 +416,31 @@ impl File {
             small_preview: PreviewImage::default(),
             exposure_time: config.exposure_config.exposure_time,
             bottom_exposure_time: config.first_exposure_config.exposure_time,
-            light_off_delay: 0.0,
+            light_off_delay: Seconds::new(0.0),
             bottom_layer_count: config.first_layers,
             bottom_lift_height: config.first_exposure_config.lift_distance,
             bottom_lift_speed: config.first_exposure_config.lift_speed.convert(),
             lift_height: config.exposure_config.lift_distance,
             lift_speed: config.exposure_config.lift_speed.convert(),
             retract_speed: config.exposure_config.retract_speed.convert(),
-            bottom_light_off_delay: 0.0,
+            bottom_light_off_delay: Seconds::new(0.0),
             light_pwm: 255,
             bottom_light_pwm: 255,
-            bottom_lift_height_2: 4.0,  // make a setting
-            bottom_lift_speed_2: 320.0, // make a setting
-            lift_height_2: 0.0,
-            lift_speed_2: 0.0,
-            retract_height_2: 0.0,
-            retract_speed_2: 0.0,
-            rest_time_after_lift: 0.0,
+            bottom_lift_height_2: Milimeters::new(4.0), // make a setting
+            bottom_lift_speed_2: MilimetersPerMinute::new(320.0), // make a setting
+            lift_height_2: Milimeters::new(0.0),
+            lift_speed_2: MilimetersPerMinute::new(0.0),
+            retract_height_2: Milimeters::new(0.0),
+            retract_speed_2: MilimetersPerMinute::new(0.0),
+            rest_time_after_lift: Seconds::new(0.0),
             bottom_retract_speed: config.first_exposure_config.retract_speed.convert(),
-            bottom_retract_speed_2: 90.0, // make a setting
-            rest_time_after_retract_2: 1.0,
-            rest_time_after_lift_3: 0.0,
-            rest_time_before_lift: 0.0,
-            bottom_retract_height_2: 1.5,
-            rest_time_after_retract: 1.0,
-            rest_time_after_lift_2: 0.0,
+            bottom_retract_speed_2: MilimetersPerMinute::new(90.0), // make a setting
+            rest_time_after_retract_2: Seconds::new(1.0),
+            rest_time_after_lift_3: Seconds::new(0.0),
+            rest_time_before_lift: Seconds::new(0.0),
+            bottom_retract_height_2: Milimeters::new(1.5),
+            rest_time_after_retract: Seconds::new(1.0),
+            rest_time_after_lift_2: Seconds::new(0.0),
         }
     }
 }

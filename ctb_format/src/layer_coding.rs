@@ -1,6 +1,7 @@
 use common::{
     config::SliceConfig,
     misc::{EncodableLayer, Run},
+    units::{Milimeters, MilimetersPerMinute, Seconds},
 };
 use nalgebra::Vector2;
 
@@ -119,17 +120,17 @@ impl EncodableLayer for LayerEncoder {
         Layer {
             position_z: config.slice_height * (layer + 1) as f32,
             exposure_time: layer_exposure.exposure_time,
-            light_off_delay: 0.0,
+            light_off_delay: Seconds::new(0.0),
             lift_height: layer_exposure.lift_distance,
             lift_speed: layer_exposure.lift_speed.convert(),
-            lift_height_2: 0.0,
-            lift_speed_2: 0.0,
+            lift_height_2: Milimeters::new(0.0),
+            lift_speed_2: MilimetersPerMinute::new(0.0),
             retract_speed: layer_exposure.retract_speed.convert(),
-            retract_height_2: 0.0,
-            retract_speed_2: 0.0,
-            rest_time_before_lift: 0.0,
-            rest_time_after_lift: 0.0,
-            rest_time_after_retract: 1.0,
+            retract_height_2: Milimeters::new(0.0),
+            retract_speed_2: MilimetersPerMinute::new(0.0),
+            rest_time_before_lift: Seconds::new(0.0),
+            rest_time_after_lift: Seconds::new(0.0),
+            rest_time_after_retract: Seconds::new(1.0),
             light_pwm: 255.0,
             data: self.data,
         }
