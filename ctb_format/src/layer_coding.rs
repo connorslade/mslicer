@@ -1,6 +1,6 @@
 use common::{
-    config::SliceConfig,
-    misc::{EncodableLayer, Run},
+    rle::Run,
+    slice::{EncodableLayer, SliceConfig},
     units::{Milimeters, MilimetersPerMinute, Seconds},
 };
 use nalgebra::Vector2;

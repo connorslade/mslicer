@@ -1,6 +1,6 @@
 use common::{
-    misc::{VectorLayer, VectorSliceResult},
     serde::Serializer,
+    slice::{VectorLayer, VectorSliceResult},
 };
 use nalgebra::Vector2;
 use svg::{

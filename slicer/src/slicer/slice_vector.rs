@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 use common::{
-    misc::{VectorLayer, VectorSliceResult},
+    slice::{VectorLayer, VectorSliceResult},
     units::Milimeter,
 };
 use nalgebra::Vector2;

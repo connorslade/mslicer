@@ -1,4 +1,4 @@
-use common::{bitvec::BitVec, misc::Run};
+use common::{container::BitVec, rle::Run};
 
 pub struct Adler32 {
     a: u16,

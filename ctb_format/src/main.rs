@@ -5,7 +5,7 @@ use clap::Parser;
 use image::RgbImage;
 
 use common::{
-    misc::Run,
+    rle::Run,
     serde::{DynamicSerializer, SliceDeserializer},
 };
 use ctb_format::{File, LayerDecoder, PreviewImage};

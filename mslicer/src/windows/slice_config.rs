@@ -7,7 +7,10 @@ use crate::{
     app::{App, history::ConfigAction},
     ui::components::{dragger, history_tracked_value, metric_dragger, vec2_dragger},
 };
-use common::{config::ExposureConfig, format::Format, units::Milimeter};
+use common::{
+    slice::{ExposureConfig, Format},
+    units::Milimeter,
+};
 
 const TRANSITION_LAYER_TOOLTIP: &str = "Transition layers interpolate between the first exposure settings and the normal exposure settings.";
 const SLICE_FORMAT_TOOLTIP: &str =

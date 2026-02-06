@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use crate::app::project::model::Model;
-use common::{config::SliceConfig, progress::CombinedProgress};
+use common::{progress::CombinedProgress, slice::SliceConfig};
 use slicer::{
     format::FormatSliceFile,
     post_process::{anti_alias::AntiAlias, elephant_foot_fixer::ElephantFootFixer},

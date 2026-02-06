@@ -3,8 +3,7 @@ use std::{any::Any, path::PathBuf, str::FromStr};
 use anyhow::{Context, Ok, Result};
 use clap::{ArgMatches, Parser};
 use common::{
-    config::{ExposureConfig, SliceConfig},
-    format::Format,
+    slice::{ExposureConfig, Format, SliceConfig},
     units::{Milimeters, MilimetersPerMinute, Seconds},
 };
 use nalgebra::{ArrayStorage, Const, Matrix, Scalar, U1, Vector2, Vector3};

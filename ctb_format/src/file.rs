@@ -6,8 +6,8 @@ use std::{
 use anyhow::{Result, ensure};
 
 use common::{
-    misc::SliceResult,
     serde::{Deserializer, DynamicSerializer, Serializer, SliceDeserializer},
+    slice::SliceResult,
     units::{Milimeters, MilimetersPerMinute, Seconds},
 };
 use nalgebra::{Vector2, Vector3, Vector4};

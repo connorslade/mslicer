@@ -4,7 +4,7 @@ use std::{
 };
 
 use anyhow::Result;
-use common::{misc::SliceResult, progress::Progress, serde::Serializer, units::Milimeter};
+use common::{progress::Progress, serde::Serializer, slice::SliceResult, units::Milimeter};
 use image::DynamicImage;
 use serde::Serialize;
 use zip::{ZipArchive, ZipWriter, write::FileOptions};

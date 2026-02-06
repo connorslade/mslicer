@@ -2,8 +2,8 @@ use anyhow::{Result, ensure};
 
 use chrono::Local;
 use common::{
-    misc::SliceResult,
     serde::{Serializer, SizedString, SliceDeserializer},
+    slice::SliceResult,
     units::Second,
 };
 

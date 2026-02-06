@@ -1,10 +1,10 @@
 use std::mem;
 
 use common::{
-    config::SliceConfig,
-    image::Image,
-    misc::{EncodableLayer, Run},
+    container::Image,
+    rle::Run,
     serde::DynamicSerializer,
+    slice::{EncodableLayer, SliceConfig},
     units::Milimeter,
 };
 use image::{GrayImage, RgbImage};

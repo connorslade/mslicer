@@ -13,8 +13,8 @@
 //!   - https://gist.github.com/juliusgeo/d4965b16a3c4478bb4eca2fe210559eb
 
 use common::{
-    bitvec::BitVec,
-    misc::Run,
+    container::BitVec,
+    rle::Run,
     serde::{DynamicSerializer, Serializer},
 };
 

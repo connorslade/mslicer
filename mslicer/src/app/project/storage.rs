@@ -5,9 +5,9 @@ use nalgebra::Vector3;
 
 use crate::app::project::{PostProcessing, Project, model::Model};
 use common::{
-    config::SliceConfig,
     progress::Progress,
     serde::{Deserializer, SerdeExt, Serializer},
+    slice::SliceConfig,
 };
 use slicer::{
     mesh::{Mesh, MeshInner},

@@ -12,9 +12,9 @@ use clone_macro::clone;
 use image::{ImageReader, RgbaImage};
 
 use common::{
-    config::SliceConfig,
     progress::Progress,
     serde::{DynamicSerializer, ReaderDeserializer},
+    slice::SliceConfig,
     units::Milimeter,
 };
 use slicer::{format::FormatSliceFile, mesh::Mesh, slicer::Slicer};

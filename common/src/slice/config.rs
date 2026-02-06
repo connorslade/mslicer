@@ -2,8 +2,8 @@ use anyhow::Result;
 use nalgebra::{Vector2, Vector3};
 
 use crate::{
-    format::Format,
     serde::{Deserializer, SerdeExt, Serializer},
+    slice::Format,
     units::{CentimetersPerSecond, Milimeters, Minutes, Seconds},
 };
 

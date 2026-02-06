@@ -1,6 +1,6 @@
 use common::{
-    config::SliceConfig,
-    misc::{EncodableLayer, Run},
+    rle::Run,
+    slice::{EncodableLayer, SliceConfig},
 };
 use nalgebra::Vector2;
 

@@ -1,4 +1,4 @@
-use common::{bitvec::BitVec, misc::Run, serde::DynamicSerializer};
+use common::{container::BitVec, rle::Run, serde::DynamicSerializer};
 use criterion::{BatchSize, Criterion, criterion_group, criterion_main};
 use nalgebra::Vector2;
 use nanodlp_format::png::{

@@ -1,4 +1,7 @@
-use common::{config::SliceConfig, format::Format, progress::Progress};
+use common::{
+    progress::Progress,
+    slice::{Format, SliceConfig},
+};
 
 use crate::{format::FormatSliceResult, mesh::Mesh};
 

@@ -9,7 +9,7 @@ use std::{
 
 use anyhow::{Context, Result};
 use clone_macro::clone;
-use common::{format::Format, misc::random_string};
+use common::{misc::random_string, slice::Format};
 use parking_lot::{Mutex, MutexGuard};
 use tracing::{info, warn};
 

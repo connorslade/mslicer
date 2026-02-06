@@ -5,7 +5,7 @@ use std::{
 };
 
 use anyhow::Result;
-use common::{config::SliceConfig, units::Milimeters};
+use common::{slice::SliceConfig, units::Milimeters};
 use egui::Theme;
 use egui_dock::Tree;
 use itertools::Itertools;

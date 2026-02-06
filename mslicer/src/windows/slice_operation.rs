@@ -19,7 +19,7 @@ use crate::{
     render::slice_preview::SlicePreviewRenderCallback,
     ui::{components::vec2_dragger, popup::Popup},
 };
-use common::{format::Format, progress::Progress, serde::DynamicSerializer};
+use common::{progress::Progress, serde::DynamicSerializer, slice::Format};
 
 const FILENAME_POPUP_TEXT: &str =
     "To ensure the file name is unique, some extra random characters will be added on the end.";

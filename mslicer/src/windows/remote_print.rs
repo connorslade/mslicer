@@ -5,7 +5,7 @@ use std::{
 };
 
 use chrono::DateTime;
-use common::{format::Format, misc::human_duration};
+use common::{misc::human_duration, slice::Format};
 use const_format::concatcp;
 use egui::{
     Align, Context, DragValue, Grid, Layout, ProgressBar, Separator, Spinner, TextEdit, Ui, vec2,

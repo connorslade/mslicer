@@ -6,7 +6,7 @@ use std::{
 
 use anyhow::Result;
 use clap::Parser;
-use common::{misc::Run, serde::SliceDeserializer};
+use common::{rle::Run, serde::SliceDeserializer};
 use goo_format::{File, LayerDecoder, PreviewImage};
 use image::RgbImage;
 

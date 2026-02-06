@@ -1,9 +1,8 @@
-pub mod bitvec;
 pub mod color;
-pub mod config;
-pub mod format;
-pub mod image;
+pub mod container;
 pub mod misc;
 pub mod progress;
+pub mod rle;
 pub mod serde;
+pub mod slice;
 pub mod units;

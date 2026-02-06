@@ -3,11 +3,11 @@ use iter::SliceLayerIterator;
 use nalgebra::{Vector2, Vector3};
 
 use common::{
-    format::Format,
-    image::Image,
-    misc::{EncodableLayer, Run, SliceResult, VectorSliceResult},
+    container::Image,
     progress::Progress,
+    rle::Run,
     serde::Serializer,
+    slice::{EncodableLayer, Format, SliceResult, VectorSliceResult},
     units::Milimeters,
 };
 

@@ -1,5 +1,5 @@
 use common::{
-    misc::{EncodableLayer, SliceResult},
+    slice::{EncodableLayer, SliceResult},
     units::Milimeter,
 };
 use ordered_float::OrderedFloat;
