@@ -1,6 +1,6 @@
 use std::env;
 
-use common::units::Micrometers;
+use common::units::{Micrometers, Seconds};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -256,10 +256,10 @@ pub struct Profile {
     pub z_step_wait: u32,
     pub top_wait: u32,
     pub wait_height: u32,
-    pub cure_time: f32,
+    pub cure_time: Seconds,
     pub wait_before_print: u32,
     pub wait_after_print: u32,
-    pub support_cure_time: f32,
+    pub support_cure_time: Seconds,
     pub support_layer_number: u32,
     pub adapt_slicing: u32,
     pub adapt_slicing_min: u32,

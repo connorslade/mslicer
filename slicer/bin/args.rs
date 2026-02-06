@@ -5,7 +5,7 @@ use clap::{ArgMatches, Parser};
 use common::{
     config::{ExposureConfig, SliceConfig},
     format::Format,
-    units::Milimeters,
+    units::{Milimeters, MilimetersPerMinute, Seconds},
 };
 use nalgebra::{ArrayStorage, Const, Matrix, Scalar, U1, Vector2, Vector3};
 use num_traits::Zero;
@@ -112,18 +112,18 @@ impl Args {
             platform_size: self.platform_size.map(Milimeters::new),
             slice_height: Milimeters::new(self.layer_height),
             exposure_config: ExposureConfig {
-                exposure_time: self.exposure_time,
-                lift_distance: self.lift_distance,
-                lift_speed: self.lift_speed / 600.0,
-                retract_distance: self.lift_distance,
-                retract_speed: self.retract_speed / 600.0,
+                exposure_time: Seconds::new(self.exposure_time),
+                lift_distance: Milimeters::new(self.lift_distance),
+                lift_speed: MilimetersPerMinute::new(self.lift_speed).convert(),
+                retract_distance: Milimeters::new(self.lift_distance),
+                retract_speed: MilimetersPerMinute::new(self.retract_speed).convert(),
             },
             first_exposure_config: ExposureConfig {
-                exposure_time: self.first_exposure_time,
-                lift_distance: self.first_lift_distance,
-                lift_speed: self.first_lift_speed / 600.0,
-                retract_distance: self.first_lift_distance,
-                retract_speed: self.first_retract_speed / 600.0,
+                exposure_time: Seconds::new(self.first_exposure_time),
+                lift_distance: Milimeters::new(self.first_lift_distance),
+                lift_speed: MilimetersPerMinute::new(self.first_lift_speed).convert(),
+                retract_distance: Milimeters::new(self.first_lift_distance),
+                retract_speed: MilimetersPerMinute::new(self.first_retract_speed).convert(),
             },
             first_layers: self.first_layers,
             transition_layers: self.transition_layers,

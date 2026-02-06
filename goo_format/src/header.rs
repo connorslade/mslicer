@@ -4,7 +4,7 @@ use anyhow::{Result, ensure};
 
 use common::{
     serde::{Deserializer, Serializer, SizedString, SliceDeserializer},
-    units::Milimeters,
+    units::{Milimeters, MilimetersPerMinute, Seconds},
 };
 
 use crate::{DELIMITER, MAGIC_TAG, PreviewImage};
@@ -61,8 +61,8 @@ pub struct Header {
     pub z_size: Milimeters,
     /// Thickness of each layer, in mm.
     pub layer_thickness: Milimeters,
-    /// Default exposure time for each layer, in seconds.
-    pub exposure_time: f32,
+    /// Default exposure time for each layer.
+    pub exposure_time: Seconds,
     /// The exposure delay mode to use.
     /// ('turn off time' confuses me)
     pub exposure_delay_mode: ExposureDelayMode,
@@ -81,26 +81,26 @@ pub struct Header {
     pub after_lift_time: f32,
     /// Time to wait after retracting the platform after exposing each regular layer, in seconds.
     pub after_retract_time: f32,
-    /// Exposure time for the bottom layers, in seconds.
-    pub bottom_exposure_time: f32,
+    /// Exposure time for the bottom layers.
+    pub bottom_exposure_time: Seconds,
     /// Number of bottom layers.
     pub bottom_layers: u32,
-    /// Distance to lift the platform after exposing each bottom layer, in mm.
-    pub bottom_lift_distance: f32,
-    /// The speed to lift the platform after exposing each bottom layer, in mm/min.
-    pub bottom_lift_speed: f32,
-    /// Distance to lift the platform after exposing each regular layer, in mm.
-    pub lift_distance: f32,
-    /// The speed to lift the platform after exposing each regular layer, in mm/min.
-    pub lift_speed: f32,
-    /// Distance to retract (move down) the platform after exposing each bottom layer, in mm.
-    pub bottom_retract_distance: f32,
-    /// The speed to retract (move down) the platform after exposing each bottom layer, in mm/min.
-    pub bottom_retract_speed: f32,
-    /// Distance to retract (move down) the platform after exposing each regular layer, in mm.
-    pub retract_distance: f32,
-    /// The speed to retract (move down) the platform after exposing each regular layer, in mm/min.
-    pub retract_speed: f32,
+    /// Distance to lift the platform after exposing each bottom layer.
+    pub bottom_lift_distance: Milimeters,
+    /// The speed to lift the platform after exposing each bottom layer.
+    pub bottom_lift_speed: MilimetersPerMinute,
+    /// Distance to lift the platform after exposing each regular layer.
+    pub lift_distance: Milimeters,
+    /// The speed to lift the platform after exposing each regular layer.
+    pub lift_speed: MilimetersPerMinute,
+    /// Distance to retract (move down) the platform after exposing each bottom layer.
+    pub bottom_retract_distance: Milimeters,
+    /// The speed to retract (move down) the platform after exposing each bottom layer.
+    pub bottom_retract_speed: MilimetersPerMinute,
+    /// Distance to retract (move down) the platform after exposing each regular layer.
+    pub retract_distance: Milimeters,
+    /// The speed to retract (move down) the platform after exposing each regular layer.
+    pub retract_speed: MilimetersPerMinute,
     /// Second distance to lift the platform after exposing each bottom layer, in mm.
     pub bottom_second_lift_distance: f32,
     /// The speed to lift the platform after exposing each bottom layer, in mm/min.
@@ -177,7 +177,7 @@ impl Header {
         ser.write_f32_be(self.y_size.raw());
         ser.write_f32_be(self.z_size.raw());
         ser.write_f32_be(self.layer_thickness.raw());
-        ser.write_f32_be(self.exposure_time);
+        ser.write_f32_be(self.exposure_time.raw());
         ser.write_u8(self.exposure_delay_mode as u8);
         ser.write_f32_be(self.turn_off_time);
         ser.write_f32_be(self.bottom_before_lift_time);
@@ -186,16 +186,16 @@ impl Header {
         ser.write_f32_be(self.before_lift_time);
         ser.write_f32_be(self.after_lift_time);
         ser.write_f32_be(self.after_retract_time);
-        ser.write_f32_be(self.bottom_exposure_time);
+        ser.write_f32_be(self.bottom_exposure_time.raw());
         ser.write_u32_be(self.bottom_layers);
-        ser.write_f32_be(self.bottom_lift_distance);
-        ser.write_f32_be(self.bottom_lift_speed);
-        ser.write_f32_be(self.lift_distance);
-        ser.write_f32_be(self.lift_speed);
-        ser.write_f32_be(self.bottom_retract_distance);
-        ser.write_f32_be(self.bottom_retract_speed);
-        ser.write_f32_be(self.retract_distance);
-        ser.write_f32_be(self.retract_speed);
+        ser.write_f32_be(self.bottom_lift_distance.raw());
+        ser.write_f32_be(self.bottom_lift_speed.raw());
+        ser.write_f32_be(self.lift_distance.raw());
+        ser.write_f32_be(self.lift_speed.raw());
+        ser.write_f32_be(self.bottom_retract_distance.raw());
+        ser.write_f32_be(self.bottom_retract_speed.raw());
+        ser.write_f32_be(self.retract_distance.raw());
+        ser.write_f32_be(self.retract_speed.raw());
         ser.write_f32_be(self.bottom_second_lift_distance);
         ser.write_f32_be(self.bottom_second_lift_speed);
         ser.write_f32_be(self.second_lift_distance);
@@ -249,7 +249,7 @@ impl Header {
             y_size: Milimeters::new(des.read_f32_be()),
             z_size: Milimeters::new(des.read_f32_be()),
             layer_thickness: Milimeters::new(des.read_f32_be()),
-            exposure_time: des.read_f32_be(),
+            exposure_time: Seconds::new(des.read_f32_be()),
             exposure_delay_mode: ExposureDelayMode::from_bool(des.read_bool()),
             turn_off_time: des.read_f32_be(),
             bottom_before_lift_time: des.read_f32_be(),
@@ -258,16 +258,16 @@ impl Header {
             before_lift_time: des.read_f32_be(),
             after_lift_time: des.read_f32_be(),
             after_retract_time: des.read_f32_be(),
-            bottom_exposure_time: des.read_f32_be(),
+            bottom_exposure_time: Seconds::new(des.read_f32_be()),
             bottom_layers: des.read_u32_be(),
-            bottom_lift_distance: des.read_f32_be(),
-            bottom_lift_speed: des.read_f32_be(),
-            lift_distance: des.read_f32_be(),
-            lift_speed: des.read_f32_be(),
-            bottom_retract_distance: des.read_f32_be(),
-            bottom_retract_speed: des.read_f32_be(),
-            retract_distance: des.read_f32_be(),
-            retract_speed: des.read_f32_be(),
+            bottom_lift_distance: Milimeters::new(des.read_f32_be()),
+            bottom_lift_speed: MilimetersPerMinute::new(des.read_f32_be()),
+            lift_distance: Milimeters::new(des.read_f32_be()),
+            lift_speed: MilimetersPerMinute::new(des.read_f32_be()),
+            bottom_retract_distance: Milimeters::new(des.read_f32_be()),
+            bottom_retract_speed: MilimetersPerMinute::new(des.read_f32_be()),
+            retract_distance: Milimeters::new(des.read_f32_be()),
+            retract_speed: MilimetersPerMinute::new(des.read_f32_be()),
             bottom_second_lift_distance: des.read_f32_be(),
             bottom_second_lift_speed: des.read_f32_be(),
             second_lift_distance: des.read_f32_be(),

@@ -55,7 +55,7 @@ pub fn metric_dragger<'a, Num: Numeric>(
         .speed(0.1 / scale)
         .custom_formatter(move |value, _range| {
             let value = value * scale;
-            let prefix = prefix.get(0).copied().unwrap_or_default();
+            let prefix = prefix.first().copied().unwrap_or_default();
             format!("{value:.1} {prefix}{unit}")
         })
         .custom_parser(move |s| {

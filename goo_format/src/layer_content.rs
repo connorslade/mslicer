@@ -2,7 +2,7 @@ use anyhow::{Result, ensure};
 
 use common::{
     serde::{Deserializer, Serializer, SliceDeserializer},
-    units::Milimeters,
+    units::{Milimeters, MilimetersPerMinute, Seconds},
 };
 
 use crate::DELIMITER;
@@ -10,13 +10,13 @@ use crate::DELIMITER;
 pub struct LayerContent {
     /// If printing should be paused on current layer.
     pub pause: bool,
-    /// The Z position to to if paused, in mm.
+    /// The Z position to to if paused.
     pub pause_position_z: Milimeters,
-    /// The Z position of the layer, in mm.
+    /// The Z position of the layer.
     /// `(layer_height * (i + 1))`.
     pub layer_position_z: Milimeters,
-    /// Exposure time for the layer, in seconds.
-    pub layer_exposure_time: f32,
+    /// Exposure time for the layer.
+    pub layer_exposure_time: Seconds,
     /// Time to wait after the layer is done when exposure delay mode is 0, in seconds.
     pub layer_off_time: f32,
     /// Time to wait before lifting the platform when exposure delay mode is 1, in seconds.
@@ -25,18 +25,18 @@ pub struct LayerContent {
     pub after_lift_time: f32,
     /// Time to wait after retracting the platform when exposure delay mode is 1, in seconds.
     pub after_retract_time: f32,
-    /// Distance to lift the platform, in mm.
-    pub lift_distance: f32,
-    /// Speed to lift the platform, in mm/min.
-    pub lift_speed: f32,
+    /// Distance to lift the platform.
+    pub lift_distance: Milimeters,
+    /// Speed to lift the platform.
+    pub lift_speed: MilimetersPerMinute,
     /// Distance to lift the platform a second time, in mm.
     pub second_lift_distance: f32,
     /// Speed to lift the platform a second time, in mm/min.
     pub second_lift_speed: f32,
-    /// Distance to retract the platform, in mm.
-    pub retract_distance: f32,
-    /// Speed to retract the platform, in mm/min.
-    pub retract_speed: f32,
+    /// Distance to retract the platform.
+    pub retract_distance: Milimeters,
+    /// Speed to retract the platform.
+    pub retract_speed: MilimetersPerMinute,
     /// Distance to retract the platform a second time, in mm.
     pub second_retract_distance: f32,
     /// Speed to retract the platform a second time, in mm/min.
@@ -54,17 +54,17 @@ impl LayerContent {
         ser.write_u16_be(self.pause as u16);
         ser.write_f32_be(self.pause_position_z.raw());
         ser.write_f32_be(self.layer_position_z.raw());
-        ser.write_f32_be(self.layer_exposure_time);
+        ser.write_f32_be(self.layer_exposure_time.raw());
         ser.write_f32_be(self.layer_off_time);
         ser.write_f32_be(self.before_lift_time);
         ser.write_f32_be(self.after_lift_time);
         ser.write_f32_be(self.after_retract_time);
-        ser.write_f32_be(self.lift_distance);
-        ser.write_f32_be(self.lift_speed);
+        ser.write_f32_be(self.lift_distance.raw());
+        ser.write_f32_be(self.lift_speed.raw());
         ser.write_f32_be(self.second_lift_distance);
         ser.write_f32_be(self.second_lift_speed);
-        ser.write_f32_be(self.retract_distance);
-        ser.write_f32_be(self.retract_speed);
+        ser.write_f32_be(self.retract_distance.raw());
+        ser.write_f32_be(self.retract_speed.raw());
         ser.write_f32_be(self.second_retract_distance);
         ser.write_f32_be(self.second_retract_speed);
         ser.write_u16_be(self.light_pwm as u16);
@@ -81,17 +81,17 @@ impl LayerContent {
             pause: des.read_u16_be() != 0,
             pause_position_z: Milimeters::new(des.read_f32_be()),
             layer_position_z: Milimeters::new(des.read_f32_be()),
-            layer_exposure_time: des.read_f32_be(),
+            layer_exposure_time: Seconds::new(des.read_f32_be()),
             layer_off_time: des.read_f32_be(),
             before_lift_time: des.read_f32_be(),
             after_lift_time: des.read_f32_be(),
             after_retract_time: des.read_f32_be(),
-            lift_distance: des.read_f32_be(),
-            lift_speed: des.read_f32_be(),
+            lift_distance: Milimeters::new(des.read_f32_be()),
+            lift_speed: MilimetersPerMinute::new(des.read_f32_be()),
             second_lift_distance: des.read_f32_be(),
             second_lift_speed: des.read_f32_be(),
-            retract_distance: des.read_f32_be(),
-            retract_speed: des.read_f32_be(),
+            retract_distance: Milimeters::new(des.read_f32_be()),
+            retract_speed: MilimetersPerMinute::new(des.read_f32_be()),
             second_retract_distance: des.read_f32_be(),
             second_retract_speed: des.read_f32_be(),
             light_pwm: des.read_u16_be().min(255) as u8,

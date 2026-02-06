@@ -4,7 +4,7 @@ use nalgebra::{Vector2, Vector3};
 use crate::{
     format::Format,
     serde::{Deserializer, SerdeExt, Serializer},
-    units::Milimeters,
+    units::{CentimetersPerSecond, Milimeters, Minutes, Seconds},
 };
 
 #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
@@ -23,11 +23,11 @@ pub struct SliceConfig {
 
 #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct ExposureConfig {
-    pub exposure_time: f32,    // s
-    pub lift_distance: f32,    // mm
-    pub lift_speed: f32,       // cm/s
-    pub retract_distance: f32, // mm
-    pub retract_speed: f32,    // cm/s
+    pub exposure_time: Seconds,
+    pub lift_distance: Milimeters,
+    pub lift_speed: CentimetersPerSecond,
+    pub retract_distance: Milimeters,
+    pub retract_speed: CentimetersPerSecond,
 }
 
 impl SliceConfig {
@@ -49,11 +49,11 @@ impl Default for SliceConfig {
             platform_size: Vector3::new(218.88, 122.904, 260.0).map(Milimeters::new),
             slice_height: Milimeters::new(0.05),
             exposure_config: ExposureConfig {
-                exposure_time: 3.0,
+                exposure_time: Seconds::new(3.0),
                 ..Default::default()
             },
             first_exposure_config: ExposureConfig {
-                exposure_time: 30.0,
+                exposure_time: Seconds::new(30.0),
                 ..Default::default()
             },
             first_layers: 3,
@@ -65,11 +65,11 @@ impl Default for SliceConfig {
 impl Default for ExposureConfig {
     fn default() -> Self {
         Self {
-            exposure_time: 3.0,
-            lift_distance: 5.0,
-            lift_speed: 0.55, // 330 mm/min
-            retract_distance: 5.0,
-            retract_speed: 0.55, // 330 mm/min
+            exposure_time: Seconds::new(3.0),
+            lift_distance: Milimeters::new(5.0),
+            lift_speed: (Milimeters::new(330.0) / Minutes::new(1.0)).convert(),
+            retract_distance: Milimeters::new(5.0),
+            retract_speed: (Milimeters::new(330.0) / Minutes::new(1.0)).convert(),
         }
     }
 }
@@ -102,20 +102,20 @@ impl SliceConfig {
 
 impl ExposureConfig {
     pub fn serialize<T: Serializer>(&self, ser: &mut T) {
-        ser.write_f32_be(self.exposure_time);
-        ser.write_f32_be(self.lift_distance);
-        ser.write_f32_be(self.lift_speed);
-        ser.write_f32_be(self.retract_distance);
-        ser.write_f32_be(self.retract_speed);
+        ser.write_f32_be(self.exposure_time.raw());
+        ser.write_f32_be(self.lift_distance.raw());
+        ser.write_f32_be(self.lift_speed.raw());
+        ser.write_f32_be(self.retract_distance.raw());
+        ser.write_f32_be(self.retract_speed.raw());
     }
 
     pub fn deserialize<T: Deserializer>(des: &mut T) -> Self {
         Self {
-            exposure_time: des.read_f32_be(),
-            lift_distance: des.read_f32_be(),
-            lift_speed: des.read_f32_be(),
-            retract_distance: des.read_f32_be(),
-            retract_speed: des.read_f32_be(),
+            exposure_time: Seconds::new(des.read_f32_be()),
+            lift_distance: Milimeters::new(des.read_f32_be()),
+            lift_speed: CentimetersPerSecond::new(des.read_f32_be()),
+            retract_distance: Milimeters::new(des.read_f32_be()),
+            retract_speed: CentimetersPerSecond::new(des.read_f32_be()),
         }
     }
 }

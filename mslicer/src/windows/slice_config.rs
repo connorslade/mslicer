@@ -162,25 +162,29 @@ fn exposure_config_grid(ui: &mut Ui, config: &mut ExposureConfig) {
         .show(ui, |ui| {
             ui.label("Exposure Time");
             ui.horizontal(|ui| {
-                ui.add(metric_dragger(&mut config.exposure_time, "s", 0).range(0.0..=f32::MAX));
+                ui.add(
+                    metric_dragger(config.exposure_time.raw_mut(), "s", 0).range(0.0..=f32::MAX),
+                );
                 ui.add_space(ui.available_width());
             });
             ui.end_row();
 
             ui.label("Lift Distance ");
-            ui.add(metric_dragger(&mut config.lift_distance, "m", -3).range(0.0..=f32::MAX));
+            ui.add(metric_dragger(config.lift_distance.raw_mut(), "m", -3).range(0.0..=f32::MAX));
             ui.end_row();
 
             ui.label("Lift Speed");
-            ui.add(metric_dragger(&mut config.lift_speed, "m/s", -2).range(0.0..=f32::MAX));
+            ui.add(metric_dragger(config.lift_speed.raw_mut(), "m/s", -2).range(0.0..=f32::MAX));
             ui.end_row();
 
             ui.label("Retract Distance");
-            ui.add(metric_dragger(&mut config.retract_distance, "m", -3).range(0.0..=f32::MAX));
+            ui.add(
+                metric_dragger(config.retract_distance.raw_mut(), "m", -3).range(0.0..=f32::MAX),
+            );
             ui.end_row();
 
             ui.label("Retract Speed");
-            ui.add(metric_dragger(&mut config.retract_speed, "m/s", -2).range(0.0..=f32::MAX));
+            ui.add(metric_dragger(config.retract_speed.raw_mut(), "m/s", -2).range(0.0..=f32::MAX));
             ui.end_row();
         });
 }

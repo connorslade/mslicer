@@ -1,7 +1,9 @@
 mod defs;
 mod value;
-pub use defs::{Base, Centi, Kilo, Micro, Milli};
-pub use value::Value;
+pub use defs::{Base, Centi, Kilo, Meter, Micro, Milli, Second};
+pub use value::{Length, Time, Velocity};
+
+use crate::units::defs::Minute;
 
 // gotta love macros. this is just so readable.
 #[macro_export]
@@ -16,50 +18,28 @@ macro_rules! marker_structs {
     };
 }
 
-pub type Meter<P = Base> = defs::Length<defs::Meter<P>>;
 pub type Mircometer = Meter<Micro>;
 pub type Milimeter = Meter<Milli>;
-pub type Micrometers = Value<Mircometer>;
-pub type Milimeters = Value<Milimeter>;
+pub type Centimeter = Meter<Centi>;
+pub type Meters = Length<Meter>;
+pub type Micrometers = Length<Mircometer>;
+pub type Milimeters = Length<Milimeter>;
+pub type Centimeters = Length<Centimeter>;
 
-marker_structs![
-    Div<T: Unit, K: Unit>,
-    Mul<T: Unit, K: Unit>
-];
+pub type Seconds = Time<Second>;
+pub type Minutes = Time<Minute>;
+
+pub type CentimetersPerSecond = Velocity<Centimeter, Second>;
+pub type MilimetersPerMinute = Velocity<Milimeter, Minute>;
 
 pub trait Unit {
     fn to_base(val: f32) -> f32;
     fn from_base(val: f32) -> f32;
 }
 
+pub trait LengthUnit: Unit {}
+pub trait TimeUnit: Unit {}
+
 pub trait MetricPrefix {
     const FACTOR: f32;
-
-    fn to_base(val: f32) -> f32 {
-        val * Self::FACTOR
-    }
-
-    fn from_base(val: f32) -> f32 {
-        val / Self::FACTOR
-    }
-}
-
-impl<A: Unit, B: Unit> Unit for Div<A, B> {
-    fn to_base(val: f32) -> f32 {
-        B::from_base(A::to_base(val))
-    }
-
-    fn from_base(val: f32) -> f32 {
-        A::from_base(B::to_base(val))
-    }
-}
-
-impl<A: Unit, B: Unit> Unit for Mul<A, B> {
-    fn to_base(val: f32) -> f32 {
-        B::to_base(A::to_base(val))
-    }
-
-    fn from_base(val: f32) -> f32 {
-        A::from_base(B::from_base(val))
-    }
 }

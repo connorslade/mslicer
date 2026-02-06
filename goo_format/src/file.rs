@@ -4,6 +4,7 @@ use chrono::Local;
 use common::{
     misc::SliceResult,
     serde::{Serializer, SizedString, SliceDeserializer},
+    units::Second,
 };
 
 use crate::{ENDING_STRING, Header, LayerContent};
@@ -24,16 +25,15 @@ impl File {
             slice_config,
         } = result;
 
-        let layer_time = slice_config.exposure_config.exposure_time
-            + slice_config.exposure_config.lift_distance
-                / (slice_config.exposure_config.lift_speed * 600.0)
-            + slice_config.exposure_config.retract_distance
-                / (slice_config.exposure_config.retract_speed * 600.0);
-        let bottom_layer_time = slice_config.first_exposure_config.exposure_time
-            + slice_config.first_exposure_config.lift_distance
-                / (slice_config.first_exposure_config.lift_speed * 600.0)
-            + slice_config.first_exposure_config.retract_distance
-                / (slice_config.first_exposure_config.retract_speed * 600.0);
+        let exp = &slice_config.exposure_config;
+        let fexp = &slice_config.first_exposure_config;
+
+        let layer_time = exp.exposure_time
+            + exp.lift_distance / exp.lift_speed
+            + exp.retract_distance / exp.retract_speed;
+        let bottom_layer_time = fexp.exposure_time
+            + fexp.lift_distance / fexp.lift_speed
+            + fexp.retract_distance / fexp.retract_speed;
         let total_time = (layers.len() as u32 - slice_config.first_layers) as f32 * layer_time
             + slice_config.first_layers as f32 * bottom_layer_time;
 
@@ -46,22 +46,22 @@ impl File {
                 z_size: slice_config.platform_size.z,
 
                 layer_count: layers.len() as u32,
-                printing_time: total_time as u32,
+                printing_time: total_time.get::<Second>() as u32,
                 layer_thickness: slice_config.slice_height,
                 bottom_layers: slice_config.first_layers,
                 transition_layers: slice_config.transition_layers as u16,
 
                 exposure_time: slice_config.exposure_config.exposure_time,
                 lift_distance: slice_config.exposure_config.lift_distance,
-                lift_speed: slice_config.exposure_config.lift_speed * 600.0,
+                lift_speed: slice_config.exposure_config.lift_speed.convert(),
                 retract_distance: slice_config.exposure_config.retract_distance,
-                retract_speed: slice_config.exposure_config.retract_speed * 600.0,
+                retract_speed: slice_config.exposure_config.retract_speed.convert(),
 
                 bottom_exposure_time: slice_config.first_exposure_config.exposure_time,
                 bottom_lift_distance: slice_config.first_exposure_config.lift_distance,
-                bottom_lift_speed: slice_config.first_exposure_config.lift_speed,
+                bottom_lift_speed: slice_config.first_exposure_config.lift_speed.convert(),
                 bottom_retract_distance: slice_config.first_exposure_config.retract_distance,
-                bottom_retract_speed: slice_config.first_exposure_config.retract_speed,
+                bottom_retract_speed: slice_config.first_exposure_config.retract_speed.convert(),
 
                 file_time: SizedString::new(
                     Local::now()

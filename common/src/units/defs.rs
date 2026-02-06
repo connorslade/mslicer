@@ -1,16 +1,12 @@
-use crate::marker_structs;
+use crate::{marker_structs, units::LengthUnit};
 
-use super::{MetricPrefix, Unit};
+use super::{MetricPrefix, TimeUnit, Unit};
 
 marker_structs![
-    Time<U: Unit = Second>,
     Second<P: MetricPrefix = Base>,
-    Minute<P: MetricPrefix = Base>,
-    Hour,
+    Minute,
 
-    Length<U: Unit = Meter>,
-    Meter<P: MetricPrefix = Base>,
-    Mile
+    Meter<P: MetricPrefix = Base>
 ];
 
 pub struct Kilo;
@@ -19,45 +15,29 @@ pub struct Centi;
 pub struct Milli;
 pub struct Micro;
 
-impl<U: Unit> Unit for Length<U> {
-    fn to_base(val: f32) -> f32 {
-        U::to_base(val)
-    }
-
-    fn from_base(val: f32) -> f32 {
-        U::from_base(val)
-    }
-}
-
-impl<U: Unit> Unit for Time<U> {
-    fn to_base(val: f32) -> f32 {
-        U::to_base(val)
-    }
-
-    fn from_base(val: f32) -> f32 {
-        U::from_base(val)
-    }
-}
-
 impl<P: MetricPrefix> Unit for Meter<P> {
     fn to_base(val: f32) -> f32 {
-        P::to_base(val)
+        val * P::FACTOR
     }
 
     fn from_base(val: f32) -> f32 {
-        P::from_base(val)
+        val / P::FACTOR
     }
 }
+
+impl<P: MetricPrefix> LengthUnit for Meter<P> {}
 
 impl<P: MetricPrefix> Unit for Second<P> {
     fn to_base(val: f32) -> f32 {
-        P::to_base(val)
+        val * P::FACTOR
     }
 
     fn from_base(val: f32) -> f32 {
-        P::from_base(val)
+        val / P::FACTOR
     }
 }
+
+impl<P: MetricPrefix> TimeUnit for Second<P> {}
 
 impl Unit for Minute {
     fn to_base(val: f32) -> f32 {
@@ -69,25 +49,7 @@ impl Unit for Minute {
     }
 }
 
-impl Unit for Hour {
-    fn to_base(val: f32) -> f32 {
-        val * (60.0 * 60.0)
-    }
-
-    fn from_base(val: f32) -> f32 {
-        val / (60.0 * 60.0)
-    }
-}
-
-impl Unit for Mile {
-    fn to_base(val: f32) -> f32 {
-        val * 1609.34
-    }
-
-    fn from_base(val: f32) -> f32 {
-        val / 1609.34
-    }
-}
+impl TimeUnit for Minute {}
 
 impl MetricPrefix for Kilo {
     const FACTOR: f32 = 1e3;

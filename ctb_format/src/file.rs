@@ -8,7 +8,7 @@ use anyhow::{Result, ensure};
 use common::{
     misc::SliceResult,
     serde::{Deserializer, DynamicSerializer, Serializer, SliceDeserializer},
-    units::Milimeters,
+    units::{Milimeters, MilimetersPerMinute, Seconds},
 };
 use nalgebra::{Vector2, Vector3, Vector4};
 use sha2::{Digest, Sha256};
@@ -61,15 +61,15 @@ pub struct File {
     pub small_preview: PreviewImage,
 
     // Layer config
-    pub exposure_time: f32,
-    pub bottom_exposure_time: f32,
+    pub exposure_time: Seconds,
+    pub bottom_exposure_time: Seconds,
     pub light_off_delay: f32,
     pub bottom_layer_count: u32,
-    pub bottom_lift_height: f32,
-    pub bottom_lift_speed: f32,
-    pub lift_height: f32,
-    pub lift_speed: f32,
-    pub retract_speed: f32,
+    pub bottom_lift_height: Milimeters,
+    pub bottom_lift_speed: MilimetersPerMinute,
+    pub lift_height: Milimeters,
+    pub lift_speed: MilimetersPerMinute,
+    pub retract_speed: MilimetersPerMinute,
     pub bottom_light_off_delay: f32,
     pub light_pwm: u16,
     pub bottom_light_pwm: u16,
@@ -80,7 +80,7 @@ pub struct File {
     pub retract_height_2: f32,
     pub retract_speed_2: f32,
     pub rest_time_after_lift: f32,
-    pub bottom_retract_speed: f32,
+    pub bottom_retract_speed: MilimetersPerMinute,
     pub bottom_retract_speed_2: f32,
     pub rest_time_after_retract_2: f32,
     pub rest_time_after_lift_3: f32,
@@ -123,8 +123,8 @@ impl File {
                 Milimeters::new(des.read_f32_le())
             },
             layer_height: Milimeters::new(des.read_f32_le()),
-            exposure_time: des.read_f32_le(),
-            bottom_exposure_time: des.read_f32_le(),
+            exposure_time: Seconds::new(des.read_f32_le()),
+            bottom_exposure_time: Seconds::new(des.read_f32_le()),
             light_off_delay: des.read_f32_le(),
             bottom_layer_count: des.read_u32_le(),
             resolution: Vector2::new(des.read_u32_le(), des.read_u32_le()),
@@ -139,11 +139,11 @@ impl File {
             },
             print_time: des.read_u32_le(),
             projector_type: des.read_u32_le(),
-            bottom_lift_height: des.read_f32_le(),
-            bottom_lift_speed: des.read_f32_le(),
-            lift_height: des.read_f32_le(),
-            lift_speed: des.read_f32_le(),
-            retract_speed: des.read_f32_le(),
+            bottom_lift_height: Milimeters::new(des.read_f32_le()),
+            bottom_lift_speed: MilimetersPerMinute::new(des.read_f32_le()),
+            lift_height: Milimeters::new(des.read_f32_le()),
+            lift_speed: MilimetersPerMinute::new(des.read_f32_le()),
+            retract_speed: MilimetersPerMinute::new(des.read_f32_le()),
             material_milliliters: des.read_f32_le(),
             material_grams: des.read_f32_le(),
             material_cost: des.read_f32_le(),
@@ -195,7 +195,7 @@ impl File {
             rest_time_after_retract: des.read_f32_le(),
             rest_time_after_lift_2: des.read_f32_le(),
             transition_layer_count: des.read_u32_le(),
-            bottom_retract_speed: des.read_f32_le(),
+            bottom_retract_speed: MilimetersPerMinute::new(des.read_f32_le()),
             bottom_retract_speed_2: des.read_f32_le(),
             rest_time_after_retract_2: {
                 des.advance_by(4 * 4);
@@ -248,8 +248,8 @@ impl File {
         ser.write_u32_le(0);
         ser.write_f32_le(self.total_height.raw());
         ser.write_f32_le(self.layer_height.raw());
-        ser.write_f32_le(self.exposure_time);
-        ser.write_f32_le(self.bottom_exposure_time);
+        ser.write_f32_le(self.exposure_time.raw());
+        ser.write_f32_le(self.bottom_exposure_time.raw());
         ser.write_f32_le(self.light_off_delay);
         ser.write_u32_le(self.bottom_layer_count);
         ser.write_u32_le(self.resolution.x);
@@ -259,11 +259,11 @@ impl File {
         let small_preview = ser.reserve(4);
         ser.write_u32_le(self.print_time);
         ser.write_u32_le(self.projector_type);
-        ser.write_f32_le(self.bottom_lift_height);
-        ser.write_f32_le(self.bottom_lift_speed);
-        ser.write_f32_le(self.lift_height);
-        ser.write_f32_le(self.lift_speed);
-        ser.write_f32_le(self.retract_speed);
+        ser.write_f32_le(self.bottom_lift_height.raw());
+        ser.write_f32_le(self.bottom_lift_speed.raw());
+        ser.write_f32_le(self.lift_height.raw());
+        ser.write_f32_le(self.lift_speed.raw());
+        ser.write_f32_le(self.retract_speed.raw());
         ser.write_f32_le(self.material_milliliters);
         ser.write_f32_le(self.material_grams);
         ser.write_f32_le(self.material_cost);
@@ -288,7 +288,7 @@ impl File {
         ser.write_f32_le(self.rest_time_after_retract);
         ser.write_f32_le(self.rest_time_after_lift_2);
         ser.write_u32_le(self.transition_layer_count);
-        ser.write_f32_le(self.bottom_retract_speed);
+        ser.write_f32_le(self.bottom_retract_speed.raw());
         ser.write_f32_le(self.bottom_retract_speed_2);
         ser.write_u32_le(0);
         ser.write_f32_le(4.0);
@@ -419,10 +419,10 @@ impl File {
             light_off_delay: 0.0,
             bottom_layer_count: config.first_layers,
             bottom_lift_height: config.first_exposure_config.lift_distance,
-            bottom_lift_speed: config.first_exposure_config.lift_speed * 600.0,
+            bottom_lift_speed: config.first_exposure_config.lift_speed.convert(),
             lift_height: config.exposure_config.lift_distance,
-            lift_speed: config.exposure_config.lift_speed * 600.0,
-            retract_speed: config.exposure_config.retract_speed * 600.0,
+            lift_speed: config.exposure_config.lift_speed.convert(),
+            retract_speed: config.exposure_config.retract_speed.convert(),
             bottom_light_off_delay: 0.0,
             light_pwm: 255,
             bottom_light_pwm: 255,
@@ -433,7 +433,7 @@ impl File {
             retract_height_2: 0.0,
             retract_speed_2: 0.0,
             rest_time_after_lift: 0.0,
-            bottom_retract_speed: config.first_exposure_config.retract_speed * 60.0,
+            bottom_retract_speed: config.first_exposure_config.retract_speed.convert(),
             bottom_retract_speed_2: 90.0, // make a setting
             rest_time_after_retract_2: 1.0,
             rest_time_after_lift_3: 0.0,
