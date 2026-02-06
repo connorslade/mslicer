@@ -1,4 +1,7 @@
-use common::misc::{EncodableLayer, SliceResult};
+use common::{
+    misc::{EncodableLayer, SliceResult},
+    units::Milimeter,
+};
 use ordered_float::OrderedFloat;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
@@ -24,7 +27,7 @@ impl Slicer {
         let layers = (0..self.layers)
             .into_par_iter()
             .map(|layer| {
-                let height = layer as f32 * self.slice_config.slice_height;
+                let height = layer as f32 * self.slice_config.slice_height.get::<Milimeter>();
 
                 // Gets all the intersections between the slice plane and the
                 // model. Because all the faces are triangles, every triangle

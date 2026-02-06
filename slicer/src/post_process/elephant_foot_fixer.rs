@@ -3,6 +3,7 @@ use std::{mem, time::Instant};
 use common::{
     progress::Progress,
     serde::{Deserializer, Serializer},
+    units::Milimeter,
 };
 use image::Luma;
 use imageproc::{morphology::Mask, point::Point};
@@ -30,8 +31,8 @@ impl ElephantFootFixer {
         let (width, height) = (info.resolution.x as usize, info.resolution.y as usize);
 
         let (x_radius, y_radius) = (
-            (self.inset_distance * (width as f32 / info.size.x)) as usize,
-            (self.inset_distance * (height as f32 / info.size.y)) as usize,
+            (self.inset_distance * (width as f32 / info.size.x).get::<Milimeter>()) as usize,
+            (self.inset_distance * (height as f32 / info.size.y).get::<Milimeter>()) as usize,
         );
         info!(
             "Eroding {} bottom layers with radius ({}, {})",

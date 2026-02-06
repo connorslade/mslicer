@@ -8,6 +8,7 @@ use anyhow::{Result, ensure};
 use common::{
     misc::SliceResult,
     serde::{Deserializer, DynamicSerializer, Serializer, SliceDeserializer},
+    units::Milimeters,
 };
 use nalgebra::{Vector2, Vector3, Vector4};
 use sha2::{Digest, Sha256};
@@ -34,15 +35,15 @@ pub struct File {
     pub modified: u32, // Timestamp in minutes
 
     // Printer properties
-    pub size: Vector3<f32>,
+    pub size: Vector3<Milimeters>,
     pub resolution: Vector2<u32>,
     pub machine_name: String,
     pub projector_type: u32,
     pub resin_parameters: ResinParameters,
 
     // Operation properties
-    pub total_height: f32,
-    pub layer_height: f32,
+    pub total_height: Milimeters,
+    pub layer_height: Milimeters,
     pub last_layer_index: u32,
     pub transition_layer_count: u32,
     pub anti_alias_flag: u8, // 7(0x7) [No AA] / 15(0x0F) [AA]
@@ -115,12 +116,13 @@ impl File {
 
         Ok(Self {
             checksum,
-            size: Vector3::new(des.read_f32_le(), des.read_f32_le(), des.read_f32_le()),
+            size: Vector3::new(des.read_f32_le(), des.read_f32_le(), des.read_f32_le())
+                .map(Milimeters::new),
             total_height: {
                 des.advance_by(4 * 2);
-                des.read_f32_le()
+                Milimeters::new(des.read_f32_le())
             },
-            layer_height: des.read_f32_le(),
+            layer_height: Milimeters::new(des.read_f32_le()),
             exposure_time: des.read_f32_le(),
             bottom_exposure_time: des.read_f32_le(),
             light_off_delay: des.read_f32_le(),
@@ -239,13 +241,13 @@ impl File {
         let mut ser = DynamicSerializer::new();
         ser.write_u64_le(self.checksum);
         let layer_offset = ser.reserve(4);
-        ser.write_f32_le(self.size.x);
-        ser.write_f32_le(self.size.y);
-        ser.write_f32_le(self.size.z);
+        ser.write_f32_le(self.size.x.raw());
+        ser.write_f32_le(self.size.y.raw());
+        ser.write_f32_le(self.size.z.raw());
         ser.write_u32_le(0);
         ser.write_u32_le(0);
-        ser.write_f32_le(self.total_height);
-        ser.write_f32_le(self.layer_height);
+        ser.write_f32_le(self.total_height.raw());
+        ser.write_f32_le(self.layer_height.raw());
         ser.write_f32_le(self.exposure_time);
         ser.write_f32_le(self.bottom_exposure_time);
         ser.write_f32_le(self.light_off_delay);
@@ -399,7 +401,7 @@ impl File {
                 resin_name: "Standard".into(),
                 resin_density: 1.1,
             },
-            total_height: layer_count as f32 * config.slice_height,
+            total_height: config.slice_height * layer_count as f32,
             layer_height: config.slice_height,
             last_layer_index: layer_count.saturating_sub(1) as u32,
             transition_layer_count: config.transition_layers,

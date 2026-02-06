@@ -1,6 +1,9 @@
 use anyhow::{Result, ensure};
 
-use common::serde::{Deserializer, Serializer, SliceDeserializer};
+use common::{
+    serde::{Deserializer, Serializer, SliceDeserializer},
+    units::Milimeters,
+};
 
 use crate::DELIMITER;
 
@@ -8,10 +11,10 @@ pub struct LayerContent {
     /// If printing should be paused on current layer.
     pub pause: bool,
     /// The Z position to to if paused, in mm.
-    pub pause_position_z: f32,
+    pub pause_position_z: Milimeters,
     /// The Z position of the layer, in mm.
     /// `(layer_height * (i + 1))`.
-    pub layer_position_z: f32,
+    pub layer_position_z: Milimeters,
     /// Exposure time for the layer, in seconds.
     pub layer_exposure_time: f32,
     /// Time to wait after the layer is done when exposure delay mode is 0, in seconds.
@@ -49,8 +52,8 @@ pub struct LayerContent {
 impl LayerContent {
     pub fn serialize<T: Serializer>(&self, ser: &mut T) {
         ser.write_u16_be(self.pause as u16);
-        ser.write_f32_be(self.pause_position_z);
-        ser.write_f32_be(self.layer_position_z);
+        ser.write_f32_be(self.pause_position_z.raw());
+        ser.write_f32_be(self.layer_position_z.raw());
         ser.write_f32_be(self.layer_exposure_time);
         ser.write_f32_be(self.layer_off_time);
         ser.write_f32_be(self.before_lift_time);
@@ -74,50 +77,35 @@ impl LayerContent {
     }
 
     pub fn deserialize(des: &mut SliceDeserializer) -> Result<Self> {
-        let pause_flag = des.read_u16_be();
-        let pause_position_z = des.read_f32_be();
-        let layer_position_z = des.read_f32_be();
-        let layer_exposure_time = des.read_f32_be();
-        let layer_off_time = des.read_f32_be();
-        let before_lift_time = des.read_f32_be();
-        let after_lift_time = des.read_f32_be();
-        let after_retract_time = des.read_f32_be();
-        let lift_distance = des.read_f32_be();
-        let lift_speed = des.read_f32_be();
-        let second_lift_distance = des.read_f32_be();
-        let second_lift_speed = des.read_f32_be();
-        let retract_distance = des.read_f32_be();
-        let retract_speed = des.read_f32_be();
-        let second_retract_distance = des.read_f32_be();
-        let second_retract_speed = des.read_f32_be();
-        let light_pwm = des.read_u16_be().min(255) as u8;
-        ensure!(des.read_slice(2) == DELIMITER);
-        let data_len = des.read_u32_be() as usize - 2;
-        ensure!(des.read_u8() == 0x55);
-        let data = des.read_slice(data_len);
-        let checksum = des.read_u8();
-        ensure!(des.read_slice(2) == DELIMITER);
-
         Ok(Self {
-            pause: pause_flag != 0,
-            pause_position_z,
-            layer_position_z,
-            layer_exposure_time,
-            layer_off_time,
-            before_lift_time,
-            after_lift_time,
-            after_retract_time,
-            lift_distance,
-            lift_speed,
-            second_lift_distance,
-            second_lift_speed,
-            retract_distance,
-            retract_speed,
-            second_retract_distance,
-            second_retract_speed,
-            light_pwm,
-            data: data.to_vec(), // ehhh its fiiiine (its not fine)
-            checksum,
+            pause: des.read_u16_be() != 0,
+            pause_position_z: Milimeters::new(des.read_f32_be()),
+            layer_position_z: Milimeters::new(des.read_f32_be()),
+            layer_exposure_time: des.read_f32_be(),
+            layer_off_time: des.read_f32_be(),
+            before_lift_time: des.read_f32_be(),
+            after_lift_time: des.read_f32_be(),
+            after_retract_time: des.read_f32_be(),
+            lift_distance: des.read_f32_be(),
+            lift_speed: des.read_f32_be(),
+            second_lift_distance: des.read_f32_be(),
+            second_lift_speed: des.read_f32_be(),
+            retract_distance: des.read_f32_be(),
+            retract_speed: des.read_f32_be(),
+            second_retract_distance: des.read_f32_be(),
+            second_retract_speed: des.read_f32_be(),
+            light_pwm: des.read_u16_be().min(255) as u8,
+            data: {
+                ensure!(des.read_slice(2) == DELIMITER);
+                let data_len = des.read_u32_be() as usize - 2;
+                ensure!(des.read_u8() == 0x55);
+                des.read_slice(data_len).to_vec() // ehhh its fiiiine (its not fine)
+            },
+            checksum: {
+                let checksum = des.read_u8();
+                ensure!(des.read_slice(2) == DELIMITER);
+                checksum
+            },
         })
     }
 }

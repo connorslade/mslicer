@@ -1,3 +1,4 @@
+use common::units::Milimeters;
 use egui::Theme;
 use nalgebra::Vector3;
 
@@ -7,7 +8,7 @@ use crate::{
 };
 
 pub struct BuildPlateDispatch {
-    last_bed_size: Vector3<f32>,
+    last_bed_size: Vector3<Milimeters>,
     last_grid_size: f32,
     last_theme: Theme,
 
@@ -17,7 +18,7 @@ pub struct BuildPlateDispatch {
 impl BuildPlateDispatch {
     pub fn new() -> Self {
         Self {
-            last_bed_size: Vector3::zeros(),
+            last_bed_size: Vector3::repeat(Milimeters::default()),
             last_grid_size: 0.0,
             last_theme: Theme::Dark,
 
@@ -48,7 +49,8 @@ impl LineGenerator for BuildPlateDispatch {
     }
 }
 
-fn generate_mesh(bed_size: Vector3<f32>, grid_size: f32, theme: Theme) -> Vec<Line> {
+fn generate_mesh(bed_size: Vector3<Milimeters>, grid_size: f32, theme: Theme) -> Vec<Line> {
+    let bed_size = bed_size.map(|x| x.raw());
     let (a, b) = (bed_size / 2.0, -bed_size / 2.0);
     let z = bed_size.z;
 

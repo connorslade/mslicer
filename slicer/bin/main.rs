@@ -15,6 +15,7 @@ use common::{
     config::SliceConfig,
     progress::Progress,
     serde::{DynamicSerializer, ReaderDeserializer},
+    units::Milimeter,
 };
 use slicer::{format::FormatSliceFile, mesh::Mesh, slicer::Slicer};
 
@@ -118,7 +119,7 @@ fn is_oob(mesh: &Mesh, slice_config: &SliceConfig) -> bool {
         || min.z < 0.0
         || max.x > slice_config.platform_resolution.x as f32
         || max.y > slice_config.platform_resolution.y as f32
-        || max.z > slice_config.platform_size.z
+        || max.z > slice_config.platform_size.z.get::<Milimeter>()
 }
 
 fn monitor_progress<T>(

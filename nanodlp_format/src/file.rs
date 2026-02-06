@@ -4,7 +4,7 @@ use std::{
 };
 
 use anyhow::Result;
-use common::{misc::SliceResult, progress::Progress, serde::Serializer};
+use common::{misc::SliceResult, progress::Progress, serde::Serializer, units::Milimeter};
 use image::DynamicImage;
 use serde::Serialize;
 use zip::{ZipArchive, ZipWriter, write::FileOptions};
@@ -33,8 +33,9 @@ impl File {
             result.layers.into_iter().map(|x| (x.inner, x.info)).unzip();
 
         let config = result.slice_config;
-        let pixel_size =
-            (config.platform_size.xy()).component_div(&config.platform_resolution.cast());
+        let pixel_size = (config.platform_size.xy())
+            .map(|x| x.get::<Milimeter>())
+            .component_div(&config.platform_resolution.cast());
 
         let timestamp = (SystemTime::now().duration_since(UNIX_EPOCH).unwrap()).as_secs();
 
@@ -58,7 +59,7 @@ impl File {
             options: Options {
                 p_width: config.platform_resolution.x,
                 p_height: config.platform_resolution.y,
-                thickness: config.slice_height * 1000.0,
+                thickness: config.slice_height.convert(),
                 x_offset: config.platform_resolution.x / 2,
                 y_offset: config.platform_resolution.y / 2,
                 x_pixel_size: pixel_size.x,
@@ -75,8 +76,8 @@ impl File {
             },
             profile: Profile {
                 title: "mslicer Config".into(),
-                depth: config.slice_height * 1000.0,
-                support_depth: config.slice_height * 1000.0,
+                depth: config.slice_height.convert(),
+                support_depth: config.slice_height.convert(),
                 transitional_layer: config.transition_layers,
                 updated: timestamp as u32,
                 cure_time: config.exposure_config.exposure_time,

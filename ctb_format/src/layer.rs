@@ -2,7 +2,10 @@ use std::fmt::Debug;
 
 use anyhow::{Result, ensure};
 
-use common::serde::{Deserializer, Serializer, SliceDeserializer};
+use common::{
+    serde::{Deserializer, Serializer, SliceDeserializer},
+    units::Milimeters,
+};
 
 use crate::{Section, crypto::decrypt_in_place};
 
@@ -13,7 +16,7 @@ pub struct LayerRef {
 }
 
 pub struct Layer {
-    pub position_z: f32,
+    pub position_z: Milimeters,
     pub exposure_time: f32,
     pub light_off_delay: f32,
     pub lift_height: f32,
@@ -54,7 +57,7 @@ impl Layer {
         let table_size = des.read_u32_le();
         ensure!(table_size == 0x58);
 
-        let position_z = des.read_f32_le();
+        let position_z = Milimeters::new(des.read_f32_le());
         let exposure_time = des.read_f32_le();
         let light_off_delay = des.read_f32_le();
         let layer_offset = des.read_u32_le();
@@ -104,7 +107,7 @@ impl Layer {
         layer: u32,
     ) {
         ser.write_u32_le(0x58);
-        ser.write_f32_le(self.position_z);
+        ser.write_f32_le(self.position_z.raw());
         ser.write_f32_le(self.exposure_time);
         ser.write_f32_le(self.light_off_delay);
         let layer_offset = ser.reserve(4);

@@ -4,6 +4,7 @@ use nalgebra::{Vector2, Vector3};
 use crate::{
     format::Format,
     serde::{Deserializer, SerdeExt, Serializer},
+    units::Milimeters,
 };
 
 #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
@@ -11,8 +12,8 @@ pub struct SliceConfig {
     pub format: Format,
 
     pub platform_resolution: Vector2<u32>,
-    pub platform_size: Vector3<f32>, // mm
-    pub slice_height: f32,           // mm
+    pub platform_size: Vector3<Milimeters>,
+    pub slice_height: Milimeters,
 
     pub exposure_config: ExposureConfig,
     pub first_exposure_config: ExposureConfig,
@@ -45,8 +46,8 @@ impl Default for SliceConfig {
             format: Format::Ctb,
 
             platform_resolution: Vector2::new(11_520, 5_120),
-            platform_size: Vector3::new(218.88, 122.904, 260.0),
-            slice_height: 0.05,
+            platform_size: Vector3::new(218.88, 122.904, 260.0).map(Milimeters::new),
+            slice_height: Milimeters::new(0.05),
             exposure_config: ExposureConfig {
                 exposure_time: 3.0,
                 ..Default::default()
@@ -77,8 +78,8 @@ impl SliceConfig {
     pub fn serialize<T: Serializer>(&self, ser: &mut T) {
         self.format.serialize(ser);
         self.platform_resolution.serialize(ser);
-        self.platform_size.serialize(ser);
-        ser.write_f32_be(self.slice_height);
+        self.platform_size.map(|x| x.raw()).serialize(ser);
+        ser.write_f32_be(self.slice_height.raw());
         self.exposure_config.serialize(ser);
         self.first_exposure_config.serialize(ser);
         ser.write_u32_be(self.first_layers);
@@ -89,8 +90,8 @@ impl SliceConfig {
         Ok(Self {
             format: Format::deserialize(des)?,
             platform_resolution: Vector2::deserialize(des),
-            platform_size: Vector3::deserialize(des),
-            slice_height: des.read_f32_be(),
+            platform_size: Vector3::deserialize(des).map(Milimeters::new),
+            slice_height: Milimeters::new(des.read_f32_be()),
             exposure_config: ExposureConfig::deserialize(des),
             first_exposure_config: ExposureConfig::deserialize(des),
             first_layers: des.read_u32_be(),

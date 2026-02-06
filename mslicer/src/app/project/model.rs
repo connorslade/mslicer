@@ -7,7 +7,10 @@ use std::{
 };
 
 use bitflags::bitflags;
-use common::color::{LinearRgb, START_COLOR};
+use common::{
+    color::{LinearRgb, START_COLOR},
+    units::Milimeters,
+};
 use nalgebra::Vector3;
 use wgpu::{Buffer, Device};
 
@@ -129,27 +132,27 @@ impl Model {
         self.mesh.set_position(pos);
     }
 
-    pub fn update_oob(&mut self, platform: &Vector3<f32>) {
+    pub fn update_oob(&mut self, platform: &Vector3<Milimeters>) {
         let (min, max) = self.mesh.bounds();
-        let half = platform / 2.0;
+        let half = platform.map(|x| x.raw()) / 2.0;
 
         let oob = (min.x < -half.x || min.y < -half.y || min.z < 0.0)
-            || (max.x > half.x || max.y > half.y || max.z > platform.z);
+            || (max.x > half.x || max.y > half.y || max.z > platform.z.raw());
         self.warnings.set(MeshWarnings::OutOfBounds, oob);
     }
 
-    pub fn set_position(&mut self, platform: &Vector3<f32>, pos: Vector3<f32>) {
+    pub fn set_position(&mut self, platform: &Vector3<Milimeters>, pos: Vector3<f32>) {
         self.mesh.set_position(pos);
         self.update_oob(platform);
     }
 
-    pub fn set_scale(&mut self, platform: &Vector3<f32>, scale: Vector3<f32>) {
+    pub fn set_scale(&mut self, platform: &Vector3<Milimeters>, scale: Vector3<f32>) {
         self.mesh.set_scale(scale);
         self.update_oob(platform);
         self.overhangs = None;
     }
 
-    pub fn set_rotation(&mut self, platform: &Vector3<f32>, rotation: Vector3<f32>) {
+    pub fn set_rotation(&mut self, platform: &Vector3<Milimeters>, rotation: Vector3<f32>) {
         self.mesh.set_rotation(rotation);
         self.update_oob(platform);
         self.overhangs = None;

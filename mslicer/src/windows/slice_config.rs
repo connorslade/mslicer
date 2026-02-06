@@ -5,9 +5,9 @@ use slicer::post_process::{anti_alias::AntiAlias, elephant_foot_fixer::ElephantF
 
 use crate::{
     app::{App, history::ConfigAction},
-    ui::components::{dragger, history_tracked_value, metric_dragger, vec2_dragger, vec3_dragger},
+    ui::components::{dragger, history_tracked_value, metric_dragger, vec2_dragger},
 };
-use common::{config::ExposureConfig, format::Format};
+use common::{config::ExposureConfig, format::Format, units::Milimeter};
 
 const TRANSITION_LAYER_TOOLTIP: &str = "Transition layers interpolate between the first exposure settings and the normal exposure settings.";
 const SLICE_FORMAT_TOOLTIP: &str =
@@ -60,7 +60,9 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                     let printer = app.state.selected_printer;
                     ui.selectable_value(&mut app.state.selected_printer, 0, "Custom");
                     for (i, printer) in app.config.printers.iter().enumerate() {
-                        let (res, size) = (printer.resolution, printer.size);
+                        let res = printer.resolution;
+                        let size = printer.size.map(|x| x.get::<Milimeter>());
+
                         ui.selectable_value(&mut app.state.selected_printer, i + 1, &printer.name)
                             .on_hover_text(format!(
                                 "{}x{} ({}x{}x{})",
@@ -90,7 +92,13 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                 ui.end_row();
 
                 ui.label("Platform Size");
-                vec3_dragger(ui, platform.as_mut(), |x| x);
+                ui.horizontal(|ui| {
+                    ui.add(DragValue::new(platform.x.raw_mut()));
+                    ui.label("×");
+                    ui.add(DragValue::new(platform.y.raw_mut()));
+                    ui.label("×");
+                    ui.add(DragValue::new(platform.z.raw_mut()));
+                });
                 ui.end_row();
             } else {
                 let printer = &app.config.printers[app.state.selected_printer - 1];
@@ -105,7 +113,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
 
             ui.label("Slice Height");
             ui.horizontal(|ui| {
-                ui.add(metric_dragger(&mut slice_config.slice_height, "m", -3));
+                ui.add(metric_dragger(slice_config.slice_height.raw_mut(), "m", -3));
                 ui.add_space(ui.available_width());
             });
             ui.end_row();

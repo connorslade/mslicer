@@ -24,8 +24,9 @@ impl Slicer {
             max.max(z)
         });
 
-        let max_layers = (slice_config.platform_size.z / slice_config.slice_height).ceil() as u32;
-        let layers = ((max_z / slice_config.slice_height).ceil() as u32).min(max_layers);
+        let slice = slice_config.slice_height;
+        let max_layers = (slice_config.platform_size.z / slice).raw().ceil() as u32;
+        let layers = ((max_z / slice).raw().ceil() as u32).min(max_layers);
 
         let progress = Progress::new();
         progress.set_total(layers as u64);

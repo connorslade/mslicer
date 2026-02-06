@@ -2,7 +2,10 @@ use std::fmt::Debug;
 
 use anyhow::{Result, ensure};
 
-use common::serde::{Deserializer, Serializer, SizedString, SliceDeserializer};
+use common::{
+    serde::{Deserializer, Serializer, SizedString, SliceDeserializer},
+    units::Milimeters,
+};
 
 use crate::{DELIMITER, MAGIC_TAG, PreviewImage};
 
@@ -51,13 +54,13 @@ pub struct Header {
     /// Not tested, so this might be wrong.
     pub y_mirror: bool,
     /// Size of the print area in the X direction, in mm.
-    pub x_size: f32,
+    pub x_size: Milimeters,
     /// Size of the print area in the Y direction, in mm.
-    pub y_size: f32,
+    pub y_size: Milimeters,
     /// Size of the print area in the Z direction, in mm.
-    pub z_size: f32,
+    pub z_size: Milimeters,
     /// Thickness of each layer, in mm.
-    pub layer_thickness: f32,
+    pub layer_thickness: Milimeters,
     /// Default exposure time for each layer, in seconds.
     pub exposure_time: f32,
     /// The exposure delay mode to use.
@@ -170,10 +173,10 @@ impl Header {
         ser.write_u16_be(self.y_resolution);
         ser.write_bool(self.x_mirror);
         ser.write_bool(self.y_mirror);
-        ser.write_f32_be(self.x_size);
-        ser.write_f32_be(self.y_size);
-        ser.write_f32_be(self.z_size);
-        ser.write_f32_be(self.layer_thickness);
+        ser.write_f32_be(self.x_size.raw());
+        ser.write_f32_be(self.y_size.raw());
+        ser.write_f32_be(self.z_size.raw());
+        ser.write_f32_be(self.layer_thickness.raw());
         ser.write_f32_be(self.exposure_time);
         ser.write_u8(self.exposure_delay_mode as u8);
         ser.write_f32_be(self.turn_off_time);
@@ -242,10 +245,10 @@ impl Header {
             y_resolution: des.read_u16_be(),
             x_mirror: des.read_bool(),
             y_mirror: des.read_bool(),
-            x_size: des.read_f32_be(),
-            y_size: des.read_f32_be(),
-            z_size: des.read_f32_be(),
-            layer_thickness: des.read_f32_be(),
+            x_size: Milimeters::new(des.read_f32_be()),
+            y_size: Milimeters::new(des.read_f32_be()),
+            z_size: Milimeters::new(des.read_f32_be()),
+            layer_thickness: Milimeters::new(des.read_f32_be()),
             exposure_time: des.read_f32_be(),
             exposure_delay_mode: ExposureDelayMode::from_bool(des.read_bool()),
             turn_off_time: des.read_f32_be(),

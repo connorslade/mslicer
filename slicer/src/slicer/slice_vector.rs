@@ -1,6 +1,9 @@
 use std::collections::HashSet;
 
-use common::misc::{VectorLayer, VectorSliceResult};
+use common::{
+    misc::{VectorLayer, VectorSliceResult},
+    units::Milimeter,
+};
 use nalgebra::Vector2;
 use ordered_float::OrderedFloat;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
@@ -22,7 +25,7 @@ impl Slicer {
             .into_par_iter()
             .inspect(|_| self.progress.add_complete(1))
             .map(|layer| {
-                let height = layer as f32 * self.slice_config.slice_height;
+                let height = layer as f32 * self.slice_config.slice_height.get::<Milimeter>();
 
                 let segments = self
                     .models

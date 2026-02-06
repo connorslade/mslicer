@@ -1,5 +1,6 @@
 use std::env;
 
+use common::units::Micrometers;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -105,7 +106,7 @@ pub struct Options {
     pub start_layer: u32,
     pub support_depth: u32,
     pub support_layer_number: u32,
-    pub thickness: f32,
+    pub thickness: Micrometers,
     pub x_offset: u32,
     pub y_offset: u32,
     pub z_offset: u32,
@@ -242,10 +243,10 @@ pub struct Profile {
     pub color: String,
     pub resin_price: u32,
     pub optimum_temperature: u32,
-    pub depth: f32,
+    pub depth: Micrometers,
     pub support_top_wait: u32,
     pub support_wait_height: u32,
-    pub support_depth: f32,
+    pub support_depth: Micrometers,
     pub support_wait_before_print: u32,
     pub support_wait_after_print: u32,
     pub transitional_layer: u32,

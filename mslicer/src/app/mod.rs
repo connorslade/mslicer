@@ -27,7 +27,7 @@ use crate::{
     },
     windows::{self, Tab},
 };
-use common::progress::CombinedProgress;
+use common::{progress::CombinedProgress, units::Milimeter};
 use slicer::{format::FormatSliceFile, slicer::Slicer};
 
 pub mod config;
@@ -141,10 +141,11 @@ impl App {
         let mut out = Vec::new();
         let mut preview_scale = f32::MAX;
 
+        let slice_height = slice_config.slice_height.get::<Milimeter>();
+        let platform_size = (slice_config.platform_size.xy()).map(|x| x.get::<Milimeter>());
+
         let platform = slice_config.platform_resolution.cast::<f32>();
-        let mm_to_px = platform
-            .component_div(&slice_config.platform_size.xy())
-            .push(1.0);
+        let mm_to_px = platform.component_div(&platform_size).push(1.0);
 
         for mesh in meshes.into_iter() {
             let mut mesh = mesh.mesh;
@@ -152,11 +153,11 @@ impl App {
 
             let (min, max) = mesh.bounds();
             preview_scale = preview_scale
-                .min(slice_config.platform_size.x / (max.x - min.x))
-                .min(slice_config.platform_size.y / (max.y - min.y));
+                .min(platform_size.x / (max.x - min.x))
+                .min(platform_size.y / (max.y - min.y));
 
             let pos = mesh.position();
-            let offset = (platform / 2.0).push(-slice_config.slice_height);
+            let offset = (platform / 2.0).push(-slice_height);
             mesh.set_position_unchecked(pos.component_mul(&mm_to_px) + offset);
             mesh.update_transformation_matrix();
 

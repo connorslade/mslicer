@@ -5,7 +5,7 @@ use std::{
 };
 
 use anyhow::Result;
-use common::config::SliceConfig;
+use common::{config::SliceConfig, units::Milimeters};
 use egui::Theme;
 use egui_dock::Tree;
 use itertools::Itertools;
@@ -43,7 +43,7 @@ pub struct Config {
 pub struct PrinterDefaults {
     pub name: String,
     pub resolution: Vector2<u32>,
-    pub size: Vector3<f32>,
+    pub size: Vector3<Milimeters>,
 }
 
 impl Config {
@@ -114,7 +114,7 @@ impl Default for Config {
             printers: vec![PrinterDefaults {
                 name: "Elegoo Saturn 3 Ultra".into(),
                 resolution: Vector2::new(11_520, 5_120),
-                size: Vector3::new(218.88, 122.904, 260.0),
+                size: Vector3::new(218.88, 122.904, 260.0).map(Milimeters::new),
             }],
         }
     }

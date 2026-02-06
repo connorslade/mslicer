@@ -84,7 +84,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                 if ui.button(&mesh.name).clicked() {
                     let generator = LineSupportGenerator::new(
                         &app.state.line_support_config,
-                        app.project.slice_config.platform_size,
+                        app.project.slice_config.platform_size.map(|x| x.convert()),
                     );
 
                     app.state.line_support_debug =
@@ -97,7 +97,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
             app.state.line_support_debug = Vec::new();
             let generator = LineSupportGenerator::new(
                 &app.state.line_support_config,
-                app.project.slice_config.platform_size,
+                app.project.slice_config.platform_size.map(|x| x.convert()),
             );
 
             for i in 0..app.project.models.len() {

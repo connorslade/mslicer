@@ -5,6 +5,7 @@ use clap::{ArgMatches, Parser};
 use common::{
     config::{ExposureConfig, SliceConfig},
     format::Format,
+    units::Milimeters,
 };
 use nalgebra::{ArrayStorage, Const, Matrix, Scalar, U1, Vector2, Vector3};
 use num_traits::Zero;
@@ -108,8 +109,8 @@ impl Args {
         Ok(SliceConfig {
             format,
             platform_resolution: self.platform_resolution,
-            platform_size: self.platform_size,
-            slice_height: self.layer_height,
+            platform_size: self.platform_size.map(Milimeters::new),
+            slice_height: Milimeters::new(self.layer_height),
             exposure_config: ExposureConfig {
                 exposure_time: self.exposure_time,
                 lift_distance: self.lift_distance,

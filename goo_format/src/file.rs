@@ -43,6 +43,7 @@ impl File {
                 y_resolution: slice_config.platform_resolution.y as u16,
                 x_size: slice_config.platform_size.x,
                 y_size: slice_config.platform_size.y,
+                z_size: slice_config.platform_size.z,
 
                 layer_count: layers.len() as u32,
                 printing_time: total_time as u32,

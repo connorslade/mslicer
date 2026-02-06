@@ -1,4 +1,4 @@
-use common::serde::SizedString;
+use common::{serde::SizedString, units::Milimeters};
 
 use crate::{Header, LayerContent, PreviewImage, header::ExposureDelayMode};
 
@@ -22,10 +22,10 @@ impl Default for Header {
             y_resolution: 5102,
             x_mirror: false,
             y_mirror: false,
-            x_size: 218.88,
-            y_size: 122.88,
-            z_size: 260.0,
-            layer_thickness: 0.05,
+            x_size: Milimeters::new(218.88),
+            y_size: Milimeters::new(122.88),
+            z_size: Milimeters::new(260.0),
+            layer_thickness: Milimeters::new(0.05),
             exposure_time: 3.0,
             exposure_delay_mode: ExposureDelayMode::StaticTime,
             turn_off_time: 0.0,
@@ -71,8 +71,8 @@ impl Default for LayerContent {
     fn default() -> Self {
         Self {
             pause: false,
-            pause_position_z: 200.0,
-            layer_position_z: 0.05,
+            pause_position_z: Milimeters::new(200.0),
+            layer_position_z: Milimeters::new(0.05),
             layer_exposure_time: 50.0,
             layer_off_time: 0.0,
             before_lift_time: 0.0,

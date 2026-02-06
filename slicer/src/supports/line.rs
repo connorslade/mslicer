@@ -1,3 +1,4 @@
+use common::units::Milimeters;
 use nalgebra::{Vector2, Vector3};
 use ordered_float::OrderedFloat;
 use tracing::info;
@@ -12,7 +13,7 @@ use crate::{
 
 pub struct LineSupportGenerator<'a> {
     config: &'a LineSupportConfig,
-    bed_size: Vector3<f32>,
+    bed_size: Vector3<Milimeters>,
 }
 
 pub struct LineSupport {
@@ -35,7 +36,7 @@ pub struct LineSupportConfig {
 }
 
 impl<'a> LineSupportGenerator<'a> {
-    pub fn new(config: &'a LineSupportConfig, bed_size: Vector3<f32>) -> Self {
+    pub fn new(config: &'a LineSupportConfig, bed_size: Vector3<Milimeters>) -> Self {
         Self { config, bed_size }
     }
 
@@ -102,14 +103,15 @@ impl<'a> LineSupportGenerator<'a> {
             overhangs.push(face);
         }
 
-        let x_count = (self.bed_size.x / self.config.face_support_spacing) as i32;
-        let y_count = (self.bed_size.y / self.config.face_support_spacing) as i32;
+        let bed_size = self.bed_size.map(|x| x.raw());
+        let x_count = (bed_size.x / self.config.face_support_spacing) as i32;
+        let y_count = (bed_size.y / self.config.face_support_spacing) as i32;
 
         for x in 0..x_count {
             for y in 0..y_count {
                 let pos = Vector2::new(
-                    x as f32 * self.config.face_support_spacing - self.bed_size.x / 2.0,
-                    y as f32 * self.config.face_support_spacing - self.bed_size.y / 2.0,
+                    x as f32 * self.config.face_support_spacing - bed_size.x / 2.0,
+                    y as f32 * self.config.face_support_spacing - bed_size.y / 2.0,
                 );
 
                 let mut intersections = Vec::new();

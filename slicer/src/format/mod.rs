@@ -8,6 +8,7 @@ use common::{
     misc::{EncodableLayer, Run, SliceResult, VectorSliceResult},
     progress::Progress,
     serde::Serializer,
+    units::Milimeters,
 };
 
 use crate::format::svg::SvgFile;
@@ -33,7 +34,7 @@ pub enum FormatSliceFile {
 pub struct SliceInfo {
     pub layers: u32,
     pub resolution: Vector2<u32>,
-    pub size: Vector3<f32>,
+    pub size: Vector3<Milimeters>,
 
     pub bottom_layers: u32,
 }
@@ -102,7 +103,7 @@ impl FormatSliceFile {
             FormatSliceFile::NanoDLP(file) => SliceInfo {
                 layers: file.layer_info.len() as u32,
                 resolution: Vector2::new(file.options.p_width, file.options.p_height),
-                size: Vector3::zeros(), // todo: implement this
+                size: Vector3::repeat(Milimeters::default()), // todo: implement this
                 bottom_layers: file.profile.support_layer_number,
             },
             FormatSliceFile::Svg(file) => SliceInfo {
@@ -110,7 +111,7 @@ impl FormatSliceFile {
 
                 // todo: actually implement
                 resolution: Vector2::repeat(1),
-                size: Vector3::zeros(),
+                size: Vector3::repeat(Milimeters::default()),
                 bottom_layers: 0,
             },
         }

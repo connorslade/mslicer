@@ -5,6 +5,7 @@ use common::{
     image::Image,
     misc::{EncodableLayer, Run},
     serde::DynamicSerializer,
+    units::Milimeter,
 };
 use image::{GrayImage, RgbImage};
 use nalgebra::Vector2;
@@ -115,8 +116,8 @@ impl EncodableLayer for LayerEncoder {
         }
 
         let area = area as f32
-            * (config.platform_size.x / config.platform_resolution.x as f32)
-            * (config.platform_size.y / config.platform_resolution.y as f32);
+            * (config.platform_size.x.get::<Milimeter>() / config.platform_resolution.x as f32)
+            * (config.platform_size.y.get::<Milimeter>() / config.platform_resolution.y as f32);
 
         let area_count = area_count.max(1);
         Layer {

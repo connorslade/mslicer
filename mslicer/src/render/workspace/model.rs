@@ -1,3 +1,4 @@
+use common::units::Milimeter;
 use encase::{ShaderType, UniformBuffer};
 use nalgebra::{Matrix4, Vector3};
 use serde::{Deserialize, Serialize};
@@ -111,10 +112,14 @@ impl ModelPipeline {
                 .map(|x| x.to_radians())
                 .unwrap_or(f32::from_bits(u32::MAX));
 
+            let build_volume = (app.project.slice_config)
+                .platform_size
+                .map(|x| x.get::<Milimeter>());
+
             let uniforms = ModelUniforms {
                 transform: app.view_projection() * model_transform,
                 model_transform,
-                build_volume: app.project.slice_config.platform_size,
+                build_volume,
                 model_color: model.color.to_srgb().into(),
                 camera_position: app.camera.position(),
                 camera_target: app.camera.target,
