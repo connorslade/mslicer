@@ -32,7 +32,13 @@ pub struct PngInfo {
     pub width: u32,
     pub height: u32,
     pub bit_depth: u8,
-    pub color_type: u8,
+    pub color_type: ColorType,
+}
+
+#[derive(Clone, Copy)]
+pub enum ColorType {
+    Grayscale = 0,
+    Truecolor = 2,
 }
 
 impl<'a> PngEncoder<'a> {
@@ -99,10 +105,10 @@ impl PngInfo {
         ser.write_u32_be(self.width);
         ser.write_u32_be(self.height);
         ser.write_u8(self.bit_depth);
-        ser.write_u8(self.color_type);
-        ser.write_u8(0);
-        ser.write_u8(0);
-        ser.write_u8(0);
+        ser.write_u8(self.color_type as u8);
+        ser.write_u8(0); // compression
+        ser.write_u8(0); // filter
+        ser.write_u8(0); // interlace
     }
 }
 

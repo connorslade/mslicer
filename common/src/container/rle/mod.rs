@@ -1,5 +1,4 @@
 pub mod png;
-pub use png::{PngEncoder, PngInfo};
 
 #[derive(Debug, Clone, Copy)]
 pub struct Run {

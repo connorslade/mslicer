@@ -1,11 +1,15 @@
-use std::{fs, path::PathBuf};
+use std::{
+    fs,
+    io::{Write, stdout},
+    path::PathBuf,
+};
 
 use anyhow::{Ok, Result};
 use clap::Parser;
 use image::RgbImage;
 
 use common::{
-    container::Run,
+    container::rle::png::{ColorType, PngEncoder, PngInfo},
     serde::{DynamicSerializer, SliceDeserializer},
 };
 use ctb_format::{File, LayerDecoder, PreviewImage};
@@ -31,7 +35,7 @@ fn main() -> Result<()> {
     let mut des = SliceDeserializer::new(&file);
 
     let file = File::deserialize(&mut des)?;
-    dbg!(&file);
+    println!("{file:#?}");
 
     if let Some(preview) = args.preview {
         fs::create_dir_all(&preview)?;
@@ -50,22 +54,32 @@ fn main() -> Result<()> {
     }
 
     if let Some(layers) = args.layers {
+        fs::create_dir_all(&layers)?;
+
+        println!("Exporting layers as images:\n");
         for (i, layer) in file.layers.iter().enumerate() {
-            let mut image = RgbImage::new(file.resolution.x, file.resolution.y);
+            let count = file.layers.len();
+            print!(
+                "\r{}/{count} ({:.1}%)",
+                i + 1,
+                (1.0 + i as f32) / count as f32 * 100.0
+            );
+            stdout().flush()?;
 
-            let mut pixel = 0;
-            for Run { length, value } in LayerDecoder::new(&layer.data) {
-                let color = image::Rgb([value, value, value]);
-                for _ in 0..length {
-                    let x = pixel % file.resolution.x;
-                    let y = pixel / file.resolution.x;
+            let header = PngInfo {
+                width: file.resolution.x,
+                height: file.resolution.y,
+                bit_depth: 8,
+                color_type: ColorType::Grayscale,
+            };
 
-                    image.put_pixel(x, y, color);
-                    pixel += 1;
-                }
-            }
+            let mut ser = DynamicSerializer::new();
+            let mut encoder = PngEncoder::new(&mut ser, &header, 1);
+            encoder.write_image_data(LayerDecoder::new(&layer.data).collect());
+            encoder.write_end();
 
-            image.save(layers.join(format!("layer_{i:03}.png")))?;
+            let path = layers.join(format!("layer_{i:03}.png"));
+            fs::write(path, ser.into_inner())?;
         }
     }
 

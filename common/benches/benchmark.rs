@@ -1,5 +1,5 @@
 use common::container::rle::png::{
-    PngEncoder, PngInfo,
+    ColorType, PngEncoder, PngInfo,
     deflate::{Adler32, huffman, lz77_compress},
     intersperse_runs,
 };
@@ -61,7 +61,7 @@ fn criterion_benchmark(c: &mut Criterion) {
                     width: PLATFORM.x / 3,
                     height: PLATFORM.y,
                     bit_depth: 8,
-                    color_type: 2,
+                    color_type: ColorType::Truecolor,
                 };
 
                 let mut ser = DynamicSerializer::new();

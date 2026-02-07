@@ -4,9 +4,12 @@ use std::{
     path::PathBuf,
 };
 
-use anyhow::Result;
+use anyhow::{Result, ensure};
 use clap::Parser;
-use common::{container::Run, serde::SliceDeserializer};
+use common::{
+    container::rle::png::{ColorType, PngEncoder, PngInfo},
+    serde::{DynamicSerializer, SliceDeserializer},
+};
 use goo_format::{File, LayerDecoder, PreviewImage};
 use image::RgbImage;
 
@@ -63,31 +66,25 @@ fn main() -> Result<()> {
             stdout().flush()?;
 
             let decoder = LayerDecoder::new(&layer.data);
-            let mut pixel = 0;
-
-            if layer.checksum != decoder.checksum() {
-                eprintln!("WARN: Checksum mismatch for layer {i}");
-            }
-
-            let path = layers.join(format!("layer_{i:03}.png"));
-            let mut image = RgbImage::new(
-                goo.header.x_resolution as u32,
-                goo.header.y_resolution as u32,
+            ensure!(
+                layer.checksum == decoder.checksum(),
+                "Checksum mismatch for layer {i}"
             );
 
-            // not optimized, but its just for debugging so whatever
-            for Run { length, value } in decoder {
-                let color = image::Rgb([value, value, value]);
-                for _ in 0..length {
-                    let x = pixel % goo.header.x_resolution as u32;
-                    let y = pixel / goo.header.x_resolution as u32;
+            let header = PngInfo {
+                width: goo.header.x_resolution as u32,
+                height: goo.header.y_resolution as u32,
+                bit_depth: 8,
+                color_type: ColorType::Grayscale,
+            };
 
-                    image.put_pixel(x, y, color);
-                    pixel += 1;
-                }
-            }
+            let mut ser = DynamicSerializer::new();
+            let mut encoder = PngEncoder::new(&mut ser, &header, 1);
+            encoder.write_image_data(decoder.collect());
+            encoder.write_end();
 
-            image.save(path)?;
+            let path = layers.join(format!("layer_{i:03}.png"));
+            fs::write(path, ser.into_inner())?;
         }
     }
 

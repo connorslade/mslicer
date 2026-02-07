@@ -3,7 +3,10 @@ use std::mem;
 use common::{
     container::{
         Image,
-        rle::{PngEncoder, PngInfo, Run},
+        rle::{
+            Run,
+            png::{ColorType, PngEncoder, PngInfo},
+        },
     },
     serde::DynamicSerializer,
     slice::{EncodableLayer, SliceConfig},
@@ -49,7 +52,7 @@ impl LayerEncoder {
             width: self.platform.x / 3,
             height: self.platform.y,
             bit_depth: 8,
-            color_type: 2,
+            color_type: ColorType::Truecolor,
         };
 
         let mut encoder = PngEncoder::new(&mut ser, &info, 3);
