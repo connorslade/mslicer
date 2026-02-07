@@ -2,7 +2,7 @@ use std::{fs, path::PathBuf};
 
 use anyhow::{Ok, Result};
 use clap::Parser;
-use image::RgbImage;
+use image::{GrayImage, RgbImage};
 
 use common::{
     rle::Run,
@@ -51,16 +51,16 @@ fn main() -> Result<()> {
 
     if let Some(layers) = args.layers {
         for (i, layer) in file.layers.iter().enumerate() {
-            let mut image = RgbImage::new(file.resolution.x, file.resolution.y);
+            let mut image = GrayImage::new(file.resolution.x, file.resolution.y);
 
             let mut pixel = 0;
             for Run { length, value } in LayerDecoder::new(&layer.data) {
-                let color = image::Rgb([value, value, value]);
+                let luma = image::Luma([value]);
                 for _ in 0..length {
                     let x = pixel % file.resolution.x;
                     let y = pixel / file.resolution.x;
 
-                    image.put_pixel(x, y, color);
+                    image.put_pixel(x, y, luma);
                     pixel += 1;
                 }
             }

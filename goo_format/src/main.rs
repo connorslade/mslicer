@@ -8,7 +8,7 @@ use anyhow::Result;
 use clap::Parser;
 use common::{rle::Run, serde::SliceDeserializer};
 use goo_format::{File, LayerDecoder, PreviewImage};
-use image::RgbImage;
+use image::{GrayImage, RgbImage};
 
 #[derive(Parser)]
 struct Args {
@@ -70,19 +70,19 @@ fn main() -> Result<()> {
             }
 
             let path = layers.join(format!("layer_{i:03}.png"));
-            let mut image = RgbImage::new(
+            let mut image = GrayImage::new(
                 goo.header.x_resolution as u32,
                 goo.header.y_resolution as u32,
             );
 
             // not optimized, but its just for debugging so whatever
             for Run { length, value } in decoder {
-                let color = image::Rgb([value, value, value]);
+                let luma = image::Luma([value]);
                 for _ in 0..length {
                     let x = pixel % goo.header.x_resolution as u32;
                     let y = pixel / goo.header.x_resolution as u32;
 
-                    image.put_pixel(x, y, color);
+                    image.put_pixel(x, y, luma);
                     pixel += 1;
                 }
             }
