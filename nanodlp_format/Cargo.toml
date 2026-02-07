@@ -5,7 +5,6 @@ edition = "2024"
 
 [dependencies]
 anyhow.workspace = true
-crc32fast.workspace = true
 image.workspace = true
 nalgebra.workspace = true
 serde.workspace = true
@@ -13,10 +12,3 @@ serde_json.workspace = true
 zip.workspace = true
 
 common = { path = "../common" }
-
-[dev-dependencies]
-criterion.workspace = true
-
-[[bench]]
-name = "benchmark"
-harness = false

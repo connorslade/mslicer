@@ -1,11 +1,14 @@
-use common::{container::BitVec, rle::Run, serde::DynamicSerializer};
-use criterion::{BatchSize, Criterion, criterion_group, criterion_main};
-use nalgebra::Vector2;
-use nanodlp_format::png::{
+use common::container::rle::png::{
     PngEncoder, PngInfo,
     deflate::{Adler32, huffman, lz77_compress},
     intersperse_runs,
 };
+use common::{
+    container::{BitVec, Run},
+    serde::DynamicSerializer,
+};
+use criterion::{BatchSize, Criterion, criterion_group, criterion_main};
+use nalgebra::Vector2;
 use std::hint::black_box;
 
 const PLATFORM: Vector2<u32> = Vector2::new(11520, 5120);

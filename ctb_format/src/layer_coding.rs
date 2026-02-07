@@ -1,5 +1,5 @@
 use common::{
-    rle::Run,
+    container::Run,
     slice::{EncodableLayer, SliceConfig},
     units::{Milimeters, MilimetersPerMinute, Seconds},
 };

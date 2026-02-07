@@ -5,6 +5,14 @@ edition = "2024"
 
 [dependencies]
 anyhow.workspace = true
+crc32fast.workspace = true
 nalgebra.workspace = true
 rand.workspace = true
 serde.workspace = true
+
+[dev-dependencies]
+criterion.workspace = true
+
+[[bench]]
+name = "benchmark"
+harness = false

@@ -1,6 +1,6 @@
 use nalgebra::Vector2;
 
-use crate::rle::Run;
+use super::Run;
 
 /// A fast grayscale image buffer
 #[derive(Clone)]

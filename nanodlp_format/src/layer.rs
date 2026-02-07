@@ -1,8 +1,10 @@
 use std::mem;
 
 use common::{
-    container::Image,
-    rle::Run,
+    container::{
+        Image,
+        rle::{PngEncoder, PngInfo, Run},
+    },
     serde::DynamicSerializer,
     slice::{EncodableLayer, SliceConfig},
     units::Milimeter,
@@ -10,11 +12,7 @@ use common::{
 use image::{GrayImage, RgbImage};
 use nalgebra::Vector2;
 
-use crate::{
-    decode_png,
-    png::{PngEncoder, PngInfo},
-    types::LayerInfo,
-};
+use crate::{decode_png, types::LayerInfo};
 
 pub struct Layer {
     pub inner: Vec<u8>,

@@ -5,7 +5,6 @@ use image::{DynamicImage, ImageFormat, codecs::png::PngDecoder};
 
 mod file;
 mod layer;
-pub mod png;
 mod types;
 pub use crate::{
     file::File,

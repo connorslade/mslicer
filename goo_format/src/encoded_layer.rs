@@ -1,5 +1,5 @@
 use common::{
-    rle::Run,
+    container::Run,
     slice::{EncodableLayer, SliceConfig},
 };
 use nalgebra::Vector2;

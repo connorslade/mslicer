@@ -3,9 +3,8 @@ use iter::SliceLayerIterator;
 use nalgebra::{Vector2, Vector3};
 
 use common::{
-    container::Image,
+    container::{Image, Run},
     progress::Progress,
-    rle::Run,
     serde::Serializer,
     slice::{EncodableLayer, Format, SliceResult, VectorSliceResult},
     units::Milimeters,
