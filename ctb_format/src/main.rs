@@ -9,7 +9,7 @@ use clap::Parser;
 use image::RgbImage;
 
 use common::{
-    container::rle::png::{ColorType, PngEncoder, PngInfo},
+    container::rle::png::{ColorType, PngEncoder},
     serde::{DynamicSerializer, SliceDeserializer},
 };
 use ctb_format::{File, LayerDecoder, PreviewImage};
@@ -66,16 +66,11 @@ fn main() -> Result<()> {
             );
             stdout().flush()?;
 
-            let header = PngInfo {
-                width: file.resolution.x,
-                height: file.resolution.y,
-                bit_depth: 8,
-                color_type: ColorType::Grayscale,
-            };
+            let decoder = LayerDecoder::new(&layer.data);
 
             let mut ser = DynamicSerializer::new();
-            let mut encoder = PngEncoder::new(&mut ser, &header, 1);
-            encoder.write_image_data(LayerDecoder::new(&layer.data).collect());
+            let mut encoder = PngEncoder::new(&mut ser, ColorType::Grayscale, file.resolution);
+            encoder.write_image_data(decoder.filter(|x| x.length > 0).collect());
             encoder.write_end();
 
             let path = layers.join(format!("layer_{i:03}.png"));

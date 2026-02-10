@@ -5,7 +5,7 @@ use common::{
         Image,
         rle::{
             Run,
-            png::{ColorType, PngEncoder, PngInfo},
+            png::{ColorType, PngEncoder},
         },
     },
     serde::DynamicSerializer,
@@ -48,14 +48,8 @@ impl LayerEncoder {
     pub fn image_data(self) -> Vec<u8> {
         let mut ser = DynamicSerializer::new();
 
-        let info = PngInfo {
-            width: self.platform.x / 3,
-            height: self.platform.y,
-            bit_depth: 8,
-            color_type: ColorType::Truecolor,
-        };
-
-        let mut encoder = PngEncoder::new(&mut ser, &info, 3);
+        let resolution = Vector2::new(self.platform.x.div_ceil(3), self.platform.y);
+        let mut encoder = PngEncoder::new(&mut ser, ColorType::Truecolor, resolution);
         encoder.write_pixel_dimensions(3, 1);
         encoder.write_image_data(self.runs);
         encoder.write_end();

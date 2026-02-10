@@ -18,21 +18,15 @@ use crate::{
 };
 
 use deflate::{Adler32, huffman, lz77_compress};
+use nalgebra::Vector2;
 
 const MAGIC: &[u8] = &[137, 80, 78, 71, 13, 10, 26, 10];
 
 pub struct PngEncoder<'a> {
-    header: &'a PngInfo,
-    planes: u8,
+    size: Vector2<u32>,
+    color: ColorType,
 
     ser: &'a mut DynamicSerializer,
-}
-
-pub struct PngInfo {
-    pub width: u32,
-    pub height: u32,
-    pub bit_depth: u8,
-    pub color_type: ColorType,
 }
 
 #[derive(Clone, Copy)]
@@ -42,15 +36,19 @@ pub enum ColorType {
 }
 
 impl<'a> PngEncoder<'a> {
-    pub fn new(ser: &'a mut DynamicSerializer, header: &'a PngInfo, planes: u8) -> Self {
-        let mut this = Self {
-            header,
-            planes,
-            ser,
-        };
+    pub fn new(ser: &'a mut DynamicSerializer, color: ColorType, size: Vector2<u32>) -> Self {
+        let mut this = Self { size, color, ser };
 
         this.ser.write_bytes(MAGIC);
-        this.write_chunk(b"IHDR", |ser| this.header.serialize(ser));
+        this.write_chunk(b"IHDR", |ser| {
+            ser.write_u32_be(size.x);
+            ser.write_u32_be(size.y);
+            ser.write_u8(8); // 8 bits per pixel per channel
+            ser.write_u8(color as u8);
+            ser.write_u8(0); // compression
+            ser.write_u8(0); // filter
+            ser.write_u8(0); // interlace
+        });
         this
     }
 
@@ -78,15 +76,15 @@ impl<'a> PngEncoder<'a> {
         });
     }
 
-    pub fn write_image_data(&mut self, mut rgb: Vec<Run>) {
-        let width = self.header.width as u64 * self.planes as u64;
-        intersperse_runs(&mut rgb, 0, width);
+    pub fn write_image_data(&mut self, mut data: Vec<Run>) {
+        let width = self.size.x as u64 * self.color.planes() as u64;
+        intersperse_runs(&mut data, 0, width);
 
         let mut check = Adler32::new();
-        rgb.iter().for_each(|run| check.update_run(run));
+        data.iter().for_each(|run| check.update_run(run));
         let check = check.finish();
 
-        let tokens = lz77_compress(rgb.into_iter());
+        let tokens = lz77_compress(data.into_iter());
         self.write_chunk(b"IDAT", |ser| {
             let bytes = ser.inner_mut();
             let mut bits = BitVec::new(bytes, 8);
@@ -100,15 +98,12 @@ impl<'a> PngEncoder<'a> {
     }
 }
 
-impl PngInfo {
-    pub fn serialize<T: Serializer>(&self, ser: &mut T) {
-        ser.write_u32_be(self.width);
-        ser.write_u32_be(self.height);
-        ser.write_u8(self.bit_depth);
-        ser.write_u8(self.color_type as u8);
-        ser.write_u8(0); // compression
-        ser.write_u8(0); // filter
-        ser.write_u8(0); // interlace
+impl ColorType {
+    fn planes(&self) -> u8 {
+        match self {
+            ColorType::Grayscale => 1,
+            ColorType::Truecolor => 3,
+        }
     }
 }
 
@@ -179,10 +174,10 @@ pub mod deflate {
         Match { length: u16 }, // distance is assumed to be 1
     }
 
-    pub fn lz77_compress(rle: impl Iterator<Item = Run>) -> Vec<LZ77Token> {
+    pub fn lz77_compress(runs: impl Iterator<Item = Run>) -> Vec<LZ77Token> {
         let mut out = Vec::new();
 
-        for run in rle {
+        for run in runs {
             out.push(LZ77Token::Literal(run.value));
             let mut remaining = run.length.saturating_sub(1);
 
@@ -266,17 +261,16 @@ pub mod deflate {
 
     fn huffman_code(vec: &mut BitVec, val: u32) {
         match val {
-            0..144 => vec.extend_rev(val + 0x30, 8),
-            144..256 => vec.extend_rev(val - 144 + 0x190, 9),
-            256..280 => vec.extend_rev(val - 256, 7),
-            280..288 => vec.extend_rev(val - 280 + 0xC0, 8),
+            0..=143 => vec.extend_rev(val + 0x30, 8),
+            144..=255 => vec.extend_rev(val - 144 + 0x190, 9),
+            256..=279 => vec.extend_rev(val - 256, 7),
+            280..=287 => vec.extend_rev(val - 280 + 0xC0, 8),
             _ => unreachable!(),
         }
     }
 
     fn length_code(n: u16) -> (u16, u16, u8) {
         match n {
-            0..=2 => (n, 0, 0),
             3..=10 => (254 + n, 0, 0),
             11..=18 => (265 + (n - 11) / 2, (n - 11) % 2, 1),
             19..=34 => (269 + (n - 19) / 4, (n - 19) % 4, 2),

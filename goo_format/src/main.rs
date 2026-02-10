@@ -7,11 +7,12 @@ use std::{
 use anyhow::{Result, ensure};
 use clap::Parser;
 use common::{
-    container::rle::png::{ColorType, PngEncoder, PngInfo},
+    container::rle::png::{ColorType, PngEncoder},
     serde::{DynamicSerializer, SliceDeserializer},
 };
 use goo_format::{File, LayerDecoder, PreviewImage};
 use image::RgbImage;
+use nalgebra::Vector2;
 
 #[derive(Parser)]
 struct Args {
@@ -71,16 +72,12 @@ fn main() -> Result<()> {
                 "Checksum mismatch for layer {i}"
             );
 
-            let header = PngInfo {
-                width: goo.header.x_resolution as u32,
-                height: goo.header.y_resolution as u32,
-                bit_depth: 8,
-                color_type: ColorType::Grayscale,
-            };
+            let resolution =
+                Vector2::new(goo.header.x_resolution, goo.header.y_resolution).map(|x| x as u32);
 
             let mut ser = DynamicSerializer::new();
-            let mut encoder = PngEncoder::new(&mut ser, &header, 1);
-            encoder.write_image_data(decoder.collect());
+            let mut encoder = PngEncoder::new(&mut ser, ColorType::Grayscale, resolution);
+            encoder.write_image_data(decoder.filter(|x| x.length > 0).collect());
             encoder.write_end();
 
             let path = layers.join(format!("layer_{i:03}.png"));

@@ -27,7 +27,7 @@ impl<'a> BitVec<'a> {
     }
 
     /// More efficient way to push multiple bits at once. Equivalent to:
-    /// ```rust
+    /// ```rs
     /// (0..bits).for_each(|bit| self.push((val >> bit) & 0b1 != 0));
     /// ```
     pub fn extend(&mut self, mut val: u32, mut bits: u8) {
