@@ -84,13 +84,15 @@ impl Slicer {
                     }
 
                     // Convert the intersections into runs of white pixels to be
-                    // encoded into the layer
+                    // encoded into the layer.
                     for span in filtered.chunks_exact(2) {
-                        let y_offset = (platform_resolution.x * y) as u64;
-
                         let a = span[0].round() as u64;
                         let b = span[1].round() as u64;
+                        if b == a {
+                            continue;
+                        }
 
+                        let y_offset = (platform_resolution.x * y) as u64;
                         let start = a + y_offset;
                         let end = b + y_offset;
                         let length = b - a;

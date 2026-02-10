@@ -174,10 +174,13 @@ pub mod deflate {
         Match { length: u16 }, // distance is assumed to be 1
     }
 
+    /// Assumes all input runs are of nonzero length.
     pub fn lz77_compress(runs: impl Iterator<Item = Run>) -> Vec<LZ77Token> {
         let mut out = Vec::new();
 
         for run in runs {
+            debug_assert!(run.length > 0);
+
             out.push(LZ77Token::Literal(run.value));
             let mut remaining = run.length.saturating_sub(1);
 
