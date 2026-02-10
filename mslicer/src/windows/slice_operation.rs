@@ -92,6 +92,9 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                             );
                             app.tasks.add(task);
                         }
+
+                        // ui.separator();
+                        // if ui.button(concatcp!(CROSSHAIR, " Detect Islands")).clicked() {}
                     })
                 });
             });

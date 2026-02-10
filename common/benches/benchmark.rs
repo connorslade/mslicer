@@ -1,5 +1,5 @@
 use common::container::rle::png::{
-    ColorType, PngEncoder, PngInfo,
+    ColorType, PngEncoder,
     deflate::{Adler32, huffman, lz77_compress},
     intersperse_runs,
 };
@@ -57,15 +57,10 @@ fn criterion_benchmark(c: &mut Criterion) {
         b.iter_batched(
             || layer.clone(),
             |rgb| {
-                let info = PngInfo {
-                    width: PLATFORM.x / 3,
-                    height: PLATFORM.y,
-                    bit_depth: 8,
-                    color_type: ColorType::Truecolor,
-                };
+                let size = Vector2::new(PLATFORM.x.div_ceil(3), PLATFORM.y);
 
                 let mut ser = DynamicSerializer::new();
-                let mut encoder = PngEncoder::new(&mut ser, &info, 3);
+                let mut encoder = PngEncoder::new(&mut ser, ColorType::Truecolor, size);
                 encoder.write_pixel_dimensions(3, 1);
                 encoder.write_image_data(rgb);
                 encoder.write_end();

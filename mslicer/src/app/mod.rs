@@ -168,14 +168,7 @@ impl App {
         let post_process = CombinedProgress::new();
         let slice_operation = SliceOperation::new(slicer.progress(), post_process.clone());
         self.slice_operation.replace(slice_operation);
-
-        if let Some(panel) = self.dock_state.find_tab(&Tab::SliceOperation) {
-            self.dock_state.set_active_tab(panel);
-        } else {
-            let window_id = self.dock_state.add_window(vec![Tab::SliceOperation]);
-            let window = self.dock_state.get_window_state_mut(window_id).unwrap();
-            window.set_size(Vec2::new(700.0, 400.0));
-        }
+        self.focus_tab(Tab::SliceOperation, Vector2::new(700.0, 400.0));
 
         thread::spawn(clone!(
             [
@@ -200,6 +193,16 @@ impl App {
                 });
             }
         ));
+    }
+
+    pub fn focus_tab(&mut self, tab: Tab, size: Vector2<f32>) {
+        if let Some(panel) = self.dock_state.find_tab(&tab) {
+            self.dock_state.set_active_tab(panel);
+        } else {
+            let window_id = self.dock_state.add_window(vec![Tab::SliceOperation]);
+            let window = self.dock_state.get_window_state_mut(window_id).unwrap();
+            window.set_size(Vec2::new(size.x, size.y));
+        }
     }
 
     pub fn reset_ui(&mut self) {
