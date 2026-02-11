@@ -9,7 +9,7 @@ const MAX_HISTORY: usize = 0x80; // random number i picked
 
 #[derive(Default)]
 pub struct History {
-    history: VecDeque<Action>,
+    pub history: VecDeque<Action>,
     future: VecDeque<Action>,
 }
 

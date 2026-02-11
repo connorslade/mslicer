@@ -107,6 +107,9 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
                             ui.button(concatcp!(ARROW_LINE_DOWN, " Align to Bed"))
                                 .clicked()
                                 .then(|| {
+                                    let old_pos = model.mesh.position();
+                                    app.history.track_model(id, ModelAction::Position(old_pos));
+
                                     model.align_to_bed();
                                     model.update_oob(platform);
                                 });

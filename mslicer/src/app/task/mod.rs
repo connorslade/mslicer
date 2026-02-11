@@ -8,6 +8,7 @@ use crate::{
 
 mod acceleration_structures;
 mod file_dialog;
+mod island_detection;
 mod mesh_load;
 mod mesh_manifold;
 mod project;
@@ -16,6 +17,7 @@ mod thread;
 pub use self::{
     acceleration_structures::BuildAccelerationStructures,
     file_dialog::FileDialog,
+    island_detection::IslandDetection,
     mesh_load::MeshLoad,
     mesh_manifold::MeshManifold,
     project::{ProjectLoad, ProjectSave},

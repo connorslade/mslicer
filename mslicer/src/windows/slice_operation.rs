@@ -5,7 +5,7 @@ use egui::{
     Align, Button, Context, DragValue, FontSelection, Grid, Id, Layout, ProgressBar, RichText,
     Sense, Slider, Style, Ui, Vec2, style::HandleShape, text::LayoutJob,
 };
-use egui_phosphor::regular::{FLOPPY_DISK_BACK, PAPER_PLANE_TILT};
+use egui_phosphor::regular::{CROSSHAIR, FLOPPY_DISK_BACK, PAPER_PLANE_TILT};
 use egui_wgpu::Callback;
 use nalgebra::Vector2;
 use wgpu::COPY_BUFFER_ALIGNMENT;
@@ -14,7 +14,7 @@ use crate::{
     app::{
         App,
         slice_operation::SliceResult,
-        task::{FileDialog, SaveResult},
+        task::{FileDialog, IslandDetection, SaveResult},
     },
     render::slice_preview::SlicePreviewRenderCallback,
     ui::{components::vec2_dragger, popup::Popup},
@@ -93,8 +93,10 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                             app.tasks.add(task);
                         }
 
-                        // ui.separator();
-                        // if ui.button(concatcp!(CROSSHAIR, " Detect Islands")).clicked() {}
+                        ui.separator();
+                        if ui.button(concatcp!(CROSSHAIR, " Detect Islands")).clicked() {
+                            app.tasks.add(IslandDetection::new(result.file.clone()));
+                        }
                     })
                 });
             });

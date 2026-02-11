@@ -168,7 +168,10 @@ fn manual_support_placement(app: &mut App) {
 
     let mut builder = MeshBuilder::new();
     for model in app.project.models.iter() {
-        let bvh = model.bvh.as_ref().unwrap();
+        let Some(bvh) = model.bvh.as_ref() else {
+            continue;
+        };
+
         let Some(intersection) = bvh.intersect_ray(
             &model.mesh,
             model.mesh.inv_transform(&pos),

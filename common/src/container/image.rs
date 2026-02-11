@@ -13,7 +13,6 @@ pub struct Image {
 pub struct ImageRuns<'a> {
     inner: &'a [u8],
 
-    size: u64,
     last_value: u8,
     last_idx: u64,
 }
@@ -57,12 +56,7 @@ impl Image {
     }
 
     pub fn runs(&self) -> ImageRuns<'_> {
-        ImageRuns {
-            inner: &self.data,
-            size: (self.size.x * self.size.y) as u64,
-            last_value: 0,
-            last_idx: 0,
-        }
+        ImageRuns::new(&self.data)
     }
 
     pub fn finish(&self) -> &[u8] {
@@ -93,18 +87,29 @@ impl Image {
     }
 }
 
+impl<'a> ImageRuns<'a> {
+    pub fn new(data: &'a [u8]) -> Self {
+        Self {
+            inner: data,
+            last_value: 0,
+            last_idx: 0,
+        }
+    }
+}
+
 impl Iterator for ImageRuns<'_> {
     type Item = Run;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.last_idx >= self.size {
+        let size = self.inner.len() as u64;
+        if self.last_idx >= size {
             return None;
         }
 
         for i in 0.. {
             let idx = self.last_idx + i;
 
-            if idx >= self.size || self.inner[idx as usize] != self.last_value {
+            if idx >= size || self.inner[idx as usize] != self.last_value {
                 let out = Run {
                     length: i,
                     value: self.last_value,

@@ -125,6 +125,25 @@ impl FormatSliceFile {
         }
     }
 
+    pub fn runs<'a>(&'a self, layer: usize) -> Box<dyn Iterator<Item = Run> + 'a> {
+        match self {
+            FormatSliceFile::Goo(file) => {
+                let data = &file.layers[layer].data;
+                Box::new(goo_format::LayerDecoder::new(data))
+            }
+            FormatSliceFile::Ctb(file) => {
+                let data = &file.layers[layer].data;
+                Box::new(ctb_format::LayerDecoder::new(data))
+            }
+            FormatSliceFile::NanoDLP(file) => {
+                let data = &file.layers[layer];
+                let decoder = nanodlp_format::LayerDecoder::new(data);
+                Box::new(decoder.runs().collect::<Vec<_>>().into_iter())
+            }
+            FormatSliceFile::Svg(_file) => panic!(),
+        }
+    }
+
     pub fn decode_layer(&self, layer: usize, image: &mut [u8]) {
         fn rle_decode(decoder: impl Iterator<Item = Run>, image: &mut [u8]) {
             let mut pixel = 0;
