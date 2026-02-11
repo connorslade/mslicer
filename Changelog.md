@@ -28,6 +28,7 @@
 - Track changes to settings for undo and redo (under edit in the top bar)
 - Use metric prefixes for slice config draggers
 - Allow using any supported output format with the CLI slicer
+- More robust slicing (include scanline boundary hits)
 
 ## v0.4.0 &mdash; November 25th, 2025
 

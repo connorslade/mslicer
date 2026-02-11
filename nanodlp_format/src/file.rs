@@ -106,7 +106,7 @@ impl File {
             T: Serialize,
         {
             zip.start_file(name, FileOptions::DEFAULT)?;
-            serde_json::to_writer(zip, &value)?;
+            serde_json::to_writer_pretty(zip, &value)?;
             Ok(())
         }
 

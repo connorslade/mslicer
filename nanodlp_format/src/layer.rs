@@ -1,8 +1,8 @@
 use common::{
     container::{
-        Image,
+        Clusters, Image, ImageRuns,
         rle::{
-            Run, RunChunks, condense_nonzero_runs,
+            self, Run,
             png::{ColorType, PngEncoder},
         },
     },
@@ -70,60 +70,41 @@ impl EncodableLayer for LayerEncoder {
     }
 
     fn finish(self, _layer: u64, config: &SliceConfig) -> Self::Output {
-        let mut area = 0;
-        let mut pos = 0;
+        let nonzero = rle::bits::from_runs(&self.runs);
+        let chunks = rle::bits::chunks(&nonzero, config.platform_resolution.x as u64);
 
         let mut min = Vector2::repeat(u64::MAX);
         let mut max = Vector2::repeat(u64::MIN);
+        let mut islands = Clusters::default();
 
-        let width = self.platform.x as u64;
-        for run in self.runs.iter() {
-            if run.value > 0 {
-                let y = pos / width;
-                area += run.length;
-
-                min.x = min.x.min(pos % width);
-                min.y = min.y.min(y);
-                pos += run.length;
-                max.x = max.x.max(pos % width);
-                max.y = max.y.max(y);
-            } else {
-                pos += run.length;
-            }
+        let width = config.platform_resolution.x as u64;
+        for row in 1..chunks.len() {
+            row_bounds(&chunks[row], width, row, &mut min, &mut max);
+            rle::bits::cluster_row_adjacency(&mut islands, &chunks, row - 1, row);
         }
 
-        let chunks = RunChunks::new(&self.runs, config.platform_resolution.x);
-        let mut prev = vec![];
-        let mut area_count = 0i32;
+        let islands = (islands.clusters())
+            .map(|(_, runs)| runs.iter().map(|(_, _, s)| s).sum::<u64>())
+            .collect::<Vec<_>>();
+        let smallest_area = islands.iter().min().copied().unwrap_or_default();
+        let largest_area = islands.iter().max().copied().unwrap_or_default();
+        let total_area = islands.iter().sum::<u64>();
 
-        for row in chunks {
-            let condensed = condense_nonzero_runs(&row);
-            if prev.is_empty() {
-                area_count += (condensed.len() / 2) as i32;
-                prev = condensed;
-                continue;
-            }
+        let pixel_area = config.platform_size.x.get::<Milimeter>()
+            * config.platform_size.y.get::<Milimeter>()
+            / config.platform_resolution.x as f32
+            / config.platform_resolution.y as f32;
 
-            area_count += unmatched_runs(&prev, &condensed);
-            prev = condensed;
-        }
-
-        let area = area as f32
-            * (config.platform_size.x.get::<Milimeter>() / config.platform_resolution.x as f32)
-            * (config.platform_size.y.get::<Milimeter>() / config.platform_resolution.y as f32);
-
-        let area_count = area_count.max(1);
         Layer {
             info: LayerInfo {
-                // todo: correctly set largest and smallest area
-                total_solid_area: area,
-                largest_area: area,
-                smallest_area: area / area_count as f32,
+                total_solid_area: total_area as f32 * pixel_area,
+                largest_area: largest_area as f32 * pixel_area,
+                smallest_area: smallest_area as f32 * pixel_area,
                 min_x: min.x as u32,
                 min_y: min.y as u32,
                 max_x: max.x as u32,
                 max_y: max.y as u32,
-                area_count: area_count as u32,
+                area_count: islands.len() as u32,
             },
             inner: self.image_data(),
         }
@@ -137,40 +118,31 @@ impl LayerDecoder {
         }
     }
 
+    pub fn runs(&self) -> impl Iterator<Item = Run> {
+        ImageRuns::new(self.image.as_raw())
+    }
+
     pub fn into_inner(self) -> RgbImage {
         self.image
     }
 }
 
-fn unmatched_runs(prev: &[u64], next: &[u64]) -> i32 {
-    let mut next_pos = 0;
-    let mut next_idx = 0;
-    let mut sum = 0;
-
-    while next_idx < next.len() {
-        let next_len = next[next_idx];
-        if next_idx % 2 == 1 {
-            let next_end = next_pos + next_len;
-            let mut touched_count = 0;
-            let mut prev_pos = 0;
-
-            for (prev_idx, &prev_run_length) in prev.iter().enumerate() {
-                touched_count += (prev_idx % 2 == 1
-                    && next_pos < prev_pos + prev_run_length
-                    && prev_pos < next_end) as i32;
-                prev_pos += prev_run_length;
-
-                if prev_pos >= next_end {
-                    break;
-                }
-            }
-
-            sum += 1 - touched_count;
-        }
-
-        next_pos += next_len;
-        next_idx += 1;
+fn row_bounds(row: &[u64], width: u64, y: usize, min: &mut Vector2<u64>, max: &mut Vector2<u64>) {
+    if row.len() <= 1 {
+        return;
     }
 
-    sum
+    // If len>1 then there is at least one non-zero voxel in that layer, which
+    // will extend the bounding box's y component.
+    min.y = min.y.min(y as u64);
+    max.y = max.y.max(y as u64);
+
+    // The left side of the first run starts at row[0] pixels in and the right
+    // side ends row[-1] pixels in from the right (when the last run is
+    // nonzero).
+    let offset = (row.len() % 2 == 1)
+        .then(|| *row.last().unwrap())
+        .unwrap_or_default();
+    min.x = min.x.min(row[0]);
+    max.x = max.x.max(width - offset);
 }
