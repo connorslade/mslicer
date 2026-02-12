@@ -16,7 +16,7 @@ pub struct SlicePreviewRenderCallback {
     pub aspect: f32,
     pub scale: f32,
 
-    pub new_preview: Option<Vec<u8>>,
+    pub new_preview: Option<(Vec<u8>, Vec<u8>)>,
 }
 
 impl CallbackTrait for SlicePreviewRenderCallback {

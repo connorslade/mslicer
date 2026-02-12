@@ -25,6 +25,17 @@ pub const UNIFORM_BIND_GROUP_LAYOUT_ENTRY: BindGroupLayoutEntry = BindGroupLayou
     count: None,
 };
 
+pub const STORAGE_BIND_GROUP_LAYOUT_ENTRY: BindGroupLayoutEntry = BindGroupLayoutEntry {
+    binding: 1,
+    visibility: ShaderStages::FRAGMENT,
+    ty: BindingType::Buffer {
+        ty: BufferBindingType::Storage { read_only: true },
+        has_dynamic_offset: false,
+        min_binding_size: None,
+    },
+    count: None,
+};
+
 pub const BASE_BIND_GROUP_LAYOUT_DESCRIPTOR: BindGroupLayoutDescriptor =
     BindGroupLayoutDescriptor {
         label: None,

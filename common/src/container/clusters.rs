@@ -3,6 +3,8 @@ use std::{
     hash::Hash,
 };
 
+// look into union find data structure for faster cluster merging.
+
 #[derive(Default)]
 pub struct Clusters<T: Hash + PartialEq + Eq + Copy> {
     runs: HashMap<T, u32>,              // maps runs to clusters

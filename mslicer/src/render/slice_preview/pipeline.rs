@@ -2,18 +2,21 @@ use encase::{ShaderSize, ShaderType, UniformBuffer};
 use nalgebra::Vector2;
 use wgpu::{
     BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayout, BindGroupLayoutDescriptor,
-    BindGroupLayoutEntry, BindingType, Buffer, BufferBindingType, BufferDescriptor, BufferUsages,
-    COPY_BUFFER_ALIGNMENT, ColorTargetState, ColorWrites, Device, FragmentState, IndexFormat,
-    MultisampleState, PipelineLayoutDescriptor, PrimitiveState, Queue, RenderPass, RenderPipeline,
-    RenderPipelineDescriptor, ShaderStages, TextureFormat, VertexState,
+    BindGroupLayoutEntry, Buffer, BufferDescriptor, BufferUsages, COPY_BUFFER_ALIGNMENT,
+    ColorTargetState, ColorWrites, Device, FragmentState, IndexFormat, MultisampleState,
+    PipelineLayoutDescriptor, PrimitiveState, Queue, RenderPass, RenderPipeline,
+    RenderPipelineDescriptor, TextureFormat, VertexState,
     util::{BufferInitDescriptor, DeviceExt},
 };
 
 use crate::{
     include_shader,
     render::{
-        ModelVertex, VERTEX_BUFFER_LAYOUT,
-        consts::{BASE_UNIFORM_DESCRIPTOR, DEPTH_STENCIL_STATE, UNIFORM_BIND_GROUP_LAYOUT_ENTRY},
+        VERTEX_BUFFER_LAYOUT,
+        consts::{
+            BASE_UNIFORM_DESCRIPTOR, DEPTH_STENCIL_STATE, STORAGE_BIND_GROUP_LAYOUT_ENTRY,
+            UNIFORM_BIND_GROUP_LAYOUT_ENTRY,
+        },
         slice_preview::SlicePreviewRenderCallback,
     },
 };
@@ -23,10 +26,14 @@ pub struct SlicePreviewPipeline {
     bind_group_layout: BindGroupLayout,
     bind_group: Option<BindGroup>,
 
-    vertex_buffer: Buffer,
     index_buffer: Buffer,
     uniform_buffer: Buffer,
-    slice_buffer: Option<Buffer>,
+    slice_buffer: Option<SliceBuffers>,
+}
+
+struct SliceBuffers {
+    layer: Buffer,
+    annotations: Buffer,
 }
 
 #[derive(ShaderType)]
@@ -50,15 +57,10 @@ impl SlicePreviewPipeline {
             label: None,
             entries: &[
                 UNIFORM_BIND_GROUP_LAYOUT_ENTRY,
+                STORAGE_BIND_GROUP_LAYOUT_ENTRY,
                 BindGroupLayoutEntry {
-                    binding: 1,
-                    visibility: ShaderStages::VERTEX | ShaderStages::FRAGMENT,
-                    ty: BindingType::Buffer {
-                        ty: BufferBindingType::Storage { read_only: true },
-                        has_dynamic_offset: false,
-                        min_binding_size: None,
-                    },
-                    count: None,
+                    binding: 2,
+                    ..STORAGE_BIND_GROUP_LAYOUT_ENTRY
                 },
             ],
         });
@@ -98,18 +100,6 @@ impl SlicePreviewPipeline {
             cache: None,
         });
 
-        let vert = [[-1.0, -1.0], [3.0, -1.0], [-1.0, 3.0]]
-            .into_iter()
-            .map(|[x, y]| ModelVertex {
-                position: [x, y, 0.0, 1.0],
-            })
-            .collect::<Vec<_>>();
-        let vertex_buffer = device.create_buffer_init(&BufferInitDescriptor {
-            label: None,
-            contents: bytemuck::cast_slice(&vert),
-            usage: BufferUsages::VERTEX | BufferUsages::COPY_DST,
-        });
-
         let index_buffer = device.create_buffer_init(&BufferInitDescriptor {
             label: None,
             contents: bytemuck::cast_slice(&[0, 1, 2]),
@@ -121,7 +111,6 @@ impl SlicePreviewPipeline {
             bind_group_layout,
             bind_group: None,
 
-            vertex_buffer,
             index_buffer,
             uniform_buffer,
 
@@ -137,19 +126,27 @@ impl SlicePreviewPipeline {
         queue: &Queue,
         resources: &SlicePreviewRenderCallback,
     ) {
-        let slice_buffer = self.slice_buffer.take().unwrap_or_else(|| {
-            device.create_buffer(&BufferDescriptor {
+        let slice_buffer = self.slice_buffer.get_or_insert_with(|| {
+            let size = resources.dimensions.x as u64 * resources.dimensions.y as u64;
+            let desc = BufferDescriptor {
                 label: None,
-                size: (resources.dimensions.x as u64 * resources.dimensions.y as u64)
-                    .next_multiple_of(COPY_BUFFER_ALIGNMENT),
+                size: size.next_multiple_of(COPY_BUFFER_ALIGNMENT),
                 usage: BufferUsages::STORAGE | BufferUsages::COPY_DST,
                 mapped_at_creation: false,
-            })
-        });
-        self.slice_buffer = Some(slice_buffer);
+            };
 
-        if let Some(new_preview) = &resources.new_preview {
-            queue.write_buffer(self.slice_buffer.as_ref().unwrap(), 0, new_preview);
+            SliceBuffers {
+                layer: device.create_buffer(&desc),
+                annotations: device.create_buffer(&BufferDescriptor {
+                    // size: size.div_ceil(2).next_multiple_of(COPY_BUFFER_ALIGNMENT),
+                    ..desc
+                }),
+            }
+        });
+
+        if let Some((layer, annotations)) = &resources.new_preview {
+            queue.write_buffer(&slice_buffer.layer, 0, layer);
+            queue.write_buffer(&slice_buffer.annotations, 0, annotations);
         }
 
         self.bind_group = Some(device.create_bind_group(&BindGroupDescriptor {
@@ -162,7 +159,11 @@ impl SlicePreviewPipeline {
                 },
                 BindGroupEntry {
                     binding: 1,
-                    resource: self.slice_buffer.as_ref().unwrap().as_entire_binding(),
+                    resource: slice_buffer.layer.as_entire_binding(),
+                },
+                BindGroupEntry {
+                    binding: 2,
+                    resource: slice_buffer.annotations.as_entire_binding(),
                 },
             ],
         }));
@@ -183,7 +184,6 @@ impl SlicePreviewPipeline {
         render_pass.set_pipeline(&self.render_pipeline);
         render_pass.set_bind_group(0, self.bind_group.as_ref().unwrap(), &[]);
 
-        render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
         render_pass.set_index_buffer(self.index_buffer.slice(..), IndexFormat::Uint32);
         render_pass.draw_indexed(0..3, 0, 0..1);
     }

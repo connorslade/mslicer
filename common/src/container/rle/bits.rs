@@ -63,9 +63,9 @@ pub fn chunks(runs: &[u64], width: u64) -> Vec<Vec<u64>> {
 }
 
 /// Inserts all the adjacencies found between the two rows (`curr` and `base`)
-/// into the container. The run type is a tuple: (row, index, size).
+/// into the container. The run type is a tuple: (row, position, size).
 pub fn cluster_row_adjacency(
-    cluster: &mut Clusters<(usize, usize, u64)>,
+    cluster: &mut Clusters<(usize, u64, u64)>,
     rows: &[Vec<u64>],
     base_row: usize,
     curr_row: usize,
@@ -85,7 +85,7 @@ pub fn cluster_row_adjacency(
                 }
 
                 if j % 2 != 0 && b_pos <= a_end && b_end >= a_pos {
-                    cluster.mark_adjacency((base_row, j, a), (curr_row, i, b));
+                    cluster.mark_adjacency((base_row, a_pos, a), (curr_row, b_pos, b));
                 }
 
                 a_pos += a;

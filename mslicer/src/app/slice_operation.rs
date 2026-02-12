@@ -8,6 +8,7 @@ use std::{
 };
 
 use common::{
+    container::Run,
     misc::human_duration,
     progress::{CombinedProgress, Progress},
 };
@@ -36,12 +37,19 @@ pub struct SliceOperationInner {
 
 pub struct SliceResult {
     pub file: Arc<FormatSliceFile>,
+    pub annotations: Arc<Mutex<Vec<Vec<Run>>>>,
 
     pub slice_preview_layer: usize,
     pub last_preview_layer: usize,
     pub preview_offset: Vector2<f32>,
     pub preview_scale: f32,
     pub layer_count: (usize, u8),
+}
+
+#[repr(u8)]
+pub enum Annotation {
+    None = 0b00,
+    Island = 0b01,
 }
 
 impl SliceOperation {

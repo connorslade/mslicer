@@ -8,6 +8,7 @@ use egui_phosphor::regular::CARET_RIGHT;
 use egui_tracing::EventCollector;
 use egui_wgpu::RenderState;
 use nalgebra::Vector2;
+use parking_lot::lock_api::Mutex;
 use tracing::{info, warn};
 
 use crate::{
@@ -16,7 +17,7 @@ use crate::{
         history::History,
         project::Project,
         remote_print::RemotePrint,
-        slice_operation::{SliceOperation, SliceResult},
+        slice_operation::{Annotation, SliceOperation, SliceResult},
         task::TaskManager,
     },
     render::{camera::Camera, preview},
@@ -27,7 +28,7 @@ use crate::{
     },
     windows::{self, Tab},
 };
-use common::{progress::CombinedProgress, units::Milimeter};
+use common::{container::Run, progress::CombinedProgress, units::Milimeter};
 use slicer::{format::FormatSliceFile, slicer::Slicer};
 
 pub mod config;
@@ -144,7 +145,9 @@ impl App {
         let slice_height = slice_config.slice_height.get::<Milimeter>();
         let platform_size = (slice_config.platform_size.xy()).map(|x| x.get::<Milimeter>());
 
-        let platform = slice_config.platform_resolution.cast::<f32>();
+        let resolution = slice_config.platform_resolution;
+        let pixels = resolution.x as u64 * resolution.y as u64;
+        let platform = resolution.cast::<f32>();
         let mm_to_px = platform.component_div(&platform_size).push(1.0);
 
         for mesh in meshes.into_iter() {
@@ -183,8 +186,14 @@ impl App {
                 post_processing.process(&mut file, post_process);
 
                 let layers = file.info().layers as usize;
+                let no_annotations = vec![Run {
+                    length: pixels,
+                    value: Annotation::None as u8,
+                }];
+
                 slice_operation.add_result(SliceResult {
                     file: Arc::new(file),
+                    annotations: Arc::new(Mutex::new(vec![no_annotations; layers])),
                     slice_preview_layer: 0,
                     last_preview_layer: 0,
                     preview_offset: Vector2::new(0.0, 0.0),

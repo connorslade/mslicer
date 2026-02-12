@@ -7,6 +7,7 @@ use egui::{
 };
 use egui_phosphor::regular::{CROSSHAIR, FLOPPY_DISK_BACK, PAPER_PLANE_TILT};
 use egui_wgpu::Callback;
+use image::{DynamicImage, GrayImage, ImageBuffer};
 use nalgebra::Vector2;
 use wgpu::COPY_BUFFER_ALIGNMENT;
 
@@ -95,7 +96,10 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
 
                         ui.separator();
                         if ui.button(concatcp!(CROSSHAIR, " Detect Islands")).clicked() {
-                            app.tasks.add(IslandDetection::new(result.file.clone()));
+                            app.tasks.add(IslandDetection::new(
+                                result.file.clone(),
+                                result.annotations.clone(),
+                            ));
                         }
                     })
                 });
@@ -189,13 +193,23 @@ fn slice_preview(ui: &mut egui::Ui, result: &mut SliceResult) {
         result.slice_preview_layer = result.slice_preview_layer.clamp(1, info.layers as usize);
         let new_preview = if result.last_preview_layer != result.slice_preview_layer {
             result.last_preview_layer = result.slice_preview_layer;
+            let size = (width * height) as usize;
 
-            let mut image =
-                vec![0; ((width * height) as u64).next_multiple_of(COPY_BUFFER_ALIGNMENT) as usize];
-            let layer = result.slice_preview_layer - 1;
-            result.file.decode_layer(layer, &mut image);
+            let mut layer = vec![0u8; size];
+            let layer_idx = result.slice_preview_layer - 1;
+            result.file.decode_layer(layer_idx, &mut layer);
 
-            Some(image)
+            let mut annotations = vec![0u8; size];
+            if layer_idx > 0 {
+                let mut pos = 0;
+                for run in result.annotations.lock()[layer_idx - 1].iter() {
+                    let len = run.length as usize;
+                    annotations[pos..(pos + len)].fill(run.value);
+                    pos += len;
+                }
+            }
+
+            Some((layer, annotations))
         } else {
             None
         };
