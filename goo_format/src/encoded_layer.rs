@@ -117,7 +117,7 @@ impl EncodableLayer for LayerEncoder {
         self.add_run(length, value);
     }
 
-    fn finish(self, layer: u64, slice_config: &SliceConfig) -> Self::Output {
+    fn finish(self, layer: u32, slice_config: &SliceConfig) -> Self::Output {
         let (data, checksum) = self.finish();
         let layer_exposure = slice_config.exposure_config(layer);
 

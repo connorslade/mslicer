@@ -5,13 +5,14 @@ use std::{
         Arc,
         atomic::{AtomicU32, Ordering},
     },
-    time::{Duration, Instant},
+    time::Instant,
 };
 
 use common::{
     container::Run,
     misc::human_duration,
     progress::{CombinedProgress, Progress},
+    units::{Miliseconds, Milliliters, Seconds},
 };
 use image::RgbaImage;
 use nalgebra::Vector2;
@@ -39,6 +40,8 @@ pub struct SliceOperationInner {
 pub struct SliceResult {
     pub file: Arc<FormatSliceFile>,
     pub annotations: Arc<Mutex<Annotations>>,
+    pub volume: Milliliters,
+    pub print_time: Seconds,
 
     pub slice_preview_layer: usize,
     pub last_preview_layer: usize,
@@ -80,7 +83,7 @@ impl SliceOperation {
 impl SliceOperationInner {
     pub fn completion(&self) -> Option<String> {
         let time = self.completion.load(Ordering::Relaxed);
-        (time != 0).then(|| human_duration(Duration::from_millis(time as u64)))
+        (time != 0).then(|| human_duration(Miliseconds::new(time as f32)))
     }
 
     pub fn needs_preview_image(&self) -> bool {

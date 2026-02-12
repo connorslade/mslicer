@@ -4,7 +4,9 @@ use nalgebra::{Vector2, Vector3};
 use crate::{
     serde::{Deserializer, SerdeExt, Serializer},
     slice::Format,
-    units::{CentimetersPerSecond, Milimeters, Minutes, Seconds},
+    units::{
+        CentimetersPerSecond, CubicMilimeters, Milimeters, Minutes, Seconds, SquareMilimeters,
+    },
 };
 
 #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
@@ -31,12 +33,36 @@ pub struct ExposureConfig {
 }
 
 impl SliceConfig {
-    pub fn exposure_config(&self, layer: u64) -> &ExposureConfig {
-        if (layer as u32) < self.first_layers {
+    pub fn exposure_config(&self, layer: u32) -> &ExposureConfig {
+        if layer < self.first_layers {
             &self.first_exposure_config
         } else {
             &self.exposure_config
         }
+    }
+
+    pub fn pixel_area(&self) -> SquareMilimeters {
+        let x = self.platform_size.x / self.platform_resolution.x as f32;
+        let y = self.platform_size.y / self.platform_resolution.y as f32;
+        x * y
+    }
+
+    pub fn voxel_volume(&self) -> CubicMilimeters {
+        self.pixel_area() * self.slice_height
+    }
+
+    pub fn print_time(&self, layers: u32) -> Seconds {
+        let exp = &self.exposure_config;
+        let fexp = &self.first_exposure_config;
+
+        let layer_time = exp.exposure_time
+            + exp.lift_distance / exp.lift_speed
+            + exp.retract_distance / exp.retract_speed;
+        let bottom_layer_time = fexp.exposure_time
+            + fexp.lift_distance / fexp.lift_speed
+            + fexp.retract_distance / fexp.retract_speed;
+        layers.saturating_sub(self.first_layers) as f32 * layer_time
+            + self.first_layers as f32 * bottom_layer_time
     }
 }
 

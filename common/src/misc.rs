@@ -1,9 +1,9 @@
-use std::time::Duration;
-
 use rand::{Rng, distr::Alphanumeric};
 
-pub fn human_duration(duration: Duration) -> String {
-    let ms = duration.as_millis() as f32;
+use crate::units::Miliseconds;
+
+pub fn human_duration(duration: Miliseconds) -> String {
+    let ms = duration.raw();
     if ms < 1000.0 {
         format!("{ms}ms")
     } else if ms < 60_000.0 {

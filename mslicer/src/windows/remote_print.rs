@@ -5,7 +5,7 @@ use std::{
 };
 
 use chrono::DateTime;
-use common::{misc::human_duration, slice::Format};
+use common::{misc::human_duration, slice::Format, units::Miliseconds};
 use const_format::concatcp;
 use egui::{
     Align, Context, DragValue, Grid, Layout, ProgressBar, Separator, Spinner, TextEdit, Ui, vec2,
@@ -101,8 +101,8 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                 });
 
                 if print_info.total_ticks != 0 {
-                    let eta = human_duration(Duration::from_millis(
-                        (print_info.total_ticks - print_info.current_ticks) as u64,
+                    let eta = human_duration(Miliseconds::new(
+                        (print_info.total_ticks - print_info.current_ticks) as f32,
                     ));
                     ui.label(format!("ETA: {eta}"));
                 }
@@ -121,8 +121,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
             }
 
             if print_info.status == PrintInfoStatus::Complete {
-                let print_time =
-                    human_duration(Duration::from_millis(print_info.total_ticks as u64));
+                let print_time = human_duration(Miliseconds::new(print_info.total_ticks as f32));
                 ui.horizontal(|ui| {
                     ui.label("Finished printing");
                     ui.monospace(&print_info.filename);

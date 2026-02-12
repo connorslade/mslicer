@@ -1,12 +1,10 @@
 use std::{marker::PhantomData, ops};
 
-use crate::units::{Meter, TimeUnit, defs::Second};
-
-use super::LengthUnit;
+use crate::units::{LengthUnit, Meter, TimeUnit, defs::Second};
 
 impl<L: LengthUnit> Length<L> {
     pub fn get<T: LengthUnit>(&self) -> f32 {
-        T::from_base(L::to_base(self.value))
+        T::apply(L::apply(self.value, 1), -1)
     }
 
     pub fn convert<T: LengthUnit>(&self) -> Length<T> {
@@ -16,7 +14,7 @@ impl<L: LengthUnit> Length<L> {
 
 impl<L: TimeUnit> Time<L> {
     pub fn get<T: TimeUnit>(&self) -> f32 {
-        T::from_base(L::to_base(self.value))
+        T::apply(L::apply(self.value, 1), -1)
     }
 
     pub fn convert<T: TimeUnit>(&self) -> Time<T> {
@@ -26,11 +24,32 @@ impl<L: TimeUnit> Time<L> {
 
 impl<L: LengthUnit, T: TimeUnit> Velocity<L, T> {
     pub fn get<L2: LengthUnit, T2: TimeUnit>(&self) -> f32 {
-        T2::to_base(L2::from_base(T::from_base(L::to_base(self.value))))
+        let base = T::apply(L::apply(self.value, 1), -1);
+        T2::apply(L2::apply(base, -1), 1)
     }
 
     pub fn convert<L2: LengthUnit, T2: TimeUnit>(&self) -> Velocity<L2, T2> {
         Velocity::new(self.get::<L2, T2>())
+    }
+}
+
+impl<L: LengthUnit> Area<L> {
+    pub fn get<T: LengthUnit>(&self) -> f32 {
+        T::apply(L::apply(self.value, 2), -2)
+    }
+
+    pub fn convert<T: LengthUnit>(&self) -> Area<T> {
+        Area::new(self.get::<T>())
+    }
+}
+
+impl<L: LengthUnit> Volume<L> {
+    pub fn get<T: LengthUnit>(&self) -> f32 {
+        T::apply(L::apply(self.value, 3), -3)
+    }
+
+    pub fn convert<T: LengthUnit>(&self) -> Volume<T> {
+        Volume::new(self.get::<T>())
     }
 }
 
@@ -46,7 +65,7 @@ impl<A: LengthUnit, B: LengthUnit> ops::Div<Length<B>> for Length<A> {
     type Output = f32;
 
     fn div(self, rhs: Length<B>) -> Self::Output {
-        A::to_base(self.value) / B::to_base(rhs.value)
+        A::apply(self.value, 1) / B::apply(rhs.value, 1)
     }
 }
 
@@ -62,7 +81,25 @@ impl<L1: LengthUnit, L2: LengthUnit, T2: TimeUnit> ops::Div<Velocity<L2, T2>> fo
     type Output = Time<T2>;
 
     fn div(self, rhs: Velocity<L2, T2>) -> Self::Output {
-        Time::new(L1::to_base(self.value) / L2::to_base(rhs.value))
+        Time::new(L1::apply(self.value, 1) / L2::apply(rhs.value, 1))
+    }
+}
+
+impl<L1: LengthUnit, L2: LengthUnit> ops::Mul<Length<L2>> for Length<L1> {
+    type Output = Area<L1>;
+
+    fn mul(self, rhs: Length<L2>) -> Self::Output {
+        let base = L1::apply(self.value, 1) * L2::apply(rhs.value, 1);
+        Area::new(L1::apply(base, -2))
+    }
+}
+
+impl<L1: LengthUnit, L2: LengthUnit> ops::Mul<Length<L2>> for Area<L1> {
+    type Output = Volume<L1>;
+
+    fn mul(self, rhs: Length<L2>) -> Self::Output {
+        let base = L1::apply(self.value, 2) * L2::apply(rhs.value, 1);
+        Volume::new(L1::apply(base, -3))
     }
 }
 
@@ -210,6 +247,8 @@ macro_rules! quantity {
 
 quantity! [
     Length<U: LengthUnit = Meter>,
+    Area<U: LengthUnit = Meter>,
+    Volume<U: LengthUnit = Meter>,
     Time<U: TimeUnit = Second>,
     Velocity<L: LengthUnit, T: TimeUnit>
 ];

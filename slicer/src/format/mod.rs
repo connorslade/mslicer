@@ -6,7 +6,7 @@ use common::{
     container::{Image, Run},
     progress::Progress,
     serde::Serializer,
-    slice::{EncodableLayer, Format, SliceResult, VectorSliceResult},
+    slice::{EncodableLayer, Format, SliceConfig, SliceResult, VectorSliceResult},
     units::Milimeters,
 };
 
@@ -34,8 +34,36 @@ pub struct SliceInfo {
     pub layers: u32,
     pub resolution: Vector2<u32>,
     pub size: Vector3<Milimeters>,
-
     pub bottom_layers: u32,
+}
+
+impl<'a> FormatSliceResult<'a> {
+    pub fn voxels(&self) -> u64 {
+        match self {
+            FormatSliceResult::Goo(file) => file.voxels,
+            FormatSliceResult::Ctb(file) => file.voxels,
+            FormatSliceResult::NanoDLP(file) => file.voxels,
+            FormatSliceResult::Svg(_) => 0,
+        }
+    }
+
+    pub fn slice_config(&self) -> &SliceConfig {
+        match self {
+            FormatSliceResult::Goo(file) => file.slice_config,
+            FormatSliceResult::Ctb(file) => file.slice_config,
+            FormatSliceResult::NanoDLP(file) => file.slice_config,
+            FormatSliceResult::Svg(file) => file.slice_config,
+        }
+    }
+
+    pub fn layers(&self) -> usize {
+        match self {
+            FormatSliceResult::Goo(file) => file.layers.len(),
+            FormatSliceResult::Ctb(file) => file.layers.len(),
+            FormatSliceResult::NanoDLP(file) => file.layers.len(),
+            FormatSliceResult::Svg(file) => file.layers.len(),
+        }
+    }
 }
 
 impl FormatSliceFile {

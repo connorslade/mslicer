@@ -7,6 +7,7 @@ pub use format::Format;
 
 pub struct SliceResult<'a, Layer> {
     pub layers: Vec<Layer>,
+    pub voxels: u64,
     pub slice_config: &'a SliceConfig,
 }
 
@@ -24,5 +25,5 @@ pub trait EncodableLayer {
 
     fn new(platform: Vector2<u32>) -> Self;
     fn add_run(&mut self, length: u64, value: u8);
-    fn finish(self, layer: u64, config: &SliceConfig) -> Self::Output;
+    fn finish(self, layer: u32, config: &SliceConfig) -> Self::Output;
 }

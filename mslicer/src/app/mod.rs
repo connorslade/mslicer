@@ -179,14 +179,22 @@ impl App {
             move || {
                 let slice_operation = slice_operation.as_ref().unwrap();
                 let slice_result = slicer.slice_format();
+                let layers = slice_result.layers();
+
+                let slice_config = slice_result.slice_config();
+                let volume = (slice_result.voxels() as f32 * slice_config.voxel_volume()).convert();
+                let print_time = slice_config.print_time(layers as u32);
+
                 let preview_image = slice_operation.preview_image();
                 let mut file = FormatSliceFile::from_slice_result(&preview_image, slice_result);
                 post_processing.process(&mut file, post_process);
 
-                let layers = file.info().layers as usize;
                 slice_operation.add_result(SliceResult {
                     file: Arc::new(file),
                     annotations: Arc::new(Mutex::new(Annotations::default())),
+                    volume,
+                    print_time,
+
                     slice_preview_layer: 0,
                     last_preview_layer: 0,
                     preview_offset: Vector2::new(0.0, 0.0),

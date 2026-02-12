@@ -8,7 +8,6 @@ use common::{
     },
     serde::DynamicSerializer,
     slice::{EncodableLayer, SliceConfig},
-    units::Milimeter,
 };
 use image::{GrayImage, RgbImage};
 use nalgebra::Vector2;
@@ -69,7 +68,7 @@ impl EncodableLayer for LayerEncoder {
         self.runs.push(Run { length, value });
     }
 
-    fn finish(self, _layer: u64, config: &SliceConfig) -> Self::Output {
+    fn finish(self, _layer: u32, config: &SliceConfig) -> Self::Output {
         let nonzero = rle::bits::from_runs(&self.runs);
         let chunks = rle::bits::chunks(&nonzero, config.platform_resolution.x as u64);
 
@@ -90,11 +89,7 @@ impl EncodableLayer for LayerEncoder {
         let largest_area = islands.iter().max().copied().unwrap_or_default();
         let total_area = islands.iter().sum::<u64>();
 
-        let pixel_area = config.platform_size.x.get::<Milimeter>()
-            * config.platform_size.y.get::<Milimeter>()
-            / config.platform_resolution.x as f32
-            / config.platform_resolution.y as f32;
-
+        let pixel_area = config.pixel_area();
         Layer {
             info: LayerInfo {
                 total_solid_area: total_area as f32 * pixel_area,

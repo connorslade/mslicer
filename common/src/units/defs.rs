@@ -9,47 +9,26 @@ marker_structs![
     Meter<P: MetricPrefix = Base>
 ];
 
+impl<P: MetricPrefix> LengthUnit for Meter<P> {}
+impl<P: MetricPrefix> Unit for Meter<P> {
+    const FACTOR: f32 = P::FACTOR;
+}
+
+impl<P: MetricPrefix> TimeUnit for Second<P> {}
+impl<P: MetricPrefix> Unit for Second<P> {
+    const FACTOR: f32 = P::FACTOR;
+}
+
+impl TimeUnit for Minute {}
+impl Unit for Minute {
+    const FACTOR: f32 = 60.0;
+}
+
 pub struct Kilo;
 pub struct Base;
 pub struct Centi;
 pub struct Milli;
 pub struct Micro;
-
-impl<P: MetricPrefix> Unit for Meter<P> {
-    fn to_base(val: f32) -> f32 {
-        val * P::FACTOR
-    }
-
-    fn from_base(val: f32) -> f32 {
-        val / P::FACTOR
-    }
-}
-
-impl<P: MetricPrefix> LengthUnit for Meter<P> {}
-
-impl<P: MetricPrefix> Unit for Second<P> {
-    fn to_base(val: f32) -> f32 {
-        val * P::FACTOR
-    }
-
-    fn from_base(val: f32) -> f32 {
-        val / P::FACTOR
-    }
-}
-
-impl<P: MetricPrefix> TimeUnit for Second<P> {}
-
-impl Unit for Minute {
-    fn to_base(val: f32) -> f32 {
-        val * 60.0
-    }
-
-    fn from_base(val: f32) -> f32 {
-        val / 60.0
-    }
-}
-
-impl TimeUnit for Minute {}
 
 impl MetricPrefix for Kilo {
     const FACTOR: f32 = 1e3;

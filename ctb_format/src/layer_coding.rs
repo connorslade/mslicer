@@ -113,7 +113,7 @@ impl EncodableLayer for LayerEncoder {
         self.add_run(length, value);
     }
 
-    fn finish(self, layer: u64, config: &SliceConfig) -> Self::Output {
+    fn finish(self, layer: u32, config: &SliceConfig) -> Self::Output {
         let layer_exposure = config.exposure_config(layer);
         // note that retract_distance is not used...
 

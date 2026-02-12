@@ -1,6 +1,6 @@
 use std::env;
 
-use common::units::{Micrometers, Seconds};
+use common::units::{Micrometers, Seconds, SquareMilimeters};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -19,9 +19,9 @@ pub struct Meta {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct LayerInfo {
-    pub total_solid_area: f32,
-    pub largest_area: f32,
-    pub smallest_area: f32,
+    pub total_solid_area: SquareMilimeters,
+    pub largest_area: SquareMilimeters,
+    pub smallest_area: SquareMilimeters,
     pub min_x: u32,
     pub min_y: u32,
     pub max_x: u32,

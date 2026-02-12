@@ -5,7 +5,7 @@ use egui::{
     Align, Button, Context, DragValue, FontSelection, Grid, Id, Layout, ProgressBar, RichText,
     Sense, Slider, Style, Ui, Vec2, style::HandleShape, text::LayoutJob,
 };
-use egui_phosphor::regular::{CROSSHAIR, FLOPPY_DISK_BACK, PAPER_PLANE_TILT};
+use egui_phosphor::regular::{CLOCK, CROSSHAIR, DROP, FLOPPY_DISK_BACK, PAPER_PLANE_TILT};
 use egui_wgpu::Callback;
 use nalgebra::Vector2;
 
@@ -18,7 +18,10 @@ use crate::{
     render::slice_preview::SlicePreviewRenderCallback,
     ui::{components::vec2_dragger, popup::Popup},
 };
-use common::{progress::Progress, serde::DynamicSerializer, slice::Format};
+use common::{
+    misc::human_duration, progress::Progress, serde::DynamicSerializer, slice::Format,
+    units::Centimeter,
+};
 
 const FILENAME_POPUP_TEXT: &str =
     "To ensure the file name is unique, some extra random characters will be added on the end.";
@@ -136,6 +139,17 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                                 .range(0.1..=10.0)
                                 .speed(0.1),
                         );
+
+                        ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                            let duration = human_duration(result.print_time.convert());
+                            ui.label(format!("{CLOCK} {duration}"));
+
+                            ui.separator();
+                            let volume = result.volume.get::<Centimeter>(); // cm³ = ml
+                            ui.label(format!("{DROP} {volume:.2} ml"));
+
+                            ui.add_space(ui.available_width());
+                        })
                     });
 
                     slice_preview(ui, result);

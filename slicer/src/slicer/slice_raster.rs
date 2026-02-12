@@ -1,3 +1,5 @@
+use std::sync::atomic::{AtomicU64, Ordering};
+
 use common::{
     slice::{EncodableLayer, SliceResult},
     units::Milimeter,
@@ -15,6 +17,7 @@ impl Slicer {
     pub fn slice<Layer: EncodableLayer>(&self) -> SliceResult<'_, Layer::Output> {
         let platform_resolution = self.slice_config.platform_resolution;
         let pixels = (platform_resolution.x * platform_resolution.y) as u64;
+        let voxels = AtomicU64::new(0);
 
         // A segment contains a reference to all of the triangles it contains. By
         // splitting the mesh into segments, not all triangles need to be tested
@@ -102,6 +105,7 @@ impl Slicer {
                         }
 
                         encoder.add_run(length, 255);
+                        voxels.fetch_add(length, Ordering::Relaxed);
                         last = end;
                     }
                 }
@@ -115,7 +119,7 @@ impl Slicer {
                 }
 
                 // Finished encoding the layer
-                encoder.finish(layer as u64, &self.slice_config)
+                encoder.finish(layer, &self.slice_config)
             })
             .inspect(|_| self.progress.add_complete(1))
             .collect::<Vec<_>>();
@@ -123,6 +127,7 @@ impl Slicer {
         self.progress.set_finished();
         SliceResult {
             layers,
+            voxels: voxels.load(Ordering::Relaxed),
             slice_config: &self.slice_config,
         }
     }

@@ -23,6 +23,7 @@ impl File {
         let SliceResult {
             layers,
             slice_config,
+            ..
         } = result;
 
         let exp = &slice_config.exposure_config;
