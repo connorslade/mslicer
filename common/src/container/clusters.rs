@@ -37,7 +37,7 @@ impl<T: Hash + PartialEq + Eq + Copy> Clusters<T> {
 
     // Finds the cluster that contains a given run, creating a new one of
     // needed.
-    pub fn get_cluster(&mut self, run: T) -> u32 {
+    pub fn insert(&mut self, run: T) -> u32 {
         if let Some(&cluster) = self.runs.get(&run) {
             return cluster;
         }
@@ -50,8 +50,8 @@ impl<T: Hash + PartialEq + Eq + Copy> Clusters<T> {
 
     pub fn mark_adjacency(&mut self, a: T, b: T) {
         // Find (or make) cluster id's for each run.
-        let a = self.get_cluster(a);
-        let b = self.get_cluster(b);
+        let a = self.insert(a);
+        let b = self.insert(b);
         if a == b {
             return;
         }

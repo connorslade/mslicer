@@ -74,7 +74,7 @@ pub struct ClusterRun {
 /// Inserts all the adjacencies found between the two rows (`curr` and `base`)
 /// into the container.
 pub fn cluster_row_adjacency(
-    cluster: &mut Clusters<ClusterRun>,
+    clusters: &mut Clusters<ClusterRun>,
     rows: &[Vec<u64>],
     base_row: usize,
     curr_row: usize,
@@ -86,6 +86,14 @@ pub fn cluster_row_adjacency(
         if i % 2 != 0 {
             let b_end = b_pos + b;
 
+            let cluster_b = ClusterRun {
+                row: curr_row,
+                index: i,
+                position: b_pos,
+                size: b,
+            };
+            clusters.insert(cluster_b);
+
             let mut a_pos = 0;
             for (j, &a) in base.iter().enumerate() {
                 let a_end = a_pos + a;
@@ -94,20 +102,13 @@ pub fn cluster_row_adjacency(
                 }
 
                 if j % 2 != 0 && b_pos <= a_end && b_end >= a_pos {
-                    cluster.mark_adjacency(
-                        ClusterRun {
-                            row: base_row,
-                            index: j,
-                            position: a_pos,
-                            size: a,
-                        },
-                        ClusterRun {
-                            row: curr_row,
-                            index: i,
-                            position: b_pos,
-                            size: b,
-                        },
-                    );
+                    let cluster_a = ClusterRun {
+                        row: base_row,
+                        index: j,
+                        position: a_pos,
+                        size: a,
+                    };
+                    clusters.mark_adjacency(cluster_a, cluster_b);
                 }
 
                 a_pos += a;
