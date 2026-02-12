@@ -58,7 +58,7 @@ impl<T: Hash + PartialEq + Eq + Copy> Clusters<T> {
 
         // Merge both clusters by moving all the runs in cluster b into cluster a.
         for run in &self.clusters[&b] {
-            *self.runs.get_mut(&run).unwrap() = a;
+            *self.runs.get_mut(run).unwrap() = a;
         }
 
         let old = self.clusters.remove(&b).unwrap();

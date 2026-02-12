@@ -1,4 +1,5 @@
 use std::{
+    collections::HashMap,
     ops::Deref,
     sync::{
         Arc,
@@ -37,7 +38,7 @@ pub struct SliceOperationInner {
 
 pub struct SliceResult {
     pub file: Arc<FormatSliceFile>,
-    pub annotations: Arc<Mutex<Vec<Vec<Run>>>>,
+    pub annotations: Arc<Mutex<Annotations>>,
 
     pub slice_preview_layer: usize,
     pub last_preview_layer: usize,
@@ -46,6 +47,12 @@ pub struct SliceResult {
     pub layer_count: (usize, u8),
 }
 
+#[derive(Default)]
+pub struct Annotations {
+    layers: HashMap<usize, Vec<Run<Annotation>>>,
+}
+
+#[derive(Clone, Copy)]
 #[repr(u8)]
 pub enum Annotation {
     None = 0b00,
@@ -105,6 +112,35 @@ impl SliceOperationInner {
 
     pub fn result(&self) -> MutexGuard<'_, Option<SliceResult>> {
         self.result.lock()
+    }
+}
+
+impl Annotations {
+    pub fn decode_layer(&self, layer: usize, buffer: &mut [u8]) {
+        let Some(layer) = self.layers.get(&layer) else {
+            return;
+        };
+
+        let mut pos = 0;
+        for run in layer.iter() {
+            let len = run.length as usize;
+            buffer[pos..(pos + len)].fill(run.value as u8);
+            pos += len;
+        }
+    }
+
+    pub fn insert_layer(&mut self, annotation: Annotation, layer: usize, runs: &[u64]) {
+        assert!(!self.layers.contains_key(&layer)); // not yet implemented!
+
+        let runs = runs
+            .iter()
+            .enumerate()
+            .map(|(i, &l)| Run {
+                length: l,
+                value: [Annotation::None, annotation][(i % 2 != 0) as usize],
+            })
+            .collect::<Vec<_>>();
+        self.layers.insert(layer, runs);
     }
 }
 

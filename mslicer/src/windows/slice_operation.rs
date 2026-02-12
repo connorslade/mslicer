@@ -7,9 +7,7 @@ use egui::{
 };
 use egui_phosphor::regular::{CROSSHAIR, FLOPPY_DISK_BACK, PAPER_PLANE_TILT};
 use egui_wgpu::Callback;
-use image::{DynamicImage, GrayImage, ImageBuffer};
 use nalgebra::Vector2;
-use wgpu::COPY_BUFFER_ALIGNMENT;
 
 use crate::{
     app::{
@@ -200,14 +198,7 @@ fn slice_preview(ui: &mut egui::Ui, result: &mut SliceResult) {
             result.file.decode_layer(layer_idx, &mut layer);
 
             let mut annotations = vec![0u8; size];
-            if layer_idx > 0 {
-                let mut pos = 0;
-                for run in result.annotations.lock()[layer_idx - 1].iter() {
-                    let len = run.length as usize;
-                    annotations[pos..(pos + len)].fill(run.value);
-                    pos += len;
-                }
-            }
+            (result.annotations.lock()).decode_layer(layer_idx, &mut annotations);
 
             Some((layer, annotations))
         } else {

@@ -145,7 +145,7 @@ impl ConfigAction {
             ConfigAction::PrinterResolution(matrix) => ConfigAction::PrinterResolution(
                 mem::replace(&mut app.project.slice_config.platform_resolution, matrix),
             ),
-            ConfigAction::PrinterSize(matrix) => todo!(),
+            ConfigAction::PrinterSize(_) => todo!(),
             ConfigAction::SliceHeight(_) => todo!(),
             ConfigAction::FirstLayers(_) => todo!(),
             ConfigAction::TransitionLayers(_) => todo!(),

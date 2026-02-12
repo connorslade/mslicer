@@ -84,7 +84,7 @@ impl EncodableLayer for LayerEncoder {
         }
 
         let islands = (islands.clusters())
-            .map(|(_, runs)| runs.iter().map(|(_, _, s)| s).sum::<u64>())
+            .map(|(_, runs)| runs.iter().map(|r| r.size).sum::<u64>())
             .collect::<Vec<_>>();
         let smallest_area = islands.iter().min().copied().unwrap_or_default();
         let largest_area = islands.iter().max().copied().unwrap_or_default();
@@ -140,9 +140,12 @@ fn row_bounds(row: &[u64], width: u64, y: usize, min: &mut Vector2<u64>, max: &m
     // The left side of the first run starts at row[0] pixels in and the right
     // side ends row[-1] pixels in from the right (when the last run is
     // nonzero).
-    let offset = (row.len() % 2 == 1)
-        .then(|| *row.last().unwrap())
-        .unwrap_or_default();
+    let offset = if row.len() % 2 == 1 {
+        *row.last().unwrap()
+    } else {
+        0
+    };
+
     min.x = min.x.min(row[0]);
     max.x = max.x.max(width - offset);
 }

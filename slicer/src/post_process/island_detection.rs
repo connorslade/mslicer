@@ -1,13 +1,16 @@
 use std::mem;
 
 use common::{
-    container::{Clusters, Run, rle},
+    container::{
+        Clusters,
+        rle::{self, bits::ClusterRun},
+    },
     progress::Progress,
 };
 
 use crate::format::FormatSliceFile;
 
-pub fn detect_islands(file: &FormatSliceFile, progress: Progress) -> Vec<Vec<u64>> {
+pub fn detect_islands(file: &FormatSliceFile, progress: Progress, cascade: bool) -> Vec<Vec<u64>> {
     let info = file.info();
     let [width, rows] = *info.resolution.as_ref();
     progress.set_total(info.layers as u64);
@@ -29,7 +32,7 @@ pub fn detect_islands(file: &FormatSliceFile, progress: Progress) -> Vec<Vec<u64
         }
 
         // Filter for clusters that are not supported by the previous layer
-        let mut island_runs = Vec::new();
+        let mut island_runs = Vec::<ClusterRun>::new();
         for (_, runs) in clusters.clusters() {
             // If a run on the layer below is adjacent to any run in this
             // cluster, it is considered supported. We can now check the next.
@@ -37,21 +40,22 @@ pub fn detect_islands(file: &FormatSliceFile, progress: Progress) -> Vec<Vec<u64
                 continue;
             }
 
-            island_runs.extend(
-                runs.iter()
-                    .map(|(row, pos, size)| (*row as u64 * width as u64 + *pos, *size)),
-            );
-            println!("found island on layer #{layer}");
+            island_runs.extend(runs.iter());
         }
 
         let mut layer = Vec::new();
         let mut pos = 0;
 
-        island_runs.sort_by_key(|(start, _size)| *start);
-        for (start, size) in island_runs.into_iter() {
-            (layer.len() % 2 == 0).then(|| layer.push(start - pos)); // todo: will this always run?
-            layer.push(size as u64);
-            pos = start + size;
+        island_runs.sort_by(|a, b| a.row.cmp(&b.row).then(a.index.cmp(&b.index)));
+        for run in island_runs.into_iter() {
+            if cascade {
+                curr[run.row][run.index - 1] += mem::take(&mut curr[run.row][run.index]);
+            }
+
+            let start = run.row as u64 * width as u64 + run.position;
+            layer.push(start - pos);
+            layer.push(run.size);
+            pos = start + run.size;
         }
 
         annotations.push(layer);
@@ -67,12 +71,14 @@ fn condensed_layer_rows(file: &FormatSliceFile, layer: usize) -> Vec<Vec<u64>> {
     rle::bits::chunks(&layer, size.x as u64)
 }
 
-fn row_overlaps(rows: &[Vec<u64>], run: &(usize, u64, u64)) -> bool {
-    let (row, pos, size) = (&rows[run.0], run.1, run.2);
-
+fn row_overlaps(rows: &[Vec<u64>], run: &ClusterRun) -> bool {
     let mut prev_pos = 0;
-    for (i, x) in row.iter().enumerate() {
-        if i % 2 != 0 && pos <= (prev_pos + x) && (pos + size) >= prev_pos {
+    for (i, &x) in rows[run.row].iter().enumerate() {
+        if i % 2 != 0
+            && x > 0
+            && run.position <= (prev_pos + x)
+            && (run.position + run.size) >= prev_pos
+        {
             return true;
         }
 
