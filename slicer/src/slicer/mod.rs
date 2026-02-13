@@ -1,9 +1,9 @@
 use common::{
     progress::Progress,
-    slice::{Format, SliceConfig},
+    slice::{DynSlicedFile, Format, SliceConfig},
 };
 
-use crate::{format::FormatSliceResult, mesh::Mesh};
+use crate::{mesh::Mesh, slicer::slice_vector::SvgFile};
 
 mod slice_raster;
 mod slice_vector;
@@ -42,6 +42,10 @@ impl Slicer {
         }
     }
 
+    pub fn slice_config(&self) -> &SliceConfig {
+        &self.slice_config
+    }
+
     pub fn layer_count(&self) -> u32 {
         self.layers
     }
@@ -51,16 +55,27 @@ impl Slicer {
         self.progress.clone()
     }
 
-    pub fn slice_format(&self) -> FormatSliceResult<'_> {
-        type GooEncoder = goo_format::LayerEncoder;
-        type CtbEncoder = ctb_format::LayerEncoder;
-        type NanoDLPEncoder = nanodlp_format::LayerEncoder;
-
+    pub fn slice(&self) -> (DynSlicedFile, u64) {
         match self.slice_config.format {
-            Format::Goo => FormatSliceResult::Goo(self.slice::<GooEncoder>()),
-            Format::Ctb => FormatSliceResult::Ctb(self.slice::<CtbEncoder>()),
-            Format::NanoDLP => FormatSliceResult::NanoDLP(self.slice::<NanoDLPEncoder>()),
-            Format::Svg => FormatSliceResult::Svg(self.slice_vector()),
+            Format::Goo => {
+                let result = self.slice_raster::<goo_format::LayerEncoder>();
+                let voxels = result.voxels;
+                let file = Box::new(goo_format::File::from_slice_result(result));
+                (file, voxels)
+            }
+            Format::Ctb => {
+                let result = self.slice_raster::<ctb_format::LayerEncoder>();
+                let voxels = result.voxels;
+                let file = Box::new(ctb_format::File::from_slice_result(result));
+                (file, voxels)
+            }
+            Format::NanoDLP => {
+                let result = self.slice_raster::<nanodlp_format::LayerEncoder>();
+                let voxels = result.voxels;
+                let file = Box::new(nanodlp_format::File::from_slice_result(result));
+                (file, voxels)
+            }
+            Format::Svg => (Box::new(SvgFile::new(self.slice_vector())), 0),
         }
     }
 }

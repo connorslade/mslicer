@@ -6,11 +6,10 @@ use common::{
         rle::{self, bits::ClusterRun},
     },
     progress::Progress,
+    slice::DynSlicedFile,
 };
 
-use crate::format::FormatSliceFile;
-
-pub fn detect_islands(file: &FormatSliceFile, progress: Progress, cascade: bool) -> Vec<Vec<u64>> {
+pub fn detect_islands(file: &DynSlicedFile, progress: Progress, cascade: bool) -> Vec<Vec<u64>> {
     let info = file.info();
     let [width, rows] = *info.resolution.as_ref();
     progress.set_total(info.layers as u64);
@@ -65,7 +64,7 @@ pub fn detect_islands(file: &FormatSliceFile, progress: Progress, cascade: bool)
     annotations
 }
 
-fn condensed_layer_rows(file: &FormatSliceFile, layer: usize) -> Vec<Vec<u64>> {
+fn condensed_layer_rows(file: &DynSlicedFile, layer: usize) -> Vec<Vec<u64>> {
     let layer = rle::bits::from_runs(&file.runs(layer).collect::<Vec<_>>());
     let size = file.info().resolution;
     rle::bits::chunks(&layer, size.x as u64)

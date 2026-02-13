@@ -1,8 +1,7 @@
 use std::sync::Arc;
 
 use clone_macro::clone;
-use common::{progress::Progress, serde::DynamicSerializer};
-use slicer::format::FormatSliceFile;
+use common::{progress::Progress, serde::DynamicSerializer, slice::DynSlicedFile};
 
 use crate::app::task::{PollResult, Task, TaskApp, TaskStatus, thread::TaskThread};
 
@@ -14,7 +13,7 @@ pub struct SaveResult {
 
 impl SaveResult {
     pub fn new(
-        (file, file_name): (Arc<FormatSliceFile>, String),
+        (file, file_name): (Arc<DynSlicedFile>, String),
         callback: impl FnOnce(Vec<u8>) + Send + 'static,
     ) -> Self {
         let progress = Progress::new();

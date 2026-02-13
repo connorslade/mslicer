@@ -29,6 +29,7 @@
 - Use metric prefixes for slice config draggers
 - Allow using any supported output format with the CLI slicer
 - More robust slicing (include scanline boundary hits)
+- Show resin volume usage and estimated print time under slice preview
 
 ## v0.4.0 &mdash; November 25th, 2025
 

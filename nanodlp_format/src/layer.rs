@@ -31,13 +31,12 @@ pub struct LayerDecoder {
 impl LayerEncoder {
     pub fn from_gray_image(gray_image: GrayImage) -> Self {
         let platform = Vector2::new(gray_image.width(), gray_image.height());
-        let image = Image::from_raw(
-            gray_image.width() as usize,
-            gray_image.height() as usize,
-            gray_image.into_raw(),
-        );
+        let image = Image::from_raw(platform.cast(), gray_image.into_raw());
+        Self::from_image(image)
+    }
 
-        let mut out = LayerEncoder::new(platform);
+    pub fn from_image(image: Image) -> Self {
+        let mut out = LayerEncoder::new(image.size.cast());
         (image.runs()).for_each(|run| out.add_run(run.length, run.value));
         out
     }

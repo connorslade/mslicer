@@ -12,12 +12,12 @@ use common::{
     container::Run,
     misc::human_duration,
     progress::{CombinedProgress, Progress},
+    slice::DynSlicedFile,
     units::{Miliseconds, Milliliters, Seconds},
 };
 use image::RgbaImage;
 use nalgebra::Vector2;
 use parking_lot::{Condvar, MappedMutexGuard, Mutex, MutexGuard};
-use slicer::format::FormatSliceFile;
 use tracing::info;
 
 #[derive(Clone)]
@@ -38,7 +38,7 @@ pub struct SliceOperationInner {
 }
 
 pub struct SliceResult {
-    pub file: Arc<FormatSliceFile>,
+    pub file: Arc<DynSlicedFile>,
     pub annotations: Arc<Mutex<Annotations>>,
     pub volume: Milliliters,
     pub print_time: Seconds,

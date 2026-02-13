@@ -55,14 +55,22 @@ impl SliceConfig {
         let exp = &self.exposure_config;
         let fexp = &self.first_exposure_config;
 
+        let first_layers = self.first_layers.min(layers);
+        let transition_layers = layers
+            .saturating_sub(self.first_layers)
+            .min(self.transition_layers);
+        let regular_layers = layers.saturating_sub(transition_layers);
+
         let layer_time = exp.exposure_time
             + exp.lift_distance / exp.lift_speed
             + exp.retract_distance / exp.retract_speed;
         let bottom_layer_time = fexp.exposure_time
             + fexp.lift_distance / fexp.lift_speed
             + fexp.retract_distance / fexp.retract_speed;
-        layers.saturating_sub(self.first_layers) as f32 * layer_time
-            + self.first_layers as f32 * bottom_layer_time
+
+        regular_layers as f32 * layer_time
+            + first_layers as f32 * bottom_layer_time
+            + transition_layers as f32 * (bottom_layer_time + layer_time) / 2.0
     }
 }
 

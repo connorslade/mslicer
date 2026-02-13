@@ -14,7 +14,7 @@ use crate::{
 
 impl Slicer {
     /// Actually runs the slicing operation, it is multithreaded.
-    pub fn slice<Layer: EncodableLayer>(&self) -> SliceResult<'_, Layer::Output> {
+    pub fn slice_raster<Layer: EncodableLayer>(&self) -> SliceResult<'_, Layer::Output> {
         let platform_resolution = self.slice_config.platform_resolution;
         let pixels = (platform_resolution.x * platform_resolution.y) as u64;
         let voxels = AtomicU64::new(0);

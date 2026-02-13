@@ -26,18 +26,14 @@ impl Image {
         }
     }
 
-    pub fn from_decoder(width: usize, height: usize, decoder: impl Iterator<Item = Run>) -> Self {
-        let mut image = Self::blank(width, height);
+    pub fn from_decoder(size: Vector2<usize>, decoder: impl Iterator<Item = Run>) -> Self {
+        let mut image = Self::blank(size.x, size.y);
         decoder.for_each(|run| image.add_run(run.length as usize, run.value));
         image
     }
 
-    pub fn from_raw(width: usize, height: usize, data: Vec<u8>) -> Self {
-        Self {
-            size: Vector2::new(width, height),
-            data,
-            idx: 0,
-        }
+    pub fn from_raw(size: Vector2<usize>, data: Vec<u8>) -> Self {
+        Self { size, data, idx: 0 }
     }
 
     pub fn add_run(&mut self, length: usize, value: u8) {
@@ -59,7 +55,11 @@ impl Image {
         ImageRuns::new(&self.data)
     }
 
-    pub fn finish(&self) -> &[u8] {
+    pub fn inner_mut(&mut self) -> &mut [u8] {
+        &mut self.data
+    }
+
+    pub fn inner(&self) -> &[u8] {
         &self.data
     }
 

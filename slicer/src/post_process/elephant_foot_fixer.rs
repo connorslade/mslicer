@@ -3,6 +3,7 @@ use std::{mem, time::Instant};
 use common::{
     progress::Progress,
     serde::{Deserializer, Serializer},
+    slice::{DynSlicedFile, SliceLayerIterator},
     units::Milimeter,
 };
 use image::Luma;
@@ -12,8 +13,6 @@ use rayon::iter::{ParallelBridge, ParallelIterator};
 use serde::{Deserialize, Serialize};
 use tracing::info;
 
-use crate::format::FormatSliceFile;
-
 #[derive(Clone, Serialize, Deserialize)]
 pub struct ElephantFootFixer {
     pub enabled: bool,
@@ -22,7 +21,7 @@ pub struct ElephantFootFixer {
 }
 
 impl ElephantFootFixer {
-    pub fn post_slice(&self, file: &mut FormatSliceFile, progress: Progress) {
+    pub fn post_slice(&self, file: &mut DynSlicedFile, progress: Progress) {
         if !self.enabled {
             return;
         }
@@ -46,17 +45,19 @@ impl ElephantFootFixer {
 
         let start = Instant::now();
         progress.set_total(info.bottom_layers as u64);
-        file.iter_mut_layers()
+        SliceLayerIterator::new(file)
             .take(info.bottom_layers as usize)
             .par_bridge()
             .for_each(|mut layer| {
                 progress.add_complete(1);
-                let erode = imageproc::morphology::grayscale_erode(&layer, &mask);
-                for (x, y, pixel) in layer.enumerate_pixels_mut() {
-                    if erode.get_pixel(x, y)[0] == 0 && pixel[0] != 0 {
-                        *pixel = Luma([darken(pixel[0])]);
+                layer.gray_image(|layer| {
+                    let erode = imageproc::morphology::grayscale_erode(layer, &mask);
+                    for (x, y, pixel) in layer.enumerate_pixels_mut() {
+                        if erode.get_pixel(x, y)[0] == 0 && pixel[0] != 0 {
+                            *pixel = Luma([darken(pixel[0])]);
+                        }
                     }
-                }
+                })
             });
 
         progress.set_finished();

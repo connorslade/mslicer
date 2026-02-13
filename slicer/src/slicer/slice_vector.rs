@@ -1,17 +1,29 @@
 use std::collections::HashSet;
 
 use common::{
-    slice::{VectorLayer, VectorSliceResult},
+    container::{Image, Run},
+    progress::Progress,
+    serde::{DynamicSerializer, Serializer},
+    slice::{Format, SliceInfo, SlicedFile, VectorLayer, VectorSliceResult},
     units::Milimeter,
 };
-use nalgebra::Vector2;
+use nalgebra::{Vector2, Vector3};
 use ordered_float::OrderedFloat;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
+use svg::{
+    Document,
+    node::element::{Polygon, Rectangle},
+};
 
 use crate::{
     geometry::Segments1D,
     slicer::{SEGMENT_LAYERS, Slicer},
 };
+
+pub struct SvgFile {
+    layers: Vec<VectorLayer>,
+    area: Vector2<u32>,
+}
 
 impl Slicer {
     pub fn slice_vector(&self) -> VectorSliceResult<'_> {
@@ -36,9 +48,7 @@ impl Slicer {
                     .map(|x| x.xy())
                     .collect::<Vec<_>>();
 
-                VectorLayer {
-                    polygons: join_segments(&segments),
-                }
+                join_segments(&segments)
             })
             .collect::<Vec<_>>();
 
@@ -85,4 +95,87 @@ fn join_segments(segments_raw: &[Vector2<f32>]) -> Vec<Vec<Vector2<f32>>> {
     }
 
     polygons
+}
+
+impl SvgFile {
+    pub fn new(result: VectorSliceResult) -> Self {
+        Self {
+            layers: result.layers,
+            area: result.slice_config.platform_resolution,
+        }
+    }
+
+    pub fn serialize<T: Serializer>(&self, ser: &mut T) {
+        let sides = self.layers.len().isqrt() + 1;
+        let (width, height) = (self.area.x as f32, self.area.y as f32);
+        let size = (width * sides as f32, height * sides as f32);
+
+        let mut svg = Document::new()
+            .set("viewBox", (0, 0, size.0, size.1))
+            .set("width", format!("{}mm", size.0))
+            .set("height", format!("{}mm", size.1));
+
+        for (idx, layer) in self.layers.iter().enumerate() {
+            let (x, y) = (idx % sides, idx / sides);
+            let offset = Vector2::new(x as f32 * width, y as f32 * height);
+
+            svg = svg.add(
+                Rectangle::new()
+                    .set("x", offset.x)
+                    .set("y", offset.y)
+                    .set("width", width)
+                    .set("height", height)
+                    .set("fill", "none")
+                    .set("stroke", "gray")
+                    .set("stroke-width", "0.1"),
+            );
+
+            for polygon in layer.iter() {
+                let points = polygon
+                    .iter()
+                    .map(|x| x + offset)
+                    .map(|x| (x.x, x.y))
+                    .collect::<Vec<_>>();
+                let poly = Polygon::new()
+                    .set("points", points)
+                    .set("fill", "none")
+                    .set("stroke", "black")
+                    .set("stroke-width", "0.1");
+                svg = svg.add(poly);
+            }
+        }
+
+        ser.write_bytes(svg.to_string().as_bytes());
+    }
+}
+
+impl SlicedFile for SvgFile {
+    fn serialize(&self, ser: &mut DynamicSerializer, progress: Progress) {
+        self.serialize(ser);
+        progress.set_total(1);
+        progress.set_finished();
+    }
+
+    fn set_preview(&mut self, _preview: &image::RgbaImage) {}
+
+    fn info(&self) -> SliceInfo {
+        SliceInfo {
+            layers: self.layers.len() as u32,
+            resolution: Vector2::zeros(),
+            size: Vector3::default(),
+            bottom_layers: 0,
+        }
+    }
+
+    fn format(&self) -> Format {
+        Format::Svg
+    }
+
+    fn runs(&self, _layer: usize) -> Box<dyn Iterator<Item = Run> + '_> {
+        unimplemented!()
+    }
+
+    fn overwrite_layer(&mut self, _layer: usize, _image: Image) {
+        unimplemented!()
+    }
 }

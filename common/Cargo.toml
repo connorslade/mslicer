@@ -6,6 +6,7 @@ edition = "2024"
 [dependencies]
 anyhow.workspace = true
 crc32fast.workspace = true
+image.workspace = true
 nalgebra.workspace = true
 rand.workspace = true
 serde.workspace = true

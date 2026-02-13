@@ -1,3 +1,6 @@
+//! Type safe united values. Probably should have just used the uom create but
+//! its whatever.
+
 mod defs;
 mod value;
 pub use defs::{Base, Centi, Kilo, Meter, Micro, Milli, Second};

@@ -2,12 +2,16 @@ use anyhow::{Result, ensure};
 
 use chrono::Local;
 use common::{
-    serde::{Serializer, SizedString, SliceDeserializer},
-    slice::SliceResult,
+    container::{Image, Run},
+    progress::Progress,
+    serde::{DynamicSerializer, Serializer, SizedString, SliceDeserializer},
+    slice::{Format, SliceInfo, SliceResult, SlicedFile},
     units::Second,
 };
+use image::{RgbaImage, imageops::FilterType};
+use nalgebra::{Vector2, Vector3};
 
-use crate::{ENDING_STRING, Header, LayerContent};
+use crate::{ENDING_STRING, Header, LayerContent, LayerDecoder, LayerEncoder, PreviewImage};
 
 pub struct File {
     pub header: Header,
@@ -20,24 +24,11 @@ impl File {
     }
 
     pub fn from_slice_result(result: SliceResult<LayerContent>) -> Self {
-        let SliceResult {
-            layers,
-            slice_config,
-            ..
-        } = result;
+        let slice_config = result.slice_config;
+        let layers = result.layers.len() as u32;
 
-        let exp = &slice_config.exposure_config;
-        let fexp = &slice_config.first_exposure_config;
-
-        let layer_time = exp.exposure_time
-            + exp.lift_distance / exp.lift_speed
-            + exp.retract_distance / exp.retract_speed;
-        let bottom_layer_time = fexp.exposure_time
-            + fexp.lift_distance / fexp.lift_speed
-            + fexp.retract_distance / fexp.retract_speed;
-        let total_time = (layers.len() as u32 - slice_config.first_layers) as f32 * layer_time
-            + slice_config.first_layers as f32 * bottom_layer_time;
-
+        let print_time = slice_config.print_time(layers);
+        let save_time = Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
         Self::new(
             Header {
                 x_resolution: slice_config.platform_resolution.x as u16,
@@ -46,8 +37,8 @@ impl File {
                 y_size: slice_config.platform_size.y,
                 z_size: slice_config.platform_size.z,
 
-                layer_count: layers.len() as u32,
-                printing_time: total_time.get::<Second>() as u32,
+                layer_count: layers,
+                printing_time: print_time.get::<Second>() as u32,
                 layer_thickness: slice_config.slice_height,
                 bottom_layers: slice_config.first_layers,
                 transition_layers: slice_config.transition_layers as u16,
@@ -64,21 +55,13 @@ impl File {
                 bottom_retract_distance: slice_config.first_exposure_config.retract_distance,
                 bottom_retract_speed: slice_config.first_exposure_config.retract_speed.convert(),
 
-                file_time: SizedString::new(
-                    Local::now()
-                        .format("%Y-%m-%d %H:%M:%S")
-                        .to_string()
-                        .as_bytes(),
-                ),
-
+                file_time: SizedString::new(save_time.as_bytes()),
                 ..Default::default()
             },
-            layers,
+            result.layers,
         )
     }
-}
 
-impl File {
     pub fn serialize<T: Serializer>(&self, ser: &mut T) {
         self.header.serialize(ser);
         for layer in &self.layers {
@@ -97,5 +80,49 @@ impl File {
 
         ensure!(des.read_slice(ENDING_STRING.len()) == ENDING_STRING);
         Ok(Self { header, layers })
+    }
+}
+
+impl SlicedFile for File {
+    fn serialize(&self, ser: &mut DynamicSerializer, progress: Progress) {
+        self.serialize(ser);
+        progress.set_total(1);
+        progress.set_finished();
+    }
+
+    fn set_preview(&mut self, preview: &RgbaImage) {
+        self.header.big_preview = PreviewImage::from_image_scaled(preview, FilterType::Nearest);
+        self.header.small_preview = PreviewImage::from_image_scaled(preview, FilterType::Nearest);
+    }
+
+    fn info(&self) -> SliceInfo {
+        SliceInfo {
+            layers: self.layers.len() as u32,
+            resolution: Vector2::new(
+                self.header.x_resolution as u32,
+                self.header.y_resolution as u32,
+            ),
+            size: Vector3::new(self.header.x_size, self.header.y_size, self.header.x_size),
+            bottom_layers: self.header.bottom_layers,
+        }
+    }
+
+    fn format(&self) -> Format {
+        Format::Goo
+    }
+
+    fn runs(&self, layer: usize) -> Box<dyn Iterator<Item = Run> + '_> {
+        let data = &self.layers[layer].data;
+        Box::new(LayerDecoder::new(data))
+    }
+
+    fn overwrite_layer(&mut self, layer: usize, image: Image) {
+        let mut encoder = LayerEncoder::new();
+        (image.runs()).for_each(|run| encoder.add_run(run.length, run.value));
+        let (data, checksum) = encoder.finish();
+
+        let layer = &mut self.layers[layer];
+        layer.data = data;
+        layer.checksum = checksum;
     }
 }

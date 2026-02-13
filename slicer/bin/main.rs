@@ -17,7 +17,7 @@ use common::{
     slice::SliceConfig,
     units::Milimeter,
 };
-use slicer::{format::FormatSliceFile, mesh::Mesh, slicer::Slicer};
+use slicer::{mesh::Mesh, slicer::Slicer};
 
 mod args;
 
@@ -76,18 +76,16 @@ fn main() -> Result<()> {
         RgbaImage::new(290, 290)
     };
 
-    let file = thread::spawn(move || {
-        let result = slicer.slice_format();
-        FormatSliceFile::from_slice_result(&preview, result)
-    });
-
-    let file = monitor_progress(file, progress, |progress| {
+    let file = thread::spawn(move || slicer.slice());
+    let (mut file, _) = monitor_progress(file, progress, |progress| {
         format!(
             "\rLayer: {}/{total}, {:.1}%",
             progress.get_complete(),
             progress.progress() * 100.0
         )
     })?;
+
+    file.set_preview(&preview);
 
     println!();
     let progress = Progress::new();

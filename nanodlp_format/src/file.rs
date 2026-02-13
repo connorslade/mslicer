@@ -4,13 +4,20 @@ use std::{
 };
 
 use anyhow::Result;
-use common::{progress::Progress, serde::Serializer, slice::SliceResult, units::Milimeter};
-use image::DynamicImage;
+use common::{
+    container::{Image, Run},
+    progress::Progress,
+    serde::{DynamicSerializer, Serializer},
+    slice::{Format, SliceInfo, SliceResult, SlicedFile},
+    units::Milimeter,
+};
+use image::{DynamicImage, RgbaImage};
+use nalgebra::{Vector2, Vector3};
 use serde::Serialize;
 use zip::{ZipArchive, ZipWriter, write::FileOptions};
 
 use crate::{
-    Layer, decode_png, encode_png, read_to_bytes,
+    Layer, LayerDecoder, LayerEncoder, decode_png, encode_png, read_to_bytes,
     types::{
         Color, LayerInfo, Meta, Options, Plate, Profile, SHIELD_AFTER_LAYER, SHIELD_BEFORE_LAYER,
     },
@@ -171,5 +178,38 @@ impl File {
             layer_info,
             layers,
         })
+    }
+}
+
+impl SlicedFile for File {
+    fn serialize(&self, ser: &mut DynamicSerializer, progress: Progress) {
+        self.serialize(ser, progress).unwrap();
+    }
+
+    fn set_preview(&mut self, preview: &RgbaImage) {
+        self.preview = preview.to_owned().into();
+    }
+
+    fn info(&self) -> SliceInfo {
+        SliceInfo {
+            layers: self.layer_info.len() as u32,
+            resolution: Vector2::new(self.options.p_width, self.options.p_height),
+            size: Vector3::default(), // todo: this
+            bottom_layers: self.profile.support_layer_number,
+        }
+    }
+
+    fn format(&self) -> Format {
+        Format::NanoDLP
+    }
+
+    fn runs(&self, layer: usize) -> Box<dyn Iterator<Item = Run> + '_> {
+        let decoder = LayerDecoder::new(&self.layers[layer]);
+        Box::new(decoder.runs().collect::<Vec<_>>().into_iter())
+    }
+
+    fn overwrite_layer(&mut self, layer: usize, image: Image) {
+        let encoder = LayerEncoder::from_image(image);
+        self.layers[layer] = encoder.image_data();
     }
 }

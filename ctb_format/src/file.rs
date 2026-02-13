@@ -6,15 +6,18 @@ use std::{
 use anyhow::{Result, ensure};
 
 use common::{
+    container::{Image, Run},
+    progress::Progress,
     serde::{Deserializer, DynamicSerializer, Serializer, SliceDeserializer},
-    slice::SliceResult,
+    slice::{Format, SliceInfo, SliceResult, SlicedFile},
     units::{Milimeters, MilimetersPerMinute, Seconds},
 };
+use image::imageops::FilterType;
 use nalgebra::{Vector2, Vector3, Vector4};
 use sha2::{Digest, Sha256};
 
 use crate::{
-    Section,
+    LayerDecoder, LayerEncoder, Section,
     crypto::{decrypt, encrypt, encrypt_in_place},
     layer::{Layer, LayerRef},
     preview::PreviewImage,
@@ -442,6 +445,46 @@ impl File {
             rest_time_after_retract: Seconds::new(1.0),
             rest_time_after_lift_2: Seconds::new(0.0),
         }
+    }
+}
+
+impl SlicedFile for File {
+    fn serialize(&self, ser: &mut DynamicSerializer, progress: Progress) {
+        self.serialize(ser);
+        progress.set_total(1);
+        progress.set_finished();
+    }
+
+    fn set_preview(&mut self, preview: &image::RgbaImage) {
+        self.large_preview = PreviewImage::from_image(preview);
+
+        let (width, height) = (preview.width() * 3 / 4, preview.height() * 3 / 4);
+        let small_preview = image::imageops::resize(preview, width, height, FilterType::Nearest);
+        self.small_preview = PreviewImage::from_image(&small_preview);
+    }
+
+    fn info(&self) -> SliceInfo {
+        SliceInfo {
+            layers: self.layers.len() as u32,
+            resolution: self.resolution,
+            size: self.size,
+            bottom_layers: self.bottom_layer_count,
+        }
+    }
+
+    fn format(&self) -> Format {
+        Format::Ctb
+    }
+
+    fn runs(&self, layer: usize) -> Box<dyn Iterator<Item = Run> + '_> {
+        let data = &self.layers[layer].data;
+        Box::new(LayerDecoder::new(data))
+    }
+
+    fn overwrite_layer(&mut self, layer: usize, image: Image) {
+        let mut encoder = LayerEncoder::default();
+        (image.runs()).for_each(|run| encoder.add_run(run.length, run.value));
+        self.layers[layer].data = encoder.into_inner();
     }
 }
 

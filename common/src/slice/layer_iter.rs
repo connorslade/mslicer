@@ -8,21 +8,42 @@ use std::{
 
 use image::GrayImage;
 
-use super::FormatSliceFile;
+use crate::{container::Image, slice::DynSlicedFile};
 
 pub struct SliceLayerIterator<'a> {
-    pub(crate) file: &'a mut FormatSliceFile,
+    pub(crate) file: &'a mut DynSlicedFile,
     pub(crate) layer: usize,
     pub(crate) layers: usize,
 }
 
 pub struct SliceLayerElement<'a> {
-    image: GrayImage,
+    image: Option<Image>,
 
-    file: *mut FormatSliceFile,
+    file: *mut DynSlicedFile,
     layer: usize,
 
     _lifetime: PhantomData<&'a ()>,
+}
+
+impl<'a> SliceLayerIterator<'a> {
+    pub fn new(file: &'a mut DynSlicedFile) -> Self {
+        Self {
+            layer: 0,
+            layers: file.info().layers as usize,
+            file,
+        }
+    }
+}
+
+impl<'a> SliceLayerElement<'a> {
+    pub fn gray_image(&mut self, callback: impl FnOnce(&mut GrayImage)) {
+        let (width, height) = (self.size.x as u32, self.size.y as u32);
+        let inner = self.image.take().unwrap().take();
+        let mut image = GrayImage::from_raw(width, height, inner).unwrap();
+
+        callback(&mut image);
+        self.image = Some(Image::from_raw(self.size, image.into_raw()));
+    }
 }
 
 impl<'a> Iterator for SliceLayerIterator<'a> {
@@ -37,7 +58,7 @@ impl<'a> Iterator for SliceLayerIterator<'a> {
         self.layer += 1;
 
         Some(SliceLayerElement {
-            image,
+            image: Some(image),
             file: self.file as *mut _,
             layer: self.layer - 1,
             _lifetime: PhantomData,
@@ -51,21 +72,21 @@ impl Drop for SliceLayerElement<'_> {
         // only be writing to one layer each, meaning the same memory will only
         // be mutably borrowed once.
         let file = unsafe { &mut *self.file };
-        file.overwrite_layer(self.layer, mem::take(&mut self.image));
+        file.overwrite_layer(self.layer, mem::take(&mut self.image).unwrap());
     }
 }
 
 impl Deref for SliceLayerElement<'_> {
-    type Target = GrayImage;
+    type Target = Image;
 
     fn deref(&self) -> &Self::Target {
-        &self.image
+        self.image.as_ref().unwrap()
     }
 }
 
 impl DerefMut for SliceLayerElement<'_> {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.image
+        self.image.as_mut().unwrap()
     }
 }
 
