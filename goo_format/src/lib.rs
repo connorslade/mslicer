@@ -9,7 +9,7 @@ mod preview_image;
 
 pub use encoded_layer::{LayerDecoder, LayerEncoder};
 pub use file::File;
-pub use header::Header;
+pub use header::{ExposureDelayMode, Header};
 pub use layer_content::LayerContent;
 pub use preview_image::PreviewImage;
 
