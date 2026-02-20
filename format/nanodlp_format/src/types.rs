@@ -1,6 +1,6 @@
 use std::env;
 
-use common::units::{Micrometers, Seconds, SquareMilimeters};
+use common::units::{Micrometers, Milimeters, Seconds, SquareMilimeters};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -62,7 +62,7 @@ pub struct Plate {
     pub repaired: bool,
     pub corrupted: bool,
     // faulty_layers: null
-    pub total_solid_area: f32,
+    pub total_solid_area: SquareMilimeters,
     pub blackout_data: String,
     pub layers_count: u32,
     pub processed: bool,
@@ -73,12 +73,12 @@ pub struct Plate {
     pub print_id: u32,
     #[serde(rename = "MC")]
     pub mc: PlateMc,
-    pub x_min: f32,
-    pub x_max: f32,
-    pub y_min: f32,
-    pub y_max: f32,
-    pub z_min: f32,
-    pub z_max: f32,
+    pub x_min: Milimeters,
+    pub x_max: Milimeters,
+    pub y_min: Milimeters,
+    pub y_max: Milimeters,
+    pub z_min: Milimeters,
+    pub z_max: Milimeters,
 }
 
 #[derive(Debug, Default, Serialize, Deserialize)]

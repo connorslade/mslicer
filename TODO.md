@@ -98,7 +98,7 @@
 - [x] Don't clone Config every frame for no reason (pass app ref to render callback)
 - [x] Add button to reset UI
 - [ ] Put all models in the same segments1d to improve slicing times with supports?
-- [ ] Island detection
+- [x] Island detection
 - [x] Require `.mslicer` extension when saving
 - [ ] Alignment tools
 - [ ] Tools for working with lots of models
@@ -129,3 +129,6 @@
 - [x] Redo the while slice operating thing, its gotten out of hand...
 - [x] Error handling in async tasks
 - [ ] Auto open tasks panel when there are pending tasks
+- [ ] Track history for slice config
+- [ ] Finish nanodlp format (#8)
+- [ ] Parse speeds with any time unit (#11)

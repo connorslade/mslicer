@@ -17,7 +17,9 @@ use serde::Serialize;
 use zip::{ZipArchive, ZipWriter, write::FileOptions};
 
 use crate::{
-    Layer, LayerDecoder, LayerEncoder, decode_png, encode_png, read_to_bytes,
+    Layer, LayerDecoder, LayerEncoder, decode_png, encode_png,
+    layer::layers_bounds,
+    read_to_bytes,
     types::{
         Color, LayerInfo, Meta, Options, Plate, Profile, SHIELD_AFTER_LAYER, SHIELD_BEFORE_LAYER,
     },
@@ -45,22 +47,24 @@ impl File {
             .component_div(&config.platform_resolution.cast());
 
         let timestamp = (SystemTime::now().duration_since(UNIX_EPOCH).unwrap()).as_secs();
+        let (min, max) = layers_bounds(config, &layer_info);
+        let first_layer_area = (layer_info.first().map(|x| x.total_solid_area)).unwrap_or_default();
 
         Self {
             meta: Meta {
-                version: "0.4.0".into(),
+                version: "0.4.0".into(), // mslicer version
                 ..Default::default()
             },
             plate: Plate {
                 processed: true,
-                total_solid_area: Default::default(), // ←
+                total_solid_area: first_layer_area, // not entirely sure what this value is supposed to be.
                 layers_count: layers.len() as u32,
-                x_min: Default::default(), // ←
-                x_max: Default::default(), // ←
-                y_min: Default::default(), // ←
-                y_max: Default::default(), // ←
-                z_min: Default::default(), // ←
-                z_max: Default::default(), // ←
+                x_min: min.x,
+                x_max: max.x,
+                y_min: min.y,
+                y_max: max.y,
+                z_min: min.z,
+                z_max: max.z,
                 ..Default::default()
             },
             options: Options {

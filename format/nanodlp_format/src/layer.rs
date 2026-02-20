@@ -8,9 +8,10 @@ use common::{
     },
     serde::DynamicSerializer,
     slice::{EncodableLayer, SliceConfig},
+    units::Milimeters,
 };
 use image::{GrayImage, RgbImage};
-use nalgebra::Vector2;
+use nalgebra::{Vector2, Vector3};
 
 use crate::{decode_png, types::LayerInfo};
 
@@ -119,6 +120,32 @@ impl LayerDecoder {
     pub fn into_inner(self) -> RgbImage {
         self.image
     }
+}
+
+pub fn layers_bounds(
+    config: &SliceConfig,
+    layers: &[LayerInfo],
+) -> (Vector3<Milimeters>, Vector3<Milimeters>) {
+    let (mut min, mut max) = (Vector3::repeat(u32::MAX), Vector3::repeat(u32::MIN));
+    for (i, layer) in (layers.iter())
+        .enumerate()
+        .filter(|(_, l)| l.area_count > 0)
+    {
+        let i = i as u32;
+        min = Vector3::new(min.x.min(layer.min_x), min.y.min(layer.min_y), min.z.min(i));
+        max = Vector3::new(max.x.max(layer.max_x), max.y.max(layer.max_y), max.z.max(i));
+    }
+
+    let half_size = config.platform_resolution.xy().cast::<f32>() / 2.0;
+    let layer_to_world = |v: Vector3<u32>| {
+        let xy = (v.xy().cast::<f32>() - half_size)
+            .component_div(&config.platform_resolution.cast())
+            .component_mul(&config.platform_size.xy().map(|x| x.raw()))
+            .map(Milimeters::new);
+        xy.push(v.z as f32 * config.slice_height)
+    };
+
+    (layer_to_world(min), layer_to_world(max))
 }
 
 fn row_bounds(row: &[u64], width: u64, y: usize, min: &mut Vector2<u64>, max: &mut Vector2<u64>) {
