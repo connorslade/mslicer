@@ -2,16 +2,24 @@
 resolver = "2"
 members = [
     "common",
-    "ctb_format",
-    "goo_format",
-    "mesh_format",
+    "format/ctb_format",
+    "format/goo_format",
+    "format/mesh_format",
+    "format/nanodlp_format",
     "mslicer",
-    "nanodlp_format",
     "remote_send",
     "slicer"
 ]
 
 [workspace.dependencies]
+common = { path = "common" }
+ctb_format = { path = "format/ctb_format" }
+goo_format = { path = "format/goo_format" }
+mesh_format = { path = "format/mesh_format" }
+nanodlp_format = { path = "format/nanodlp_format" }
+remote_send = { path = "remote_send" }
+slicer = { path = "slicer" }
+
 aes = "0.8.4"
 afire = "3.0.0-alpha.3"
 anyhow = "1.0.99"

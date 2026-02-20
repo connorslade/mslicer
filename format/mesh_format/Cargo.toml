@@ -4,8 +4,8 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+common.workspace = true
+
 anyhow.workspace = true
 clone-macro.workspace = true
 nalgebra.workspace = true
-
-common = { path = "../common" }

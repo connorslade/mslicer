@@ -4,6 +4,8 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+common.workspace = true
+
 afire.workspace = true
 anyhow.workspace = true
 bitflags.workspace = true
@@ -11,10 +13,8 @@ chrono.workspace = true
 md5.workspace = true
 parking_lot.workspace = true
 rand.workspace = true
+serde.workspace = true
 serde_json.workspace = true
 serde_repr.workspace = true
-serde.workspace = true
 soon.workspace = true
 tracing.workspace = true
-
-common = { path = "../common" }

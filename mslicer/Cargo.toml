@@ -4,6 +4,11 @@ version = "0.4.0"
 edition = "2024"
 
 [dependencies]
+common.workspace = true
+mesh_format.workspace = true
+remote_send.workspace = true
+slicer.workspace = true
+
 anyhow.workspace = true
 bitflags.workspace = true
 bytemuck.workspace = true
@@ -36,9 +41,3 @@ toml.workspace = true
 tracing-subscriber.workspace = true
 tracing.workspace = true
 wgpu.workspace = true
-
-common = { path = "../common" }
-goo_format = { path = "../goo_format" }
-mesh_format = { path = "../mesh_format" }
-remote_send = { path = "../remote_send" }
-slicer = { path = "../slicer" }

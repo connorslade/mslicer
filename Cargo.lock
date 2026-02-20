@@ -3035,7 +3035,6 @@ dependencies = [
  "egui_dock",
  "egui_tracing",
  "encase",
- "goo_format",
  "image",
  "itertools 0.14.0",
  "markdown",

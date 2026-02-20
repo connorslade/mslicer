@@ -1,13 +1,14 @@
 [package]
-name = "goo_format"
+name = "nanodlp_format"
 version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+common.workspace = true
+
 anyhow.workspace = true
-chrono.workspace = true
-clap.workspace = true
 image.workspace = true
 nalgebra.workspace = true
-
-common = { path = "../common" }
+serde.workspace = true
+serde_json.workspace = true
+zip.workspace = true
