@@ -51,10 +51,7 @@ impl File {
         let first_layer_area = (layer_info.first().map(|x| x.total_solid_area)).unwrap_or_default();
 
         Self {
-            meta: Meta {
-                version: "0.4.0".into(), // mslicer version
-                ..Default::default()
-            },
+            meta: Default::default(),
             plate: Plate {
                 processed: true,
                 total_solid_area: first_layer_area, // not entirely sure what this value is supposed to be.
