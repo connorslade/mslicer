@@ -34,8 +34,7 @@ pub fn dragger<Num: Numeric>(
 
 pub fn metric_dragger<'a, Num: Numeric>(
     value: &'a mut Num,
-    unit: &'static str,
-    base: i32,
+    (unit, base, speed): (&'static str, i32, bool),
 ) -> DragValue<'a> {
     const METRIX_PREFIX: &[(&[char], i32)] = &[
         (&[], 0),
@@ -65,9 +64,17 @@ pub fn metric_dragger<'a, Num: Numeric>(
             let (number, unit) = s.split_at(last_digit);
             let unit = unit.trim_start();
 
-            let mantissa = number.parse::<f64>().ok()?;
+            let mut mantissa = number.parse::<f64>().ok()?;
             let (_, scale) = (METRIX_PREFIX.iter())
                 .rfind(|(x, _)| x.is_empty() || x.iter().any(|x| unit.starts_with(*x)))?;
+
+            if speed && let Some((_, denom)) = unit.split_once('/') {
+                match denom {
+                    "s" => mantissa /= 1.0,
+                    "min" => mantissa /= 60.0,
+                    _ => {}
+                }
+            }
 
             Some(mantissa * f64::powi(10.0, scale - base))
         })

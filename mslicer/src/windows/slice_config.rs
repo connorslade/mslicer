@@ -6,6 +6,7 @@ use slicer::post_process::{anti_alias::AntiAlias, elephant_foot_fixer::ElephantF
 use crate::{
     app::{App, history::ConfigAction},
     ui::components::{dragger, history_tracked_value, metric_dragger, vec2_dragger},
+    util::WidgetExt,
 };
 use common::{
     slice::{ExposureConfig, Format},
@@ -116,7 +117,10 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
 
             ui.label("Slice Height");
             ui.horizontal(|ui| {
-                ui.add(metric_dragger(slice_config.slice_height.raw_mut(), "m", -3));
+                ui.add(metric_dragger(
+                    slice_config.slice_height.raw_mut(),
+                    ("m", -3, false),
+                ));
                 ui.add_space(ui.available_width());
             });
             ui.end_row();
@@ -134,11 +138,11 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
         });
 
     ui.collapsing("Exposure Config", |ui| {
-        exposure_config_grid(ui, &mut slice_config.exposure_config);
+        exposure_config(ui, &mut slice_config.exposure_config);
     });
 
     ui.collapsing("First Exposure Config", |ui| {
-        exposure_config_grid(ui, &mut slice_config.first_exposure_config);
+        exposure_config(ui, &mut slice_config.first_exposure_config);
     });
 
     ui.add_space(16.0);
@@ -157,7 +161,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     });
 }
 
-fn exposure_config_grid(ui: &mut Ui, config: &mut ExposureConfig) {
+fn exposure_config(ui: &mut Ui, config: &mut ExposureConfig) {
     Grid::new("exposure_config")
         .num_columns(2)
         .spacing([40.0, 4.0])
@@ -165,29 +169,35 @@ fn exposure_config_grid(ui: &mut Ui, config: &mut ExposureConfig) {
         .show(ui, |ui| {
             ui.label("Exposure Time");
             ui.horizontal(|ui| {
-                ui.add(
-                    metric_dragger(config.exposure_time.raw_mut(), "s", 0).range(0.0..=f32::MAX),
-                );
+                metric_dragger(config.exposure_time.raw_mut(), ("s", 0, false))
+                    .range(0.0..=f32::MAX)
+                    .add(ui);
                 ui.add_space(ui.available_width());
             });
             ui.end_row();
 
             ui.label("Lift Distance ");
-            ui.add(metric_dragger(config.lift_distance.raw_mut(), "m", -3).range(0.0..=f32::MAX));
+            metric_dragger(config.lift_distance.raw_mut(), ("m", -3, false))
+                .range(0.0..=f32::MAX)
+                .add(ui);
             ui.end_row();
 
             ui.label("Lift Speed");
-            ui.add(metric_dragger(config.lift_speed.raw_mut(), "m/s", -2).range(0.0..=f32::MAX));
+            metric_dragger(config.lift_speed.raw_mut(), ("m/s", -2, true))
+                .range(0.0..=f32::MAX)
+                .add(ui);
             ui.end_row();
 
             ui.label("Retract Distance");
-            ui.add(
-                metric_dragger(config.retract_distance.raw_mut(), "m", -3).range(0.0..=f32::MAX),
-            );
+            metric_dragger(config.retract_distance.raw_mut(), ("m", -3, false))
+                .range(0.0..=f32::MAX)
+                .add(ui);
             ui.end_row();
 
             ui.label("Retract Speed");
-            ui.add(metric_dragger(config.retract_speed.raw_mut(), "m/s", -2).range(0.0..=f32::MAX));
+            metric_dragger(config.retract_speed.raw_mut(), ("m/s", -2, true))
+                .range(0.0..=f32::MAX)
+                .add(ui);
             ui.end_row();
         });
 }
@@ -223,7 +233,7 @@ pub fn elephant_foot_fixer(this: &mut ElephantFootFixer, ui: &mut Ui) {
                 ui.label(WARNING).on_hover_text(INSET_WARNING);
             });
             ui.horizontal(|ui| {
-                ui.add(metric_dragger(&mut this.inset_distance, "m", -3));
+                ui.add(metric_dragger(&mut this.inset_distance, ("m", -3, false)));
                 ui.add_space(ui.available_width());
             });
             ui.end_row();
