@@ -1,7 +1,7 @@
 use std::mem;
 
 use egui::{CentralPanel, Color32, Context, Frame, Id, Sense, Theme, Ui, WidgetText};
-use egui_dock::{DockArea, NodeIndex, SurfaceIndex, TabViewer};
+use egui_dock::{DockArea, TabViewer};
 use egui_wgpu::Callback;
 use nalgebra::Matrix4;
 use parking_lot::MappedRwLockWriteGuard;
@@ -90,26 +90,6 @@ impl TabViewer for Tabs<'_> {
         }
     }
 
-    fn add_popup(&mut self, ui: &mut Ui, surface: SurfaceIndex, node: NodeIndex) {
-        ui.set_min_width(120.0);
-        ui.style_mut().visuals.button_frame = false;
-
-        let dock_state = &mut self.app.dock_state;
-
-        for tab in Tab::ALL {
-            let already_open = dock_state.find_tab(&tab).is_some();
-            if !already_open && ui.button(tab.name()).clicked() {
-                if let Some(surface) = dock_state.get_surface_mut(surface) {
-                    let tree = surface.node_tree_mut().unwrap();
-                    tree.set_focused_node(node);
-                    tree.push_to_focused_leaf(tab);
-                } else {
-                    dock_state.add_window(vec![tab]);
-                }
-            }
-        }
-    }
-
     fn is_closeable(&self, tab: &Self::Tab) -> bool {
         *tab != Tab::Viewport
     }
@@ -135,8 +115,6 @@ pub fn ui(app: &mut App, ctx: &Context) {
         // i am once again too tired to deal with this
         let dock_state = unsafe { &mut *(&mut app.dock_state as *mut _) };
         DockArea::new(dock_state)
-            .show_add_buttons(true)
-            .show_add_popup(true)
             .show_leaf_close_all_buttons(false)
             .show_leaf_collapse_buttons(false)
             .tab_context_menus(false)

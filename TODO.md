@@ -130,5 +130,5 @@
 - [x] Error handling in async tasks
 - [ ] Auto open tasks panel when there are pending tasks
 - [ ] Track history for slice config
-- [ ] Finish nanodlp format (#8)
-- [ ] Parse speeds with any time unit (#11)
+- [x] Finish nanodlp format (#8)
+- [x] Parse speeds with any time unit (#11)

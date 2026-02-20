@@ -1,6 +1,6 @@
 use const_format::concatcp;
 use egui::{ComboBox, Context, DragValue, Grid, Theme, Ui};
-use egui_phosphor::regular::{ARROW_COUNTER_CLOCKWISE, FOLDER, INFO, LAYOUT};
+use egui_phosphor::regular::{ARROW_COUNTER_CLOCKWISE, FOLDER, INFO};
 use tracing::error;
 
 use crate::{
@@ -27,8 +27,6 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
         {
             app.config = Default::default();
         }
-
-        app.state.queue_reset_ui |= ui.button(concatcp!(LAYOUT, " Reset UI")).clicked();
     });
     ui.add_space(8.0);
 

@@ -4,7 +4,7 @@ use const_format::concatcp;
 use egui::{
     Button, Context, Key, KeyboardShortcut, Modifiers, TopBottomPanel, Ui, ViewportCommand,
 };
-use egui_phosphor::regular::{FILE_TEXT, GIT_DIFF, STACK};
+use egui_phosphor::regular::{CARDS, FILE_TEXT, GIT_DIFF, STACK};
 
 use crate::{
     app::{
@@ -13,6 +13,7 @@ use crate::{
     },
     include_asset,
     ui::components::labeled_separator,
+    windows::Tab,
 };
 
 const CTRL_SHIFT: Modifiers = Modifiers::CTRL.plus(Modifiers::SHIFT);
@@ -96,6 +97,26 @@ pub fn ui(app: &mut App, ctx: &Context) {
                 ui.add_enabled_ui(app.history.can_redo(), |ui| {
                     menu_button((ui, app, ctx), SHORTCUTS[7], "Redo");
                 });
+            });
+
+            ui.menu_button(concatcp!(CARDS, " View"), |ui| {
+                ui.set_width(150.0);
+
+                labeled_separator(ui, "Actions");
+                app.state.queue_reset_ui |= ui.button("Reset Interface").clicked();
+
+                labeled_separator(ui, "Windows");
+                for tab in Tab::ALL {
+                    let existing = app.dock_state.find_tab(&tab);
+                    let mut open = existing.is_some();
+                    ui.checkbox(&mut open, tab.name());
+
+                    if !open && let Some(tab) = existing {
+                        app.dock_state.remove_tab(tab);
+                    } else if open && existing.is_none() {
+                        app.dock_state.add_window(vec![tab]);
+                    }
+                }
             });
 
             let slicing = (app.slice_operation.as_ref())
