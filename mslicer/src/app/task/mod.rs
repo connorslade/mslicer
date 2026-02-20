@@ -1,9 +1,12 @@
-use std::borrow::Cow;
+use std::{borrow::Cow, mem};
+
+use nalgebra::Vector2;
 
 use crate::{
     app::{App, config::Config, project::Project},
     app_ref_type,
     ui::popup::PopupManager,
+    windows::Tab,
 };
 
 mod acceleration_structures;
@@ -48,6 +51,7 @@ pub struct TaskStatus<'a> {
 #[derive(Default)]
 pub struct TaskManager {
     tasks: Vec<Box<dyn Task>>,
+    visible_count: usize,
 }
 
 /// A subset of App fields, excluding `tasks`. This allows mutable access to
@@ -85,8 +89,11 @@ impl<'a> TaskManagerRef<'a> {
         };
 
         let mut i = 0;
+        let mut visible = 0;
         while i < this.tasks.len() {
-            let result = this.tasks[i].poll(&mut app);
+            let task = &mut this.tasks[i];
+            visible += task.status().is_some() as usize;
+            let result = task.poll(&mut app);
             if result.complete {
                 this.tasks.remove(i);
             } else {
@@ -94,6 +101,12 @@ impl<'a> TaskManagerRef<'a> {
             }
 
             this.tasks.extend(result.new_tasks);
+        }
+
+        if visible > mem::replace(&mut this.visible_count, visible)
+            && self.app.dock_state.find_tab(&Tab::Tasks).is_none()
+        {
+            self.app.add_tab(Tab::Tasks, Vector2::new(400.0, 200.0));
         }
     }
 }

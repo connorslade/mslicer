@@ -128,7 +128,7 @@
 - [x] Make sliced file serialization an async task
 - [x] Redo the while slice operating thing, its gotten out of hand...
 - [x] Error handling in async tasks
-- [ ] Auto open tasks panel when there are pending tasks
+- [x] Auto open tasks panel when there are pending tasks
 - [ ] Track history for slice config
 - [x] Finish nanodlp format (#8)
 - [x] Parse speeds with any time unit (#11)

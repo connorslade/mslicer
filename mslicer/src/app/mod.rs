@@ -208,10 +208,14 @@ impl App {
         if let Some(panel) = self.dock_state.find_tab(&tab) {
             self.dock_state.set_active_tab(panel);
         } else {
-            let window_id = self.dock_state.add_window(vec![Tab::SliceOperation]);
-            let window = self.dock_state.get_window_state_mut(window_id).unwrap();
-            window.set_size(Vec2::new(size.x, size.y));
+            self.add_tab(tab, size);
         }
+    }
+
+    pub fn add_tab(&mut self, tab: Tab, size: Vector2<f32>) {
+        let window_id = self.dock_state.add_window(vec![tab]);
+        let window = self.dock_state.get_window_state_mut(window_id).unwrap();
+        window.set_size(Vec2::new(size.x, size.y));
     }
 
     pub fn reset_ui(&mut self) {
