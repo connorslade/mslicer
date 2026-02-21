@@ -1,5 +1,3 @@
-use egui::{Response, Ui, Widget};
-
 #[macro_export]
 macro_rules! include_asset {
     ($name:expr) => {
@@ -45,14 +43,4 @@ macro_rules! app_ref_type {
             }
         });
     };
-}
-
-pub trait WidgetExt {
-    fn add(self, ui: &mut Ui) -> Response;
-}
-
-impl<T: Widget> WidgetExt for T {
-    fn add(self, ui: &mut Ui) -> Response {
-        ui.add(self)
-    }
 }

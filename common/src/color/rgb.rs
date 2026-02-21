@@ -27,6 +27,10 @@ impl<T> LinearRgb<T> {
     pub fn as_slice_mut(&mut self) -> &mut [T; 3] {
         unsafe { mem::transmute(self) }
     }
+
+    pub fn as_slice(&self) -> &[T; 3] {
+        unsafe { mem::transmute(self) }
+    }
 }
 
 impl<T> SRgb<T> {
@@ -35,6 +39,10 @@ impl<T> SRgb<T> {
     }
 
     pub fn as_slice_mut(&mut self) -> &mut [T; 3] {
+        unsafe { mem::transmute(self) }
+    }
+
+    pub fn as_slice(&self) -> &[T; 3] {
         unsafe { mem::transmute(self) }
     }
 }

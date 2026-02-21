@@ -1,6 +1,6 @@
 use std::{collections::VecDeque, mem};
 
-use common::color::LinearRgb;
+use common::{color::LinearRgb, units::Milimeters};
 use nalgebra::{Vector2, Vector3};
 
 use crate::{app::App, app_ref_type};
@@ -35,8 +35,8 @@ pub enum ModelAction {
 pub enum ConfigAction {
     SelectedPrinter(usize),
     PrinterResolution(Vector2<u32>),
-    PrinterSize(Vector3<f32>),
-    SliceHeight(f32),
+    PrinterSize(Vector3<Milimeters>),
+    SliceHeight(Milimeters),
     FirstLayers(u32),
     TransitionLayers(u32),
     // todo: exposure config & plugins
@@ -137,18 +137,30 @@ impl ModelAction {
 
 impl ConfigAction {
     pub fn undo(self, app: &mut App) -> Option<ConfigAction> {
+        let slice_config = &mut app.project.slice_config;
         Some(match self {
             ConfigAction::SelectedPrinter(printer) => ConfigAction::SelectedPrinter(mem::replace(
                 &mut app.state.selected_printer,
                 printer,
             )),
             ConfigAction::PrinterResolution(matrix) => ConfigAction::PrinterResolution(
-                mem::replace(&mut app.project.slice_config.platform_resolution, matrix),
+                mem::replace(&mut slice_config.platform_resolution, matrix),
             ),
-            ConfigAction::PrinterSize(_) => todo!(),
-            ConfigAction::SliceHeight(_) => todo!(),
-            ConfigAction::FirstLayers(_) => todo!(),
-            ConfigAction::TransitionLayers(_) => todo!(),
+            ConfigAction::PrinterSize(size) if app.state.selected_printer == 0 => {
+                ConfigAction::PrinterSize(mem::replace(&mut slice_config.platform_size, size))
+            }
+            ConfigAction::SliceHeight(slice_height) => ConfigAction::SliceHeight(mem::replace(
+                &mut slice_config.slice_height,
+                slice_height,
+            )),
+            ConfigAction::FirstLayers(layers) => {
+                ConfigAction::FirstLayers(mem::replace(&mut slice_config.first_layers, layers))
+            }
+            ConfigAction::TransitionLayers(layers) => ConfigAction::TransitionLayers(mem::replace(
+                &mut slice_config.transition_layers,
+                layers,
+            )),
+            _ => return None,
         })
     }
 }
