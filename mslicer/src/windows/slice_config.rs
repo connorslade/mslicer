@@ -18,6 +18,7 @@ use common::{
 const TRANSITION_LAYER_TOOLTIP: &str = "Transition layers interpolate between the first exposure settings and the normal exposure settings.";
 const SLICE_FORMAT_TOOLTIP: &str =
     "Only .goo and .ctb files can be sent with the 'Remote Print' module.";
+const PRINTER_TOOLTIP: &str = "You can add to this list by manually editing config.toml in the config directory. (See Workspace tab)";
 
 pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     ui.heading("Slice Config");
@@ -56,7 +57,10 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                 });
             ui.end_row();
 
-            ui.label("Printer");
+            ui.horizontal(|ui| {
+                ui.label("Printer");
+                ui.label(INFO).on_hover_text(PRINTER_TOOLTIP);
+            });
             ComboBox::new("printer", "")
                 .selected_text(match app.state.selected_printer {
                     0 => "Custom",

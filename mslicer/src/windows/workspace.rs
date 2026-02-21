@@ -16,7 +16,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
         if ui
             .button(concatcp!(FOLDER, " Open Config Directory"))
             .clicked()
-            && let Err(err) = open::that(&app.config_dir)
+            && let Err(err) = open::that_detached(&app.config_dir)
         {
             error!("Failed to open config directory: {}", err);
         }
