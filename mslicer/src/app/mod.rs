@@ -194,6 +194,7 @@ impl App {
                     volume,
                     print_time,
 
+                    detected_islands: false,
                     slice_preview_layer: 0,
                     last_preview_layer: 0,
                     preview_offset: Vector2::new(0.0, 0.0),

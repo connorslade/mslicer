@@ -98,16 +98,19 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                         }
 
                         ui.separator();
-                        if ui
-                            .button(concatcp!(CROSSHAIR, " Detect Islands"))
-                            .on_hover_text(DETECT_ISLANDS_DESC)
-                            .clicked()
-                        {
-                            app.tasks.add(IslandDetection::new(
-                                result.file.clone(),
-                                result.annotations.clone(),
-                            ));
-                        }
+                        ui.add_enabled_ui(!result.detected_islands, |ui| {
+                            if ui
+                                .button(concatcp!(CROSSHAIR, " Detect Islands"))
+                                .on_hover_text(DETECT_ISLANDS_DESC)
+                                .clicked()
+                            {
+                                result.detected_islands = true;
+                                app.tasks.add(IslandDetection::new(
+                                    result.file.clone(),
+                                    result.annotations.clone(),
+                                ));
+                            }
+                        });
                     })
                 });
             });

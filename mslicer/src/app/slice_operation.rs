@@ -43,6 +43,7 @@ pub struct SliceResult {
     pub volume: Milliliters,
     pub print_time: Seconds,
 
+    pub detected_islands: bool,
     pub slice_preview_layer: usize,
     pub last_preview_layer: usize,
     pub preview_offset: Vector2<f32>,
