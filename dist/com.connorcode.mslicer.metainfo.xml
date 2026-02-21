@@ -36,30 +36,10 @@
     	<release version="0.5.0" date="2026-02-21">
             <description>
                 <ul>
-                    <li>
-                        Detect and show warnings for
-                        <ul>
-                            <li>Non-manifold meshes</li>
-                            <li>Meshes that extend outside the printable volume</li>
-                        </ul>
-                    </li>
-                    <li>
-                        Support generation progress
-                        <ul>
-                            <li>Visualize overhanging faces and vertices</li>
-                            <li>Basic (unfinished) manually placed support routing</li>
-                        </ul>
-                    </li>
-                    <li>
-                        Use async tasks for more operations
-                        <ul>
-                            <li>Loading meshes</li>
-                            <li>Saving and loading projects</li>
-                            <li>Building acceleration structures</li>
-                            <li>File pick/save dialogs</li>
-                            <li>Exporting sliced files (mostly needed for compressing .nanodlp)</li>
-                        </ul>
-                    </li>
+                    <li>Detect and show warnings for non-manifold meshes and meshes that extend outside the printable volume</li>
+                    <li>Visualize overhanging faces and vertices</li>
+                    <li>Basic (unfinished) manually placed support routing</li>
+                    <li>Use async tasks for more operations: Loading meshes, Saving and loading projects, Building acceleration structures, File pick/save dialogs, Exporting sliced files (mostly needed for compressing .nanodlp).</li>
                     <li>Color backfaces grey in rendered view</li>
                     <li>Don't show multiple copies of layer in slice preview when panning far to the right</li>
                     <li>Printer presets (print volume, resolution)</li>
