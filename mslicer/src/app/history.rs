@@ -1,7 +1,7 @@
 use std::{collections::VecDeque, mem};
 
-use common::{color::LinearRgb, units::Milimeters};
-use nalgebra::{Vector2, Vector3};
+use common::color::LinearRgb;
+use nalgebra::Vector3;
 
 use crate::{app::App, app_ref_type};
 
@@ -18,7 +18,6 @@ app_ref_type!(History, history);
 #[derive(Debug, Clone, PartialEq)]
 pub enum Action {
     Model { id: u32, action: ModelAction },
-    SliceConfig(ConfigAction),
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -29,17 +28,6 @@ pub enum ModelAction {
     Position(Vector3<f32>),
     Scale(Vector3<f32>),
     Rotation(Vector3<f32>),
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub enum ConfigAction {
-    SelectedPrinter(usize),
-    PrinterResolution(Vector2<u32>),
-    PrinterSize(Vector3<Milimeters>),
-    SliceHeight(Milimeters),
-    FirstLayers(u32),
-    TransitionLayers(u32),
-    // todo: exposure config & plugins
 }
 
 impl History {
@@ -72,10 +60,6 @@ impl History {
     pub fn track_model(&mut self, id: u32, action: ModelAction) {
         self.track(Action::Model { id, action });
     }
-
-    pub fn track_config(&mut self, action: ConfigAction) {
-        self.track(Action::SliceConfig(action));
-    }
 }
 
 impl<'a> HistoryRef<'a> {
@@ -100,7 +84,6 @@ impl Action {
             Action::Model { id, action } => action
                 .undo(app, id)
                 .map(|action| Action::Model { id, action }),
-            Action::SliceConfig(action) => action.undo(app).map(|x| x.into()),
         }
     }
 }
@@ -132,41 +115,5 @@ impl ModelAction {
                 ModelAction::Rotation(old)
             }
         })
-    }
-}
-
-impl ConfigAction {
-    pub fn undo(self, app: &mut App) -> Option<ConfigAction> {
-        let slice_config = &mut app.project.slice_config;
-        Some(match self {
-            ConfigAction::SelectedPrinter(printer) => ConfigAction::SelectedPrinter(mem::replace(
-                &mut app.state.selected_printer,
-                printer,
-            )),
-            ConfigAction::PrinterResolution(matrix) => ConfigAction::PrinterResolution(
-                mem::replace(&mut slice_config.platform_resolution, matrix),
-            ),
-            ConfigAction::PrinterSize(size) if app.state.selected_printer == 0 => {
-                ConfigAction::PrinterSize(mem::replace(&mut slice_config.platform_size, size))
-            }
-            ConfigAction::SliceHeight(slice_height) => ConfigAction::SliceHeight(mem::replace(
-                &mut slice_config.slice_height,
-                slice_height,
-            )),
-            ConfigAction::FirstLayers(layers) => {
-                ConfigAction::FirstLayers(mem::replace(&mut slice_config.first_layers, layers))
-            }
-            ConfigAction::TransitionLayers(layers) => ConfigAction::TransitionLayers(mem::replace(
-                &mut slice_config.transition_layers,
-                layers,
-            )),
-            _ => return None,
-        })
-    }
-}
-
-impl From<ConfigAction> for Action {
-    fn from(value: ConfigAction) -> Self {
-        Self::SliceConfig(value)
     }
 }

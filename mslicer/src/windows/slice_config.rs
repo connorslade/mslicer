@@ -4,13 +4,10 @@ use egui_phosphor::regular::{ARROW_COUNTER_CLOCKWISE, INFO, NOTE_PENCIL, WARNING
 use slicer::post_process::{anti_alias::AntiAlias, elephant_foot_fixer::ElephantFootFixer};
 
 use crate::{
-    app::{
-        App,
-        history::ConfigAction::{self, *},
-    },
+    app::App,
     ui::{
-        components::{dragger, history_tracked_value, metric_dragger, vec2_dragger},
-        extentions::{ResposeExt, WidgetExt},
+        components::{dragger, metric_dragger, vec2_dragger},
+        extentions::WidgetExt,
     },
 };
 use common::{
@@ -66,7 +63,6 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                     i => &app.config.printers[i - 1].name,
                 })
                 .show_ui(ui, |ui| {
-                    let printer = app.state.selected_printer;
                     ui.selectable_value(&mut app.state.selected_printer, 0, "Custom");
                     for (i, printer) in app.config.printers.iter().enumerate() {
                         let res = printer.resolution;
@@ -78,9 +74,6 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                                 res.x, res.y, size.x, size.y, size.z
                             ));
                     }
-
-                    (app.state.selected_printer != printer)
-                        .then(|| app.history.track_config(SelectedPrinter(printer)));
                 });
             ui.end_row();
 
@@ -88,12 +81,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
             let prev = *platform;
             if app.state.selected_printer == 0 {
                 ui.label("Platform Resolution");
-                let original_resolution = slice_config.platform_resolution;
-                let editing = vec2_dragger(ui, slice_config.platform_resolution.as_mut(), |x| x);
-                history_tracked_value(
-                    (editing, ui, &mut app.history),
-                    (0, || PrinterResolution(original_resolution).into()),
-                );
+                vec2_dragger(ui, slice_config.platform_resolution.as_mut(), |x| x);
                 ui.end_row();
 
                 ui.label("Platform Size");
@@ -105,9 +93,6 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                     ui.add(DragValue::new(platform.z.raw_mut()));
                 });
                 ui.end_row();
-
-                (*platform != prev)
-                    .then(|| app.history.track_config(ConfigAction::PrinterSize(prev)));
             } else {
                 let printer = &app.config.printers[app.state.selected_printer - 1];
                 slice_config.platform_resolution = printer.resolution;
@@ -121,35 +106,20 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
 
             ui.label("Slice Height");
             ui.horizontal(|ui| {
-                let dragger =
-                    metric_dragger(slice_config.slice_height.raw_mut(), ("m", -3, false)).add(ui);
-                history_tracked_value(
-                    (dragger.being_edited(), ui, &mut app.history),
-                    (0, || SliceHeight(slice_config.slice_height).into()),
-                );
+                metric_dragger(slice_config.slice_height.raw_mut(), ("m", -3, false)).add(ui);
                 ui.add_space(ui.available_width());
             });
             ui.end_row();
 
             ui.label("First Layers");
-            let dragger = DragValue::new(&mut slice_config.first_layers).add(ui);
-            history_tracked_value(
-                (dragger.being_edited(), ui, &mut app.history),
-                (0, || FirstLayers(slice_config.first_layers).into()),
-            );
+            DragValue::new(&mut slice_config.first_layers).add(ui);
             ui.end_row();
 
             ui.horizontal(|ui| {
                 ui.label("Transition Layers");
                 ui.label(INFO).on_hover_text(TRANSITION_LAYER_TOOLTIP);
             });
-            let dragger = DragValue::new(&mut slice_config.transition_layers).add(ui);
-            history_tracked_value(
-                (dragger.being_edited(), ui, &mut app.history),
-                (0, || {
-                    TransitionLayers(slice_config.transition_layers).into()
-                }),
-            );
+            DragValue::new(&mut slice_config.transition_layers).add(ui);
             ui.end_row();
         });
 
