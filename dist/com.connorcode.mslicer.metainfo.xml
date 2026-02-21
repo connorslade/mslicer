@@ -18,8 +18,8 @@
 	<summary>Masked stereolithography slicer</summary>
 	<description>
 		<p>
-			An experimental open-source slicer for masked stereolithography (resin) printers.
-			Supports the following output formats: Chitu (.ctb), Elegoo (.goo), and Vector (.svg).
+		    An experimental open-source slicer for masked stereolithography (resin) printers.
+		    Supports the following output formats: Chitu (.ctb), Elegoo (.goo), NanoDLP (.nanodlp), and Vector (.svg).
 		</p>
 	</description>
 	<keywords>
@@ -33,6 +33,58 @@
 	</screenshots>
 
 	<releases>
+    	<release version="0.5.0" date="2026-02-21">
+            <description>
+                <ul>
+                    <li>
+                        Detect and show warnings for
+                        <ul>
+                            <li>Non-manifold meshes</li>
+                            <li>Meshes that extend outside the printable volume</li>
+                        </ul>
+                    </li>
+                    <li>
+                        Support generation progress
+                        <ul>
+                            <li>Visualize overhanging faces and vertices</li>
+                            <li>Basic (unfinished) manually placed support routing</li>
+                        </ul>
+                    </li>
+                    <li>
+                        Use async tasks for more operations
+                        <ul>
+                            <li>Loading meshes</li>
+                            <li>Saving and loading projects</li>
+                            <li>Building acceleration structures</li>
+                            <li>File pick/save dialogs</li>
+                            <li>Exporting sliced files (mostly needed for compressing .nanodlp)</li>
+                        </ul>
+                    </li>
+                    <li>Color backfaces grey in rendered view</li>
+                    <li>Don't show multiple copies of layer in slice preview when panning far to the right</li>
+                    <li>Printer presets (print volume, resolution)</li>
+                    <li>Reduce memory usage of loaded models</li>
+                    <li>Reuse GPU buffers when possible (instead of reallocating)</li>
+                    <li>Don't duplicate mesh data in project save file</li>
+                    <li>Custom project and mesh (de)serialization with progress monitoring</li>
+                    <li>Added task panel to view the progress of running async tasks</li>
+                    <li>Run post processing operations asynchronously with their own progress bars</li>
+                    <li>Added support for the NanoDLP format (.nanodlp)</li>
+                    <li>Allow setting/updating default slice config ([#5](https://github.com/connorslade/mslicer/issues/5))</li>
+                    <li>Remember the file that was opened for future save operations</li>
+                    <li>Track changes to settings for undo and redo (under edit in the top bar)</li>
+                    <li>Use metric prefixes for slice config draggers</li>
+                    <li>Allow using any supported output format with the CLI slicer</li>
+                    <li>More robust slicing (include scanline boundary hits)</li>
+                    <li>Show resin volume usage and estimated print time under slice preview</li>
+                    <li>Island detection task</li>
+                    <li>Fix invalid unit and color space transformations with type safe systems</li>
+                    <li>Use the 'windows' subsystem on Windows</li>
+                    <li>Remove unfinished support for translucent models</li>
+                    <li>Remove inconsistent slice preview pixel outlines (for now)</li>
+                </ul>
+            </description>
+        </release>    
         <release version="0.4.0" date="2025-11-25">
             <description>
                 <ul>

@@ -1,12 +1,13 @@
 # Changelog
 
-## v0.5.0 &mdash; Coming Soon™
+## v0.5.0 &mdash; February 21st, 2026
 
 - Detect and show warnings for
   - Non-manifold meshes
   - Meshes that extend outside the printable volume
-- Support generation
+- Support generation progress
   - Visualize overhanging faces and vertices
+  - Basic (unfinished) manually placed support routing
 - Use async tasks for more operations
   - Loading meshes
   - Saving and loading projects
@@ -21,7 +22,7 @@
 - Don't duplicate mesh data in project save file
 - Custom project and mesh (de)serialization with progress monitoring
 - Added task panel to view the progress of running async tasks
-- Run post processing operations asynchronously
+- Run post processing operations asynchronously with their own progress bars
 - Added support for the NanoDLP format (.nanodlp)
 - Allow setting/updating default slice config ([#5](https://github.com/connorslade/mslicer/issues/5))
 - Remember the file that was opened for future save operations
@@ -31,6 +32,10 @@
 - More robust slicing (include scanline boundary hits)
 - Show resin volume usage and estimated print time under slice preview
 - Island detection task
+- Fix invalid unit and color space transformations with type safe systems
+- Use the 'windows' subsystem on Windows
+- Remove unfinished support for translucent models
+- Remove inconsistent slice preview pixel outlines (for now)
 
 ## v0.4.0 &mdash; November 25th, 2025
 
