@@ -54,27 +54,25 @@ fn pixel(pos: vec2u) -> vec3f {
     return vec3f(brightness) * color;
 }
 
-fn index_slice(pos: vec2u) -> f32 {
-    let byte_idx = (pos.y * context.dimensions.x + pos.x);
-    let array_idx = byte_idx / 4;
-    let shift = (byte_idx % 4) * 8;
+struct Index {
+    array_idx: u32,
+    shift: u32
+}
 
-    let value = (layer[array_idx] >> shift) & 0xFF;
+fn index(pos: vec2u) -> Index {
+    let byte_idx = (pos.y * context.dimensions.x + pos.x);
+    return Index(byte_idx / 4, (byte_idx % 4) * 8);
+}
+
+fn index_slice(pos: vec2u) -> f32 {
+    let index = index(pos);
+    let value = (layer[index.array_idx] >> index.shift) & 0xFF;
     return f32(value) / 255.0;
 }
 
 fn index_annotation(pos: vec2u) -> vec3f {
-    // let nibble_idx = (pos.y * context.dimensions.x + pos.x);
-    // let array_idx = nibble_idx / 8;
-    // let shift = (nibble_idx % 8) * 4;
-
-    // let value = (annotations[array_idx] >> shift) & 0xF;
-
-    let byte_idx = (pos.y * context.dimensions.x + pos.x);
-    let array_idx = byte_idx / 4;
-    let shift = (byte_idx % 4) * 8;
-
-    let value = (annotations[array_idx] >> shift) & 0xFF;
+    let index = index(pos);
+    let value = (annotations[index.array_idx] >> index.shift) & 0xFF;
     return ANNOTATION_COLORS[value];
 }
 

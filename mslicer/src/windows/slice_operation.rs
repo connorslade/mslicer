@@ -25,6 +25,8 @@ use common::{
 
 const FILENAME_POPUP_TEXT: &str =
     "To ensure the file name is unique, some extra random characters will be added on the end.";
+const DETECT_ISLANDS_DESC: &str =
+    "Will color disconnected chunks of voxels red in the slice preview.";
 
 pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     if let Some(slice_operation) = &app.slice_operation {
@@ -96,7 +98,11 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                         }
 
                         ui.separator();
-                        if ui.button(concatcp!(CROSSHAIR, " Detect Islands")).clicked() {
+                        if ui
+                            .button(concatcp!(CROSSHAIR, " Detect Islands"))
+                            .on_hover_text(DETECT_ISLANDS_DESC)
+                            .clicked()
+                        {
                             app.tasks.add(IslandDetection::new(
                                 result.file.clone(),
                                 result.annotations.clone(),
