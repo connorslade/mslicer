@@ -7,7 +7,6 @@ use common::{
     units::{Milimeters, MilimetersPerMinute, Seconds},
 };
 use nalgebra::{ArrayStorage, Const, Matrix, Scalar, U1, Vector2, Vector3};
-use num_traits::Zero;
 
 #[derive(Debug, Parser)]
 /// mslicer command line interface.
@@ -196,10 +195,10 @@ fn vector_value_parser<T, const N: usize>(
     raw: &str,
 ) -> Result<Matrix<T, Const<N>, U1, ArrayStorage<T, N, 1>>>
 where
-    T: FromStr + Scalar + Zero,
+    T: FromStr + Scalar + Default,
     T::Err: Send + Sync + std::error::Error,
 {
-    let mut vec = Matrix::<T, Const<N>, U1, ArrayStorage<T, N, 1>>::zeros();
+    let mut vec = Matrix::<T, Const<N>, U1, ArrayStorage<T, N, 1>>::repeat(T::default());
 
     let mut parts = raw.splitn(N, ',');
     for i in 0..N {

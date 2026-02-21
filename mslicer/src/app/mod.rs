@@ -8,7 +8,7 @@ use egui_phosphor::regular::CARET_RIGHT;
 use egui_tracing::EventCollector;
 use egui_wgpu::RenderState;
 use nalgebra::Vector2;
-use parking_lot::lock_api::Mutex;
+use parking_lot::Mutex;
 use tracing::{info, warn};
 
 use crate::{
