@@ -5,12 +5,12 @@
 //! ## References
 //!
 //! - PNG
-//!   - https://www.bamfordresearch.com/2021/one-hour-png
-//!   - https://www.libpng.org/pub/png/book/chapter11.html
+//!   - <https://www.bamfordresearch.com/2021/one-hour-png>
+//!   - <https://www.libpng.org/pub/png/book/chapter11.html>
 //! - Deflate
-//!   - https://www.rfc-editor.org/rfc/rfc1951
-//!   - https://github.com/image-rs/fdeflate/blob/c365c7e6ffa81feb2e1fb762eed7299f05c9b0ca/src/compress.rs
-//!   - https://gist.github.com/juliusgeo/d4965b16a3c4478bb4eca2fe210559eb
+//!   - <https://www.rfc-editor.org/rfc/rfc1951>
+//!   - <https://github.com/image-rs/fdeflate/blob/c365c7e6ffa81feb2e1fb762eed7299f05c9b0ca/src/compress.rs>
+//!   - <https://gist.github.com/juliusgeo/d4965b16a3c4478bb4eca2fe210559eb>
 
 use crate::{
     container::{BitVec, Run},

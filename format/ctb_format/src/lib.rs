@@ -1,3 +1,40 @@
+//! ChituBox encrypted format v5 (`.ctb`).
+//!
+//! ## References
+//!
+//! This implementation would not be possible without the work done by the UV Tools contributors. Thank you!!!
+//!
+//! - [UV Tools](https://github.com/sn4k3/UVtools)
+//!
+//! ## Examples
+//!
+//! Decode a CTB file from disk and saves all of its layers as PNGs.
+//!
+//! ```ignore,msla_format
+//! use std::fs;
+//! use msla_format::{
+//!     container::rle::png::{ColorType, PngEncoder},
+//!     ctb,
+//!     serde::{DynamicSerializer, SliceDeserializer},
+//! };
+//!
+//! let bytes = fs::read("out.ctb").unwrap();
+//! let mut des = SliceDeserializer::new(&bytes);
+//! let file = ctb::File::deserialize(&mut des).unwrap();
+//! println!("{file:?}");
+//!
+//! for (i, layer) in file.layers.iter().enumerate() {
+//!     let decoder = ctb::LayerDecoder::new(&layer.data);
+//!
+//!     let mut ser = DynamicSerializer::new();
+//!     let mut png = PngEncoder::new(&mut ser, ColorType::Grayscale, file.resolution);
+//!     png.write_image_data(decoder.collect());
+//!     png.write_end();
+//!
+//!     fs::write(format!("layer_{i}.png"), ser.into_inner()).unwrap();
+//! }
+//! ```
+
 use anyhow::Result;
 
 use common::serde::{Deserializer, Serializer, SliceDeserializer};
@@ -18,7 +55,7 @@ pub use crate::{
 };
 
 #[derive(Debug)]
-pub struct Section {
+struct Section {
     pub size: u32,
     pub offset: u32,
 }

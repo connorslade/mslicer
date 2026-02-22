@@ -2,7 +2,7 @@ use nalgebra::Vector2;
 
 use super::Run;
 
-/// A fast grayscale image buffer
+/// Fast grayscale image buffer
 #[derive(Clone)]
 pub struct Image {
     pub size: Vector2<usize>,
@@ -10,10 +10,11 @@ pub struct Image {
     idx: usize,
 }
 
-pub struct ImageRuns<'a> {
-    inner: &'a [u8],
+/// Iterator of runs over a sequence of items.
+pub struct ImageRuns<'a, T = u8> {
+    inner: &'a [T],
 
-    last_value: u8,
+    last_value: T,
     last_idx: u64,
 }
 
@@ -87,18 +88,18 @@ impl Image {
     }
 }
 
-impl<'a> ImageRuns<'a> {
-    pub fn new(data: &'a [u8]) -> Self {
+impl<'a, T: Default> ImageRuns<'a, T> {
+    pub fn new(data: &'a [T]) -> Self {
         Self {
             inner: data,
-            last_value: 0,
+            last_value: T::default(),
             last_idx: 0,
         }
     }
 }
 
-impl Iterator for ImageRuns<'_> {
-    type Item = Run;
+impl<T: PartialEq + Copy + Default> Iterator for ImageRuns<'_, T> {
+    type Item = Run<T>;
 
     fn next(&mut self) -> Option<Self::Item> {
         let size = self.inner.len() as u64;
@@ -114,7 +115,7 @@ impl Iterator for ImageRuns<'_> {
                     length: i,
                     value: self.last_value,
                 };
-                self.last_value = *self.inner.get(idx as usize).unwrap_or(&0);
+                self.last_value = self.inner.get(idx as usize).copied().unwrap_or_default();
                 self.last_idx += i;
                 return Some(out);
             }

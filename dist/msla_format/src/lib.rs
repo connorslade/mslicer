@@ -1,3 +1,5 @@
+#![doc = include_str!("../README.md")]
+
 #[cfg(feature = "ctb")]
 pub mod ctb;
 #[cfg(feature = "goo")]
@@ -7,10 +9,4 @@ pub mod nanodlp;
 
 mod common;
 
-use common::{container, progress, slice};
-pub use common::{
-    progress::Progress,
-    serde,
-    slice::{DynSlicedFile, EncodableLayer, Format, SliceConfig, SlicedFile},
-    units,
-};
+pub use common::{container, progress, serde, slice, units};

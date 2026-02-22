@@ -1,8 +1,12 @@
+//! Container types.
+
 mod bitvec;
-pub mod clusters;
+mod clusters;
 mod image;
 pub mod rle;
-pub use bitvec::BitVec;
-pub use clusters::Clusters;
-pub use image::{Image, ImageRuns};
-pub use rle::Run;
+pub use self::{
+    bitvec::BitVec,
+    clusters::Clusters,
+    image::{Image, ImageRuns},
+    rle::Run,
+};

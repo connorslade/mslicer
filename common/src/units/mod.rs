@@ -1,5 +1,6 @@
-//! Type safe united values. Probably should have just used the uom create but
-//! its whatever.
+//! Type safe united values.
+//!
+//! Probably should have just used the uom create but it's whatever.
 
 mod defs;
 mod value;

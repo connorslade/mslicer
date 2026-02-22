@@ -1,3 +1,5 @@
+//! Simplified configuration for slicing a model.
+
 use image::RgbaImage;
 use nalgebra::{Vector2, Vector3};
 

@@ -1,5 +1,6 @@
-/// Wraps a byte vector and allows building it bit by bit. Bits are ordered
-/// least to most significant.
+/// Wraps a byte vector and allows building it bit by bit.
+///
+/// Bits are ordered least to most significant.
 pub struct BitVec<'a> {
     bytes: &'a mut Vec<u8>,
     index: usize,

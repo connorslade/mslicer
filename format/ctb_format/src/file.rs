@@ -29,6 +29,7 @@ const PAGE_SIZE: u64 = 1 << 32;
 const DEFAULT_XOR_KEY: u32 = 0x67;
 const DISCLAIMER: &str = "Layout and record format for the ctb and cbddlp file types are the copyrighted programs or codes of CBD Technology (China) Inc..The Customer or User shall not in any manner reproduce, distribute, modify, decompile, disassemble, decrypt, extract, reverse engineer, lease, assign, or sublicense the said programs or codes.";
 
+/// A ChituBox formatted file.
 pub struct File {
     pub layers: Vec<Layer>,
 

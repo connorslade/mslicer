@@ -1,3 +1,5 @@
+//! Binary format (de)serialization tools.
+
 mod deserializer;
 mod serializer;
 mod types;

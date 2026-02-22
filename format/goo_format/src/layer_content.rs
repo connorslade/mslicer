@@ -43,7 +43,7 @@ pub struct LayerContent {
     pub second_retract_speed: MilimetersPerMinute,
     /// Brightness of the light, 0-255.
     pub light_pwm: u8,
-    /// The actual layer data, run length encoded with [`goo_format::LayerEncoder`].
+    /// The actual layer data.
     pub data: Vec<u8>,
     /// Negative wrapping sum of all bytes in `data`.
     pub checksum: u8,

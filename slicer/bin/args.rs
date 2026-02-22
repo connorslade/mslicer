@@ -8,8 +8,8 @@ use common::{
 };
 use nalgebra::{ArrayStorage, Const, Matrix, Scalar, U1, Vector2, Vector3};
 
-#[derive(Debug, Parser)]
 /// mslicer command line interface.
+#[derive(Debug, Parser)]
 pub struct Args {
     #[arg(long, default_value = "11520, 5120", value_parser = vector_value_parser::<u32, 2>, )]
     /// Resolution of the printer mask display in pixels.

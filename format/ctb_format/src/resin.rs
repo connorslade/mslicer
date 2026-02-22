@@ -5,6 +5,7 @@ use common::serde::{Deserializer, Serializer, SliceDeserializer};
 
 use crate::{Section, read_string};
 
+/// Describes the resin used for this job.
 #[derive(Debug)]
 pub struct ResinParameters {
     pub resin_color: Vector4<u8>,

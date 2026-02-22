@@ -18,6 +18,8 @@ grep -RIl '' src/common | xargs sed -i -e 's/use crate/use crate::common/g'
 grep -RIl '' src/ctb | xargs sed -i -e 's/use crate/use crate::ctb/g'
 grep -RIl '' src/goo | xargs sed -i -e 's/use crate/use crate::goo/g'
 grep -RIl '' src/nanodlp | xargs sed -i -e 's/use crate/use crate::nanodlp/g'
-grep -RIl '' src/common src/ctb src/goo src/nanodlp | xargs sed -i -e 's/use common/use crate/g'
+grep -RIl '' src/common src/ctb src/goo src/nanodlp | xargs sed -i \
+    -e 's/use common/use crate/g' \
+    -e 's/ignore,msla_format/rust/g'
 
 # cargo publish --dry-run --allow-dirty

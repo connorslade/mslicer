@@ -5,6 +5,14 @@ use std::{
 
 // look into union find data structure for faster cluster merging.
 
+/// Disjoint Set.
+///
+/// Lets you insert items, then mark pairs of items as being connected. You can
+/// then iterate the items in each 'cluster' of connected items.
+///
+/// This data structure is often implemented as a tree to avoid moving items in
+/// memory when a connection is made, but this one uses two hash maps. Unsure of
+/// the performance implications.
 #[derive(Default)]
 pub struct Clusters<T: Hash + PartialEq + Eq + Copy> {
     runs: HashMap<T, u32>,              // maps runs to clusters

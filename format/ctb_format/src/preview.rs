@@ -11,6 +11,7 @@ use nalgebra::{Vector2, Vector3};
 
 use crate::Section;
 
+/// RGB bitmap image.
 #[derive(Default)]
 pub struct PreviewImage {
     width: u32,
@@ -30,7 +31,27 @@ impl PreviewImage {
         }
     }
 
-    pub fn deserialize(des: &mut SliceDeserializer) -> Result<Self> {
+    pub fn inner_data(&self) -> &[Vector3<u8>] {
+        &self.data
+    }
+
+    pub fn size(&self) -> Vector2<u32> {
+        Vector2::new(self.width, (self.data.len() / self.width as usize) as u32)
+    }
+
+    pub fn get_pixel(&self, x: u32, y: u32) -> Vector3<u8> {
+        let index = y * self.width + x;
+        self.data[index as usize]
+    }
+
+    pub fn set_pixel(&mut self, x: u32, y: u32, rgb: Vector3<u8>) {
+        let index = y * self.width + x;
+        self.data[index as usize] = rgb;
+    }
+}
+
+impl PreviewImage {
+    pub(crate) fn deserialize(des: &mut SliceDeserializer) -> Result<Self> {
         let width = des.read_u32_le();
         let height = des.read_u32_le();
         let image = Section::deserialize(des)?;
@@ -42,7 +63,7 @@ impl PreviewImage {
         )
     }
 
-    pub fn serialize<T: Serializer>(&self, ser: &mut T) {
+    pub(crate) fn serialize<T: Serializer>(&self, ser: &mut T) {
         let size = self.size();
         ser.write_u32_le(size.x);
         ser.write_u32_le(size.y);
@@ -56,7 +77,7 @@ impl PreviewImage {
         });
     }
 
-    pub fn from_bytes(bytes: &[u8], size: Vector2<u32>) -> Result<Self> {
+    fn from_bytes(bytes: &[u8], size: Vector2<u32>) -> Result<Self> {
         let pixels = size.x as usize * size.y as usize;
         let mut data = Vec::with_capacity(pixels);
 
@@ -88,7 +109,7 @@ impl PreviewImage {
         })
     }
 
-    pub fn to_bytes(&self) -> Vec<u8> {
+    fn to_bytes(&self) -> Vec<u8> {
         let mut out = Vec::new();
         let mut last_color = self.data[0];
         let mut length = 0;
@@ -130,19 +151,6 @@ impl PreviewImage {
         add_run(length, last_color);
 
         out
-    }
-
-    pub fn inner_data(&self) -> &[Vector3<u8>] {
-        &self.data
-    }
-
-    pub fn size(&self) -> Vector2<u32> {
-        Vector2::new(self.width, (self.data.len() / self.width as usize) as u32)
-    }
-
-    pub fn get_pixel(&self, x: u32, y: u32) -> Vector3<u8> {
-        let index = y * self.width + x;
-        self.data[index as usize]
     }
 }
 

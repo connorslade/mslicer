@@ -1,3 +1,5 @@
+//! Progress tracking utilities.
+
 use std::{
     array,
     ops::Index,
@@ -7,6 +9,9 @@ use std::{
     },
 };
 
+/// Tracks the progress of an operation.
+///
+/// The inner state is reference counted, so cloning will maintain references to the same values.
 #[derive(Clone)]
 pub struct Progress(Arc<ProgressInner>);
 

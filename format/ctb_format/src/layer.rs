@@ -15,6 +15,7 @@ pub struct LayerRef {
     pub page_number: u32,
 }
 
+/// Bitmap for a layer with it's print parameters.
 pub struct Layer {
     pub position_z: Milimeters,
     pub exposure_time: Seconds,

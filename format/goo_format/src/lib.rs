@@ -1,3 +1,9 @@
+//! Elegoo format V3.0 (`.goo`).
+//!
+//! ## References
+//!
+//! - [Official Format Spec](https://github.com/elegooofficial/GOO)
+
 mod default;
 mod encoded_layer;
 mod file;

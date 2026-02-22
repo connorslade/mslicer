@@ -7,6 +7,7 @@ use nalgebra::Vector2;
 
 use crate::layer::Layer;
 
+/// Decodes the internal layer format to a series of runs.
 pub struct LayerDecoder<'a> {
     data: &'a [u8],
     offset: usize,
@@ -65,6 +66,7 @@ impl Iterator for LayerDecoder<'_> {
     }
 }
 
+/// Encodes a series of runs into the internal layer format.
 #[derive(Default)]
 pub struct LayerEncoder {
     data: Vec<u8>,
