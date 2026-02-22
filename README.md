@@ -46,7 +46,7 @@ The video is also hosted on YouTube ([here][demo-yt]) if the one below doesn't p
 [actions-badge]: https://github.com/connorslade/mslicer/actions/workflows/build.yml/badge.svg
 [download-badge]: https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fconnorcode.com%2Fapi%2Fdownloads%3Fgithub%3Dconnorslade%252Fmslicer%26flathub%3Dcom.connorcode.mslicer&query=%24%5B%27total-human%27%5D&label=downloads&color=limegreen;
 
-[hero-image]: https://github.com/user-attachments/assets/ca282fea-680d-4825-aca1-36d9e29fc1fe
+[hero-image]: https://github.com/user-attachments/assets/77c9263f-c0f8-445a-80b4-6f95d7532282
 [demo-yt]: https://youtu.be/_Xu0jFAEYLc
 [project page]: https://connorcode.com/projects/mslicer
 [benchmark results]: https://files.connorcode.com/Documents/mslicer/speed-chart.pdf
