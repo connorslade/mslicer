@@ -9,7 +9,7 @@ use std::{
 
 use anyhow::{Context, Result};
 use clone_macro::clone;
-use common::{misc::random_string, slice::Format};
+use common::slice::Format;
 use parking_lot::{Mutex, MutexGuard};
 use tracing::{info, warn};
 
@@ -29,6 +29,7 @@ use crate::{
         popup::{Popup, PopupIcon},
         state::{RemotePrintConnectStatus, UiState},
     },
+    util::random_string,
 };
 
 pub struct RemotePrint {

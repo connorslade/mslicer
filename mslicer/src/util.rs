@@ -1,3 +1,5 @@
+use rand::{Rng, distr::Alphanumeric};
+
 #[macro_export]
 macro_rules! include_asset {
     ($name:expr) => {
@@ -43,4 +45,12 @@ macro_rules! app_ref_type {
             }
         });
     };
+}
+
+pub fn random_string(len: usize) -> String {
+    rand::rng()
+        .sample_iter(&Alphanumeric)
+        .take(len)
+        .map(char::from)
+        .collect()
 }

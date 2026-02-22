@@ -1,7 +1,9 @@
 [workspace]
 resolver = "2"
+default-members = ["mslicer"]
 members = [
     "common",
+    "dist/msla_format",
     "format/ctb_format",
     "format/goo_format",
     "format/mesh_format",

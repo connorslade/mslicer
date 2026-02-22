@@ -1,5 +1,3 @@
-#![doc = include_str!("../README.md")]
-
 mod default;
 mod encoded_layer;
 mod file;

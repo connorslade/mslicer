@@ -1,5 +1,3 @@
-use rand::{Rng, distr::Alphanumeric};
-
 use crate::units::Miliseconds;
 
 pub fn human_duration(duration: Miliseconds) -> String {
@@ -23,14 +21,6 @@ pub fn human_duration(duration: Miliseconds) -> String {
             seconds
         )
     }
-}
-
-pub fn random_string(len: usize) -> String {
-    rand::rng()
-        .sample_iter(&Alphanumeric)
-        .take(len)
-        .map(char::from)
-        .collect()
 }
 
 pub fn subscript_number(num: impl Into<u64>) -> String {

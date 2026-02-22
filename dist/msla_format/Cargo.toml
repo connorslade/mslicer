@@ -1,0 +1,38 @@
+[package]
+name = "msla_format"
+version = "0.1.0"
+edition = "2024"
+
+categories = ["parser-implementations", "rendering::data-formats"]
+description = "Library for encoding and decoding various MSLA file formats: Elegoo (.goo), Chitu Encrypted (.ctb), NanoDLP (.nanodlp)."
+documentation = "https://docs.rs/msla_format"
+include = ["src/*"]
+keywords = ["msla", "elegoo", "goo", "chitu", "ctb", "nanodlp"]
+license = "GPL-3.0-only"
+readme = "README.md"
+repository = "https://github.com/connorslade/mslicer"
+
+[dependencies]
+anyhow.workspace = true
+image.workspace = true
+nalgebra.workspace = true
+
+# CTB
+aes = { workspace = true, optional = true }
+cbc = { workspace = true, optional = true }
+sha2 = { workspace = true, optional = true }
+
+# GOO
+chrono = { workspace = true, optional = true }
+
+# NANODLP
+crc32fast = { workspace = true, optional = true }
+serde = { workspace = true, optional = true }
+serde_json = { workspace = true, optional = true }
+zip = { workspace = true, optional = true }
+
+[features]
+default = ["ctb", "goo", "nanodlp"]
+ctb = ["aes", "cbc", "sha2"]
+goo = ["chrono"]
+nanodlp = ["crc32fast", "serde", "serde_json", "zip"]

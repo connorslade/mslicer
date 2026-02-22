@@ -1,6 +1,18 @@
-use crate::{marker_structs, units::LengthUnit};
+use crate::units::LengthUnit;
 
 use super::{MetricPrefix, TimeUnit, Unit};
+
+// gotta love macros. this is just so readable.
+macro_rules! marker_structs {
+    ($($name:ident$(<$($param:ident$(:$constraint:ident)?$(=$default:ident)?),+>)?),*) => {
+        $(pub struct $name$(<$($param$(:$constraint)?$(=$default)?),+>)? {
+            $(
+                #[allow(unused_parens)]
+                _types: std::marker::PhantomData<($($param),+)>
+            )?
+        })*
+    };
+}
 
 marker_structs![
     Second<P: MetricPrefix = Base>,

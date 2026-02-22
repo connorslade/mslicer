@@ -16,7 +16,7 @@ jobs:
           rust-version: stable
 
       - name: Build
-        run: cargo build -r
+        run: cargo b -r -p mslicer -p slicer -p remote_send
 
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4

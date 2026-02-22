@@ -11,19 +11,6 @@ use crate::units::{
     value::{Area, Volume},
 };
 
-// gotta love macros. this is just so readable.
-#[macro_export]
-macro_rules! marker_structs {
-    ($($name:ident$(<$($param:ident$(:$constraint:ident)?$(=$default:ident)?),+>)?),*) => {
-        $(pub struct $name$(<$($param$(:$constraint)?$(=$default)?),+>)? {
-            $(
-                #[allow(unused_parens)]
-                _types: std::marker::PhantomData<($($param),+)>
-            )?
-        })*
-    };
-}
-
 pub type Mircometer = Meter<Micro>;
 pub type Milimeter = Meter<Milli>;
 pub type Centimeter = Meter<Centi>;
