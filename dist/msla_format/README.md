@@ -11,10 +11,10 @@ This crate is a collection of format implementation extracted from my [mslicer](
 
 ## Run Length Encoding
 
-Because resin printers often have very high resolution displays/masks it would be impractical to store layer data uncompressed, so for this reason all of the supported formats make use of some for of run length encoding (RLE).
+Because resin printers often have very high resolution displays/masks it would be impractical to store layer data uncompressed, for this reason all the supported formats make use of some form of run length encoding (RLE).
 This is why the interface for all the layer encoders lets you add runs of values.
 
-It is important to note that you must define a value for every pixel.
+It is important to note that you *must* define a value for every pixel (although there is no check for this).
 This is because (on my printer at least) the buffer that each layer is decoded into is initially uninitialized.
 So if the last run doesn’t fill the buffer, the printer will just print whatever was in the buffer before which just makes a huge mess (theoretically of course).
 
@@ -22,6 +22,7 @@ So if the last run doesn’t fill the buffer, the printer will just print whatev
 
 For some real world examples, check out the following links to my mslicer project source code:
 
+- CLI [.ctb](https://github.com/connorslade/mslicer/blob/5b4401a550dcc5cea8094d28cefdff45355aa39b/format/ctb_format/src/main.rs)/[.goo](https://github.com/connorslade/mslicer/blob/5b4401a550dcc5cea8094d28cefdff45355aa39b/format/goo_format/src/main.rs) inspector
 - [Slicing a triangular mesh into a layer](https://github.com/connorslade/mslicer/blob/5b4401a550dcc5cea8094d28cefdff45355aa39b/slicer/src/slicer/slice_raster.rs#L17)
 - [Decoding a sliced file for a layer preview](https://github.com/connorslade/mslicer/blob/5b4401a550dcc5cea8094d28cefdff45355aa39b/mslicer/src/windows/slice_operation.rs#L199)
 

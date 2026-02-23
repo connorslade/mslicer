@@ -1,3 +1,5 @@
+// This build script is not included in the published version.
+
 use std::process::Command;
 
 #[cfg(not(unix))]
