@@ -19,8 +19,6 @@ mod util;
 mod windows;
 use app::{App, config::Config};
 
-const ICON: &[u8] = include_asset!("icon.png");
-
 fn main() -> Result<()> {
     // Don't print panics on threads that are handled by the task system.
     let old_panic = panic::take_hook();
@@ -44,20 +42,15 @@ fn main() -> Result<()> {
 
     let config_dir = dirs::config_dir().unwrap().join("mslicer");
     let config = Config::load_or_default(&config_dir);
-
     let max_buffer_size = config.max_buffer_size;
-    let icon = image::load_from_memory(ICON)?;
+
     eframe::run_native(
         "mslicer",
         NativeOptions {
             viewport: ViewportBuilder::default()
                 .with_inner_size(Vec2::new(1920.0, 1080.0))
                 .with_drag_and_drop(true)
-                .with_icon(IconData {
-                    rgba: icon.to_rgba8().to_vec(),
-                    width: icon.width(),
-                    height: icon.height(),
-                }),
+                .with_icon(icon()),
             depth_buffer: 24,
             stencil_buffer: 8,
             multisampling: 4,
@@ -92,4 +85,21 @@ fn main() -> Result<()> {
     .unwrap();
 
     Ok(())
+}
+
+// On MacOS the icons are loaded automacally from the icon.icns file. Overwrting
+// with a static image can cause problems.
+#[cfg(target_os = "macos")]
+fn icon() -> IconData {
+    IconData::default()
+}
+
+#[cfg(not(target_os = "macos"))]
+fn icon() -> IconData {
+    let icon = image::load_from_memory(include_asset!("icon.png")).unwrap();
+    IconData {
+        rgba: icon.to_rgba8().to_vec(),
+        width: icon.width(),
+        height: icon.height(),
+    }
 }
