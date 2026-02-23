@@ -7,6 +7,13 @@ macro_rules! include_asset {
     };
 }
 
+#[macro_export]
+macro_rules! include_dist {
+    ($name:expr) => {
+        include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/../dist/", $name))
+    };
+}
+
 /// Generates a 'ref' type given an app field and it's type. This allows for
 /// safely calling methods requiring an App reference on values stored in App.
 #[macro_export]

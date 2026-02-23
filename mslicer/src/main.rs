@@ -87,8 +87,7 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-// On MacOS the icons are loaded automacally from the icon.icns file. Overwrting
-// with a static image can cause problems.
+// On MacOS the icons are loaded automacally from the icon.icns file.
 #[cfg(target_os = "macos")]
 fn icon() -> IconData {
     IconData::default()
@@ -96,7 +95,7 @@ fn icon() -> IconData {
 
 #[cfg(not(target_os = "macos"))]
 fn icon() -> IconData {
-    let icon = image::load_from_memory(include_asset!("icon.png")).unwrap();
+    let icon = image::load_from_memory(include_dist!("icon.png")).unwrap();
     IconData {
         rgba: icon.to_rgba8().to_vec(),
         width: icon.width(),

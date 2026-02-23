@@ -21,17 +21,18 @@ jobs:
       - name: Package
         run: |
           mkdir out
+          TOOLCHAIN=$(rustup show active-toolchain | sed 's/^[^-]*-\(.*\) (.*)/\1/')
           if [ "$RUNNER_OS" == "Linux" ]; then
-            cp target/release/mslicer out
-            cp target/release/slicer out
+            cp target/release/mslicer out/mslicer-$TOOLCHAIN
+            cp target/release/slicer out/slicer-$TOOLCHAIN
           elif [ "$RUNNER_OS" == "Windows" ]; then
-            cp target/release/mslicer.exe out
-            cp target/release/slicer.exe out
+            cp target/release/mslicer.exe out/mslicer-$TOOLCHAIN.exe
+            cp target/release/slicer.exe out/slicer-$TOOLCHAIN.exe
           elif [ "$RUNNER_OS" == "macOS" ]; then
-            cp -r dist/mslicer.app out
-            mkdir out/mslicer.app/Contents/MacOS
-            cp target/release/mslicer out/mslicer.app/Contents/MacOS
-            cp target/release/slicer out
+            cp -r dist/mslicer.app out/mslicer-$TOOLCHAIN.app
+            mkdir out/mslicer-$TOOLCHAIN.app/Contents/MacOS
+            cp target/release/mslicer out/mslicer-$TOOLCHAIN.app/Contents/MacOS
+            cp target/release/slicer out/slicer-$TOOLCHAIN
           else
             echo "$RUNNER_OS not supported"
             exit 1
