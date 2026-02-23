@@ -9,6 +9,7 @@ use crate::{
     },
 };
 
+/// Configuration for slicing a model.
 #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct SliceConfig {
     pub format: Format,
@@ -23,6 +24,7 @@ pub struct SliceConfig {
     pub transition_layers: u32,
 }
 
+/// Layer exposure settings.
 #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct ExposureConfig {
     pub exposure_time: Seconds,

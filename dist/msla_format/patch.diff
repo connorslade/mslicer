@@ -1,0 +1,99 @@
+--- a/src/common/mod.rs
++++ b/src/common/mod.rs
+@@ -1,4 +1,2 @@
+-pub mod color;
+ pub mod container;
+-pub mod misc;
+ pub mod progress;
+
+--- a/src/common/slice/mod.rs
++++ b/src/common/slice/mod.rs
+@@ -5,10 +5,8 @@
+
+ mod config;
+ mod format;
+-mod layer_iter;
+ pub use config::{ExposureConfig, SliceConfig};
+ pub use format::Format;
+-pub use layer_iter::SliceLayerIterator;
+
+ use crate::{
+     container::{Image, Run, rle},
+@@ -67,10 +65,3 @@
+     pub voxels: u64,
+     pub slice_config: &'a SliceConfig,
+ }
+-
+-pub type Polygon = Vec<Vector2<f32>>;
+-pub type VectorLayer = Vec<Polygon>;
+-pub struct VectorSliceResult<'a> {
+-    pub layers: Vec<VectorLayer>,
+-    pub slice_config: &'a SliceConfig,
+-}
+
+--- a/src/common/progress.rs
++++ b/src/common/progress.rs
+@@ -1,8 +1,6 @@
+ //! Progress tracking utilities.
+ 
+ use std::{
+-    array,
+-    ops::Index,
+     sync::{
+         Arc,
+         atomic::{AtomicU64, Ordering},
+@@ -20,10 +20,6 @@
+     total: AtomicU64,
+ }
+ 
+-#[derive(Clone)]
+-pub struct CombinedProgress<const N: usize> {
+-    inner: [Progress; N],
+-}
+ 
+ impl Progress {
+     pub fn new() -> Self {
+@@ -72,43 +68,3 @@
+         self.0.complete.store(total, Ordering::Relaxed);
+     }
+ }
+-
+-impl<const N: usize> CombinedProgress<N> {
+-    pub fn new() -> Self {
+-        Self {
+-            inner: array::from_fn(|_| Progress::new()),
+-        }
+-    }
+-
+-    pub fn count(&self) -> usize {
+-        N
+-    }
+-
+-    pub fn progress(&self) -> f32 {
+-        self.inner.iter().map(|x| x.progress()).sum::<f32>() / N as f32
+-    }
+-
+-    pub fn complete(&self) -> bool {
+-        self.inner.iter().all(|x| x.complete())
+-    }
+-}
+-
+-impl<const N: usize> Index<usize> for CombinedProgress<N> {
+-    type Output = Progress;
+-
+-    fn index(&self, index: usize) -> &Self::Output {
+-        &self.inner[index]
+-    }
+-}
+-
+-impl Default for Progress {
+-    fn default() -> Self {
+-        Self::new()
+-    }
+-}
+-
+-impl<const N: usize> Default for CombinedProgress<N> {
+-    fn default() -> Self {
+-        Self::new()
+-    }
+-}

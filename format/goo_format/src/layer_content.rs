@@ -7,7 +7,8 @@ use common::{
 
 use crate::DELIMITER;
 
-pub struct LayerContent {
+/// Layer data with it's print parameters.
+pub struct Layer {
     /// If printing should be paused on current layer.
     pub pause: bool,
     /// The Z position to to if paused.
@@ -49,7 +50,7 @@ pub struct LayerContent {
     pub checksum: u8,
 }
 
-impl LayerContent {
+impl Layer {
     pub fn serialize<T: Serializer>(&self, ser: &mut T) {
         ser.write_u16_be(self.pause as u16);
         ser.write_f32_be(self.pause_position_z.raw());

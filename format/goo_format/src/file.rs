@@ -11,19 +11,20 @@ use common::{
 use image::{RgbaImage, imageops::FilterType};
 use nalgebra::{Vector2, Vector3};
 
-use crate::{ENDING_STRING, Header, LayerContent, LayerDecoder, LayerEncoder, PreviewImage};
+use crate::{ENDING_STRING, Header, Layer, LayerDecoder, LayerEncoder, PreviewImage};
 
+/// A Goo file.
 pub struct File {
     pub header: Header,
-    pub layers: Vec<LayerContent>,
+    pub layers: Vec<Layer>,
 }
 
 impl File {
-    pub fn new(header: Header, layers: Vec<LayerContent>) -> Self {
+    pub fn new(header: Header, layers: Vec<Layer>) -> Self {
         Self { header, layers }
     }
 
-    pub fn from_slice_result(result: SliceResult<LayerContent>) -> Self {
+    pub fn from_slice_result(result: SliceResult<Layer>) -> Self {
         let slice_config = result.slice_config;
         let layers = result.layers.len() as u32;
 
@@ -75,7 +76,7 @@ impl File {
         let mut layers = Vec::with_capacity(header.layer_count as usize);
 
         for _ in 0..header.layer_count {
-            layers.push(LayerContent::deserialize(des)?);
+            layers.push(Layer::deserialize(des)?);
         }
 
         ensure!(des.read_slice(ENDING_STRING.len()) == ENDING_STRING);

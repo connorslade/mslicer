@@ -5,7 +5,7 @@ use std::{
 
 // look into union find data structure for faster cluster merging.
 
-/// Disjoint Set.
+/// Disjoint set.
 ///
 /// Lets you insert items, then mark pairs of items as being connected. You can
 /// then iterate the items in each 'cluster' of connected items.

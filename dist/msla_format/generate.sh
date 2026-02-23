@@ -20,6 +20,10 @@ grep -RIl '' src/goo | xargs sed -i -e 's/use crate/use crate::goo/g'
 grep -RIl '' src/nanodlp | xargs sed -i -e 's/use crate/use crate::nanodlp/g'
 grep -RIl '' src/common src/ctb src/goo src/nanodlp | xargs sed -i \
     -e 's/use common/use crate/g' \
-    -e 's/ignore,msla_format/rust/g'
+    -e 's/ignore,msla_format/rust/g' \
+    -e 's/mslicer/msla_format/g' \
+    -e 's/0.5.0/0.1.0/g'
 
-# cargo publish --dry-run --allow-dirty
+# Remove unused code (Optional)
+rm src/common/slice/layer_iter.rs
+patch -p1 < patch.diff

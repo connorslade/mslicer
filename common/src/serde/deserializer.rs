@@ -5,8 +5,6 @@ use std::{
     slice,
 };
 
-use crate::misc::as_array;
-
 #[rustfmt::skip]
 pub trait Deserializer {
     fn pos(&mut self) -> usize;
@@ -157,5 +155,14 @@ impl<T: Read + Seek> Deserializer for ReaderDeserializer<T> {
 
     fn is_eof(&mut self) -> bool {
         self.pos() >= self.size()
+    }
+}
+
+const fn as_array<T, const N: usize>(this: &[T]) -> Option<&[T; N]> {
+    if this.len() == N {
+        let ptr = this.as_ptr() as *const [T; N];
+        Some(unsafe { &*ptr })
+    } else {
+        None
     }
 }

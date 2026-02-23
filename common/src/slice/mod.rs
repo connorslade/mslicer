@@ -17,8 +17,12 @@ use crate::{
     units::Milimeters,
 };
 
+/// Boxed [`SlicedFile`].
 pub type DynSlicedFile = Box<dyn SlicedFile + Send + Sync>;
 
+/// Sliced file interface.
+///
+/// Implemented by all format File types.
 pub trait SlicedFile {
     fn serialize(&self, ser: &mut DynamicSerializer, progress: Progress);
     fn set_preview(&mut self, preview: &RgbaImage);
@@ -36,6 +40,9 @@ pub trait SlicedFile {
     }
 }
 
+/// Layer encoder interface.
+///
+/// Implemented by all format layer encoders.
 pub trait EncodableLayer {
     type Output: Send;
 
@@ -44,6 +51,7 @@ pub trait EncodableLayer {
     fn finish(self, layer: u32, config: &SliceConfig) -> Self::Output;
 }
 
+/// Format agnostic sliced file info.
 pub struct SliceInfo {
     pub layers: u32,
     pub resolution: Vector2<u32>,
@@ -51,6 +59,9 @@ pub struct SliceInfo {
     pub bottom_layers: u32,
 }
 
+/// Output of a slicing operations, contains layers and slice config.
+///
+/// To be use with `File::from_slice_result`.
 pub struct SliceResult<'a, Layer> {
     pub layers: Vec<Layer>,
     pub voxels: u64,

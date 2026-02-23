@@ -3,6 +3,9 @@ use std::fmt::Debug;
 use common::serde::{Deserializer, Serializer, SliceDeserializer};
 use image::{RgbaImage, imageops::FilterType};
 
+/// RGB bitmap image.
+///
+/// Each pixel is two bytes: 0bRRRRRGGGGGGBBBBB.
 pub struct PreviewImage<const WIDTH: usize, const HEIGHT: usize> {
     // 0brrrrrggggggbbbbb
     data: Box<[u16]>,

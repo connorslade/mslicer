@@ -9,7 +9,7 @@ use common::{
 
 use crate::{DELIMITER, MAGIC_TAG, PreviewImage};
 
-/// The header section of a `.goo` file.
+/// Everything but the layer data.
 #[derive(Debug)]
 pub struct Header {
     /// Format version, should be "V3.0".

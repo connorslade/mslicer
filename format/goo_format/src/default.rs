@@ -3,7 +3,7 @@ use common::{
     units::{Milimeters, MilimetersPerMinute, Seconds},
 };
 
-use crate::{Header, LayerContent, PreviewImage, header::ExposureDelayMode};
+use crate::{Header, Layer, PreviewImage, header::ExposureDelayMode};
 
 impl Default for Header {
     fn default() -> Self {
@@ -70,7 +70,7 @@ impl Default for Header {
     }
 }
 
-impl Default for LayerContent {
+impl Default for Layer {
     fn default() -> Self {
         Self {
             pause: false,

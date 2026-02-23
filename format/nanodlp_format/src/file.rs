@@ -25,6 +25,7 @@ use crate::{
     },
 };
 
+/// NanoDLP file.
 pub struct File {
     pub meta: Meta,
     pub plate: Plate,

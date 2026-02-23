@@ -4,13 +4,15 @@ use common::{
 };
 use nalgebra::Vector2;
 
-use crate::{LayerContent, layer_content::calculate_checksum};
+use crate::{Layer, layer_content::calculate_checksum};
 
+/// Encodes a series of runs into the internal layer format.
 pub struct LayerEncoder {
     data: Vec<u8>,
     last_value: u8,
 }
 
+/// Decodes the internal layer format to a series of runs.
 pub struct LayerDecoder<'a> {
     data: &'a [u8],
     color: u8,
@@ -107,7 +109,7 @@ impl LayerEncoder {
 }
 
 impl EncodableLayer for LayerEncoder {
-    type Output = LayerContent;
+    type Output = Layer;
 
     fn new(_platform: Vector2<u32>) -> Self {
         Self::default()
@@ -121,7 +123,7 @@ impl EncodableLayer for LayerEncoder {
         let (data, checksum) = self.finish();
         let layer_exposure = slice_config.exposure_config(layer);
 
-        LayerContent {
+        Layer {
             data,
             checksum,
             layer_position_z: slice_config.slice_height * (layer + 1) as f32,

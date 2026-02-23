@@ -9,4 +9,16 @@ pub mod nanodlp;
 
 mod common;
 
-pub use common::{container, progress, serde, slice, units};
+use common::progress;
+pub use common::{
+    container,
+    progress::Progress,
+    serde,
+    slice::{DynSlicedFile, EncodableLayer, SliceInfo, SlicedFile},
+    units,
+};
+pub mod slice {
+    //! Simplified configuration for slicing a model.
+    pub(crate) use crate::common::slice::*;
+    pub use crate::common::slice::{ExposureConfig, SliceConfig, SliceResult};
+}

@@ -15,16 +15,19 @@ use nalgebra::{Vector2, Vector3};
 
 use crate::{decode_png, types::LayerInfo};
 
+/// Layer data with its associated info.
 pub struct Layer {
-    pub inner: Vec<u8>,
+    pub inner: Vec<u8>, // png encoded
     pub info: LayerInfo,
 }
 
+/// Encodes a series of runs into the internal layer format.
 pub struct LayerEncoder {
     platform: Vector2<u32>,
     runs: Vec<Run>,
 }
 
+/// Decodes the internal layer format to a series of runs.
 pub struct LayerDecoder {
     image: RgbImage,
 }
