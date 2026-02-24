@@ -29,9 +29,9 @@ jobs:
             cp target/release/mslicer.exe out/mslicer-$TOOLCHAIN.exe
             cp target/release/slicer.exe out/slicer-$TOOLCHAIN.exe
           elif [ "$RUNNER_OS" == "macOS" ]; then
-            cp -r dist/mslicer.app out/mslicer-$TOOLCHAIN.app
-            mkdir out/mslicer-$TOOLCHAIN.app/Contents/MacOS
-            cp target/release/mslicer out/mslicer-$TOOLCHAIN.app/Contents/MacOS
+            cp -r dist/mslicer.app out/mslicer.app
+            mkdir out/mslicer.app/Contents/MacOS
+            cp target/release/mslicer out/mslicer.app/Contents/MacOS
             cp target/release/slicer out/slicer-$TOOLCHAIN
           else
             echo "$RUNNER_OS not supported"

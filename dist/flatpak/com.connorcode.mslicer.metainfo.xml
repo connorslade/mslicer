@@ -8,7 +8,8 @@
 	<launchable type="desktop-id">com.connorcode.mslicer.desktop</launchable>
 	<content_rating type="oars-1.1" />
 
-	<url type="homepage">https://github.com/connorslade/mslicer</url>
+	<url type="homepage">https://mslicer.com</url>
+	<url type="vcs-browser">https://github.com/connorslade/mslicer</url>
 	<url type="bugtracker">https://github.com/connorslade/mslicer/issues</url>
 	<update_contact>connor@connorcode.com</update_contact>
 	<developer id="com.connorcode">
@@ -29,6 +30,7 @@
 	<screenshots>
 		<screenshot type="default">
 			<image type="source">https://github.com/user-attachments/assets/ca282fea-680d-4825-aca1-36d9e29fc1fe</image>
+			<caption>Slicing a treefrog model.</caption>
 		</screenshot>
 	</screenshots>
 

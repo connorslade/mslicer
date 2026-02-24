@@ -32,13 +32,11 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     if let Some(slice_operation) = &app.slice_operation {
         let progress = &slice_operation.progress;
 
-        if let Some(completion) = slice_operation.completion() {
-            let mut result = app.slice_operation.as_ref().unwrap().result();
-            let result = result.as_mut().unwrap();
+        if let Some(result) = slice_operation.result().as_mut() {
             let format = result.file.format();
 
             ui.horizontal(|ui| {
-                ui.label(format!("Slicing completed in {completion}!"));
+                ui.label(format!("Slicing completed in {}!", result.completion()));
 
                 ui.with_layout(Layout::default().with_cross_align(Align::Max), |ui| {
                     ui.horizontal(|ui| {

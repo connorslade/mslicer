@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.6.0 &mdash; Coming Soon™
+
+- New icon (gnome inspired)
+- Better packaging for MacOS (.app bundle) and Windows (.rc file)
+- Keyboard shortcuts use ⌘ on MacOS
+- Fix panic caused by race condition
+
 ## v0.5.0 &mdash; February 21st, 2026
 
 - Detect and show warnings for

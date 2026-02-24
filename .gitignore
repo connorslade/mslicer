@@ -4,3 +4,4 @@
 *.stl
 *.ctb
 codebook.toml
+.DS_Store

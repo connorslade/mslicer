@@ -1,18 +1,15 @@
 use std::{
     collections::HashMap,
     ops::Deref,
-    sync::{
-        Arc,
-        atomic::{AtomicU32, Ordering},
-    },
-    time::Instant,
+    sync::Arc,
+    time::{Duration, Instant},
 };
 
 use common::{
     container::Run,
     misc::human_duration,
     progress::{CombinedProgress, Progress},
-    slice::DynSlicedFile,
+    slice::{DynSlicedFile, SliceConfig},
     units::{Miliseconds, Milliliters, Seconds},
 };
 use image::RgbaImage;
@@ -27,8 +24,6 @@ pub struct SliceOperation {
 
 pub struct SliceOperationInner {
     start_time: Instant,
-    completion: AtomicU32,
-
     pub progress: Progress,
     pub post_processing_progress: CombinedProgress<2>,
     pub result: Mutex<Option<SliceResult>>,
@@ -39,6 +34,7 @@ pub struct SliceOperationInner {
 
 pub struct SliceResult {
     pub file: Arc<DynSlicedFile>,
+    pub elapsed: Duration,
     pub annotations: Arc<Mutex<Annotations>>,
     pub volume: Milliliters,
     pub print_time: Seconds,
@@ -68,8 +64,6 @@ impl SliceOperation {
         Self {
             inner: Arc::new(SliceOperationInner {
                 start_time: Instant::now(),
-                completion: AtomicU32::new(0),
-
                 progress: slice,
                 post_processing_progress: post_process,
                 result: Mutex::new(None),
@@ -82,11 +76,6 @@ impl SliceOperation {
 }
 
 impl SliceOperationInner {
-    pub fn completion(&self) -> Option<String> {
-        let time = self.completion.load(Ordering::Relaxed);
-        (time != 0).then(|| human_duration(Miliseconds::new(time as f32)))
-    }
-
     pub fn needs_preview_image(&self) -> bool {
         self.preview_image.lock().is_none()
     }
@@ -105,13 +94,33 @@ impl SliceOperationInner {
         MutexGuard::map(preview_image, |image| image.as_mut().unwrap())
     }
 
-    pub fn add_result(&self, result: SliceResult) {
+    pub fn add_result(
+        &self,
+        config: &SliceConfig,
+        (file, voxels): (DynSlicedFile, u64),
+        preview_scale: f32,
+    ) {
         let elapsed = self.start_time.elapsed();
-        self.completion
-            .store(elapsed.as_millis() as u32, Ordering::Relaxed);
-
         info!("Slice operation completed in {:?}", elapsed);
-        self.result.lock().replace(result);
+
+        let layers = file.info().layers as usize;
+        let volume = (voxels as f32 * config.voxel_volume()).convert();
+        let print_time = config.print_time(layers as u32);
+
+        self.result.lock().replace(SliceResult {
+            elapsed,
+            file: Arc::new(file),
+            annotations: Arc::new(Mutex::new(Annotations::default())),
+            volume,
+            print_time,
+
+            detected_islands: false,
+            slice_preview_layer: 0,
+            last_preview_layer: 0,
+            preview_offset: Vector2::new(0.0, 0.0),
+            preview_scale: preview_scale.max(1.0).log2(),
+            layer_count: (layers, layers.to_string().len() as u8),
+        });
     }
 
     pub fn result(&self) -> MutexGuard<'_, Option<SliceResult>> {
@@ -145,6 +154,13 @@ impl Annotations {
             })
             .collect::<Vec<_>>();
         self.layers.insert(layer, runs);
+    }
+}
+
+impl SliceResult {
+    pub fn completion(&self) -> String {
+        let time = self.elapsed.as_millis() as f32;
+        human_duration(Miliseconds::new(time))
     }
 }
 

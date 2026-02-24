@@ -1,4 +1,4 @@
-use std::{mem, path::PathBuf, sync::Arc, thread, time::Instant};
+use std::{mem, path::PathBuf, thread, time::Instant};
 
 use clone_macro::clone;
 use const_format::concatcp;
@@ -8,17 +8,12 @@ use egui_phosphor::regular::CARET_RIGHT;
 use egui_tracing::EventCollector;
 use egui_wgpu::RenderState;
 use nalgebra::Vector2;
-use parking_lot::Mutex;
 use tracing::{info, warn};
 
 use crate::{
     app::{
-        config::Config,
-        history::History,
-        project::Project,
-        remote_print::RemotePrint,
-        slice_operation::{Annotations, SliceOperation, SliceResult},
-        task::TaskManager,
+        config::Config, history::History, project::Project, remote_print::RemotePrint,
+        slice_operation::SliceOperation, task::TaskManager,
     },
     render::{camera::Camera, preview},
     ui::{
@@ -179,28 +174,12 @@ impl App {
             move || {
                 let slice_operation = slice_operation.as_ref().unwrap();
                 let (mut file, voxels) = slicer.slice();
-                let layers = file.info().layers as usize;
-
-                let slice_config = slicer.slice_config();
-                let volume = (voxels as f32 * slice_config.voxel_volume()).convert();
-                let print_time = slice_config.print_time(layers as u32);
 
                 post_processing.process(&mut file, post_process);
                 file.set_preview(&slice_operation.preview_image());
 
-                slice_operation.add_result(SliceResult {
-                    file: Arc::new(file),
-                    annotations: Arc::new(Mutex::new(Annotations::default())),
-                    volume,
-                    print_time,
-
-                    detected_islands: false,
-                    slice_preview_layer: 0,
-                    last_preview_layer: 0,
-                    preview_offset: Vector2::new(0.0, 0.0),
-                    preview_scale: preview_scale.max(1.0).log2(),
-                    layer_count: (layers, layers.to_string().len() as u8),
-                });
+                let config = slicer.slice_config();
+                slice_operation.add_result(config, (file, voxels), preview_scale);
             }
         ));
     }
