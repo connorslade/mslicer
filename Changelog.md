@@ -6,6 +6,8 @@
 - Better packaging for MacOS (.app bundle) and Windows (.rc file)
 - Keyboard shortcuts use ⌘ on MacOS
 - Fix panic caused by race condition
+- Show annotated layers on slice preview slider
+- Show project file name in window title
 
 ## v0.5.0 &mdash; February 21st, 2026
 

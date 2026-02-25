@@ -2,7 +2,7 @@ use std::{mem, path::PathBuf, thread, time::Instant};
 
 use clone_macro::clone;
 use const_format::concatcp;
-use egui::{Theme, Vec2, Visuals};
+use egui::{Theme, Vec2, ViewportCommand, Visuals};
 use egui_dock::{DockState, NodeIndex, Tree};
 use egui_phosphor::regular::CARET_RIGHT;
 use egui_tracing::EventCollector;
@@ -203,11 +203,22 @@ impl App {
         let surface = self.dock_state.main_surface_mut();
         default_dock_layout(surface);
     }
+
+    pub fn set_title(&mut self, ctx: &egui::Context) {
+        let title = if let Some(stem) = self.project.path.as_ref().and_then(|x| x.file_stem()) {
+            format!("mslicer - {}", stem.to_string_lossy())
+        } else {
+            "mslicer".into()
+        };
+        ctx.send_viewport_cmd(ViewportCommand::Title(title));
+    }
 }
 
 impl eframe::App for App {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         ctx.request_repaint();
+        self.set_title(ctx);
+
         self.fps.update();
         self.popup().render(ctx);
         self.tasks().poll();

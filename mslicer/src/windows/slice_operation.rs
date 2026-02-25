@@ -1,9 +1,9 @@
-use std::{fs::File, io::Write, mem, sync::Arc};
+use std::{f32, fs::File, io::Write, mem, sync::Arc};
 
 use const_format::concatcp;
 use egui::{
-    Align, Button, Context, DragValue, FontSelection, Grid, Id, Layout, ProgressBar, RichText,
-    Sense, Slider, Style, Ui, Vec2, style::HandleShape, text::LayoutJob,
+    Align, Button, Color32, Context, DragValue, FontSelection, Grid, Id, Layout, ProgressBar, Rect,
+    RichText, Sense, Slider, StrokeKind, Style, Ui, Vec2, style::HandleShape, text::LayoutJob,
 };
 use egui_phosphor::regular::{CLOCK, CROSSHAIR, DROP, FLOPPY_DISK_BACK, PAPER_PLANE_TILT};
 use egui_wgpu::Callback;
@@ -12,11 +12,11 @@ use nalgebra::Vector2;
 use crate::{
     app::{
         App,
-        slice_operation::SliceResult,
+        slice_operation::{ISLAND_COLOR, SliceResult},
         task::{FileDialog, IslandDetection, SaveResult},
     },
     render::slice_preview::SlicePreviewRenderCallback,
-    ui::{components::vec2_dragger, popup::Popup},
+    ui::{components::vec2_dragger, extentions::WidgetExt, popup::Popup},
 };
 use common::{
     misc::human_duration, progress::Progress, serde::DynamicSerializer, slice::Format,
@@ -108,6 +108,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                                     result.annotations.clone(),
                                 ));
                             }
+                            slice_preview
                         });
                     })
                 });
@@ -198,13 +199,7 @@ fn slice_preview(ui: &mut egui::Ui, result: &mut SliceResult) {
     let info = result.file.info();
 
     ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
-        ui.spacing_mut().slider_width = ui.available_size().y;
-        ui.add(
-            Slider::new(&mut result.slice_preview_layer, 1..=info.layers as usize)
-                .vertical()
-                .handle_shape(HandleShape::Rect { aspect_ratio: 1.0 })
-                .show_value(false),
-        );
+        layer_slider(ui, result);
 
         let available_size = ui.available_size() - Vec2::new(5.0, 5.0);
         let (width, height) = (info.resolution.x, info.resolution.y);
@@ -218,10 +213,10 @@ fn slice_preview(ui: &mut egui::Ui, result: &mut SliceResult) {
             let layer_idx = result.slice_preview_layer - 1;
             result.file.decode_layer(layer_idx, &mut layer);
 
-            let mut annotations = vec![0u8; size];
-            (result.annotations.lock()).decode_layer(layer_idx, &mut annotations);
+            let mut layer_annotations = vec![0u8; size];
+            (result.annotations.lock()).decode_layer(layer_idx, &mut layer_annotations);
 
-            Some((layer, annotations))
+            Some((layer, layer_annotations))
         } else {
             None
         };
@@ -256,6 +251,58 @@ fn slice_preview(ui: &mut egui::Ui, result: &mut SliceResult) {
             ui.painter().add(callback);
         });
     });
+}
+
+fn layer_slider(ui: &mut egui::Ui, result: &mut SliceResult) {
+    let info = result.file.info();
+
+    ui.spacing_mut().slider_width = ui.available_size().y;
+    let slider = Slider::new(&mut result.slice_preview_layer, 1..=info.layers as usize)
+        .vertical()
+        .handle_shape(HandleShape::Rect { aspect_ratio: 1.0 })
+        .show_value(false)
+        .add(ui);
+
+    let painter = ui.painter_at(slider.rect);
+    let slice = slider.rect.height() / info.layers as f32;
+
+    let visuals = ui.style().interact(&slider);
+    let rail = ui.spacing().slider_rail_height;
+    let handle_r = slider.rect.width() / 2.5;
+    let height = slider.rect.height() - 2.0 * handle_r;
+    let pos = |t: f32| slider.rect.center_bottom() - Vec2::Y * (handle_r + height * t);
+
+    let slider_t = (result.slice_preview_layer - 1) as f32 / (info.layers - 1) as f32;
+    let handle_inner_r = handle_r - visuals.fg_stroke.width;
+    let handle_t = (handle_inner_r + visuals.expansion) / height;
+
+    let annotations = result.annotations.lock();
+    for i in 0..info.layers {
+        if annotations.contains(i as usize) {
+            let t = i as f32 / (info.layers.saturating_sub(1)) as f32;
+            let width = if (slider_t - t).abs() < handle_t {
+                handle_inner_r * 2.0 + visuals.expansion
+            } else {
+                rail
+            };
+
+            let rect = Rect::from_center_size(pos(t), Vec2::new(width, slice * 2.0));
+            painter.rect_filled(rect, 0, ISLAND_COLOR);
+        }
+    }
+    drop(annotations);
+
+    let rect = Rect::from_center_size(
+        pos(slider_t),
+        2.0 * Vec2::splat(handle_r + visuals.expansion),
+    );
+    painter.rect(
+        rect,
+        visuals.corner_radius,
+        Color32::TRANSPARENT,
+        visuals.fg_stroke,
+        StrokeKind::Inside,
+    );
 }
 
 fn name_popup(mainboard_id: String, data: Arc<Vec<u8>>, format: Format) -> Popup {

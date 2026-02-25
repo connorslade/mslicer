@@ -12,6 +12,7 @@ use common::{
     slice::{DynSlicedFile, SliceConfig},
     units::{Miliseconds, Milliliters, Seconds},
 };
+use egui::Color32;
 use image::RgbaImage;
 use nalgebra::Vector2;
 use parking_lot::{Condvar, MappedMutexGuard, Mutex, MutexGuard};
@@ -46,6 +47,8 @@ pub struct SliceResult {
     pub preview_scale: f32,
     pub layer_count: (usize, u8),
 }
+
+pub const ISLAND_COLOR: Color32 = Color32::from_rgb(159, 44, 54);
 
 #[derive(Default)]
 pub struct Annotations {
@@ -129,6 +132,14 @@ impl SliceOperationInner {
 }
 
 impl Annotations {
+    pub fn contains(&self, layer: usize) -> bool {
+        if let Some(layer) = self.layers.get(&layer) {
+            layer.iter().any(|x| !matches!(x.value, Annotation::None))
+        } else {
+            false
+        }
+    }
+
     pub fn decode_layer(&self, layer: usize, buffer: &mut [u8]) {
         let Some(layer) = self.layers.get(&layer) else {
             return;
