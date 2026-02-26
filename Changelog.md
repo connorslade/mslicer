@@ -9,6 +9,8 @@
 - Show annotated layers on slice preview slider
 - Show project file name in window title
 - Cleanup slice preview scaling
+  - Will now always default to 1× scale
+  - Zooming is now centered on the cursor position
 
 ## v0.5.0 &mdash; February 21st, 2026
 

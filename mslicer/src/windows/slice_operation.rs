@@ -5,7 +5,9 @@ use egui::{
     Align, Button, Color32, Context, DragValue, FontSelection, Grid, Id, Layout, ProgressBar, Rect,
     RichText, Sense, Slider, StrokeKind, Style, Ui, Vec2, style::HandleShape, text::LayoutJob,
 };
-use egui_phosphor::regular::{CLOCK, CROSSHAIR, DROP, FLOPPY_DISK_BACK, PAPER_PLANE_TILT};
+use egui_phosphor::regular::{
+    CARET_DOWN, CARET_UP, CLOCK, CORNERS_IN, CROSSHAIR, DROP, FLOPPY_DISK_BACK, PAPER_PLANE_TILT,
+};
 use egui_wgpu::Callback;
 use nalgebra::Vector2;
 
@@ -16,7 +18,7 @@ use crate::{
         task::{FileDialog, IslandDetection, SaveResult},
     },
     render::slice_preview::SlicePreviewRenderCallback,
-    ui::{components::vec2_dragger, extentions::WidgetExt, popup::Popup},
+    ui::{extentions::WidgetExt, popup::Popup},
 };
 use common::{
     misc::human_duration, progress::Progress, serde::DynamicSerializer, slice::Format,
@@ -132,9 +134,9 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                                 }),
                         );
                         result.slice_preview_layer +=
-                            ui.button(RichText::new("+").monospace()).clicked() as usize;
+                            ui.button(RichText::new(CARET_UP)).clicked() as usize;
                         result.slice_preview_layer -=
-                            ui.button(RichText::new("-").monospace()).clicked() as usize;
+                            ui.button(RichText::new(CARET_DOWN)).clicked() as usize;
 
                         ui.separator();
                         ui.label("Scale");
@@ -143,6 +145,12 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                                 .range(0.5..=10.0)
                                 .speed(0.1),
                         );
+
+                        ui.separator();
+                        if ui.button(concatcp!(CORNERS_IN, " Center View")).clicked() {
+                            result.preview_offset = Vector2::zeros();
+                            result.preview_scale = 1.0;
+                        }
 
                         ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                             let duration = human_duration(result.print_time.convert());
@@ -232,9 +240,23 @@ fn slice_preview(ui: &mut egui::Ui, result: &mut SliceResult) {
                     drag.x / rect.width() * width as f32 / preview_scale * aspect;
                 result.preview_offset.y += drag.y / rect.height() * height as f32 / preview_scale;
 
-                if response.hovered() {
+                if let Some(pointer) = ui.input(|x| x.pointer.hover_pos()) {
+                    let t = (pointer - rect.min) / (rect.max - rect.min); // screen space
+
+                    let dimensions = Vec2::new(info.resolution.x as f32, info.resolution.y as f32);
+                    let aspect = rect.width() / rect.height() * dimensions.y / dimensions.x;
+
                     let scroll = ui.input(|x| x.smooth_scroll_delta);
-                    result.preview_scale = (result.preview_scale + scroll.y * 0.01).clamp(0.5, 10.0)
+                    result.preview_scale =
+                        (result.preview_scale + scroll.y * 0.01).clamp(0.5, 10.0);
+
+                    if scroll.y != 0.0 {
+                        // Scale around the cursor, not the center of the layer
+                        let delta = ((t - Vec2::splat(0.5)) * Vec2::new(aspect, 1.0) * dimensions)
+                            * (preview_scale.recip() - result.preview_scale.powi(-2));
+                        result.preview_offset.x += delta.x;
+                        result.preview_offset.y -= delta.y;
+                    }
                 }
 
                 let callback = Callback::new_paint_callback(

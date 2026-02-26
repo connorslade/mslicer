@@ -97,12 +97,7 @@ impl SliceOperationInner {
         MutexGuard::map(preview_image, |image| image.as_mut().unwrap())
     }
 
-    pub fn add_result(
-        &self,
-        config: &SliceConfig,
-        (file, voxels): (DynSlicedFile, u64),
-        preview_scale: f32,
-    ) {
+    pub fn add_result(&self, config: &SliceConfig, (file, voxels): (DynSlicedFile, u64)) {
         let elapsed = self.start_time.elapsed();
         info!("Slice operation completed in {:?}", elapsed);
 
@@ -121,7 +116,7 @@ impl SliceOperationInner {
             slice_preview_layer: 0,
             last_preview_layer: 0,
             preview_offset: Vector2::new(0.0, 0.0),
-            preview_scale: preview_scale.max(1.0).log2(),
+            preview_scale: 1.0,
             layer_count: (layers, layers.to_string().len() as u8),
         });
     }

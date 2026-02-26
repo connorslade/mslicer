@@ -73,7 +73,7 @@
 - [x] Allow dragging slice operation preview
 - [x] Fix rotation on Z axis
 - [x] Fix Z translation being doubled
-- [ ] Merge goo_format changes into goo crate
+- [x] Merge goo_format changes into goo crate (made msla_format)
 - [x] Implement .ctb format (see <https://github.com/cbiffle/catibo/blob/master/doc/cbddlp-ctb.adoc>)
   - [x] Generic format system
   - [x] Fix plugins / post processes
@@ -109,7 +109,7 @@
 - [x] Don't show normals for hidden models
 - [ ] Fix low overall fps when scrubbing through layers, upload async?
 - [x] Show little breaks between pixels at high scales
-- [ ] Slice preview zoom around cursor position
+- [x] Slice preview zoom around cursor position
 - [ ] Multiple workspaces per project
 - [ ] Built-in mesh subdivision
 - [x] Require Viewport tab to be active on startup
@@ -132,3 +132,4 @@
 - [ ] Track history for slice config
 - [x] Finish nanodlp format (#8)
 - [x] Parse speeds with any time unit (#11)
+- [ ] Auto reload annotations on current layer when island detection finishes

@@ -1,4 +1,7 @@
-use std::{f32::consts::FRAC_PI_2, ops::Neg};
+use std::{
+    f32::consts::{FRAC_PI_2, PI},
+    ops::Neg,
+};
 
 use egui::{PointerButton, Response, Ui};
 use nalgebra::{Matrix4, Vector2, Vector3};
@@ -78,10 +81,10 @@ impl Default for Camera {
     fn default() -> Self {
         Self {
             target: Vector3::zeros(),
-            angle: Vector2::zeros(),
+            angle: Vector2::new(PI, 0.0),
             distance: 10.0,
 
-            fov: std::f32::consts::FRAC_PI_2,
+            fov: FRAC_PI_2,
             near: 0.1,
             far: 10_000.0,
         }
