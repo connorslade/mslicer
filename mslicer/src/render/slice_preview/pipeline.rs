@@ -174,7 +174,7 @@ impl SlicePreviewPipeline {
                 dimensions: resources.dimensions,
                 offset: resources.offset,
                 aspect: resources.aspect,
-                scale: resources.scale.recip(),
+                scale: resources.scale,
             })
             .unwrap();
         queue.write_buffer(&self.uniform_buffer, 0, &buffer.into_inner());

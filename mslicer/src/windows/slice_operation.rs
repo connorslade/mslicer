@@ -137,14 +137,10 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                             ui.button(RichText::new("-").monospace()).clicked() as usize;
 
                         ui.separator();
-                        ui.label("Offset");
-                        vec2_dragger(ui, result.preview_offset.as_mut(), |x| x);
-
-                        ui.separator();
                         ui.label("Scale");
                         ui.add(
                             DragValue::new(&mut result.preview_scale)
-                                .range(0.1..=10.0)
+                                .range(0.5..=10.0)
                                 .speed(0.1),
                         );
 
@@ -221,35 +217,38 @@ fn slice_preview(ui: &mut egui::Ui, result: &mut SliceResult) {
             None
         };
 
-        egui::Frame::canvas(ui.style()).show(ui, |ui| {
-            let (rect, response) = ui
-                .allocate_exact_size(Vec2::new(available_size.x, available_size.y), Sense::drag());
+        egui::Frame::canvas(ui.style())
+            .fill(ui.style().visuals.panel_fill)
+            .show(ui, |ui| {
+                let (rect, response) = ui.allocate_exact_size(
+                    Vec2::new(available_size.x, available_size.y),
+                    Sense::drag(),
+                );
 
-            let preview_scale = result.preview_scale.exp2();
-            let drag = response.drag_delta();
-            let aspect = rect.width() / rect.height() * height as f32 / width as f32;
-            result.preview_offset.x -=
-                drag.x / rect.width() * width as f32 / preview_scale * aspect;
-            result.preview_offset.y += drag.y / rect.height() * height as f32 / preview_scale;
+                let drag = response.drag_delta();
+                let aspect = rect.width() / rect.height() * height as f32 / width as f32;
+                let preview_scale = result.preview_scale.powi(2);
+                result.preview_offset.x -=
+                    drag.x / rect.width() * width as f32 / preview_scale * aspect;
+                result.preview_offset.y += drag.y / rect.height() * height as f32 / preview_scale;
 
-            if response.hovered() {
-                let scroll = ui.input(|x| x.smooth_scroll_delta);
-                result.preview_scale += scroll.y * 0.01;
-                result.preview_scale = result.preview_scale.max(0.1);
-            }
+                if response.hovered() {
+                    let scroll = ui.input(|x| x.smooth_scroll_delta);
+                    result.preview_scale = (result.preview_scale + scroll.y * 0.01).clamp(0.5, 10.0)
+                }
 
-            let callback = Callback::new_paint_callback(
-                rect,
-                SlicePreviewRenderCallback {
-                    dimensions: Vector2::new(info.resolution.x, info.resolution.y),
-                    offset: result.preview_offset,
-                    aspect: rect.width() / rect.height(),
-                    scale: preview_scale,
-                    new_preview,
-                },
-            );
-            ui.painter().add(callback);
-        });
+                let callback = Callback::new_paint_callback(
+                    rect,
+                    SlicePreviewRenderCallback {
+                        dimensions: Vector2::new(info.resolution.x, info.resolution.y),
+                        offset: result.preview_offset,
+                        aspect: rect.width() / rect.height(),
+                        scale: result.preview_scale.powi(2),
+                        new_preview,
+                    },
+                );
+                ui.painter().add(callback);
+            });
     });
 }
 

@@ -8,6 +8,7 @@
 - Fix panic caused by race condition
 - Show annotated layers on slice preview slider
 - Show project file name in window title
+- Cleanup slice preview scaling
 
 ## v0.5.0 &mdash; February 21st, 2026
 
