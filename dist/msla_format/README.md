@@ -1,6 +1,6 @@
 # `msla_format` [![Build](https://github.com/connorslade/mslicer/actions/workflows/build.yml/badge.svg)](https://github.com/connorslade/mslicer/actions/workflows/build.yml) [![Latest Version](https://img.shields.io/crates/v/msla_format)](https://crates.io/crates/msla_format) [![Downloads](https://img.shields.io/crates/d/msla_format?label=Downloads)](https://crates.io/crates/msla_format)
 
-Library for encoding and decoding common masked stereolithography (MSLA) file formats.
+Library for encoding and decoding common MSLA file formats.
 This crate is a collection of format implementation extracted from my [mslicer](https://github.com/connorslade/mslicer) project, an open source slicer for MSLA printers.
 
 ## Supported Formats

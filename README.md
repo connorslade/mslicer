@@ -1,6 +1,6 @@
 # mslicer [![Build][actions-badge]][actions] ![][download-badge]
 
-An experimental open-source slicer for masked stereolithography (resin) printers.
+A high-performance, open-source slicer for MSLA resin printers.
 Supports the following output formats: Chitu (.ctb), Elegoo (.goo), NanoDLP (.nanodlp), and Vector (.svg).
 You can read more about the development of this project on its [project page].
 Often 20× to 120× faster than competing slicers, see the [benchmark results].

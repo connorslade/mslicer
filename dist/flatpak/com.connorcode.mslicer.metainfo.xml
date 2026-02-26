@@ -19,7 +19,7 @@
 	<summary>Masked stereolithography slicer</summary>
 	<description>
 		<p>
-		    An experimental open-source slicer for masked stereolithography (resin) printers.
+            A high-performance open-source slicer for MSLA resin printers.
 		    Supports the following output formats: Chitu (.ctb), Elegoo (.goo), NanoDLP (.nanodlp), and Vector (.svg).
 		</p>
 	</description>
