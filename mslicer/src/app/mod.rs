@@ -134,7 +134,6 @@ impl App {
         info!("Starting slicing operation");
 
         let slice_config = self.project.slice_config.clone();
-        let mut out = Vec::new();
 
         let slice_height = slice_config.slice_height.get::<Milimeter>();
         let platform_size = (slice_config.platform_size.xy()).map(|x| x.get::<Milimeter>());
@@ -143,18 +142,22 @@ impl App {
         let mm_to_px = platform.component_div(&platform_size).push(1.0);
 
         // Transform models from world-space to platform-space
-        for mesh in meshes.into_iter() {
-            let mut mesh = mesh.mesh;
+        let mut meshes_vec: Vec<slicer::mesh::Mesh> = Vec::new();
+        let mut exposures_vec: Vec<f32> = Vec::new();
+
+        for model in meshes.into_iter() {
+            let mut mesh = model.mesh;
             mesh.set_scale_unchecked(mesh.scale().component_mul(&mm_to_px));
 
             let offset = (platform / 2.0).push(-slice_height / 2.0);
             mesh.set_position_unchecked(mesh.position().component_mul(&mm_to_px) + offset);
             mesh.update_transformation_matrix();
 
-            out.push(mesh);
+            meshes_vec.push(mesh);
+            exposures_vec.push(model.relative_exposure);
         }
 
-        let slicer = Slicer::new(slice_config, out);
+        let slicer = Slicer::new_with_exposures(slice_config, meshes_vec, exposures_vec);
         let post_process = CombinedProgress::new();
         let slice_operation = SliceOperation::new(slicer.progress(), post_process.clone());
         self.slice_operation.replace(slice_operation);
