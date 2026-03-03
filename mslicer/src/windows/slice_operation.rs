@@ -139,15 +139,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                             ui.button(RichText::new(CARET_DOWN)).clicked() as usize;
 
                         ui.separator();
-                        ui.label("Scale");
-                        ui.add(
-                            DragValue::new(&mut result.preview_scale)
-                                .range(0.5..=10.0)
-                                .speed(0.1),
-                        );
-
-                        ui.separator();
-                        if ui.button(concatcp!(CORNERS_IN, " Center View")).clicked() {
+                        if ui.button(concatcp!(CORNERS_IN, " Reset View")).clicked() {
                             result.preview_offset = Vector2::zeros();
                             result.preview_scale = 1.0;
                         }
@@ -240,9 +232,9 @@ fn slice_preview(ui: &mut egui::Ui, result: &mut SliceResult) {
                     drag.x / rect.width() * width as f32 / preview_scale * aspect;
                 result.preview_offset.y += drag.y / rect.height() * height as f32 / preview_scale;
 
-                if let Some(pointer) = ui.input(|x| x.pointer.hover_pos()) {
-                    let t = (pointer - rect.min) / (rect.max - rect.min); // screen space
-
+                if let Some(pointer) = response.hover_pos()
+                    && rect.contains(pointer)
+                {
                     let dimensions = Vec2::new(info.resolution.x as f32, info.resolution.y as f32);
                     let aspect = rect.width() / rect.height() * dimensions.y / dimensions.x;
 
@@ -252,7 +244,8 @@ fn slice_preview(ui: &mut egui::Ui, result: &mut SliceResult) {
 
                     if scroll.y != 0.0 {
                         // Scale around the cursor, not the center of the layer
-                        let delta = ((t - Vec2::splat(0.5)) * Vec2::new(aspect, 1.0) * dimensions)
+                        let t = (pointer - rect.min) / (rect.max - rect.min) - Vec2::splat(0.5);
+                        let delta = (t * Vec2::new(aspect, 1.0) * dimensions)
                             * (preview_scale.recip() - result.preview_scale.powi(-2));
                         result.preview_offset.x += delta.x;
                         result.preview_offset.y -= delta.y;
