@@ -1,6 +1,8 @@
+use std::mem;
+
 use common::misc::subscript_number;
 use const_format::concatcp;
-use egui::{Align, Context, Grid, Id, Layout, Popup, Ui, collapsing_header::CollapsingState};
+use egui::{Align, Context, Grid, Layout, Popup, Ui, collapsing_header::CollapsingState};
 use egui_phosphor::regular::{
     ARROW_LINE_DOWN, COPY, CURSOR_TEXT, DICE_THREE, DOTS_THREE_CIRCLE, EYE, EYE_SLASH, LINK_BREAK,
     LINK_SIMPLE, TRASH, WARNING,
@@ -8,7 +10,11 @@ use egui_phosphor::regular::{
 use nalgebra::Vector3;
 
 use crate::{
-    app::{App, history::ModelAction, project::model::MeshWarnings},
+    app::{
+        App,
+        history::ModelAction,
+        project::model::{MeshWarnings, RenameState},
+    },
     ui::components::{
         being_edited, history_tracked_model, vec3_dragger, vec3_dragger_proportional,
     },
@@ -39,43 +45,34 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
         let collapse_id = ui.id().with(id);
 
         let mut collapsing = CollapsingState::load_with_default_open(ui.ctx(), collapse_id, false);
-        let collapse_next_frame_id = collapse_id.with("next_frame");
-        if ui.data_mut(|d| d.remove_temp::<bool>(collapse_next_frame_id) == Some(true)) {
-            collapsing.toggle(ui);
-        }
+        mem::take(&mut model.ui.toggle).then(|| collapsing.toggle(ui));
 
         collapsing
             .show_header(ui, |ui| {
                 ui.visuals_mut().button_frame = false;
 
-                let name_edit_id = collapse_id.with("name_edit");
-                let editing = ui.data(|d| d.get_temp::<bool>(name_edit_id));
-                if let Some(b) = editing {
+                if !matches!(model.ui.rename, RenameState::None) {
                     let text_edit = ui.text_edit_singleline(&mut model.name);
-                    if !b {
+                    if matches!(model.ui.rename, RenameState::Starting) {
                         text_edit.request_focus();
-                        ui.data_mut(|d| d.insert_temp(name_edit_id, true));
+                        model.ui.rename = RenameState::Editing;
                     }
 
                     let editing = being_edited(&text_edit);
-                    if !editing {
-                        ui.data_mut(|d| d.remove_temp::<bool>(name_edit_id));
-                    }
+                    (!editing).then(|| model.ui.rename = RenameState::None);
 
                     history_tracked_model(
                         (editing, ui, &mut app.history),
                         (id, || ModelAction::Name(model.name.clone())),
                     )
                 } else {
-                    if ui.button(&model.name).clicked() {
-                        ui.data_mut(|d| d.insert_temp(collapse_next_frame_id, true));
-                    }
+                    model.ui.toggle ^= ui.button(&model.name).clicked();
                 }
 
                 ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                     ui.menu_button(DOTS_THREE_CIRCLE, |ui| {
                         (ui.button(concatcp!(CURSOR_TEXT, " Rename")).clicked())
-                            .then(|| ui.data_mut(|d| d.insert_temp(name_edit_id, false)));
+                            .then(|| model.ui.rename = RenameState::Starting);
                         (ui.button(concatcp!(TRASH, " Delete")).clicked())
                             .then(|| action = Action::Remove(i));
                         (ui.button(concatcp!(COPY, " Duplicate")).clicked())
@@ -143,7 +140,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
 
                         ui.horizontal(|ui| {
                             let mut scale = model.mesh.scale();
-                            let editing = if model.locked_scale {
+                            let editing = if model.ui.locked_scale {
                                 vec3_dragger_proportional(ui, scale.as_mut(), |x| {
                                     x.speed(0.01).range(0.001..=f32::MAX)
                                 })
@@ -158,8 +155,8 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
                             );
                             (model.mesh.scale() != scale).then(|| model.set_scale(platform, scale));
 
-                            model.locked_scale ^= ui
-                                .button([LINK_BREAK, LINK_SIMPLE][model.locked_scale as usize])
+                            model.ui.locked_scale ^= ui
+                                .button([LINK_BREAK, LINK_SIMPLE][model.ui.locked_scale as usize])
                                 .clicked();
                         });
                         ui.end_row();
@@ -196,9 +193,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
 
     match action {
         Action::Remove(i) => {
-            let id = app.project.models.remove(i).id;
-            let id = Id::new(format!("model_show_{id}",));
-            ui.data_mut(|map| map.remove::<bool>(id));
+            app.project.models.remove(i).id;
         }
         Action::Duplicate(i) => {
             let model = app.project.models[i].clone();

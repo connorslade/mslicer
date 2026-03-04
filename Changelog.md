@@ -11,6 +11,7 @@
 - Cleanup slice preview scaling
   - Will now always default to 1× scale
   - Zooming is now centered on the cursor position
+- Cleanup model panel UI
 
 ## v0.5.0 &mdash; February 21st, 2026
 

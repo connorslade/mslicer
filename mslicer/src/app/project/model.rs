@@ -34,9 +34,23 @@ pub struct Model {
 
     pub color: LinearRgb<f32>,
     pub hidden: bool,
-    pub locked_scale: bool,
+    pub ui: ModelUi,
 
     buffers: Option<RenderedMeshBuffers>,
+}
+
+#[derive(Clone)]
+pub struct ModelUi {
+    pub toggle: bool,
+    pub rename: RenameState,
+    pub locked_scale: bool,
+}
+
+#[derive(Clone)]
+pub enum RenameState {
+    None,
+    Starting,
+    Editing,
 }
 
 bitflags! {
@@ -67,7 +81,8 @@ impl Model {
 
             color: LinearRgb::repeat(1.0),
             hidden: false,
-            locked_scale: true,
+
+            ui: ModelUi::default(),
             buffers: None,
         }
     }
@@ -175,8 +190,18 @@ impl Clone for Model {
 
             color: self.color,
             hidden: self.hidden,
-            locked_scale: self.locked_scale,
+            ui: self.ui.clone(),
             buffers: None,
+        }
+    }
+}
+
+impl Default for ModelUi {
+    fn default() -> Self {
+        Self {
+            toggle: false,
+            rename: RenameState::None,
+            locked_scale: true,
         }
     }
 }
