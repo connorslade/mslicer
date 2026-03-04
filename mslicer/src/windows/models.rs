@@ -1,9 +1,9 @@
 use common::misc::subscript_number;
 use const_format::concatcp;
-use egui::{Context, Grid, Id, Popup, Ui};
+use egui::{Align, Context, Grid, Id, Layout, Popup, Ui, collapsing_header::CollapsingState};
 use egui_phosphor::regular::{
-    ARROW_LINE_DOWN, CIRCLES_THREE, COPY, DICE_THREE, EYE, EYE_SLASH, LINK_BREAK, LINK_SIMPLE,
-    TRASH, TRIANGLE, WARNING,
+    ARROW_LINE_DOWN, COPY, CURSOR_TEXT, DICE_THREE, DOTS_THREE_CIRCLE, EYE, EYE_SLASH, LINK_BREAK,
+    LINK_SIMPLE, TRASH, WARNING,
 };
 use nalgebra::Vector3;
 
@@ -33,160 +33,165 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
         return;
     }
 
-    let width = ui.available_width();
     let platform = &app.project.slice_config.platform_size;
-
     for (i, model) in app.project.models.iter_mut().enumerate() {
         let id = model.id;
-        let data_id = Id::new("model_show").with(id);
-        let open = ui.data_mut(|map| *map.get_temp_mut_or_insert_with(data_id, || false));
+        let collapse_id = ui.id().with(id);
 
-        ui.horizontal(|ui| {
-            (ui.button(if open { "⏷" } else { "⏵" }).clicked())
-                .then(|| ui.data_mut(|map| map.insert_temp(data_id, !open)));
+        let mut collapsing = CollapsingState::load_with_default_open(ui.ctx(), collapse_id, false);
+        let collapse_next_frame_id = collapse_id.with("next_frame");
+        if ui.data_mut(|d| d.remove_temp::<bool>(collapse_next_frame_id) == Some(true)) {
+            collapsing.toggle(ui);
+        }
 
-            let toggle_history = ui
-                .button(if model.hidden { EYE_SLASH } else { EYE })
-                .on_hover_text(if model.hidden { "Show" } else { "Hide" })
-                .clicked();
-            if toggle_history {
-                app.history
-                    .track_model(model.id, ModelAction::Hidden(model.hidden))
-            }
-            model.hidden ^= toggle_history;
+        collapsing
+            .show_header(ui, |ui| {
+                ui.visuals_mut().button_frame = false;
 
-            if !model.warnings.is_empty() {
-                let count = model.warnings.bits().count_ones();
-                let mut warn = ui.label(format!("{WARNING}{}", subscript_number(count)));
-                for warning in model.warnings.iter() {
-                    let desc = match warning {
-                        MeshWarnings::NonManifold => WARN_NON_MANIFOLD,
-                        MeshWarnings::OutOfBounds => WARN_OUT_OF_BOUNDS,
-                        _ => unreachable!(),
-                    };
-                    warn = warn.on_hover_text(desc);
-                }
-            }
+                let name_edit_id = collapse_id.with("name_edit");
+                let editing = ui.data(|d| d.get_temp::<bool>(name_edit_id));
+                if let Some(b) = editing {
+                    let text_edit = ui.text_edit_singleline(&mut model.name);
+                    if !b {
+                        text_edit.request_focus();
+                        ui.data_mut(|d| d.insert_temp(name_edit_id, true));
+                    }
 
-            if open {
-                let text_edit = ui.text_edit_singleline(&mut model.name);
-                let editing = being_edited(&text_edit);
-                history_tracked_model(
-                    (editing, ui, &mut app.history),
-                    (id, || ModelAction::Name(model.name.clone())),
-                )
-            } else {
-                ui.label(&model.name);
-            }
-        });
+                    let editing = being_edited(&text_edit);
+                    if !editing {
+                        ui.data_mut(|d| d.remove_temp::<bool>(name_edit_id));
+                    }
 
-        if open {
-            Grid::new(format!("model_{}", model.id))
-                .num_columns(2)
-                .with_row_color(|row, style| (row % 2 == 0).then_some(style.visuals.faint_bg_color))
-                .show(ui, |ui| {
-                    ui.label("Info");
-                    ui.horizontal(|ui| {
-                        ui.label(TRIANGLE);
-                        ui.monospace(model.mesh.face_count().to_string());
-
-                        ui.separator();
-
-                        ui.label(CIRCLES_THREE);
-                        ui.monospace(model.mesh.vertex_count().to_string());
-                    });
-                    ui.end_row();
-
-                    ui.label("Actions");
-                    ui.vertical(|ui| {
-                        ui.horizontal_wrapped(|ui| {
-                            (ui.button(concatcp!(TRASH, " Delete")).clicked())
-                                .then(|| action = Action::Remove(i));
-                            (ui.button(concatcp!(COPY, " Duplicate")).clicked())
-                                .then(|| action = Action::Duplicate(i));
-                            ui.button(concatcp!(ARROW_LINE_DOWN, " Align to Bed"))
-                                .clicked()
-                                .then(|| {
-                                    let old_pos = model.mesh.position();
-                                    app.history.track_model(id, ModelAction::Position(old_pos));
-
-                                    model.align_to_bed();
-                                    model.update_oob(platform);
-                                });
-                        });
-                    });
-                    ui.end_row();
-
-                    ui.horizontal(|ui| {
-                        ui.label("Position");
-                        ui.add_space(20.0);
-                    });
-                    ui.horizontal(|ui| {
-                        let mut position = model.mesh.position();
-                        let editing = vec3_dragger(ui, position.as_mut(), |x| x);
-                        history_tracked_model(
-                            (editing, ui, &mut app.history),
-                            (id, || ModelAction::Position(model.mesh.position())),
-                        );
-                        (model.mesh.position() != position)
-                            .then(|| model.set_position(platform, position));
-                        ui.add_space(width);
-                    });
-                    ui.end_row();
-
-                    ui.label("Scale");
-
-                    ui.horizontal(|ui| {
-                        let mut scale = model.mesh.scale();
-                        let editing = if model.locked_scale {
-                            vec3_dragger_proportional(ui, scale.as_mut(), |x| {
-                                x.speed(0.01).range(0.001..=f32::MAX)
-                            })
-                        } else {
-                            vec3_dragger(ui, scale.as_mut(), |x| {
-                                x.speed(0.01).range(0.001..=f32::MAX)
-                            })
-                        };
-                        history_tracked_model(
-                            (editing, ui, &mut app.history),
-                            (id, || ModelAction::Scale(model.mesh.scale())),
-                        );
-                        (model.mesh.scale() != scale).then(|| model.set_scale(platform, scale));
-
-                        model.locked_scale ^= ui
-                            .button([LINK_BREAK, LINK_SIMPLE][model.locked_scale as usize])
-                            .clicked();
-                    });
-                    ui.end_row();
-
-                    ui.label("Rotation");
-                    let mut rotation = rad_to_deg(model.mesh.rotation());
-                    let editing = vec3_dragger(ui, rotation.as_mut(), |x| x.suffix("°"));
                     history_tracked_model(
                         (editing, ui, &mut app.history),
-                        (id, || ModelAction::Rotation(model.mesh.rotation())),
-                    );
-                    (model.mesh.rotation() != rotation)
-                        .then(|| model.set_rotation(platform, deg_to_rad(rotation)));
-                    ui.end_row();
+                        (id, || ModelAction::Name(model.name.clone())),
+                    )
+                } else {
+                    if ui.button(&model.name).clicked() {
+                        ui.data_mut(|d| d.insert_temp(collapse_next_frame_id, true));
+                    }
+                }
 
-                    ui.label("Color");
-                    ui.horizontal(|ui| {
-                        let editing = Popup::is_id_open(ctx, ui.auto_id_with("popup"));
-                        let original_color = model.color;
-                        ui.color_edit_button_rgb(model.color.as_slice_mut());
+                ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                    ui.menu_button(DOTS_THREE_CIRCLE, |ui| {
+                        (ui.button(concatcp!(CURSOR_TEXT, " Rename")).clicked())
+                            .then(|| ui.data_mut(|d| d.insert_temp(name_edit_id, false)));
+                        (ui.button(concatcp!(TRASH, " Delete")).clicked())
+                            .then(|| action = Action::Remove(i));
+                        (ui.button(concatcp!(COPY, " Duplicate")).clicked())
+                            .then(|| action = Action::Duplicate(i));
+                        ui.button(concatcp!(ARROW_LINE_DOWN, " Align to Bed"))
+                            .clicked()
+                            .then(|| {
+                                let old_pos = model.mesh.position();
+                                app.history.track_model(id, ModelAction::Position(old_pos));
+
+                                model.align_to_bed();
+                                model.update_oob(platform);
+                            });
+                    });
+
+                    if ui
+                        .button(if model.hidden { EYE_SLASH } else { EYE })
+                        .on_hover_text(if model.hidden { "Show" } else { "Hide" })
+                        .clicked()
+                    {
+                        app.history
+                            .track_model(model.id, ModelAction::Hidden(model.hidden));
+                        model.hidden ^= true;
+                    }
+
+                    if !model.warnings.is_empty() {
+                        let count = model.warnings.bits().count_ones();
+                        let mut warn = ui.label(format!("{WARNING}{}", subscript_number(count)));
+                        for warning in model.warnings.iter() {
+                            let desc = match warning {
+                                MeshWarnings::NonManifold => WARN_NON_MANIFOLD,
+                                MeshWarnings::OutOfBounds => WARN_OUT_OF_BOUNDS,
+                                _ => unreachable!(),
+                            };
+                            warn = warn.on_hover_text(desc);
+                        }
+                    }
+                });
+            })
+            .body(|ui| {
+                Grid::new(format!("model_{}", model.id))
+                    .num_columns(2)
+                    .with_row_color(|row, style| {
+                        (row % 2 == 0).then_some(style.visuals.faint_bg_color)
+                    })
+                    .show(ui, |ui| {
+                        ui.horizontal(|ui| {
+                            ui.label("Position");
+                            ui.add_space(20.0);
+                        });
+                        ui.horizontal(|ui| {
+                            let mut position = model.mesh.position();
+                            let editing = vec3_dragger(ui, position.as_mut(), |x| x);
+                            history_tracked_model(
+                                (editing, ui, &mut app.history),
+                                (id, || ModelAction::Position(model.mesh.position())),
+                            );
+                            (model.mesh.position() != position)
+                                .then(|| model.set_position(platform, position));
+                            ui.add_space(ui.available_width());
+                        });
+                        ui.end_row();
+
+                        ui.label("Scale");
+
+                        ui.horizontal(|ui| {
+                            let mut scale = model.mesh.scale();
+                            let editing = if model.locked_scale {
+                                vec3_dragger_proportional(ui, scale.as_mut(), |x| {
+                                    x.speed(0.01).range(0.001..=f32::MAX)
+                                })
+                            } else {
+                                vec3_dragger(ui, scale.as_mut(), |x| {
+                                    x.speed(0.01).range(0.001..=f32::MAX)
+                                })
+                            };
+                            history_tracked_model(
+                                (editing, ui, &mut app.history),
+                                (id, || ModelAction::Scale(model.mesh.scale())),
+                            );
+                            (model.mesh.scale() != scale).then(|| model.set_scale(platform, scale));
+
+                            model.locked_scale ^= ui
+                                .button([LINK_BREAK, LINK_SIMPLE][model.locked_scale as usize])
+                                .clicked();
+                        });
+                        ui.end_row();
+
+                        ui.label("Rotation");
+                        let mut rotation = rad_to_deg(model.mesh.rotation());
+                        let editing = vec3_dragger(ui, rotation.as_mut(), |x| x.suffix("°"));
                         history_tracked_model(
                             (editing, ui, &mut app.history),
-                            (id, || ModelAction::Color(original_color)),
+                            (id, || ModelAction::Rotation(model.mesh.rotation())),
                         );
+                        (model.mesh.rotation() != rotation)
+                            .then(|| model.set_rotation(platform, deg_to_rad(rotation)));
+                        ui.end_row();
 
-                        if ui.button(concatcp!(DICE_THREE, " Random")).clicked() {
-                            app.history.track_model(id, ModelAction::Color(model.color));
-                            model.randomize_color();
-                        }
+                        ui.label("Color");
+                        ui.horizontal(|ui| {
+                            let editing = Popup::is_id_open(ctx, ui.auto_id_with("popup"));
+                            let original_color = model.color;
+                            ui.color_edit_button_rgb(model.color.as_slice_mut());
+                            history_tracked_model(
+                                (editing, ui, &mut app.history),
+                                (id, || ModelAction::Color(original_color)),
+                            );
+
+                            if ui.button(concatcp!(DICE_THREE, " Random")).clicked() {
+                                app.history.track_model(id, ModelAction::Color(model.color));
+                                model.randomize_color();
+                            }
+                        });
                     });
-                });
-        }
+            });
     }
 
     match action {
