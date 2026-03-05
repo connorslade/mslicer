@@ -1,6 +1,6 @@
 use std::env;
 
-use common::units::{Micrometers, Milimeters, Seconds, SquareMilimeters};
+use common::units::{CubicCentimeters, Micrometers, Milimeters, Seconds, SquareMilimeters};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -62,7 +62,7 @@ pub struct Plate {
     pub repaired: bool,
     pub corrupted: bool,
     // faulty_layers: null
-    pub total_solid_area: SquareMilimeters,
+    pub total_solid_area: CubicCentimeters,
     pub blackout_data: String,
     pub layers_count: u32,
     pub processed: bool,
@@ -110,8 +110,8 @@ pub struct Options {
     pub x_offset: u32,
     pub y_offset: u32,
     pub z_offset: u32,
-    pub x_pixel_size: f32,
-    pub y_pixel_size: f32,
+    pub x_pixel_size: Milimeters,
+    pub y_pixel_size: Milimeters,
     // mask: null,
     pub auto_center: u32,
     pub slice_from_zero: bool,
@@ -168,8 +168,8 @@ pub struct Options {
     pub ignore_mask: u32,
     #[serde(rename = "XYRes")]
     pub xy_res: f32,
-    pub x_res: f32,
-    pub y_res: f32,
+    pub x_res: Micrometers,
+    pub y_res: Micrometers,
     pub z_res_perc: u32,
     pub preview_width: u32,
     pub preview_height: u32,

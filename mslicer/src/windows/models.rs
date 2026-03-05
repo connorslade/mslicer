@@ -193,7 +193,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
 
     match action {
         Action::Remove(i) => {
-            app.project.models.remove(i).id;
+            app.project.models.remove(i);
         }
         Action::Duplicate(i) => {
             let model = app.project.models[i].clone();

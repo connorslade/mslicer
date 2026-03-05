@@ -9,7 +9,6 @@ use common::{
     progress::Progress,
     serde::{DynamicSerializer, Serializer},
     slice::{Format, SliceInfo, SliceResult, SlicedFile},
-    units::Milimeter,
 };
 use image::{DynamicImage, RgbaImage};
 use nalgebra::{Vector2, Vector3};
@@ -43,19 +42,20 @@ impl File {
             result.layers.into_iter().map(|x| (x.inner, x.info)).unzip();
 
         let config = result.slice_config;
-        let pixel_size = (config.platform_size.xy())
-            .map(|x| x.get::<Milimeter>())
-            .component_div(&config.platform_resolution.cast());
+        let pixel_size = Vector2::new(
+            config.platform_size.x / config.platform_resolution.x as f32,
+            config.platform_size.y / config.platform_resolution.y as f32,
+        );
+        let voxel_volume = pixel_size.x * pixel_size.y * config.slice_height;
 
         let timestamp = (SystemTime::now().duration_since(UNIX_EPOCH).unwrap()).as_secs();
         let (min, max) = layers_bounds(config, &layer_info);
-        let first_layer_area = (layer_info.first().map(|x| x.total_solid_area)).unwrap_or_default();
 
         Self {
             meta: Default::default(),
             plate: Plate {
                 processed: true,
-                total_solid_area: first_layer_area, // not entirely sure what this value is supposed to be.
+                total_solid_area: voxel_volume.convert() * result.voxels as f32,
                 layers_count: layers.len() as u32,
                 x_min: min.x,
                 x_max: max.x,
@@ -73,6 +73,8 @@ impl File {
                 y_offset: config.platform_resolution.y / 2,
                 x_pixel_size: pixel_size.x,
                 y_pixel_size: pixel_size.y,
+                x_res: pixel_size.x.convert(),
+                y_res: pixel_size.y.convert(),
                 ignore_mask: 1,
                 image_mirror: 1,
                 display_controller: 1,
