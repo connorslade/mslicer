@@ -1,5 +1,6 @@
 use std::{
     f32::consts::TAU,
+    path::PathBuf,
     sync::{
         Arc,
         atomic::{AtomicU32, Ordering},
@@ -35,6 +36,8 @@ pub struct Model {
     pub color: LinearRgb<f32>,
     pub hidden: bool,
     pub ui: ModelUi,
+    pub file_path: Option<PathBuf>,
+    pub parent_model_id: Option<u32>,
 
     buffers: Option<RenderedMeshBuffers>,
 }
@@ -83,6 +86,8 @@ impl Model {
             hidden: false,
 
             ui: ModelUi::default(),
+            file_path: None,
+            parent_model_id: None,
             buffers: None,
         }
     }
@@ -105,6 +110,30 @@ impl Model {
     pub fn with_random_color(mut self) -> Self {
         self.randomize_color();
         self
+    }
+
+    pub fn with_parent_model_id(mut self, parent_id: u32) -> Self {
+        self.parent_model_id = Some(parent_id);
+        self
+    }
+
+    pub fn with_file_path(mut self, file_path: PathBuf) -> Self {
+        self.file_path = Some(file_path);
+        self
+    }
+
+    pub fn replace_mesh(&mut self, mut mesh: Mesh, platform: &Vector3<Milimeters>) {
+        // Apply the current transformations to the new mesh before replacing
+        mesh.set_position_unchecked(self.mesh.position());
+        mesh.set_scale_unchecked(self.mesh.scale());
+        mesh.set_rotation_unchecked(self.mesh.rotation());
+        mesh.update_transformation_matrix();
+        self.mesh = mesh;
+
+        // Invalidate buffers so they will be recreated
+        self.buffers = None;
+
+        self.update_oob(platform);
     }
 
     pub fn randomize_color(&mut self) -> &mut Self {
@@ -191,6 +220,8 @@ impl Clone for Model {
             color: self.color,
             hidden: self.hidden,
             ui: self.ui.clone(),
+            file_path: self.file_path.clone(),
+            parent_model_id: self.parent_model_id,
             buffers: None,
         }
     }

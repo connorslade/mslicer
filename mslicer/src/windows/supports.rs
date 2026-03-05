@@ -152,7 +152,8 @@ fn generate_support(
     let (supports, debug) = support.generate_line_supports(&mesh.mesh, half_edge);
     let mesh = Model::from_mesh(supports)
         .with_name(format!("Supports {}", mesh.name))
-        .with_random_color();
+        .with_random_color()
+        .with_parent_model_id(mesh.id);
 
     meshes.push(mesh);
     debug

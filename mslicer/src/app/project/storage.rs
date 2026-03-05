@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::Arc};
+use std::{collections::HashMap, path::PathBuf, sync::Arc};
 
 use anyhow::{Result, ensure};
 use nalgebra::Vector3;
@@ -26,6 +26,9 @@ struct ModelInfo {
     position: Vector3<f32>,
     scale: Vector3<f32>,
     rotation: Vector3<f32>,
+
+    file_path: Option<PathBuf>,
+    parent_model_id: Option<u32>,
 }
 
 impl ModelInfo {
@@ -38,6 +41,8 @@ impl ModelInfo {
             position: model.mesh.position(),
             scale: model.mesh.scale(),
             rotation: model.mesh.rotation(),
+            file_path: model.file_path.clone(),
+            parent_model_id: model.parent_model_id,
         }
     }
 
@@ -48,10 +53,14 @@ impl ModelInfo {
         mesh.set_rotation_unchecked(self.rotation);
         mesh.update_transformation_matrix();
 
-        Model::from_mesh(mesh)
+        let mut model = Model::from_mesh(mesh)
             .with_name(self.name)
             .with_color(self.color.into())
-            .with_hidden(self.hidden)
+            .with_hidden(self.hidden);
+        if let Some(file_path) = self.file_path {
+            model = model.with_file_path(file_path);
+        }
+        model
     }
 
     pub fn serialize<T: Serializer>(&self, ser: &mut T) {
@@ -68,6 +77,20 @@ impl ModelInfo {
         self.position.serialize(ser);
         self.scale.serialize(ser);
         self.rotation.serialize(ser);
+
+        // File path
+        ser.write_bool(self.file_path.is_some());
+        if let Some(file_path) = &self.file_path {
+            let path_str = file_path.to_string_lossy();
+            ser.write_u32_be(path_str.len() as u32);
+            ser.write_bytes(path_str.as_bytes());
+        }
+
+        // Parent model ID
+        ser.write_bool(self.parent_model_id.is_some());
+        if let Some(parent_id) = self.parent_model_id {
+            ser.write_u32_be(parent_id);
+        }
     }
 
     pub fn deserialize<T: Deserializer>(des: &mut T) -> Self {
@@ -83,6 +106,25 @@ impl ModelInfo {
             position: Vector3::<f32>::deserialize(des),
             scale: Vector3::<f32>::deserialize(des),
             rotation: Vector3::<f32>::deserialize(des),
+            file_path: {
+                let has_path = des.read_bool();
+                if has_path {
+                    let path_len = des.read_u32_be();
+                    let path_data = des.read_bytes(path_len as usize);
+                    let path_str = String::from_utf8_lossy(&path_data);
+                    Some(PathBuf::from(&*path_str))
+                } else {
+                    None
+                }
+            },
+            parent_model_id: {
+                let has_parent = des.read_bool();
+                if has_parent {
+                    Some(des.read_u32_be())
+                } else {
+                    None
+                }
+            },
         }
     }
 }

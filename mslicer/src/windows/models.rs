@@ -4,8 +4,8 @@ use common::misc::subscript_number;
 use const_format::concatcp;
 use egui::{Align, Context, Grid, Layout, Popup, Ui, collapsing_header::CollapsingState};
 use egui_phosphor::regular::{
-    ARROW_LINE_DOWN, COPY, CURSOR_TEXT, DICE_THREE, DOTS_THREE_CIRCLE, EYE, EYE_SLASH, LINK_BREAK,
-    LINK_SIMPLE, TRASH, WARNING,
+    ARROW_COUNTER_CLOCKWISE, ARROW_LINE_DOWN, COPY, CURSOR_TEXT, DICE_THREE, DOTS_THREE_CIRCLE,
+    EYE, EYE_SLASH, LINK_BREAK, LINK_SIMPLE, TRASH, WARNING,
 };
 use nalgebra::Vector3;
 
@@ -14,6 +14,7 @@ use crate::{
         App,
         history::ModelAction,
         project::model::{MeshWarnings, RenameState},
+        task::MeshLoad,
     },
     ui::components::{
         being_edited, history_tracked_model, vec3_dragger, vec3_dragger_proportional,
@@ -27,6 +28,7 @@ enum Action {
     None,
     Remove(usize),
     Duplicate(usize),
+    Reload(usize),
 }
 
 pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
@@ -73,6 +75,11 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
                     ui.menu_button(DOTS_THREE_CIRCLE, |ui| {
                         (ui.button(concatcp!(CURSOR_TEXT, " Rename")).clicked())
                             .then(|| model.ui.rename = RenameState::Starting);
+                        if model.file_path.is_some() {
+                            (ui.button(concatcp!(ARROW_COUNTER_CLOCKWISE, " Reload"))
+                                .clicked())
+                            .then(|| action = Action::Reload(i));
+                        }
                         (ui.button(concatcp!(TRASH, " Delete")).clicked())
                             .then(|| action = Action::Remove(i));
                         (ui.button(concatcp!(COPY, " Duplicate")).clicked())
@@ -199,6 +206,24 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
             let model = app.project.models[i].clone();
             app.project.models.push(model);
         }
+        Action::Reload(i) => {
+            if let Some(file_path) = app.project.models[i].file_path.clone() {
+                let model_id = app.project.models[i].id;
+                let supports_removed = remove_supports_for_model(app, model_id);
+
+                if !supports_removed.is_empty() {
+                    // Show warning to user
+                    use crate::ui::popup::PopupIcon;
+                    app.popup.open(crate::ui::popup::Popup::simple(
+                        "Supports Removed",
+                        PopupIcon::Warning,
+                        "Supports were removed due to model reload. Please regenerate supports if needed."
+                    ));
+                }
+
+                app.tasks.add(MeshLoad::reload(file_path, i));
+            }
+        }
         Action::None => {}
     }
 }
@@ -209,4 +234,24 @@ fn rad_to_deg(pos: Vector3<f32>) -> Vector3<f32> {
 
 fn deg_to_rad(pos: Vector3<f32>) -> Vector3<f32> {
     pos.map(|x| x.to_radians())
+}
+
+/// Removes all support models for a given parent model ID.
+/// Returns a vector of indices that were removed.
+fn remove_supports_for_model(app: &mut App, model_id: u32) -> Vec<usize> {
+    let supports_to_remove: Vec<usize> = app
+        .project
+        .models
+        .iter()
+        .enumerate()
+        .filter(|(_, m)| m.parent_model_id == Some(model_id))
+        .map(|(idx, _)| idx)
+        .collect();
+
+    // Remove supports in reverse order to avoid index shifting
+    for idx in supports_to_remove.iter().rev() {
+        app.project.models.remove(*idx);
+    }
+
+    supports_to_remove
 }
