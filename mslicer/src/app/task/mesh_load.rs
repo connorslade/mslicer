@@ -22,6 +22,7 @@ pub struct MeshLoad {
     progress: Progress,
     join: TaskThread<mesh_format::Mesh>,
     name: String,
+    file_path: Option<PathBuf>,
 }
 
 impl MeshLoad {
@@ -35,6 +36,7 @@ impl MeshLoad {
             })),
             progress,
             name,
+            file_path: Some(path),
         }
     }
 
@@ -47,6 +49,7 @@ impl MeshLoad {
             })),
             progress,
             name,
+            file_path: None,
         }
     }
 }
@@ -64,6 +67,9 @@ impl Task for MeshLoad {
             let mut model = Model::from_mesh(mesh)
                 .with_name(mem::take(&mut self.name))
                 .with_random_color();
+            if let Some(file_path) = self.file_path.take() {
+                model = model.with_file_path(file_path);
+            }
             model.update_oob(&app.project.slice_config.platform_size);
             let result = PollResult::complete()
                 .with_task(MeshManifold::new(&model))
