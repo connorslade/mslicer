@@ -1,4 +1,4 @@
-use std::{fs::File, io::BufReader, mem};
+use std::{fs::File, io::BufReader, mem, path::PathBuf};
 
 use clone_macro::clone;
 use common::{
@@ -25,7 +25,8 @@ pub struct MeshLoad {
 }
 
 impl MeshLoad {
-    pub fn file(file: File, name: String, format: String) -> Self {
+    pub fn file(path: PathBuf, name: String, format: String) -> Self {
+        let file = File::open(&path).unwrap();
         let des = ReaderDeserializer::new(BufReader::new(file));
         let progress = Progress::new();
         Self {
