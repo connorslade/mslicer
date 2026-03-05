@@ -1,5 +1,6 @@
 use std::{
     f32::consts::TAU,
+    path::PathBuf,
     sync::{
         Arc,
         atomic::{AtomicU32, Ordering},
@@ -37,6 +38,7 @@ pub struct Model {
     pub exposure: u8,
     pub hidden: bool,
     pub ui: ModelUi,
+    pub file_path: Option<PathBuf>,
     pub parent_model_id: Option<u32>,
 
     buffers: Option<RenderedMeshBuffers>,
@@ -87,6 +89,7 @@ impl Model {
             exposure: 255,
             ui: ModelUi::default(),
 
+            file_path: None,
             parent_model_id: None,
             buffers: None,
         }
@@ -124,6 +127,11 @@ impl Model {
 
     pub fn with_parent_model_id(mut self, parent_id: u32) -> Self {
         self.parent_model_id = Some(parent_id);
+        self
+    }
+
+    pub fn with_file_path(mut self, file_path: PathBuf) -> Self {
+        self.file_path = Some(file_path);
         self
     }
 
@@ -215,6 +223,7 @@ impl Clone for Model {
 
             exposure: self.exposure,
 
+            file_path: self.file_path.clone(),
             parent_model_id: self.parent_model_id,
             buffers: None,
         }
