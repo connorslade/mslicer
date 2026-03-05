@@ -295,3 +295,23 @@ fn rad_to_deg(pos: Vector3<f32>) -> Vector3<f32> {
 fn deg_to_rad(pos: Vector3<f32>) -> Vector3<f32> {
     pos.map(|x| x.to_radians())
 }
+
+/// Removes all support models for a given parent model ID.
+/// Returns a vector of indices that were removed.
+fn remove_supports_for_model(app: &mut App, model_id: u32) -> Vec<usize> {
+    let supports_to_remove: Vec<usize> = app
+        .project
+        .models
+        .iter()
+        .enumerate()
+        .filter(|(_, m)| m.parent_model_id == Some(model_id))
+        .map(|(idx, _)| idx)
+        .collect();
+
+    // Remove supports in reverse order to avoid index shifting
+    for idx in supports_to_remove.iter().rev() {
+        app.project.models.remove(*idx);
+    }
+
+    supports_to_remove
+}
