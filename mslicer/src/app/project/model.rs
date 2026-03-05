@@ -135,6 +135,20 @@ impl Model {
         self
     }
 
+    pub fn replace_mesh(&mut self, mut mesh: Mesh, platform: &Vector3<Milimeters>) {
+        // Apply the current transformations to the new mesh before replacing
+        mesh.set_position_unchecked(self.mesh.position());
+        mesh.set_scale_unchecked(self.mesh.scale());
+        mesh.set_rotation_unchecked(self.mesh.rotation());
+        mesh.update_transformation_matrix();
+        self.mesh = mesh;
+
+        // Invalidate buffers so they will be recreated
+        self.buffers = None;
+
+        self.update_oob(platform);
+    }
+
     pub fn randomize_color(&mut self) -> &mut Self {
         let shift = rand::random::<f32>() * TAU;
         self.color = START_COLOR.hue_shift(shift).to_linear_srgb();
