@@ -41,7 +41,6 @@ pub struct Model {
 
 #[derive(Clone)]
 pub struct ModelUi {
-    pub toggle: bool,
     pub rename: RenameState,
     pub locked_scale: bool,
 }
@@ -199,7 +198,6 @@ impl Clone for Model {
 impl Default for ModelUi {
     fn default() -> Self {
         Self {
-            toggle: false,
             rename: RenameState::None,
             locked_scale: true,
         }
