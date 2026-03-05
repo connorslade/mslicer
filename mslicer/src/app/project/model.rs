@@ -36,6 +36,8 @@ pub struct Model {
     pub hidden: bool,
     pub ui: ModelUi,
 
+    pub relative_exposure: f32,
+
     buffers: Option<RenderedMeshBuffers>,
 }
 
@@ -81,8 +83,10 @@ impl Model {
 
             color: LinearRgb::repeat(1.0),
             hidden: false,
-
             ui: ModelUi::default(),
+
+            relative_exposure: 1.0,
+
             buffers: None,
         }
     }
@@ -191,6 +195,9 @@ impl Clone for Model {
             color: self.color,
             hidden: self.hidden,
             ui: self.ui.clone(),
+
+            relative_exposure: self.relative_exposure,
+
             buffers: None,
         }
     }

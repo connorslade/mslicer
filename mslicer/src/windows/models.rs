@@ -187,6 +187,32 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
                                 model.randomize_color();
                             }
                         });
+                        ui.end_row();
+
+                        ui.label("Relative Exposure");
+                        ui.horizontal(|ui| {
+                            // Convert internal 0.0-1.0 range to UI 0-100% range
+                            let mut ui_exposure = model.relative_exposure * 100.0;
+                            let original_exposure = model.relative_exposure;
+                            let editing = ui
+                                .add(
+                                    egui::DragValue::new(&mut ui_exposure)
+                                        .speed(1.0)
+                                        .range(0.0..=100.0)
+                                        .suffix("%"),
+                                )
+                                .changed();
+
+                            // Convert back to internal representation
+                            if editing {
+                                model.relative_exposure = ui_exposure / 100.0;
+                            }
+
+                            history_tracked_model(
+                                (editing, ui, &mut app.history),
+                                (id, || ModelAction::RelativeExposure(original_exposure)),
+                            );
+                        });
                     });
             });
     }

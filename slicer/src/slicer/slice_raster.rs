@@ -27,6 +27,9 @@ impl Slicer {
             .map(|x| Segments1D::from_mesh(x, SEGMENT_LAYERS))
             .collect::<Vec<_>>();
 
+        // Get model exposures for this slicer
+        let model_exposures = &self.model_exposures;
+
         let layers = (0..self.layers)
             .into_par_iter()
             .map(|layer| {
@@ -36,8 +39,14 @@ impl Slicer {
                 // model. Because all the faces are triangles, every triangle
                 // intersection will return two points. These can then be
                 // interpreted as line segments making up a polygon.
-                let segments = (self.models.iter().enumerate())
-                    .flat_map(|(idx, mesh)| segments[idx].intersect_plane(mesh, height))
+                let segments_with_exposure = (self.models.iter().enumerate())
+                    .flat_map(|(idx, mesh)| {
+                        let exposure = model_exposures[idx];
+                        segments[idx]
+                            .intersect_plane(mesh, height)
+                            .into_iter()
+                            .map(move |segment| (segment, exposure))
+                    })
                     .collect::<Vec<_>>();
 
                 // Creates a new encoded for this layer. Because printers can
@@ -55,20 +64,22 @@ impl Slicer {
                 // this one works surprisingly fast.
                 for y in 0..platform_resolution.y {
                     let yf = y as f32 + 0.5;
-                    let mut intersections = (segments.iter())
-                        .map(|x| (x.0[0], x.0[1], x.1))
+                    let mut intersections = (segments_with_exposure.iter())
+                        .map(|(segment, exposure)| {
+                            (segment.0[0], segment.0[1], segment.1, *exposure)
+                        })
                         // Filtering to only consider segments with one point
                         // above the current row and one point below.
-                        .filter(|&(a, b, _)| (a.y >= yf) ^ (b.y >= yf))
-                        .map(|(a, b, facing)| {
+                        .filter(|&(a, b, _, _)| (a.y >= yf) ^ (b.y >= yf))
+                        .map(|(a, b, facing, exposure)| {
                             // Get the x position of the line segment at this y
                             let t = (yf - a.y) / (b.y - a.y);
-                            (a.x + t * (b.x - a.x), facing)
+                            (a.x + t * (b.x - a.x), facing, exposure)
                         })
                         .collect::<Vec<_>>();
 
                     // Sort all these intersections for run-length encoding
-                    intersections.sort_by_key(|&(x, _)| OrderedFloat(x));
+                    intersections.sort_by_key(|&(x, _, _)| OrderedFloat(x));
 
                     // In order to avoid creating a cavity in the model when
                     // there is an intersection either by the same mesh or
@@ -78,19 +89,20 @@ impl Slicer {
                     let mut filtered = Vec::with_capacity(intersections.len());
                     let mut depth = 0;
 
-                    for (pos, dir) in intersections {
+                    for (pos, dir, exposure) in intersections {
                         let prev_depth = depth;
                         depth += (dir as i32) * 2 - 1;
 
-                        ((depth == 0) ^ (prev_depth == 0))
-                            .then(|| filtered.push(pos.clamp(0.0, platform_resolution.x as f32)));
+                        ((depth == 0) ^ (prev_depth == 0)).then(|| {
+                            filtered.push((pos.clamp(0.0, platform_resolution.x as f32), exposure))
+                        });
                     }
 
                     // Convert the intersections into runs of white pixels to be
                     // encoded into the layer.
                     for span in filtered.chunks_exact(2) {
-                        let a = span[0].round() as u64;
-                        let b = span[1].round() as u64;
+                        let a = span[0].0.round() as u64;
+                        let b = span[1].0.round() as u64;
                         if b == a {
                             continue;
                         }
@@ -104,7 +116,10 @@ impl Slicer {
                             encoder.add_run(start - last, 0);
                         }
 
-                        encoder.add_run(length, 255);
+                        // Calculate the intensity based on the exposure value
+                        // For now, use the exposure from the first intersection in the span
+                        let intensity = (span[0].1 * 255.0).round() as u8;
+                        encoder.add_run(length, intensity);
                         voxels.fetch_add(length, Ordering::Relaxed);
                         last = end;
                     }
