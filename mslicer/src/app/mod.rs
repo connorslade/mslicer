@@ -147,7 +147,7 @@ impl App {
             let mut mesh = mesh.mesh;
             mesh.set_scale_unchecked(mesh.scale().component_mul(&mm_to_px));
 
-            let offset = (platform / 2.0).push(-slice_height);
+            let offset = (platform / 2.0).push(-slice_height / 2.0);
             mesh.set_position_unchecked(mesh.position().component_mul(&mm_to_px) + offset);
             mesh.update_transformation_matrix();
 
