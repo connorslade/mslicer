@@ -26,6 +26,8 @@ struct ModelInfo {
     position: Vector3<f32>,
     scale: Vector3<f32>,
     rotation: Vector3<f32>,
+
+    parent_model_id: Option<u32>,
 }
 
 impl ModelInfo {
@@ -38,6 +40,7 @@ impl ModelInfo {
             position: model.mesh.position(),
             scale: model.mesh.scale(),
             rotation: model.mesh.rotation(),
+            parent_model_id: model.parent_model_id,
         }
     }
 
@@ -68,6 +71,12 @@ impl ModelInfo {
         self.position.serialize(ser);
         self.scale.serialize(ser);
         self.rotation.serialize(ser);
+
+        // Parent model ID
+        ser.write_bool(self.parent_model_id.is_some());
+        if let Some(parent_id) = self.parent_model_id {
+            ser.write_u32_be(parent_id);
+        }
     }
 
     pub fn deserialize<T: Deserializer>(des: &mut T) -> Self {
@@ -83,6 +92,14 @@ impl ModelInfo {
             position: Vector3::<f32>::deserialize(des),
             scale: Vector3::<f32>::deserialize(des),
             rotation: Vector3::<f32>::deserialize(des),
+            parent_model_id: {
+                let has_parent = des.read_bool();
+                if has_parent {
+                    Some(des.read_u32_be())
+                } else {
+                    None
+                }
+            },
         }
     }
 }

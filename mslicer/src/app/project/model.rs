@@ -35,6 +35,7 @@ pub struct Model {
     pub color: LinearRgb<f32>,
     pub hidden: bool,
     pub ui: ModelUi,
+    pub parent_model_id: Option<u32>,
 
     buffers: Option<RenderedMeshBuffers>,
 }
@@ -83,6 +84,7 @@ impl Model {
             hidden: false,
 
             ui: ModelUi::default(),
+            parent_model_id: None,
             buffers: None,
         }
     }
@@ -104,6 +106,11 @@ impl Model {
 
     pub fn with_random_color(mut self) -> Self {
         self.randomize_color();
+        self
+    }
+
+    pub fn with_parent_model_id(mut self, parent_id: u32) -> Self {
+        self.parent_model_id = Some(parent_id);
         self
     }
 
@@ -191,6 +198,7 @@ impl Clone for Model {
             color: self.color,
             hidden: self.hidden,
             ui: self.ui.clone(),
+            parent_model_id: self.parent_model_id,
             buffers: None,
         }
     }
