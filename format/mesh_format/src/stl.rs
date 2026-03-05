@@ -22,7 +22,7 @@ pub fn parse<T: Deserializer>(des: &mut T, progress: Progress) -> Result<Mesh> {
 }
 
 /// From Wikipedia :eyes:
-/// ```
+/// ```plain
 /// UINT8[80]    – Header                 - 80 bytes
 /// UINT32       – Number of triangles    - 04 bytes
 /// foreach triangle                      - 50 bytes
@@ -58,7 +58,7 @@ mod binary {
     }
 }
 
-/// ```
+/// ```plain
 /// solid name
 /// facet normal ni nj nk
 ///     outer loop

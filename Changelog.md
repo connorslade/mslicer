@@ -12,6 +12,7 @@
   - Will now always default to 1× scale
   - Zooming is now centered on the cursor position
 - Cleanup model panel UI
+- Remove accidental doc-tests in [stl.rs](https://github.com/connorslade/mslicer/blob/main/format/mesh_format/src/stl.rs), which blocking nixpkgs-update build
 
 ## v0.5.0 &mdash; February 21st, 2026
 
