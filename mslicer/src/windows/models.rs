@@ -7,8 +7,8 @@ use egui::{
     UiBuilder, Widget, vec2,
 };
 use egui_phosphor::regular::{
-    ARROW_LINE_DOWN, COPY, CURSOR_TEXT, DICE_THREE, EYE, EYE_SLASH, LINK_BREAK, LINK_SIMPLE, TRASH,
-    WARNING,
+    ARROW_COUNTER_CLOCKWISE, ARROW_LINE_DOWN, COPY, CURSOR_TEXT, DICE_THREE, EYE, EYE_SLASH,
+    LINK_BREAK, LINK_SIMPLE, TRASH, WARNING,
 };
 use nalgebra::Vector3;
 
@@ -17,6 +17,7 @@ use crate::{
         App,
         history::ModelAction,
         project::model::{MeshWarnings, RenameState},
+        task::MeshLoad,
     },
     ui::components::{
         being_edited, grid, history_tracked_model, vec3_dragger, vec3_dragger_proportional,
@@ -31,6 +32,7 @@ enum Action {
     None,
     Remove(usize),
     Duplicate(usize),
+    Reload(usize),
 }
 
 pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
@@ -102,6 +104,24 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
                 let model = app.project.models[i].clone();
                 app.project.models.push(model);
             }
+            Action::Reload(i) => {
+                if let Some(file_path) = app.project.models[i].file_path.clone() {
+                    let model_id = app.project.models[i].id;
+                    let supports_removed = remove_supports_for_model(app, model_id);
+
+                    if !supports_removed.is_empty() {
+                        // Show warning to user
+                        use crate::ui::popup::PopupIcon;
+                        app.popup.open(crate::ui::popup::Popup::simple(
+                            "Supports Removed",
+                            PopupIcon::Warning,
+                            "Supports were removed due to model reload. Please regenerate supports if needed."
+                        ));
+                    }
+
+                    app.tasks.add(MeshLoad::reload(file_path, i));
+                }
+            }
             Action::None => {}
         }
     }
@@ -167,6 +187,11 @@ fn model_properties(app: &mut App, ui: &mut Ui, ctx: &Context, action: &mut Acti
     ui.horizontal_wrapped(|ui| {
         (ui.button(concatcp!(CURSOR_TEXT, " Rename")).clicked())
             .then(|| model.ui.rename = RenameState::Starting);
+        if model.file_path.is_some() {
+            (ui.button(concatcp!(ARROW_COUNTER_CLOCKWISE, " Reload"))
+                .clicked())
+            .then(|| *action = Action::Reload(i));
+        }
         (ui.button(concatcp!(TRASH, " Delete")).clicked()).then(|| *action = Action::Remove(i));
         (ui.button(concatcp!(COPY, " Duplicate")).clicked())
             .then(|| *action = Action::Duplicate(i));
