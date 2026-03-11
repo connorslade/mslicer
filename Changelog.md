@@ -15,6 +15,7 @@
 - Remove accidental doc-tests in [stl.rs](https://github.com/connorslade/mslicer/blob/main/format/mesh_format/src/stl.rs), which blocking nixpkgs-update build
 - Make slices at middle of layer height (not bottom)
 - Fix volume stored in .nanodlp files
+- Add exposure PWM control to slice config
 
 ## v0.5.0 &mdash; February 21st, 2026
 

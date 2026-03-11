@@ -1,5 +1,6 @@
 use const_format::concatcp;
 use egui::{ComboBox, Context, DragValue, Grid, Ui};
+use egui_extras::{Column, TableBuilder};
 use egui_phosphor::regular::{ARROW_COUNTER_CLOCKWISE, INFO, NOTE_PENCIL, WARNING};
 use slicer::post_process::{anti_alias::AntiAlias, elephant_foot_fixer::ElephantFootFixer};
 
@@ -127,11 +128,14 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
             ui.end_row();
         });
 
-    ui.collapsing("Exposure Config", |ui| {
+    ui.add_space(16.0);
+    ui.heading("Layer Settings");
+
+    ui.collapsing("Normal Layers", |ui| {
         exposure_config(ui, &mut slice_config.exposure_config);
     });
 
-    ui.collapsing("First Exposure Config", |ui| {
+    ui.collapsing("First Layers", |ui| {
         exposure_config(ui, &mut slice_config.first_exposure_config);
     });
 
@@ -152,43 +156,77 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
 }
 
 fn exposure_config(ui: &mut Ui, config: &mut ExposureConfig) {
-    Grid::new("exposure_config")
-        .num_columns(2)
-        .spacing([40.0, 4.0])
+    TableBuilder::new(ui)
         .striped(true)
-        .show(ui, |ui| {
-            ui.label("Exposure Time");
-            ui.horizontal(|ui| {
+        .column(Column::exact(80.0))
+        .column(Column::auto())
+        .column(Column::auto())
+        .column(Column::remainder())
+        .header(16.0, |mut row| {
+            row.col(|ui| {
+                ui.label("Exposure");
+            });
+
+            row.col(|ui| {
                 metric_dragger(config.exposure_time.raw_mut(), ("s", 0, false))
                     .range(0.0..=f32::MAX)
                     .add(ui);
-                ui.add_space(ui.available_width());
             });
-            ui.end_row();
 
-            ui.label("Lift Distance ");
-            metric_dragger(config.lift_distance.raw_mut(), ("m", -3, false))
-                .range(0.0..=f32::MAX)
-                .add(ui);
-            ui.end_row();
+            row.col(|ui| {
+                ui.label("@");
+            });
 
-            ui.label("Lift Speed");
-            metric_dragger(config.lift_speed.raw_mut(), ("m/s", -2, true))
-                .range(0.0..=f32::MAX)
-                .add(ui);
-            ui.end_row();
+            row.col(|ui| {
+                let mut pwm = config.pwm as f32 / 2.55;
+                DragValue::new(&mut pwm).max_decimals(0).suffix('%').add(ui);
+                config.pwm = (pwm * 2.55) as u8;
+            });
+        })
+        .body(|mut body| {
+            body.row(16.0, |mut row| {
+                row.col(|ui| {
+                    ui.label("Lift");
+                });
 
-            ui.label("Retract Distance");
-            metric_dragger(config.retract_distance.raw_mut(), ("m", -3, false))
-                .range(0.0..=f32::MAX)
-                .add(ui);
-            ui.end_row();
+                row.col(|ui| {
+                    metric_dragger(config.lift_distance.raw_mut(), ("m", -3, false))
+                        .range(0.0..=f32::MAX)
+                        .add(ui);
+                });
 
-            ui.label("Retract Speed");
-            metric_dragger(config.retract_speed.raw_mut(), ("m/s", -2, true))
-                .range(0.0..=f32::MAX)
-                .add(ui);
-            ui.end_row();
+                row.col(|ui| {
+                    ui.label("@");
+                });
+
+                row.col(|ui| {
+                    metric_dragger(config.lift_speed.raw_mut(), ("m/s", -2, true))
+                        .range(0.0..=f32::MAX)
+                        .add(ui);
+                });
+            });
+
+            body.row(16.0, |mut row| {
+                row.col(|ui| {
+                    ui.label("Retract");
+                });
+
+                row.col(|ui| {
+                    metric_dragger(config.retract_distance.raw_mut(), ("m", -3, false))
+                        .range(0.0..=f32::MAX)
+                        .add(ui);
+                });
+
+                row.col(|ui| {
+                    ui.label("@");
+                });
+
+                row.col(|ui| {
+                    metric_dragger(config.retract_speed.raw_mut(), ("m/s", -2, true))
+                        .range(0.0..=f32::MAX)
+                        .add(ui);
+                });
+            });
         });
 }
 

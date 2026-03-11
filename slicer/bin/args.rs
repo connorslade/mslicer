@@ -32,6 +32,9 @@ pub struct Args {
     #[arg(long, default_value_t = 3.0)]
     /// Layer exposure time in seconds.
     pub exposure_time: f32,
+    #[arg(long, default_value_t = 100.0)]
+    /// Layer exposure PWM (overall brightness). 0%–100%.
+    pub exposure_pwm: f32,
     #[arg(long, default_value_t = 5.0)]
     /// Distance to lift the platform after exposing each regular layer, in mm.
     pub lift_distance: f32,
@@ -47,6 +50,9 @@ pub struct Args {
     #[arg(long, default_value_t = 30.0)]
     /// First layer exposure time in seconds.
     pub first_exposure_time: f32,
+    #[arg(long, default_value_t = 100.0)]
+    /// First layer exposure PWM (overall brightness). 0%–100%.
+    pub first_exposure_pwm: f32,
     #[arg(long, default_value_t = 5.0)]
     /// Distance to lift the platform after exposing each first layer, in mm.
     pub first_lift_distance: f32,
@@ -111,6 +117,7 @@ impl Args {
             slice_height: Milimeters::new(self.layer_height),
             exposure_config: ExposureConfig {
                 exposure_time: Seconds::new(self.exposure_time),
+                pwm: (self.exposure_pwm.clamp(0.0, 100.0) * 2.55) as u8,
                 lift_distance: Milimeters::new(self.lift_distance),
                 lift_speed: MilimetersPerMinute::new(self.lift_speed).convert(),
                 retract_distance: Milimeters::new(self.lift_distance),
@@ -118,6 +125,7 @@ impl Args {
             },
             first_exposure_config: ExposureConfig {
                 exposure_time: Seconds::new(self.first_exposure_time),
+                pwm: (self.first_exposure_pwm.clamp(0.0, 100.0) * 2.55) as u8,
                 lift_distance: Milimeters::new(self.first_lift_distance),
                 lift_speed: MilimetersPerMinute::new(self.first_lift_speed).convert(),
                 retract_distance: Milimeters::new(self.first_lift_distance),

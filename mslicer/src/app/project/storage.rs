@@ -14,7 +14,15 @@ use slicer::{
     post_process::{anti_alias::AntiAlias, elephant_foot_fixer::ElephantFootFixer},
 };
 
-const VERSION: u16 = 2;
+/// Project format version. Value should be incremented whenever the save format
+/// changes, even in development.
+///
+/// ## v3
+/// Added the PWM value to SliceConfig -> ExposureConfig.
+///
+/// ## v2
+/// A complete rewrite using a custom serilizer/deserilizer because of the bincode drama...
+const VERSION: u16 = 3;
 
 struct ModelInfo {
     mesh: u32,
@@ -122,8 +130,13 @@ impl Project {
     }
 
     pub fn deserialize<T: Deserializer>(des: &mut T, progress: Progress) -> Result<Self> {
-        ensure!(des.read_u16_be() == VERSION, "Save version mismatch.");
-        let slice_config = SliceConfig::deserialize(des)?;
+        let version = des.read_u16_be();
+        ensure!(
+            (2..=VERSION).contains(&version),
+            "Save version not supported."
+        );
+
+        let slice_config = SliceConfig::deserialize(des, version)?;
         let post_processing = PostProcessing::deserialize(des);
 
         let models = des.read_u32_be();

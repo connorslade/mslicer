@@ -428,8 +428,8 @@ impl File {
             lift_speed: config.exposure_config.lift_speed.convert(),
             retract_speed: config.exposure_config.retract_speed.convert(),
             bottom_light_off_delay: Seconds::new(0.0),
-            light_pwm: 255,
-            bottom_light_pwm: 255,
+            light_pwm: config.exposure_config.pwm as u16,
+            bottom_light_pwm: config.first_exposure_config.pwm as u16,
             bottom_lift_height_2: Milimeters::new(4.0), // make a setting
             bottom_lift_speed_2: MilimetersPerMinute::new(320.0), // make a setting
             lift_height_2: Milimeters::new(0.0),
