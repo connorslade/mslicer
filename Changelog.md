@@ -16,6 +16,7 @@
 - Make slices at middle of layer height (not bottom)
 - Fix volume stored in .nanodlp files
 - Add exposure PWM control to slice config
+- Fix layers rendering flipped in slice preview 
 
 ## v0.5.0 &mdash; February 21st, 2026
 
