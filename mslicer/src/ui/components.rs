@@ -32,54 +32,6 @@ pub fn dragger<Num: Numeric>(
     });
 }
 
-pub fn metric_dragger<'a, Num: Numeric>(
-    value: &'a mut Num,
-    (unit, base, speed): (&'static str, i32, bool),
-) -> DragValue<'a> {
-    const METRIX_PREFIX: &[(&[char], i32)] = &[
-        (&[], 0),
-        (&['c'], -2),
-        (&['m'], -3),
-        (&['μ', 'u'], -6),
-        (&['n'], -9),
-    ];
-
-    let exp = value.to_f64().abs().log10().floor() as i32 + base;
-    let (prefix, scale) = (METRIX_PREFIX.iter())
-        .find(|(_, scale)| exp >= *scale)
-        .unwrap_or(&METRIX_PREFIX[0]);
-    let scale = f64::powi(10.0, base - scale);
-
-    DragValue::new(value)
-        .speed(0.1 / scale)
-        .custom_formatter(move |value, _range| {
-            let value = value * scale;
-            let prefix = prefix.first().copied().unwrap_or_default();
-            format!("{value:.1} {prefix}{unit}")
-        })
-        .custom_parser(move |s| {
-            let last_digit = (s.bytes())
-                .position(|x| !matches!(x, b'0'..=b'9' | b'.' | b'-'))
-                .unwrap_or(s.len());
-            let (number, unit) = s.split_at(last_digit);
-            let unit = unit.trim_start();
-
-            let mut mantissa = number.parse::<f64>().ok()?;
-            let (_, scale) = (METRIX_PREFIX.iter())
-                .rfind(|(x, _)| x.is_empty() || x.iter().any(|x| unit.starts_with(*x)))?;
-
-            if speed && let Some((_, denom)) = unit.split_once('/') {
-                match denom {
-                    "s" => mantissa /= 1.0,
-                    "min" => mantissa /= 60.0,
-                    _ => {}
-                }
-            }
-
-            Some(mantissa * f64::powi(10.0, scale - base))
-        })
-}
-
 pub fn vec2_dragger<Num: Numeric>(
     ui: &mut Ui,
     val: &mut [Num; 2],

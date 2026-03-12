@@ -6,11 +6,11 @@ use slicer::post_process::{anti_alias::AntiAlias, elephant_foot_fixer::ElephantF
 
 use crate::{
     app::App,
-    ui::components::{dragger, metric_dragger, vec2_dragger},
+    ui::components::{dragger, vec2_dragger},
 };
 use common::{
     slice::{ExposureConfig, Format},
-    units::{Milimeter, Minute},
+    units::{Milimeter, Minute, Mircometer},
 };
 
 const TRANSITION_LAYER_TOOLTIP: &str = "Transition layers interpolate between the first exposure settings and the normal exposure settings.";
@@ -108,7 +108,12 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
 
             ui.label("Slice Height");
             ui.horizontal(|ui| {
-                metric_dragger(slice_config.slice_height.raw_mut(), ("m", -3, false)).ui(ui);
+                slice_config.slice_height.with::<Mircometer>(|value| {
+                    DragValue::new(value)
+                        .suffix(" μm")
+                        .range(1.0..=f32::MAX)
+                        .ui(ui);
+                });
                 ui.add_space(ui.available_width());
             });
             ui.end_row();
@@ -199,13 +204,13 @@ fn exposure_config(ui: &mut Ui, config: &mut ExposureConfig) {
                 });
 
                 row.col(|ui| {
-                    let mut val = config.lift_speed.convert::<Milimeter, Minute>();
-                    DragValue::new(val.raw_mut())
-                        .suffix(" mm/min")
-                        .speed(0.1)
-                        .range(0.0..=f32::MAX)
-                        .ui(ui);
-                    config.lift_speed = val.convert();
+                    config.lift_speed.with::<Milimeter, Minute>(|val| {
+                        DragValue::new(val)
+                            .suffix(" mm/min")
+                            .speed(0.1)
+                            .range(0.0..=f32::MAX)
+                            .ui(ui);
+                    });
                 });
             });
 
@@ -227,13 +232,13 @@ fn exposure_config(ui: &mut Ui, config: &mut ExposureConfig) {
                 });
 
                 row.col(|ui| {
-                    let mut val = config.retract_speed.convert::<Milimeter, Minute>();
-                    DragValue::new(val.raw_mut())
-                        .suffix(" mm/min")
-                        .speed(0.1)
-                        .range(0.0..=f32::MAX)
-                        .ui(ui);
-                    config.retract_speed = val.convert();
+                    config.retract_speed.with::<Milimeter, Minute>(|val| {
+                        DragValue::new(val)
+                            .suffix(" mm/min")
+                            .speed(0.1)
+                            .range(0.0..=f32::MAX)
+                            .ui(ui);
+                    });
                 });
             });
         });
@@ -270,7 +275,10 @@ pub fn elephant_foot_fixer(this: &mut ElephantFootFixer, ui: &mut Ui) {
                 ui.label(WARNING).on_hover_text(INSET_WARNING);
             });
             ui.horizontal(|ui| {
-                ui.add(metric_dragger(&mut this.inset_distance, ("m", -3, false)));
+                DragValue::new(&mut this.inset_distance)
+                    .speed(0.1)
+                    .range(0.1..=f32::MAX)
+                    .ui(ui);
                 ui.add_space(ui.available_width());
             });
             ui.end_row();
