@@ -14,6 +14,7 @@ pub struct UiState {
     pub workspace: WorkspaceHover,
     pub support_placement: bool,
 
+    pub selected_model: Option<u32>,
     pub selected_printer: usize,
     pub support_preview: Option<Mesh>,
 
