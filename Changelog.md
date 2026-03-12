@@ -18,6 +18,7 @@
 - Add exposure PWM control to slice config ([#21](https://github.com/connorslade/mslicer/issues/21))
 - Fix layers rendering flipped in slice preview  ([#20](https://github.com/connorslade/mslicer/issues/20))
 - Use standard unit (mm/min) for lift and retract speeds ([#22](https://github.com/connorslade/mslicer/issues/22))
+- Replace about panel with a first time popup that links to the documentation
 
 ## v0.5.0 &mdash; February 21st, 2026
 

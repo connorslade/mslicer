@@ -26,6 +26,7 @@ pub struct SliceConfig {
 
 /// Layer exposure settings.
 #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(default)]
 pub struct ExposureConfig {
     pub exposure_time: Seconds,
     pub pwm: u8,
