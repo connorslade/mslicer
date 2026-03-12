@@ -4,13 +4,10 @@
 
 mod defs;
 mod value;
-pub use defs::{Base, Centi, Kilo, Meter, Micro, Milli, Second};
+pub use defs::{Base, Centi, Kilo, Meter, Micro, Milli, Minute, Second};
 pub use value::{Length, Time, Velocity};
 
-use crate::units::{
-    defs::Minute,
-    value::{Area, Volume},
-};
+use crate::units::value::{Area, Volume};
 
 pub type Mircometer = Meter<Micro>;
 pub type Milimeter = Meter<Milli>;

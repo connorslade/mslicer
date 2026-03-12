@@ -13,7 +13,7 @@ use crate::{
 };
 use common::{
     slice::{ExposureConfig, Format},
-    units::Milimeter,
+    units::{Milimeter, Minute},
 };
 
 const TRANSITION_LAYER_TOOLTIP: &str = "Transition layers interpolate between the first exposure settings and the normal exposure settings.";
@@ -89,7 +89,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                 vec2_dragger(ui, slice_config.platform_resolution.as_mut(), |x| x);
                 ui.end_row();
 
-                ui.label("Platform Size");
+                ui.label("Platform Size (mm)");
                 ui.horizontal(|ui| {
                     ui.add(DragValue::new(platform.x.raw_mut()));
                     ui.label("×");
@@ -128,9 +128,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
             ui.end_row();
         });
 
-    ui.add_space(16.0);
-    ui.heading("Layer Settings");
-
+    ui.add_space(8.0);
     ui.collapsing("Normal Layers", |ui| {
         exposure_config(ui, &mut slice_config.exposure_config);
     });
@@ -168,7 +166,9 @@ fn exposure_config(ui: &mut Ui, config: &mut ExposureConfig) {
             });
 
             row.col(|ui| {
-                metric_dragger(config.exposure_time.raw_mut(), ("s", 0, false))
+                DragValue::new(config.exposure_time.raw_mut())
+                    .suffix(" s")
+                    .speed(0.1)
                     .range(0.0..=f32::MAX)
                     .add(ui);
             });
@@ -190,7 +190,9 @@ fn exposure_config(ui: &mut Ui, config: &mut ExposureConfig) {
                 });
 
                 row.col(|ui| {
-                    metric_dragger(config.lift_distance.raw_mut(), ("m", -3, false))
+                    DragValue::new(config.lift_distance.raw_mut())
+                        .suffix(" mm")
+                        .speed(0.1)
                         .range(0.0..=f32::MAX)
                         .add(ui);
                 });
@@ -200,9 +202,13 @@ fn exposure_config(ui: &mut Ui, config: &mut ExposureConfig) {
                 });
 
                 row.col(|ui| {
-                    metric_dragger(config.lift_speed.raw_mut(), ("m/s", -2, true))
+                    let mut val = config.lift_speed.convert::<Milimeter, Minute>();
+                    DragValue::new(val.raw_mut())
+                        .suffix(" mm/min")
+                        .speed(0.1)
                         .range(0.0..=f32::MAX)
                         .add(ui);
+                    config.lift_speed = val.convert();
                 });
             });
 
@@ -212,7 +218,9 @@ fn exposure_config(ui: &mut Ui, config: &mut ExposureConfig) {
                 });
 
                 row.col(|ui| {
-                    metric_dragger(config.retract_distance.raw_mut(), ("m", -3, false))
+                    DragValue::new(config.retract_distance.raw_mut())
+                        .suffix(" mm")
+                        .speed(0.1)
                         .range(0.0..=f32::MAX)
                         .add(ui);
                 });
@@ -222,9 +230,13 @@ fn exposure_config(ui: &mut Ui, config: &mut ExposureConfig) {
                 });
 
                 row.col(|ui| {
-                    metric_dragger(config.retract_speed.raw_mut(), ("m/s", -2, true))
+                    let mut val = config.retract_speed.convert::<Milimeter, Minute>();
+                    DragValue::new(val.raw_mut())
+                        .suffix(" mm/min")
+                        .speed(0.1)
                         .range(0.0..=f32::MAX)
                         .add(ui);
+                    config.retract_speed = val.convert();
                 });
             });
         });
@@ -250,7 +262,7 @@ pub fn elephant_foot_fixer(this: &mut ElephantFootFixer, ui: &mut Ui) {
     const INTENSITY_TIP: &str =
         "This percent will be multiplied by the pixel values of the edge pixels.";
 
-    Grid::new("exposure_config")
+    Grid::new("elephant_foot_fixer")
         .num_columns(2)
         .spacing([40.0, 4.0])
         .striped(true)

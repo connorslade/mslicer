@@ -15,8 +15,9 @@
 - Remove accidental doc-tests in [stl.rs](https://github.com/connorslade/mslicer/blob/main/format/mesh_format/src/stl.rs), which blocking nixpkgs-update build
 - Make slices at middle of layer height (not bottom)
 - Fix volume stored in .nanodlp files
-- Add exposure PWM control to slice config
-- Fix layers rendering flipped in slice preview 
+- Add exposure PWM control to slice config ([#21](https://github.com/connorslade/mslicer/issues/21))
+- Fix layers rendering flipped in slice preview  ([#20](https://github.com/connorslade/mslicer/issues/20))
+- Use standard unit (mm/min) for lift and retract speeds ([#22](https://github.com/connorslade/mslicer/issues/22))
 
 ## v0.5.0 &mdash; February 21st, 2026
 
