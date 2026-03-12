@@ -3,7 +3,8 @@ use std::{f32, fs::File, io::Write, mem, sync::Arc};
 use const_format::concatcp;
 use egui::{
     Align, Button, Color32, Context, DragValue, FontSelection, Grid, Id, Layout, ProgressBar, Rect,
-    RichText, Sense, Slider, StrokeKind, Style, Ui, Vec2, style::HandleShape, text::LayoutJob,
+    RichText, Sense, Slider, StrokeKind, Style, Ui, Vec2, Widget, style::HandleShape,
+    text::LayoutJob,
 };
 use egui_phosphor::regular::{
     CARET_DOWN, CARET_UP, CLOCK, CORNERS_IN, CROSSHAIR, DROP, FLOPPY_DISK_BACK, PAPER_PLANE_TILT,
@@ -18,7 +19,7 @@ use crate::{
         task::{FileDialog, IslandDetection, SaveResult},
     },
     render::slice_preview::SlicePreviewRenderCallback,
-    ui::{extentions::WidgetExt, popup::Popup},
+    ui::popup::Popup,
 };
 use common::{
     misc::human_duration, progress::Progress, serde::DynamicSerializer, slice::Format,
@@ -275,7 +276,7 @@ fn layer_slider(ui: &mut egui::Ui, result: &mut SliceResult) {
         .vertical()
         .handle_shape(HandleShape::Rect { aspect_ratio: 1.0 })
         .show_value(false)
-        .add(ui);
+        .ui(ui);
 
     let painter = ui.painter_at(slider.rect);
     let slice = slider.rect.height() / info.layers as f32;

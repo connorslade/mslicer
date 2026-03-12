@@ -1,8 +1,9 @@
 use egui::{
-    Button, Color32, Context, Id, Image, ImageSource, LayerId, Order, Window, include_image, vec2,
+    Button, Color32, Context, Id, Image, ImageSource, LayerId, Order, Widget, Window,
+    include_image, vec2,
 };
 
-use crate::{app::App, ui::extentions::WidgetExt};
+use crate::app::App;
 
 const DESCRIPTION: &str = "Welcome to mslicer — a high-performance, open-source slicer for MSLA resin printers, created by Connor Slade.";
 const LOGO: ImageSource = include_image!("../../../dist/icon.png");
@@ -28,7 +29,7 @@ pub fn ui(app: &mut App, ctx: &Context) {
         .fixed_pos((ctx.content_rect().size() - size).to_pos2() / 2.0)
         .show(ctx, |ui| {
             ui.vertical_centered(|ui| {
-                Image::new(LOGO).max_width(80.0).add(ui);
+                Image::new(LOGO).max_width(80.0).ui(ui);
                 ui.heading(concat!("mslicer v", env!("CARGO_PKG_VERSION")));
             });
             ui.separator();
@@ -53,13 +54,13 @@ pub fn ui(app: &mut App, ctx: &Context) {
                 let spacing = ui.style().spacing.item_spacing.x;
                 let size = vec2(ui.available_size().x - spacing, 0.0) / 2.0;
 
-                if Button::new("Close").min_size(size).add(ui).clicked() {
+                if Button::new("Close").min_size(size).ui(ui).clicked() {
                     app.config.about = false;
                 }
 
                 if Button::new("Getting Started Guide")
                     .min_size(size)
-                    .add(ui)
+                    .ui(ui)
                     .clicked()
                 {
                     let _ = open::that_detached(GETTING_STARTED_LINK);

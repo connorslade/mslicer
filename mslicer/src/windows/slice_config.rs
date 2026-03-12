@@ -1,15 +1,12 @@
 use const_format::concatcp;
-use egui::{ComboBox, Context, DragValue, Grid, Ui};
+use egui::{ComboBox, Context, DragValue, Grid, Ui, Widget};
 use egui_extras::{Column, TableBuilder};
 use egui_phosphor::regular::{ARROW_COUNTER_CLOCKWISE, INFO, NOTE_PENCIL, WARNING};
 use slicer::post_process::{anti_alias::AntiAlias, elephant_foot_fixer::ElephantFootFixer};
 
 use crate::{
     app::App,
-    ui::{
-        components::{dragger, metric_dragger, vec2_dragger},
-        extentions::WidgetExt,
-    },
+    ui::components::{dragger, metric_dragger, vec2_dragger},
 };
 use common::{
     slice::{ExposureConfig, Format},
@@ -111,20 +108,20 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
 
             ui.label("Slice Height");
             ui.horizontal(|ui| {
-                metric_dragger(slice_config.slice_height.raw_mut(), ("m", -3, false)).add(ui);
+                metric_dragger(slice_config.slice_height.raw_mut(), ("m", -3, false)).ui(ui);
                 ui.add_space(ui.available_width());
             });
             ui.end_row();
 
             ui.label("First Layers");
-            DragValue::new(&mut slice_config.first_layers).add(ui);
+            DragValue::new(&mut slice_config.first_layers).ui(ui);
             ui.end_row();
 
             ui.horizontal(|ui| {
                 ui.label("Transition Layers");
                 ui.label(INFO).on_hover_text(TRANSITION_LAYER_TOOLTIP);
             });
-            DragValue::new(&mut slice_config.transition_layers).add(ui);
+            DragValue::new(&mut slice_config.transition_layers).ui(ui);
             ui.end_row();
         });
 
@@ -170,7 +167,7 @@ fn exposure_config(ui: &mut Ui, config: &mut ExposureConfig) {
                     .suffix(" s")
                     .speed(0.1)
                     .range(0.0..=f32::MAX)
-                    .add(ui);
+                    .ui(ui);
             });
 
             row.col(|ui| {
@@ -179,7 +176,7 @@ fn exposure_config(ui: &mut Ui, config: &mut ExposureConfig) {
 
             row.col(|ui| {
                 let mut pwm = config.pwm as f32 / 2.55;
-                DragValue::new(&mut pwm).max_decimals(0).suffix('%').add(ui);
+                DragValue::new(&mut pwm).max_decimals(0).suffix('%').ui(ui);
                 config.pwm = (pwm * 2.55) as u8;
             });
         })
@@ -194,7 +191,7 @@ fn exposure_config(ui: &mut Ui, config: &mut ExposureConfig) {
                         .suffix(" mm")
                         .speed(0.1)
                         .range(0.0..=f32::MAX)
-                        .add(ui);
+                        .ui(ui);
                 });
 
                 row.col(|ui| {
@@ -207,7 +204,7 @@ fn exposure_config(ui: &mut Ui, config: &mut ExposureConfig) {
                         .suffix(" mm/min")
                         .speed(0.1)
                         .range(0.0..=f32::MAX)
-                        .add(ui);
+                        .ui(ui);
                     config.lift_speed = val.convert();
                 });
             });
@@ -222,7 +219,7 @@ fn exposure_config(ui: &mut Ui, config: &mut ExposureConfig) {
                         .suffix(" mm")
                         .speed(0.1)
                         .range(0.0..=f32::MAX)
-                        .add(ui);
+                        .ui(ui);
                 });
 
                 row.col(|ui| {
@@ -235,7 +232,7 @@ fn exposure_config(ui: &mut Ui, config: &mut ExposureConfig) {
                         .suffix(" mm/min")
                         .speed(0.1)
                         .range(0.0..=f32::MAX)
-                        .add(ui);
+                        .ui(ui);
                     config.retract_speed = val.convert();
                 });
             });
