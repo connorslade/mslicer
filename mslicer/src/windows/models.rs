@@ -2,7 +2,10 @@ use std::f32;
 
 use common::misc::subscript_number;
 use const_format::concatcp;
-use egui::{Color32, Context, Frame, Grid, Popup, Rect, ScrollArea, TopBottomPanel, Ui, vec2};
+use egui::{
+    Color32, Context, Frame, Grid, Label, Popup, ScrollArea, Sense, TopBottomPanel, Ui, UiBuilder,
+    Widget, vec2,
+};
 use egui_phosphor::regular::{
     ARROW_LINE_DOWN, COPY, CURSOR_TEXT, DICE_THREE, EYE, EYE_SLASH, LINK_BREAK, LINK_SIMPLE, TRASH,
     WARNING,
@@ -40,28 +43,24 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
     for i in 0..app.project.models.len() {
         let id = app.project.models[i].id;
 
-        let rect = Rect::from_min_size(ui.cursor().min, vec2(ui.available_width(), 18.0))
-            .expand2(vec2(2.0, ui.spacing().item_spacing.y / 2.0));
+        let (rect, response) =
+            ui.allocate_exact_size(vec2(ui.available_width(), 18.0), Sense::click());
 
         let selected = Some(id) == app.state.selected_model;
-        let hovered = ui
-            .input(|i| i.pointer.latest_pos())
-            .map(|pointer| rect.contains(pointer))
-            .unwrap_or_default();
-
         let color = if selected {
             ui.visuals().selection.bg_fill
-        } else if hovered {
-            ui.visuals().extreme_bg_color
+        } else if response.hovered() {
+            ui.visuals().code_bg_color
         } else if i % 2 == 1 {
             ui.visuals().faint_bg_color
         } else {
             ui.style().noninteractive().bg_fill
         };
 
-        ui.painter().rect_filled(rect, 2.0, color);
+        let rect_margin = rect.expand2(vec2(2.0, ui.spacing().item_spacing.y / 2.0));
+        ui.painter().rect_filled(rect_margin, 2.0, color);
 
-        if hovered && ui.input(|i| i.pointer.primary_clicked()) {
+        if response.clicked() {
             if selected {
                 app.state.selected_model = None;
             } else {
@@ -69,25 +68,16 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
             }
         }
 
-        ui.horizontal(|ui| {
-            if selected {
-                ui.visuals_mut().override_text_color = Some(Color32::WHITE);
-            }
+        ui.scope_builder(UiBuilder::new().max_rect(rect), |ui| {
+            ui.horizontal(|ui| {
+                if selected {
+                    ui.visuals_mut().override_text_color = Some(Color32::WHITE);
+                }
 
-            model_entry(app, ui, i);
-            ui.take_available_width();
+                model_entry(app, ui, i);
+                ui.take_available_width();
+            });
         });
-    }
-
-    let empty = ui.cursor();
-    if ui.input(|i| {
-        i.pointer.primary_clicked()
-            && i.pointer
-                .latest_pos()
-                .map(|p| empty.contains(p))
-                .unwrap_or_default()
-    }) {
-        app.state.selected_model = None;
     }
 
     if let Some(id) = app.state.selected_model
@@ -115,6 +105,9 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
             Action::None => {}
         }
     }
+
+    let (_rect, response) = ui.allocate_exact_size(ui.available_size(), Sense::click());
+    response.clicked().then(|| app.state.selected_model = None);
 }
 
 fn model_entry(app: &mut App, ui: &mut Ui, model_idx: usize) {
@@ -161,7 +154,7 @@ fn model_entry(app: &mut App, ui: &mut Ui, model_idx: usize) {
             (id, || ModelAction::Name(model.name.clone())),
         )
     } else {
-        ui.label(&model.name);
+        Label::new(&model.name).selectable(false).ui(ui);
     }
 }
 
