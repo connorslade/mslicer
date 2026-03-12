@@ -1,10 +1,10 @@
 use std::f32;
 
-use common::misc::subscript_number;
+use common::{misc::subscript_number, units::Centimeter};
 use const_format::concatcp;
 use egui::{
-    CollapsingHeader, Color32, Context, DragValue, Frame, Label, Popup, Sense, TopBottomPanel, Ui,
-    UiBuilder, Widget, vec2,
+    CollapsingHeader, Color32, Context, Frame, Label, Popup, Sense, TopBottomPanel, Ui, UiBuilder,
+    Widget, vec2,
 };
 use egui_phosphor::regular::{
     ARROW_LINE_DOWN, COPY, CURSOR_TEXT, DICE_THREE, EYE, EYE_SLASH, LINK_BREAK, LINK_SIMPLE, TRASH,
@@ -21,6 +21,7 @@ use crate::{
     ui::components::{
         being_edited, grid, history_tracked_model, vec3_dragger, vec3_dragger_proportional,
     },
+    util::separate_thousands,
 };
 
 const WARN_NON_MANIFOLD: &str = "This mesh is non-manifold, it may produce unexpected results when sliced.\nConsider running it through a mesh repair tool.";
@@ -256,13 +257,14 @@ fn model_properties(app: &mut App, ui: &mut Ui, ctx: &Context, action: &mut Acti
         grid("model_props_grid").show(ui, |ui| {
             ui.label("Faces");
             ui.horizontal(|ui| {
-                ui.label(model.mesh.face_count().to_string());
+                ui.label(separate_thousands(model.mesh.face_count()));
                 ui.take_available_width();
             });
             ui.end_row();
 
-            ui.label("Vertices");
-            ui.label(model.mesh.vertex_count().to_string());
+            ui.label("Volume");
+            let volume = model.volume().convert::<Centimeter>().raw();
+            ui.label(format!("{volume:.2} cm³"));
             ui.end_row();
 
             // ui.label("Relative Exposure");

@@ -9,7 +9,7 @@ use std::{
 use bitflags::bitflags;
 use common::{
     color::{LinearRgb, START_COLOR},
-    units::Milimeters,
+    units::{CubicMilimeters, Milimeters},
 };
 use nalgebra::Vector3;
 use wgpu::{Buffer, Device};
@@ -28,6 +28,7 @@ pub struct Model {
     pub mesh: Mesh,
     pub bvh: Option<Arc<Bvh>>,
     pub half_edge: Option<Arc<HalfEdgeMesh>>,
+    base_volume: CubicMilimeters,
 
     pub warnings: MeshWarnings,
     pub overhangs: Option<Vec<u32>>,
@@ -71,6 +72,7 @@ impl Model {
             name: String::new(),
             id: next_id(),
 
+            base_volume: mesh_volume(&mesh),
             bvh: None,
             half_edge: None,
             mesh,
@@ -84,6 +86,11 @@ impl Model {
             ui: ModelUi::default(),
             buffers: None,
         }
+    }
+
+    pub fn volume(&self) -> CubicMilimeters {
+        let scale = self.mesh.scale();
+        self.base_volume * scale.x * scale.y * scale.z
     }
 
     pub fn with_name(mut self, name: String) -> Self {
@@ -183,6 +190,7 @@ impl Clone for Model {
             mesh: self.mesh.clone(),
             bvh: self.bvh.clone(),
             half_edge: self.half_edge.clone(),
+            base_volume: self.base_volume,
 
             warnings: self.warnings,
             overhangs: self.overhangs.clone(),
@@ -207,4 +215,16 @@ impl Default for ModelUi {
 fn next_id() -> u32 {
     static NEXT_ID: AtomicU32 = AtomicU32::new(0);
     NEXT_ID.fetch_add(1, Ordering::Relaxed)
+}
+
+// Reference: https://stackoverflow.com/a/13927691
+fn mesh_volume(mesh: &Mesh) -> CubicMilimeters {
+    let mut volume = 0.0;
+
+    for face in 0..mesh.face_count() {
+        let [a, b, c] = mesh.face_verts(face);
+        volume += a.dot(&b.cross(&c)) / 6.0;
+    }
+
+    CubicMilimeters::new(volume.abs())
 }

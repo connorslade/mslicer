@@ -1,3 +1,5 @@
+use std::iter;
+
 use rand::{Rng, distr::Alphanumeric};
 
 #[macro_export]
@@ -60,4 +62,17 @@ pub fn random_string(len: usize) -> String {
         .take(len)
         .map(char::from)
         .collect()
+}
+
+pub fn separate_thousands(number: impl TryInto<u64>) -> String {
+    let str = number.try_into().unwrap_or(u64::MAX).to_string();
+    let separators = iter::repeat([None, None, Some(',')])
+        .flatten()
+        .skip(3 - str.len() % 3);
+
+    (str.chars().map(Some))
+        .zip(iter::once(None).chain(separators))
+        .flat_map(|(a, b)| [b, a])
+        .flatten()
+        .collect::<String>()
 }
