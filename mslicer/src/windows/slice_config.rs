@@ -114,7 +114,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                         .range(1.0..=f32::MAX)
                         .ui(ui);
                 });
-                ui.add_space(ui.available_width());
+                ui.take_available_width();
             });
             ui.end_row();
 
@@ -145,6 +145,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     ui.label(
         "These effects are currently not optimized and will significancy increase slicing time.",
     );
+    ui.add_space(8.0);
 
     let post_processing = &mut app.project.post_processing;
     ui.collapsing("Anti Alias", |ui| {
@@ -279,7 +280,7 @@ pub fn elephant_foot_fixer(this: &mut ElephantFootFixer, ui: &mut Ui) {
                     .speed(0.1)
                     .range(0.1..=f32::MAX)
                     .ui(ui);
-                ui.add_space(ui.available_width());
+                ui.take_available_width();
             });
             ui.end_row();
 

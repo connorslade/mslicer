@@ -218,10 +218,13 @@ impl eframe::App for App {
         self.tasks().poll();
 
         // only update the visuals if the theme has changed
-        match self.config.theme {
-            Theme::Dark => ctx.set_visuals(Visuals::dark()),
-            Theme::Light => ctx.set_visuals(Visuals::light()),
-        }
+        ctx.set_visuals(Visuals {
+            collapsing_header_frame: true,
+            ..match self.config.theme {
+                Theme::Dark => Visuals::dark(),
+                Theme::Light => Visuals::light(),
+            }
+        });
 
         self.remote_print().tick();
         preview::process_previews(self);

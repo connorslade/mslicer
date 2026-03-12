@@ -3,8 +3,8 @@ use std::f32;
 use common::misc::subscript_number;
 use const_format::concatcp;
 use egui::{
-    Color32, Context, Frame, Grid, Label, Popup, ScrollArea, Sense, TopBottomPanel, Ui, UiBuilder,
-    Widget, vec2,
+    CollapsingHeader, Color32, Context, DragValue, Frame, Label, Popup, Sense, TopBottomPanel, Ui,
+    UiBuilder, Widget, vec2,
 };
 use egui_phosphor::regular::{
     ARROW_LINE_DOWN, COPY, CURSOR_TEXT, DICE_THREE, EYE, EYE_SLASH, LINK_BREAK, LINK_SIMPLE, TRASH,
@@ -19,7 +19,7 @@ use crate::{
         project::model::{MeshWarnings, RenameState},
     },
     ui::components::{
-        being_edited, history_tracked_model, vec3_dragger, vec3_dragger_proportional,
+        being_edited, grid, history_tracked_model, vec3_dragger, vec3_dragger_proportional,
     },
 };
 
@@ -90,8 +90,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
             .default_height(f32::MAX)
             .show_inside(ui, |ui| {
                 ui.add_space(4.0);
-                ScrollArea::vertical()
-                    .show(ui, |ui| model_properties(app, ui, ctx, &mut action, model));
+                model_properties(app, ui, ctx, &mut action, model)
             });
 
         match action {
@@ -181,78 +180,96 @@ fn model_properties(app: &mut App, ui: &mut Ui, ctx: &Context, action: &mut Acti
             });
     });
 
-    Grid::new("model_props_grid")
-        .num_columns(2)
-        .with_row_color(|row, style| (row % 2 == 0).then_some(style.visuals.faint_bg_color))
+    CollapsingHeader::new("Transform")
+        .default_open(true)
         .show(ui, |ui| {
-            ui.horizontal(|ui| {
+            grid("model_props_grid").show(ui, |ui| {
                 ui.label("Position");
-                ui.add_space(20.0);
-            });
-            ui.horizontal(|ui| {
-                let mut position = model.mesh.position();
-                let editing = vec3_dragger(ui, position.as_mut(), |x| x);
+                ui.horizontal(|ui| {
+                    let mut position = model.mesh.position();
+                    let editing = vec3_dragger(ui, position.as_mut(), |x| x);
+                    history_tracked_model(
+                        (editing, ui, &mut app.history),
+                        (id, || ModelAction::Position(model.mesh.position())),
+                    );
+                    (model.mesh.position() != position)
+                        .then(|| model.set_position(platform, position));
+                    ui.take_available_width();
+                });
+                ui.end_row();
+
+                ui.label("Scale");
+
+                ui.horizontal(|ui| {
+                    let mut scale = model.mesh.scale();
+                    let editing = if model.ui.locked_scale {
+                        vec3_dragger_proportional(ui, scale.as_mut(), |x| {
+                            x.speed(0.01).range(0.001..=f32::MAX)
+                        })
+                    } else {
+                        vec3_dragger(ui, scale.as_mut(), |x| {
+                            x.speed(0.01).range(0.001..=f32::MAX)
+                        })
+                    };
+                    history_tracked_model(
+                        (editing, ui, &mut app.history),
+                        (id, || ModelAction::Scale(model.mesh.scale())),
+                    );
+                    (model.mesh.scale() != scale).then(|| model.set_scale(platform, scale));
+
+                    model.ui.locked_scale ^= ui
+                        .button([LINK_BREAK, LINK_SIMPLE][model.ui.locked_scale as usize])
+                        .clicked();
+                });
+                ui.end_row();
+
+                ui.label("Rotation");
+                let mut rotation = rad_to_deg(model.mesh.rotation());
+                let editing = vec3_dragger(ui, rotation.as_mut(), |x| x.suffix("°"));
                 history_tracked_model(
                     (editing, ui, &mut app.history),
-                    (id, || ModelAction::Position(model.mesh.position())),
+                    (id, || ModelAction::Rotation(model.mesh.rotation())),
                 );
-                (model.mesh.position() != position).then(|| model.set_position(platform, position));
-                ui.add_space(ui.available_width());
-            });
-            ui.end_row();
+                (model.mesh.rotation() != rotation)
+                    .then(|| model.set_rotation(platform, deg_to_rad(rotation)));
+                ui.end_row();
 
-            ui.label("Scale");
+                ui.label("Color");
+                ui.horizontal(|ui| {
+                    let editing = Popup::is_id_open(ctx, ui.auto_id_with("popup"));
+                    let original_color = model.color;
+                    ui.color_edit_button_rgb(model.color.as_slice_mut());
+                    history_tracked_model(
+                        (editing, ui, &mut app.history),
+                        (id, || ModelAction::Color(original_color)),
+                    );
 
-            ui.horizontal(|ui| {
-                let mut scale = model.mesh.scale();
-                let editing = if model.ui.locked_scale {
-                    vec3_dragger_proportional(ui, scale.as_mut(), |x| {
-                        x.speed(0.01).range(0.001..=f32::MAX)
-                    })
-                } else {
-                    vec3_dragger(ui, scale.as_mut(), |x| {
-                        x.speed(0.01).range(0.001..=f32::MAX)
-                    })
-                };
-                history_tracked_model(
-                    (editing, ui, &mut app.history),
-                    (id, || ModelAction::Scale(model.mesh.scale())),
-                );
-                (model.mesh.scale() != scale).then(|| model.set_scale(platform, scale));
-
-                model.ui.locked_scale ^= ui
-                    .button([LINK_BREAK, LINK_SIMPLE][model.ui.locked_scale as usize])
-                    .clicked();
-            });
-            ui.end_row();
-
-            ui.label("Rotation");
-            let mut rotation = rad_to_deg(model.mesh.rotation());
-            let editing = vec3_dragger(ui, rotation.as_mut(), |x| x.suffix("°"));
-            history_tracked_model(
-                (editing, ui, &mut app.history),
-                (id, || ModelAction::Rotation(model.mesh.rotation())),
-            );
-            (model.mesh.rotation() != rotation)
-                .then(|| model.set_rotation(platform, deg_to_rad(rotation)));
-            ui.end_row();
-
-            ui.label("Color");
-            ui.horizontal(|ui| {
-                let editing = Popup::is_id_open(ctx, ui.auto_id_with("popup"));
-                let original_color = model.color;
-                ui.color_edit_button_rgb(model.color.as_slice_mut());
-                history_tracked_model(
-                    (editing, ui, &mut app.history),
-                    (id, || ModelAction::Color(original_color)),
-                );
-
-                if ui.button(concatcp!(DICE_THREE, " Random")).clicked() {
-                    app.history.track_model(id, ModelAction::Color(model.color));
-                    model.randomize_color();
-                }
+                    if ui.button(concatcp!(DICE_THREE, " Random")).clicked() {
+                        app.history.track_model(id, ModelAction::Color(model.color));
+                        model.randomize_color();
+                    }
+                });
             });
         });
+
+    ui.collapsing("Miscellaneous", |ui| {
+        grid("model_props_grid").show(ui, |ui| {
+            ui.label("Faces");
+            ui.horizontal(|ui| {
+                ui.label(model.mesh.face_count().to_string());
+                ui.take_available_width();
+            });
+            ui.end_row();
+
+            ui.label("Vertices");
+            ui.label(model.mesh.vertex_count().to_string());
+            ui.end_row();
+
+            // ui.label("Relative Exposure");
+            // DragValue::new(&mut 100).suffix("%").ui(ui);
+            // ui.end_row();
+        });
+    });
 }
 
 fn rad_to_deg(pos: Vector3<f32>) -> Vector3<f32> {

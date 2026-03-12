@@ -79,7 +79,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                             };
                         }
 
-                        ui.add_space(ui.available_width());
+                        ui.take_available_width();
                     })
                 },
             );

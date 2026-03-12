@@ -153,7 +153,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                             let volume = result.volume.get::<Centimeter>(); // cm³ = ml
                             ui.label(format!("{DROP} {volume:.2} ml"));
 
-                            ui.add_space(ui.available_width());
+                            ui.take_available_width();
                         })
                     });
 

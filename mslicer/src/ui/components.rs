@@ -1,6 +1,6 @@
 use std::{hash::Hash, mem};
 
-use egui::{Color32, DragValue, FontId, Response, Separator, Ui, emath::Numeric};
+use egui::{Color32, DragValue, FontId, Grid, Response, Separator, Ui, emath::Numeric};
 
 use crate::app::history::{Action, History, ModelAction};
 
@@ -95,6 +95,13 @@ pub fn vec3_dragger_proportional(
         }
     });
     edit
+}
+
+pub fn grid(id_salt: &str) -> Grid {
+    Grid::new(id_salt)
+        .num_columns(2)
+        .spacing([40.0, 4.0])
+        .striped(true)
 }
 
 /// Returns if the supplied widget response is being dragged or has focus.
