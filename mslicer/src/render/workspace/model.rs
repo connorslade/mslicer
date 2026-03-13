@@ -15,6 +15,7 @@ use crate::{
     include_shader,
     render::{
         Gcx, VERTEX_BUFFER_LAYOUT,
+        camera::Camera,
         consts::{BASE_BIND_GROUP_LAYOUT_DESCRIPTOR, DEPTH_STENCIL_STATE},
     },
 };
@@ -92,6 +93,26 @@ impl ModelPipeline {
             bind_groups: Vec::new(),
         }
     }
+
+    fn bind_group(&self, gcx: &Gcx, uniforms: ModelUniforms) -> BindGroup {
+        let mut buffer = UniformBuffer::new(Vec::new());
+        buffer.write(&uniforms).unwrap();
+
+        let uniform_buffer = gcx.device.create_buffer_init(&BufferInitDescriptor {
+            label: None,
+            contents: &buffer.into_inner(),
+            usage: BufferUsages::UNIFORM,
+        });
+
+        gcx.device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: None,
+            layout: &self.bind_group_layout,
+            entries: &[BindGroupEntry {
+                binding: 0,
+                resource: uniform_buffer.as_entire_binding(),
+            }],
+        })
+    }
 }
 
 impl ModelPipeline {
@@ -126,32 +147,35 @@ impl ModelPipeline {
                 render_style: app.config.render_style as u32,
                 overhang_angle,
             };
-
-            let mut buffer = UniformBuffer::new(Vec::new());
-            buffer.write(&uniforms).unwrap();
-
-            let uniform_buffer = gcx.device.create_buffer_init(&BufferInitDescriptor {
-                label: None,
-                contents: &buffer.into_inner(),
-                usage: BufferUsages::UNIFORM,
-            });
-
-            let bind_group = gcx.device.create_bind_group(&wgpu::BindGroupDescriptor {
-                label: None,
-                layout: &self.bind_group_layout,
-                entries: &[BindGroupEntry {
-                    binding: 0,
-                    resource: uniform_buffer.as_entire_binding(),
-                }],
-            });
-
-            self.bind_groups.push(bind_group);
+            self.bind_groups.push(self.bind_group(gcx, uniforms));
         }
 
         if !to_generate.is_empty() {
             for idx in to_generate {
-                app.project.models[idx].get_buffers(gcx.device);
+                app.project.models[idx].get_buffers(&gcx.device);
             }
+        }
+    }
+
+    pub fn prepare_preview(&mut self, gcx: &Gcx, app: &mut App, camera: Camera) {
+        self.bind_groups.clear();
+        for model in app.project.models.iter() {
+            if model.try_get_buffers().is_none() {
+                continue;
+            }
+
+            let model_transform = *model.mesh.transformation_matrix();
+            let uniforms = ModelUniforms {
+                transform: camera.view_projection_matrix(1.0) * model_transform,
+                model_transform,
+                build_volume: Vector3::repeat(f32::MAX),
+                model_color: model.color.to_srgb().into(),
+                camera_position: camera.position(),
+                camera_target: camera.target,
+                render_style: RenderStyle::Rendered as u32,
+                overhang_angle: 0.0,
+            };
+            self.bind_groups.push(self.bind_group(gcx, uniforms));
         }
     }
 

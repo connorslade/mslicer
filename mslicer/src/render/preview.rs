@@ -1,14 +1,15 @@
 use std::f32::consts::PI;
 
+use egui_wgpu::RenderState;
 use image::{Rgba, RgbaImage};
 use nalgebra::{Vector2, Vector3};
+use parking_lot::MappedRwLockWriteGuard;
 use tracing::{error, info};
 use wgpu::{
-    BufferAddress, BufferDescriptor, BufferUsages, Color, CommandEncoderDescriptor, Device,
-    Extent3d, LoadOp, MapMode, Operations, Origin3d, PollType, Queue, RenderPassColorAttachment,
-    RenderPassDepthStencilAttachment, RenderPassDescriptor, StoreOp, TexelCopyBufferInfo,
-    TexelCopyBufferLayout, TexelCopyTextureInfo, Texture, TextureAspect, TextureFormat,
-    TextureView, TextureViewDescriptor,
+    BufferAddress, BufferDescriptor, BufferUsages, Color, Extent3d, LoadOp, MapMode, Operations,
+    Origin3d, PollType, RenderPassColorAttachment, RenderPassDepthStencilAttachment,
+    RenderPassDescriptor, StoreOp, TexelCopyBufferInfo, TexelCopyBufferLayout,
+    TexelCopyTextureInfo, Texture, TextureAspect, TextureFormat, TextureView,
 };
 
 use crate::app::App;
@@ -30,21 +31,15 @@ pub fn process_previews(app: &mut App) {
 }
 
 // TODO: Allow rendering multiple preview images at once
-// todo: this is just so bad with all the unsafe casts sob. please rework this.
 fn render_preview_image(app: &mut App, size: (u32, u32)) -> RgbaImage {
     info!("Generating {}x{} preview image", size.0, size.1);
-
-    let (device, queue) = (
-        unsafe { &*(&app.render_state.device as *const _) },
-        unsafe { &*(&app.render_state.queue as *const _) },
-    );
-    let gcx = Gcx { device, queue };
+    let gcx = app.gcx();
 
     let format = app.render_state.target_format;
-    let (texture, resolved_texture, depth_texture) = init_textures(device, format, size);
-    let texture_view = texture.create_view(&TextureViewDescriptor::default());
-    let resolved_texture_view = resolved_texture.create_view(&TextureViewDescriptor::default());
-    let depth_texture_view = depth_texture.create_view(&TextureViewDescriptor::default());
+    let (texture, resolved_texture, depth_texture) = init_textures(&gcx.device, format, size);
+    let texture_view = texture.create_view(&Default::default());
+    let resolved_texture_view = resolved_texture.create_view(&Default::default());
+    let depth_texture_view = depth_texture.create_view(&Default::default());
 
     let (mut min, mut max) = (Vector3::repeat(f32::MAX), Vector3::repeat(f32::MIN));
     for model in app.project.models.iter() {
@@ -53,44 +48,37 @@ fn render_preview_image(app: &mut App, size: (u32, u32)) -> RgbaImage {
         max = max.zip_map(&model_max, f32::max);
     }
 
-    let target = (min + max) / 2.0;
-    let distance = (min - max).magnitude() / 2.0;
-
-    let old_camera = app.camera.clone();
-    app.camera = Camera {
-        target,
-        distance,
+    let mut camera = Camera {
+        target: (min + max) / 2.0,
         angle: Vector2::new(PI, PI / 10.0),
-        ..app.camera
+        ..Default::default()
     };
+    camera.distance = (max - camera.target).magnitude() / (camera.fov / 2.0).tan();
 
-    let app2 = unsafe { &mut *(app as *mut _) };
-    let mut resources = app.get_callback_resource_mut::<WorkspaceRenderResources>();
-    let pipeline: &mut ModelPipeline = unsafe { &mut *(&mut resources.model as *mut _) };
-    pipeline.prepare(&gcx, app2);
-
+    let render_state = app.render_state.clone();
     render_preview(
-        app2,
+        app,
         &gcx,
-        &resources.model,
+        &mut pipeline(&render_state),
         &texture_view,
         &resolved_texture_view,
         &depth_texture_view,
+        camera,
     );
 
-    app2.camera = old_camera;
-    download_preview(device, format, queue, &resolved_texture)
+    download_preview(&gcx, format, &resolved_texture)
 }
 
 fn render_preview(
     app: &mut App,
-    Gcx { device, queue }: &Gcx,
-    model_pipeline: &ModelPipeline,
+    gcx: &Gcx,
+    model_pipeline: &mut ModelPipeline,
     texture_view: &TextureView,
     resolved_texture_view: &TextureView,
     depth_texture_view: &TextureView,
+    camera: Camera,
 ) {
-    let mut encoder = device.create_command_encoder(&CommandEncoderDescriptor { label: None });
+    let mut encoder = gcx.device.create_command_encoder(&Default::default());
     let mut preview_render_pass = encoder.begin_render_pass(&RenderPassDescriptor {
         label: None,
         color_attachments: &[Some(RenderPassColorAttachment {
@@ -114,23 +102,18 @@ fn render_preview(
         occlusion_query_set: None,
     });
 
+    model_pipeline.prepare_preview(gcx, app, camera);
     model_pipeline.paint(&mut preview_render_pass, app);
     drop(preview_render_pass);
-    queue.submit(std::iter::once(encoder.finish()));
+    gcx.queue.submit(std::iter::once(encoder.finish()));
 }
 
-fn download_preview(
-    device: &Device,
-    format: TextureFormat,
-    queue: &Queue,
-    texture: &Texture,
-) -> RgbaImage {
-    let mut download_encoder =
-        device.create_command_encoder(&CommandEncoderDescriptor { label: None });
+fn download_preview(gcx: &Gcx, format: TextureFormat, texture: &Texture) -> RgbaImage {
+    let mut download_encoder = gcx.device.create_command_encoder(&Default::default());
     let texture_extent = texture.size();
     let texture_size = (texture_extent.width * texture_extent.height * 4) as BufferAddress;
 
-    let staging_buffer = device.create_buffer(&BufferDescriptor {
+    let staging_buffer = gcx.device.create_buffer(&BufferDescriptor {
         label: None,
         size: texture_size,
         usage: BufferUsages::COPY_DST | BufferUsages::MAP_READ,
@@ -154,13 +137,13 @@ fn download_preview(
         },
         texture_extent,
     );
-    queue.submit(std::iter::once(download_encoder.finish()));
+    gcx.queue.submit(std::iter::once(download_encoder.finish()));
 
     let (tx, rx) = std::sync::mpsc::channel();
     let slice = staging_buffer.slice(..);
     slice.map_async(MapMode::Read, move |_| tx.send(()).unwrap());
 
-    device.poll(PollType::wait_indefinitely()).unwrap();
+    gcx.device.poll(PollType::wait_indefinitely()).unwrap();
     rx.recv().unwrap();
 
     let mapped_range = slice.get_mapped_range();
@@ -193,4 +176,13 @@ fn download_preview(
     staging_buffer.unmap();
 
     image
+}
+
+fn pipeline(render_state: &RenderState) -> MappedRwLockWriteGuard<'_, ModelPipeline> {
+    MappedRwLockWriteGuard::map(render_state.renderer.write(), |x| {
+        &mut (x.callback_resources)
+            .get_mut::<WorkspaceRenderResources>()
+            .unwrap()
+            .model
+    })
 }

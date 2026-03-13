@@ -21,6 +21,8 @@
 - Replace about panel with a first time popup that links to the documentation
 - Show individual model volume (before slicing)
 - Model specific relative exposures ([#18](https://github.com/connorslade/mslicer/pull/18))
+- Correctly overwrite render settings when generating preview images
+  - Will now use rendered mode without overhang detection, the default fov, and the correct aspect ratio
 
 ## v0.5.0 &mdash; February 21st, 2026
 

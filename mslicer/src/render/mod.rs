@@ -32,9 +32,9 @@ pub const VERTEX_BUFFER_LAYOUT: VertexBufferLayout = VertexBufferLayout {
     }],
 };
 
-pub struct Gcx<'a> {
-    pub device: &'a Device,
-    pub queue: &'a Queue,
+pub struct Gcx {
+    pub device: Device,
+    pub queue: Queue,
 }
 
 #[repr(C)]

@@ -4,7 +4,6 @@ use egui::{CentralPanel, Color32, Context, Frame, Id, Sense, Theme, Ui, WidgetTe
 use egui_dock::{DockArea, TabViewer};
 use egui_wgpu::Callback;
 use nalgebra::Matrix4;
-use parking_lot::MappedRwLockWriteGuard;
 use serde::{Deserialize, Serialize};
 
 use crate::{app::App, render::workspace::WorkspaceRenderCallback, ui::state::WorkspaceHover};
@@ -145,12 +144,6 @@ impl App {
         WorkspaceRenderCallback {
             app: self as *mut _,
         }
-    }
-
-    pub fn get_callback_resource_mut<T: 'static>(&self) -> MappedRwLockWriteGuard<'_, T> {
-        MappedRwLockWriteGuard::map(self.render_state.renderer.write(), |x| {
-            x.callback_resources.get_mut::<T>().unwrap()
-        })
     }
 
     pub fn view_projection(&self) -> Matrix4<f32> {

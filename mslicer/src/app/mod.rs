@@ -15,7 +15,7 @@ use crate::{
         config::Config, history::History, project::Project, remote_print::RemotePrint,
         slice_operation::SliceOperation, task::TaskManager,
     },
-    render::{camera::Camera, preview},
+    render::{Gcx, camera::Camera, preview},
     ui::{
         drag_and_drop,
         popup::{Popup, PopupIcon, PopupManager},
@@ -178,6 +178,13 @@ impl App {
         ));
     }
 
+    pub fn gcx(&self) -> Gcx {
+        Gcx {
+            device: self.render_state.device.clone(),
+            queue: self.render_state.queue.clone(),
+        }
+    }
+
     pub fn focus_tab(&mut self, tab: Tab, size: Vector2<f32>) {
         if let Some(panel) = self.dock_state.find_tab(&tab) {
             self.dock_state.set_active_tab(panel);
@@ -200,7 +207,7 @@ impl App {
 
     pub fn set_title(&mut self, ctx: &egui::Context) {
         let title = if let Some(stem) = self.project.path.as_ref().and_then(|x| x.file_stem()) {
-            format!("mslicer - {}", stem.to_string_lossy())
+            format!("mslicer — {}", stem.to_string_lossy())
         } else {
             "mslicer".into()
         };

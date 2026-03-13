@@ -4,12 +4,8 @@ use wgpu::{CommandBuffer, CommandEncoder, Device, Queue, RenderPass};
 
 use crate::{
     app::App,
-    render::{
-        Gcx,
-        workspace::{
-            line::LineDispatch, model::ModelPipeline, point::PointDispatch,
-            support::SupportPipeline,
-        },
+    render::workspace::{
+        line::LineDispatch, model::ModelPipeline, point::PointDispatch, support::SupportPipeline,
     },
 };
 
@@ -33,15 +29,15 @@ pub struct WorkspaceRenderCallback {
 impl CallbackTrait for WorkspaceRenderCallback {
     fn prepare(
         &self,
-        device: &Device,
-        queue: &Queue,
+        _device: &Device,
+        _queue: &Queue,
         _screen: &ScreenDescriptor,
         _encoder: &mut CommandEncoder,
         resources: &mut CallbackResources,
     ) -> Vec<CommandBuffer> {
         let workspace = resources.get_mut::<WorkspaceRenderResources>().unwrap();
-        let gcx = Gcx { device, queue };
         let app = self.app();
+        let gcx = app.gcx();
 
         workspace.model.prepare(&gcx, app);
         workspace.support.prepare(&gcx, app);
