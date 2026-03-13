@@ -5,7 +5,7 @@ use tracing::error;
 
 use crate::{
     app::App,
-    render::workspace::model::RenderStyle,
+    render::{camera::Projection, workspace::model::RenderStyle},
     ui::components::{dragger, vec2_dragger, vec3_dragger},
 };
 
@@ -61,6 +61,16 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                 });
             ui.end_row();
 
+            ui.label("Projection");
+            ComboBox::new("projection", "")
+                .selected_text(app.config.projection.name())
+                .show_ui(ui, |ui| {
+                    for camera in Projection::ALL {
+                        ui.selectable_value(&mut app.config.projection, camera, camera.name());
+                    }
+                });
+            ui.end_row();
+
             ui.label("Grid Size");
             ui.horizontal(|ui| {
                 dragger(ui, "", &mut app.config.grid_size, |x| {
@@ -71,10 +81,9 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
             ui.end_row();
         });
 
-    ui.add_space(16.0);
-    ui.heading("Advanced");
-
+    ui.add_space(8.0);
     ui.checkbox(&mut app.config.show_normals, "Show Normals");
+    ui.add_space(8.0);
 
     ui.collapsing("Camera", |ui| {
         Grid::new("workspace_camera")
@@ -95,14 +104,6 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
 
                 ui.label("Fov");
                 ui.add(DragValue::new(&mut app.camera.fov).speed(0.01));
-                ui.end_row();
-
-                ui.label("Near");
-                ui.add(DragValue::new(&mut app.camera.near));
-                ui.end_row();
-
-                ui.label("Far");
-                ui.add(DragValue::new(&mut app.camera.far));
                 ui.end_row();
             });
     });

@@ -13,7 +13,10 @@ use nalgebra::{Vector2, Vector3};
 use serde::{Deserialize, Serialize};
 use tracing::{info, warn};
 
-use crate::{render::workspace::model::RenderStyle, windows::Tab};
+use crate::{
+    render::{camera::Projection, workspace::model::RenderStyle},
+    windows::Tab,
+};
 
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(default)]
@@ -35,6 +38,7 @@ pub struct Config {
 
     // Advanced Settings
     pub render_style: RenderStyle,
+    pub projection: Projection,
     pub show_normals: bool,
     pub max_buffer_size: u64,
     pub printers: Vec<PrinterDefaults>,
@@ -111,6 +115,7 @@ impl Default for Config {
             network_broadcast_address: IpAddr::V4(Ipv4Addr::new(192, 168, 1, 255)),
 
             render_style: RenderStyle::Rendered,
+            projection: Projection::Perspective,
             max_buffer_size: 512 << 20,
             show_normals: false,
             printers: vec![PrinterDefaults {

@@ -5,28 +5,52 @@ use std::{
 
 use egui::{PointerButton, Response, Ui};
 use nalgebra::{Matrix4, Vector2, Vector3};
+use serde::{Deserialize, Serialize};
 
 const EPSILON: f32 = 1e-5;
+const NEAR: f32 = 0.1;
+const FAR: f32 = 10_000.0;
 
 #[derive(Clone, Debug)]
 pub struct Camera {
     pub target: Vector3<f32>,
     pub angle: Vector2<f32>,
     pub distance: f32,
-
     pub fov: f32,
-    pub near: f32,
-    pub far: f32,
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub enum Projection {
+    Perspective,
+    Orthographic,
 }
 
 impl Camera {
-    pub fn view_projection_matrix(&self, aspect: f32) -> Matrix4<f32> {
-        let pos = self.position() + self.target;
+    pub fn view_projection_matrix(&self, projection: Projection, aspect: f32) -> Matrix4<f32> {
+        let camera =
+            Vector3::new(self.angle.x.sin(), self.angle.x.cos(), self.angle.y.tan()).normalize();
 
-        let view = Matrix4::look_at_rh(&pos.into(), &self.target.into(), &Vector3::z_axis());
-        let projection = Matrix4::new_perspective(aspect, self.fov, self.near, self.far);
+        match projection {
+            Projection::Perspective => {
+                Matrix4::new_perspective(aspect, self.fov, NEAR, FAR)
+                    * Matrix4::look_at_rh(
+                        &(camera * self.distance).into(),
+                        &self.target.into(),
+                        &Vector3::z_axis(),
+                    )
+            }
+            Projection::Orthographic => {
+                let height = self.distance * (self.fov / 2.0).sin();
+                let width = aspect * height;
 
-        projection * view
+                Matrix4::new_orthographic(-width, width, -height, height, -FAR, FAR)
+                    * Matrix4::look_at_rh(
+                        &(camera * FAR / 2.0 + self.target).into(),
+                        &self.target.into(),
+                        &Vector3::z_axis(),
+                    )
+            }
+        }
     }
 
     // returns ray pos (camera pos) and ray dir
@@ -77,16 +101,24 @@ impl Camera {
     }
 }
 
+impl Projection {
+    pub const ALL: [Projection; 2] = [Projection::Perspective, Projection::Orthographic];
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            Projection::Perspective => "Perspective",
+            Projection::Orthographic => "Orthographic",
+        }
+    }
+}
+
 impl Default for Camera {
     fn default() -> Self {
         Self {
             target: Vector3::zeros(),
             angle: Vector2::new(PI, 0.0),
             distance: 10.0,
-
             fov: FRAC_PI_2,
-            near: 0.1,
-            far: 10_000.0,
         }
     }
 }

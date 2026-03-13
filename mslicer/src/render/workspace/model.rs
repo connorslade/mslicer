@@ -15,7 +15,7 @@ use crate::{
     include_shader,
     render::{
         Gcx, VERTEX_BUFFER_LAYOUT,
-        camera::Camera,
+        camera::{Camera, Projection},
         consts::{BASE_BIND_GROUP_LAYOUT_DESCRIPTOR, DEPTH_STENCIL_STATE},
     },
 };
@@ -164,9 +164,10 @@ impl ModelPipeline {
                 continue;
             }
 
+            let view_projection = camera.view_projection_matrix(Projection::Perspective, 1.0);
             let model_transform = *model.mesh.transformation_matrix();
             let uniforms = ModelUniforms {
-                transform: camera.view_projection_matrix(1.0) * model_transform,
+                transform: view_projection * model_transform,
                 model_transform,
                 build_volume: Vector3::repeat(f32::MAX),
                 model_color: model.color.to_srgb().into(),

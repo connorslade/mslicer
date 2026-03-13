@@ -148,6 +148,7 @@ impl App {
 
     pub fn view_projection(&self) -> Matrix4<f32> {
         let aspect = self.state.workspace.aspect;
-        self.camera.view_projection_matrix(aspect)
+        self.camera
+            .view_projection_matrix(self.config.projection, aspect)
     }
 }

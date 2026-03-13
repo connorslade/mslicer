@@ -23,6 +23,7 @@
 - Model specific relative exposures ([#18](https://github.com/connorslade/mslicer/pull/18))
 - Correctly overwrite render settings when generating preview images
   - Will now use rendered mode without overhang detection, the default fov, and the correct aspect ratio
+- Pick between Perspective or Orthographic camera projections
 
 ## v0.5.0 &mdash; February 21st, 2026
 
