@@ -1,3 +1,5 @@
+use std::iter;
+
 use crate::units::Miliseconds;
 
 pub fn human_duration(duration: Miliseconds) -> String {
@@ -21,6 +23,20 @@ pub fn human_duration(duration: Miliseconds) -> String {
             seconds
         )
     }
+}
+
+pub fn separate_thousands(number: impl TryInto<u64>) -> String {
+    let str = number.try_into().unwrap_or(u64::MAX).to_string();
+    let separators = [None, None, Some(',')]
+        .into_iter()
+        .cycle()
+        .skip(3 - str.len() % 3);
+
+    (str.chars().map(Some))
+        .zip(iter::once(None).chain(separators))
+        .flat_map(|(a, b)| [b, a])
+        .flatten()
+        .collect()
 }
 
 pub fn subscript_number(num: impl Into<u64>) -> String {

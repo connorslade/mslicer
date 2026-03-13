@@ -1,6 +1,9 @@
 use std::f32;
 
-use common::{misc::subscript_number, units::Centimeter};
+use common::{
+    misc::{separate_thousands, subscript_number},
+    units::Centimeter,
+};
 use const_format::concatcp;
 use egui::{
     CollapsingHeader, Color32, Context, DragValue, Frame, Label, Popup, Sense, TopBottomPanel, Ui,
@@ -21,7 +24,6 @@ use crate::{
     ui::components::{
         being_edited, grid, history_tracked_model, vec3_dragger, vec3_dragger_proportional,
     },
-    util::separate_thousands,
 };
 
 const WARN_NON_MANIFOLD: &str = "This mesh is non-manifold, it may produce unexpected results when sliced.\nConsider running it through a mesh repair tool.";
@@ -86,7 +88,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
     {
         let mut action = Action::None;
         TopBottomPanel::bottom("model_props")
-            .resizable(true)
+            .resizable(false)
             .frame(Frame::new().inner_margin(2.0))
             .default_height(f32::MAX)
             .show_inside(ui, |ui| {
@@ -267,7 +269,7 @@ fn model_properties(app: &mut App, ui: &mut Ui, ctx: &Context, action: &mut Acti
             ui.label(format!("{volume:.2} cm³"));
             ui.end_row();
 
-            ui.label("Relative Exposure");
+            ui.label("Exposure");
             let mut value = model.exposure as f32 / 2.55;
             let editing = being_edited(
                 &DragValue::new(&mut value)
