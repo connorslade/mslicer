@@ -103,7 +103,7 @@ pub fn ui(app: &mut App, ctx: &Context) {
                 ui.set_width(150.0);
 
                 labeled_separator(ui, "Actions");
-                app.config.about |= ui.button("About").clicked();
+                app.config.about |= ui.button("About mslicer").clicked();
                 app.state.queue_reset_ui |= ui.button("Reset Interface").clicked();
 
                 labeled_separator(ui, "Windows");

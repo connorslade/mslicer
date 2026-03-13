@@ -74,4 +74,8 @@ pub fn ui(app: &mut App, ctx: &Context) {
     {
         app.config.about = false;
     }
+
+    if ctx.input(|i| !i.keys_down.is_empty()) {
+        app.config.about = false;
+    }
 }

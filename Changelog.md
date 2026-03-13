@@ -2,7 +2,7 @@
 
 ## v0.6.0 &mdash; Coming Soon™
 
-- New icon (gnome inspired)
+- New logo/icon (gnome inspired)
 - Better packaging for MacOS (.app bundle) and Windows (.rc file)
 - Keyboard shortcuts use ⌘ on MacOS
 - Fix panic caused by race condition

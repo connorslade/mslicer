@@ -4,7 +4,7 @@ use common::{
     slice::{EncodableLayer, SliceResult},
     units::Milimeter,
 };
-use ordered_float::OrderedFloat;
+use itertools::Itertools;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
 use crate::{
@@ -54,7 +54,9 @@ impl Slicer {
                 // encoded. There is probably a better polygon filling algo, but
                 // this one works surprisingly fast.
                 for y in 0..platform_resolution.y {
+                    let y_offset = (platform_resolution.x * y) as u64;
                     let yf = y as f32 + 0.5;
+
                     let mut intersections = (segments.iter())
                         .map(|x| (x.0[0], x.0[1], x.1))
                         // Filtering to only consider segments with one point
@@ -63,50 +65,28 @@ impl Slicer {
                         .map(|(a, b, facing)| {
                             // Get the x position of the line segment at this y
                             let t = (yf - a.y) / (b.y - a.y);
-                            (a.x + t * (b.x - a.x), facing)
+                            let pos = a.x + t * (b.x - a.x);
+                            (pos.round() as u64, facing)
                         })
                         .collect::<Vec<_>>();
 
                     // Sort all these intersections for run-length encoding
-                    intersections.sort_by_key(|&(x, _)| OrderedFloat(x));
+                    intersections.sort_by_key(|&(x, _)| x);
 
-                    // In order to avoid creating a cavity in the model when
-                    // there is an intersection either by the same mesh or
-                    // another mesh, these intersections are removed. This is
-                    // done by looking at the direction each line segment is
-                    // facing. For example, <- <- -> -> would be reduced to <- ->.
-                    let mut filtered = Vec::with_capacity(intersections.len());
-                    let mut depth = 0;
-
-                    for (pos, dir) in intersections {
-                        let prev_depth = depth;
-                        depth += (dir as i32) * 2 - 1;
-
-                        ((depth == 0) ^ (prev_depth == 0))
-                            .then(|| filtered.push(pos.clamp(0.0, platform_resolution.x as f32)));
-                    }
-
-                    // Convert the intersections into runs of white pixels to be
+                    // Convert the intersections into runs of voxels to be
                     // encoded into the layer.
-                    for span in filtered.chunks_exact(2) {
-                        let a = span[0].round() as u64;
-                        let b = span[1].round() as u64;
-                        if b == a {
-                            continue;
+                    let mut depth = 0;
+                    for ((a, a_dir), (b, _)) in intersections.into_iter().tuple_windows() {
+                        depth += 1 - (a_dir as i32) * 2;
+
+                        if depth != 0 && b != a {
+                            let (start, length) = (a + y_offset, b - a);
+                            (start > last).then(|| encoder.add_run(start - last, 0));
+                            encoder.add_run(length, 255);
+
+                            voxels.fetch_add(length, Ordering::Relaxed);
+                            last = start + length;
                         }
-
-                        let y_offset = (platform_resolution.x * y) as u64;
-                        let start = a + y_offset;
-                        let end = b + y_offset;
-                        let length = b - a;
-
-                        if start > last {
-                            encoder.add_run(start - last, 0);
-                        }
-
-                        encoder.add_run(length, 255);
-                        voxels.fetch_add(length, Ordering::Relaxed);
-                        last = end;
                     }
                 }
 
@@ -114,9 +94,7 @@ impl Slicer {
                 // decoded into is just uninitialized memory. So if the last run
                 // doesn't fill the buffer, the printer will just print whatever
                 // was in the buffer before which just makes a huge mess.
-                if last < pixels {
-                    encoder.add_run(pixels - last, 0);
-                }
+                (last < pixels).then(|| encoder.add_run(pixels - last, 0));
 
                 // Finished encoding the layer
                 encoder.finish(layer, &self.slice_config)
