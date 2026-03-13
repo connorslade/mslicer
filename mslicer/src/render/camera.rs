@@ -1,7 +1,4 @@
-use std::{
-    f32::consts::{FRAC_PI_2, PI},
-    ops::Neg,
-};
+use std::{f32::consts::FRAC_PI_2, ops::Neg};
 
 use egui::{PointerButton, Response, Ui};
 use nalgebra::{Matrix4, Vector2, Vector3};
@@ -27,16 +24,13 @@ pub enum Projection {
 
 impl Camera {
     pub fn view_projection_matrix(&self, projection: Projection, aspect: f32) -> Matrix4<f32> {
-        let camera =
-            Vector3::new(self.angle.x.sin(), self.angle.x.cos(), self.angle.y.tan()).normalize();
-
         match projection {
             Projection::Perspective => {
                 Matrix4::new_perspective(aspect, self.fov, NEAR, FAR)
                     * Matrix4::look_at_rh(
-                        &(camera * self.distance).into(),
+                        &(self.position(self.distance) + self.target).into(),
                         &self.target.into(),
-                        &Vector3::z_axis(),
+                        &self.up(),
                     )
             }
             Projection::Orthographic => {
@@ -45,9 +39,9 @@ impl Camera {
 
                 Matrix4::new_orthographic(-width, width, -height, height, -FAR, FAR)
                     * Matrix4::look_at_rh(
-                        &(camera * FAR / 2.0 + self.target).into(),
+                        &(self.position(FAR / 2.0) + self.target).into(),
                         &self.target.into(),
-                        &Vector3::z_axis(),
+                        &self.up(),
                     )
             }
         }
@@ -55,11 +49,11 @@ impl Camera {
 
     // returns ray pos (camera pos) and ray dir
     pub fn hovered_ray(&self, aspect: f32, uv: Vector2<f32>) -> (Vector3<f32>, Vector3<f32>) {
-        let camera_pos = self.position() + self.target;
+        let camera_pos = self.position(self.distance) + self.target;
         let pos = 2.0 * Vector2::new(uv.x, 1.0 - uv.y) - Vector2::repeat(1.0);
 
         let forward = (self.target - camera_pos).normalize();
-        let right = forward.cross(&Vector3::z()).normalize();
+        let right = forward.cross(&self.up()).normalize();
         let up = right.cross(&forward).normalize();
 
         let fov_scale = (self.fov * 0.5).tan();
@@ -74,17 +68,13 @@ impl Camera {
         let drag_delta = response.drag_delta() * if shift_down { 0.1 } else { 1.0 };
 
         if response.dragged_by(PointerButton::Primary) {
-            self.angle.x += drag_delta.x * 0.01;
-            self.angle.y = (self.angle.y + drag_delta.y * 0.01)
-                .clamp(-FRAC_PI_2 + EPSILON, FRAC_PI_2 - EPSILON);
+            self.angle.x -= drag_delta.x * 0.01;
+            self.angle.y += drag_delta.y * 0.01;
         }
 
         if response.dragged_by(PointerButton::Secondary) {
-            let facing = Vector3::new(self.angle.x.sin(), self.angle.x.cos(), self.angle.y.tan())
-                .normalize()
-                .neg();
-
-            let right = facing.cross(&Vector3::z()).normalize();
+            let facing = self.position(1.0).neg();
+            let right = facing.cross(&self.up()).normalize();
             let up = right.cross(&facing).normalize();
             self.target -= (right * drag_delta.x * 0.1) - (up * drag_delta.y * 0.1);
         }
@@ -95,9 +85,16 @@ impl Camera {
         }
     }
 
-    pub fn position(&self) -> Vector3<f32> {
-        Vector3::new(self.angle.x.sin(), self.angle.x.cos(), self.angle.y.tan()).normalize()
-            * self.distance
+    pub fn position(&self, distance: f32) -> Vector3<f32> {
+        Vector3::new(
+            self.angle.x.cos() * self.angle.y.cos(),
+            self.angle.x.sin() * self.angle.y.cos(),
+            self.angle.y.sin(),
+        ) * distance
+    }
+
+    pub fn up(&self) -> Vector3<f32> {
+        Vector3::z() * self.angle.y.cos().signum()
     }
 }
 
@@ -116,7 +113,7 @@ impl Default for Camera {
     fn default() -> Self {
         Self {
             target: Vector3::zeros(),
-            angle: Vector2::new(PI, 0.0),
+            angle: Vector2::new(-FRAC_PI_2, 0.0),
             distance: 10.0,
             fov: FRAC_PI_2,
         }

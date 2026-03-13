@@ -112,7 +112,7 @@ impl SupportPipeline {
 
         let uniform = SupportUniforms {
             transform: app.view_projection(),
-            camera_direction: app.camera.position() / app.camera.distance,
+            camera_direction: app.camera.position(1.0),
         };
 
         let mut buffer = UniformBuffer::new(Vec::new());

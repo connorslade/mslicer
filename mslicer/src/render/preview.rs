@@ -2,7 +2,7 @@ use std::f32::consts::PI;
 
 use egui_wgpu::RenderState;
 use image::{Rgba, RgbaImage};
-use nalgebra::{Vector2, Vector3};
+use nalgebra::Vector3;
 use parking_lot::MappedRwLockWriteGuard;
 use tracing::{error, info};
 use wgpu::{
@@ -50,9 +50,9 @@ fn render_preview_image(app: &mut App, size: (u32, u32)) -> RgbaImage {
 
     let mut camera = Camera {
         target: (min + max) / 2.0,
-        angle: Vector2::new(PI, PI / 10.0),
         ..Default::default()
     };
+    camera.angle.y = PI / 10.0;
     camera.distance = (max - camera.target).magnitude() / (camera.fov / 2.0).tan();
 
     let render_state = app.render_state.clone();
