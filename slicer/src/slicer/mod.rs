@@ -14,7 +14,9 @@ const SEGMENT_LAYERS: usize = 100;
 pub struct Slicer {
     slice_config: SliceConfig,
     models: Vec<Mesh>,
-    model_exposures: Vec<f32>,
+
+    exposures: Vec<u8>,
+
     layers: u32,
     progress: Progress,
 }
@@ -22,15 +24,15 @@ pub struct Slicer {
 impl Slicer {
     /// Creates a new slicer given a slice config and list of models.
     pub fn new(slice_config: SliceConfig, models: Vec<Mesh>) -> Self {
-        let model_exposures = models.iter().map(|_| 1.0).collect(); // Default to 1.0 (100%)
-        Self::new_with_exposures(slice_config, models, model_exposures)
+        let exposures = vec![255; models.len()];
+        Self::new_with_exposures(slice_config, models, exposures)
     }
 
     /// Creates a new slicer given a slice config, list of models, and their relative exposures.
     pub fn new_with_exposures(
         slice_config: SliceConfig,
         models: Vec<Mesh>,
-        model_exposures: Vec<f32>,
+        exposures: Vec<u8>,
     ) -> Self {
         let max_z = models.iter().fold(0_f32, |max, model| {
             let verts = model.vertices().iter();
@@ -48,7 +50,9 @@ impl Slicer {
         Self {
             slice_config,
             models,
-            model_exposures,
+
+            exposures,
+
             layers,
             progress,
         }

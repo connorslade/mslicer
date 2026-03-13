@@ -27,7 +27,6 @@ struct Tabs<'a> {
 
 #[derive(Serialize, Deserialize, Clone, Hash, PartialEq, Eq)]
 pub enum Tab {
-    About,
     Logs,
     Models,
     RemotePrint,
@@ -40,8 +39,7 @@ pub enum Tab {
 }
 
 impl Tab {
-    const ALL: [Tab; 9] = [
-        Tab::About,
+    const ALL: [Tab; 8] = [
         Tab::Logs,
         Tab::Models,
         Tab::RemotePrint,
@@ -54,7 +52,6 @@ impl Tab {
 
     pub fn name(&self) -> &'static str {
         match self {
-            Tab::About => "About",
             Tab::Logs => "Logs",
             Tab::Models => "Models",
             Tab::RemotePrint => "Remote Print",
@@ -77,7 +74,6 @@ impl TabViewer for Tabs<'_> {
 
     fn ui(&mut self, ui: &mut Ui, tab: &mut Self::Tab) {
         match tab {
-            Tab::About => about::ui(self.app, ui, self.ctx),
             Tab::Logs => logs::ui(self.app, ui, self.ctx),
             Tab::Models => models::ui(self.app, ui, self.ctx),
             Tab::RemotePrint => remote_print::ui(self.app, ui, self.ctx),
@@ -108,6 +104,7 @@ impl TabViewer for Tabs<'_> {
 }
 
 pub fn ui(app: &mut App, ctx: &Context) {
+    about::ui(app, ctx);
     top_bar::ui(app, ctx);
 
     mem::take(&mut app.state.queue_reset_ui).then(|| app.reset_ui());

@@ -5,9 +5,9 @@
 const GRID_WIDTH: f32 = 2.0;
 
 const POINTS = array(
-    vec2(-1.0, -1.0),
-    vec2( 3.0, -1.0),
-    vec2(-1.0,  3.0)
+    vec2( 1.0,  1.0),
+    vec2(-3.0,  1.0),
+    vec2( 1.0, -3.0)
 );
 
 const BACKGROUND_COLOR = vec3f(0.106);

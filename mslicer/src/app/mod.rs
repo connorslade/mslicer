@@ -142,8 +142,8 @@ impl App {
         let mm_to_px = platform.component_div(&platform_size).push(1.0);
 
         // Transform models from world-space to platform-space
-        let mut meshes_vec: Vec<slicer::mesh::Mesh> = Vec::new();
-        let mut exposures_vec: Vec<f32> = Vec::new();
+        let mut out = Vec::new();
+        let mut exposures = Vec::new();
 
         for model in meshes.into_iter() {
             let mut mesh = model.mesh;
@@ -153,11 +153,11 @@ impl App {
             mesh.set_position_unchecked(mesh.position().component_mul(&mm_to_px) + offset);
             mesh.update_transformation_matrix();
 
-            meshes_vec.push(mesh);
-            exposures_vec.push(model.relative_exposure);
+            out.push(mesh);
+            exposures.push((model.relative_exposure * 255.0) as u8);
         }
 
-        let slicer = Slicer::new_with_exposures(slice_config, meshes_vec, exposures_vec);
+        let slicer = Slicer::new_with_exposures(slice_config, out, exposures);
         let post_process = CombinedProgress::new();
         let slice_operation = SliceOperation::new(slicer.progress(), post_process.clone());
         self.slice_operation.replace(slice_operation);
@@ -221,10 +221,13 @@ impl eframe::App for App {
         self.tasks().poll();
 
         // only update the visuals if the theme has changed
-        match self.config.theme {
-            Theme::Dark => ctx.set_visuals(Visuals::dark()),
-            Theme::Light => ctx.set_visuals(Visuals::light()),
-        }
+        ctx.set_visuals(Visuals {
+            collapsing_header_frame: true,
+            ..match self.config.theme {
+                Theme::Dark => Visuals::dark(),
+                Theme::Light => Visuals::light(),
+            }
+        });
 
         self.remote_print().tick();
         preview::process_previews(self);
@@ -265,11 +268,12 @@ impl FpsTracker {
 }
 
 fn default_dock_layout(surface: &mut Tree<Tab>) {
-    let [_old_node, new_node] = surface.split_right(NodeIndex::root(), 0.7, vec![Tab::About]);
-    surface.split_below(new_node, 0.9, vec![Tab::Tasks]);
-
     let [_old_node, new_node] = surface.split_left(NodeIndex::root(), 0.2, vec![Tab::Models]);
     let [_old_node, new_node] =
         surface.split_below(new_node, 0.4, vec![Tab::SliceConfig, Tab::Supports]);
-    surface.split_below(new_node, 0.6, vec![Tab::Workspace, Tab::RemotePrint]);
+    surface.split_below(
+        new_node,
+        0.6,
+        vec![Tab::Workspace, Tab::RemotePrint, Tab::Tasks],
+    );
 }

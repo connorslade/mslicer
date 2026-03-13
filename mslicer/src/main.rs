@@ -72,13 +72,13 @@ fn main() -> Result<()> {
             ..Default::default()
         },
         Box::new(|cc| {
-            let render_state = render::init_wgpu(cc);
-
             let mut fonts = FontDefinitions::default();
             egui_phosphor::add_to_fonts(&mut fonts, egui_phosphor::Variant::Regular);
             cc.egui_ctx.set_fonts(fonts);
 
-            let app = App::new(render_state, config_dir, config, collector);
+            egui_extras::install_image_loaders(&cc.egui_ctx);
+
+            let app = App::new(render::init_wgpu(cc), config_dir, config, collector);
             Ok(Box::new(app))
         }),
     )

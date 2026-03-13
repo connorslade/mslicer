@@ -23,6 +23,7 @@ pub struct Config {
     pub overhang_visualization: (bool, f32),
     pub recent_projects: Vec<PathBuf>,
     pub panels: Option<Tree<Tab>>,
+    pub about: bool,
     pub default_slice_config: SliceConfig,
 
     // Remote print settings
@@ -101,6 +102,7 @@ impl Default for Config {
 
             recent_projects: Vec::new(),
             panels: None,
+            about: true,
 
             alert_print_completion: false,
             init_remote_print_at_startup: false,

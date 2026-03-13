@@ -38,6 +38,7 @@ criterion = "0.8.1"
 dirs = "6.0.0"
 eframe = { version = "0.33.3", features = ["wgpu", "serde"] }
 egui = "0.33.3"
+egui_extras = { version = "0.33.3", features = ["image"] }
 egui-phosphor = "0.11.0"
 egui-wgpu = "0.33.3"
 egui_dock = { version = "0.18.0", features = ["serde"] }

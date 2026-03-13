@@ -60,7 +60,7 @@ fn render_preview_image(app: &mut App, size: (u32, u32)) -> RgbaImage {
     app.camera = Camera {
         target,
         distance,
-        angle: Vector2::new(0.0, PI / 10.0),
+        angle: Vector2::new(PI, PI / 10.0),
         ..app.camera
     };
 

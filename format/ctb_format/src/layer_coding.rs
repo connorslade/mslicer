@@ -133,7 +133,7 @@ impl EncodableLayer for LayerEncoder {
             rest_time_before_lift: Seconds::new(0.0),
             rest_time_after_lift: Seconds::new(0.0),
             rest_time_after_retract: Seconds::new(1.0),
-            light_pwm: 255.0,
+            light_pwm: layer_exposure.pwm as f32,
             data: self.data,
         }
     }

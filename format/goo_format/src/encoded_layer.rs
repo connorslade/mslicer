@@ -129,6 +129,7 @@ impl EncodableLayer for LayerEncoder {
             layer_position_z: slice_config.slice_height * (layer + 1) as f32,
 
             layer_exposure_time: layer_exposure.exposure_time,
+            light_pwm: layer_exposure.pwm,
             lift_distance: layer_exposure.lift_distance,
             lift_speed: layer_exposure.lift_speed.convert(),
             retract_distance: layer_exposure.retract_distance,

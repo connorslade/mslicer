@@ -4,7 +4,7 @@ use common::{
     slice::{EncodableLayer, SliceResult},
     units::Milimeter,
 };
-use ordered_float::OrderedFloat;
+use itertools::Itertools;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
 use crate::{
@@ -27,9 +27,6 @@ impl Slicer {
             .map(|x| Segments1D::from_mesh(x, SEGMENT_LAYERS))
             .collect::<Vec<_>>();
 
-        // Get model exposures for this slicer
-        let model_exposures = &self.model_exposures;
-
         let layers = (0..self.layers)
             .into_par_iter()
             .map(|layer| {
@@ -39,9 +36,9 @@ impl Slicer {
                 // model. Because all the faces are triangles, every triangle
                 // intersection will return two points. These can then be
                 // interpreted as line segments making up a polygon.
-                let segments_with_exposure = (self.models.iter().enumerate())
+                let segments = (self.models.iter().enumerate())
                     .flat_map(|(idx, mesh)| {
-                        let exposure = model_exposures[idx];
+                        let exposure = self.exposures[idx];
                         segments[idx]
                             .intersect_plane(mesh, height)
                             .into_iter()
@@ -63,65 +60,47 @@ impl Slicer {
                 // encoded. There is probably a better polygon filling algo, but
                 // this one works surprisingly fast.
                 for y in 0..platform_resolution.y {
+                    let y_offset = (platform_resolution.x * y) as u64;
                     let yf = y as f32 + 0.5;
-                    let mut intersections = (segments_with_exposure.iter())
-                        .map(|(segment, exposure)| {
-                            (segment.0[0], segment.0[1], segment.1, *exposure)
-                        })
+
+                    let mut intersections = (segments.iter())
+                        .map(|((pos, facing), exposure)| (pos[0], pos[1], facing, exposure))
                         // Filtering to only consider segments with one point
                         // above the current row and one point below.
                         .filter(|&(a, b, _, _)| (a.y >= yf) ^ (b.y >= yf))
-                        .map(|(a, b, facing, exposure)| {
+                        .map(|(a, b, &facing, &exposure)| {
                             // Get the x position of the line segment at this y
                             let t = (yf - a.y) / (b.y - a.y);
-                            (a.x + t * (b.x - a.x), facing, exposure)
+                            let pos = a.x + t * (b.x - a.x);
+                            (pos.round() as u64, facing, exposure)
                         })
                         .collect::<Vec<_>>();
 
                     // Sort all these intersections for run-length encoding
-                    intersections.sort_by_key(|&(x, _, _)| OrderedFloat(x));
+                    intersections.sort_by_key(|&(x, _, _)| x);
 
-                    // In order to avoid creating a cavity in the model when
-                    // there is an intersection either by the same mesh or
-                    // another mesh, these intersections are removed. This is
-                    // done by looking at the direction each line segment is
-                    // facing. For example, <- <- -> -> would be reduced to <- ->.
-                    let mut filtered = Vec::with_capacity(intersections.len());
-                    let mut depth = 0;
-
-                    for (pos, dir, exposure) in intersections {
-                        let prev_depth = depth;
-                        depth += (dir as i32) * 2 - 1;
-
-                        ((depth == 0) ^ (prev_depth == 0)).then(|| {
-                            filtered.push((pos.clamp(0.0, platform_resolution.x as f32), exposure))
-                        });
-                    }
-
-                    // Convert the intersections into runs of white pixels to be
+                    // Convert the intersections into runs of voxels to be
                     // encoded into the layer.
-                    for span in filtered.chunks_exact(2) {
-                        let a = span[0].0.round() as u64;
-                        let b = span[1].0.round() as u64;
-                        if b == a {
-                            continue;
+                    let mut depth = 0;
+                    let mut exposures = [0; 256];
+                    for ((a, a_dir, a_exposure), (b, _, _)) in
+                        intersections.into_iter().tuple_windows()
+                    {
+                        let delta = 1 - (a_dir as i32) * 2;
+                        depth += delta;
+                        exposures[a_exposure as usize] += delta;
+
+                        if depth != 0 && b != a {
+                            let (start, length) = (a + y_offset, b - a);
+                            (start > last).then(|| encoder.add_run(start - last, 0));
+
+                            let max_exposure =
+                                exposures.iter().rposition(|&x| x > 0).unwrap_or(255);
+                            encoder.add_run(length, max_exposure as u8);
+
+                            voxels.fetch_add(length, Ordering::Relaxed);
+                            last = start + length;
                         }
-
-                        let y_offset = (platform_resolution.x * y) as u64;
-                        let start = a + y_offset;
-                        let end = b + y_offset;
-                        let length = b - a;
-
-                        if start > last {
-                            encoder.add_run(start - last, 0);
-                        }
-
-                        // Calculate the intensity based on the exposure value
-                        // For now, use the exposure from the first intersection in the span
-                        let intensity = (span[0].1 * 255.0).round() as u8;
-                        encoder.add_run(length, intensity);
-                        voxels.fetch_add(length, Ordering::Relaxed);
-                        last = end;
                     }
                 }
 
@@ -129,9 +108,7 @@ impl Slicer {
                 // decoded into is just uninitialized memory. So if the last run
                 // doesn't fill the buffer, the printer will just print whatever
                 // was in the buffer before which just makes a huge mess.
-                if last < pixels {
-                    encoder.add_run(pixels - last, 0);
-                }
+                (last < pixels).then(|| encoder.add_run(pixels - last, 0));
 
                 // Finished encoding the layer
                 encoder.finish(layer, &self.slice_config)

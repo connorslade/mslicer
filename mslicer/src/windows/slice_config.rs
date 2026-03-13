@@ -1,18 +1,16 @@
 use const_format::concatcp;
-use egui::{ComboBox, Context, DragValue, Grid, Ui};
+use egui::{ComboBox, Context, DragValue, Grid, Ui, Widget};
+use egui_extras::{Column, TableBuilder};
 use egui_phosphor::regular::{ARROW_COUNTER_CLOCKWISE, INFO, NOTE_PENCIL, WARNING};
 use slicer::post_process::{anti_alias::AntiAlias, elephant_foot_fixer::ElephantFootFixer};
 
 use crate::{
     app::App,
-    ui::{
-        components::{dragger, metric_dragger, vec2_dragger},
-        extentions::WidgetExt,
-    },
+    ui::components::{dragger, vec2_dragger},
 };
 use common::{
     slice::{ExposureConfig, Format},
-    units::Milimeter,
+    units::{Milimeter, Minute, Mircometer},
 };
 
 const TRANSITION_LAYER_TOOLTIP: &str = "Transition layers interpolate between the first exposure settings and the normal exposure settings.";
@@ -88,7 +86,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                 vec2_dragger(ui, slice_config.platform_resolution.as_mut(), |x| x);
                 ui.end_row();
 
-                ui.label("Platform Size");
+                ui.label("Platform Size (mm)");
                 ui.horizontal(|ui| {
                     ui.add(DragValue::new(platform.x.raw_mut()));
                     ui.label("×");
@@ -110,28 +108,34 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
 
             ui.label("Slice Height");
             ui.horizontal(|ui| {
-                metric_dragger(slice_config.slice_height.raw_mut(), ("m", -3, false)).add(ui);
-                ui.add_space(ui.available_width());
+                slice_config.slice_height.with::<Mircometer>(|value| {
+                    DragValue::new(value)
+                        .suffix(" μm")
+                        .range(1.0..=f32::MAX)
+                        .ui(ui);
+                });
+                ui.take_available_width();
             });
             ui.end_row();
 
             ui.label("First Layers");
-            DragValue::new(&mut slice_config.first_layers).add(ui);
+            DragValue::new(&mut slice_config.first_layers).ui(ui);
             ui.end_row();
 
             ui.horizontal(|ui| {
                 ui.label("Transition Layers");
                 ui.label(INFO).on_hover_text(TRANSITION_LAYER_TOOLTIP);
             });
-            DragValue::new(&mut slice_config.transition_layers).add(ui);
+            DragValue::new(&mut slice_config.transition_layers).ui(ui);
             ui.end_row();
         });
 
-    ui.collapsing("Exposure Config", |ui| {
+    ui.add_space(8.0);
+    ui.collapsing("Normal Layers", |ui| {
         exposure_config(ui, &mut slice_config.exposure_config);
     });
 
-    ui.collapsing("First Exposure Config", |ui| {
+    ui.collapsing("First Layers", |ui| {
         exposure_config(ui, &mut slice_config.first_exposure_config);
     });
 
@@ -141,6 +145,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     ui.label(
         "These effects are currently not optimized and will significancy increase slicing time.",
     );
+    ui.add_space(8.0);
 
     let post_processing = &mut app.project.post_processing;
     ui.collapsing("Anti Alias", |ui| {
@@ -152,43 +157,91 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
 }
 
 fn exposure_config(ui: &mut Ui, config: &mut ExposureConfig) {
-    Grid::new("exposure_config")
-        .num_columns(2)
-        .spacing([40.0, 4.0])
+    TableBuilder::new(ui)
         .striped(true)
-        .show(ui, |ui| {
-            ui.label("Exposure Time");
-            ui.horizontal(|ui| {
-                metric_dragger(config.exposure_time.raw_mut(), ("s", 0, false))
-                    .range(0.0..=f32::MAX)
-                    .add(ui);
-                ui.add_space(ui.available_width());
+        .column(Column::exact(80.0))
+        .column(Column::auto())
+        .column(Column::auto())
+        .column(Column::remainder())
+        .header(16.0, |mut row| {
+            row.col(|ui| {
+                ui.label("Exposure");
             });
-            ui.end_row();
 
-            ui.label("Lift Distance ");
-            metric_dragger(config.lift_distance.raw_mut(), ("m", -3, false))
-                .range(0.0..=f32::MAX)
-                .add(ui);
-            ui.end_row();
+            row.col(|ui| {
+                DragValue::new(config.exposure_time.raw_mut())
+                    .suffix(" s")
+                    .speed(0.1)
+                    .range(0.0..=f32::MAX)
+                    .ui(ui);
+            });
 
-            ui.label("Lift Speed");
-            metric_dragger(config.lift_speed.raw_mut(), ("m/s", -2, true))
-                .range(0.0..=f32::MAX)
-                .add(ui);
-            ui.end_row();
+            row.col(|ui| {
+                ui.label("@");
+            });
 
-            ui.label("Retract Distance");
-            metric_dragger(config.retract_distance.raw_mut(), ("m", -3, false))
-                .range(0.0..=f32::MAX)
-                .add(ui);
-            ui.end_row();
+            row.col(|ui| {
+                let mut pwm = config.pwm as f32 / 2.55;
+                DragValue::new(&mut pwm).max_decimals(0).suffix('%').ui(ui);
+                config.pwm = (pwm * 2.55) as u8;
+            });
+        })
+        .body(|mut body| {
+            body.row(16.0, |mut row| {
+                row.col(|ui| {
+                    ui.label("Lift");
+                });
 
-            ui.label("Retract Speed");
-            metric_dragger(config.retract_speed.raw_mut(), ("m/s", -2, true))
-                .range(0.0..=f32::MAX)
-                .add(ui);
-            ui.end_row();
+                row.col(|ui| {
+                    DragValue::new(config.lift_distance.raw_mut())
+                        .suffix(" mm")
+                        .speed(0.1)
+                        .range(0.0..=f32::MAX)
+                        .ui(ui);
+                });
+
+                row.col(|ui| {
+                    ui.label("@");
+                });
+
+                row.col(|ui| {
+                    config.lift_speed.with::<Milimeter, Minute>(|val| {
+                        DragValue::new(val)
+                            .suffix(" mm/min")
+                            .speed(0.1)
+                            .range(0.0..=f32::MAX)
+                            .ui(ui);
+                    });
+                });
+            });
+
+            body.row(16.0, |mut row| {
+                row.col(|ui| {
+                    ui.label("Retract");
+                });
+
+                row.col(|ui| {
+                    DragValue::new(config.retract_distance.raw_mut())
+                        .suffix(" mm")
+                        .speed(0.1)
+                        .range(0.0..=f32::MAX)
+                        .ui(ui);
+                });
+
+                row.col(|ui| {
+                    ui.label("@");
+                });
+
+                row.col(|ui| {
+                    config.retract_speed.with::<Milimeter, Minute>(|val| {
+                        DragValue::new(val)
+                            .suffix(" mm/min")
+                            .speed(0.1)
+                            .range(0.0..=f32::MAX)
+                            .ui(ui);
+                    });
+                });
+            });
         });
 }
 
@@ -212,7 +265,7 @@ pub fn elephant_foot_fixer(this: &mut ElephantFootFixer, ui: &mut Ui) {
     const INTENSITY_TIP: &str =
         "This percent will be multiplied by the pixel values of the edge pixels.";
 
-    Grid::new("exposure_config")
+    Grid::new("elephant_foot_fixer")
         .num_columns(2)
         .spacing([40.0, 4.0])
         .striped(true)
@@ -223,8 +276,11 @@ pub fn elephant_foot_fixer(this: &mut ElephantFootFixer, ui: &mut Ui) {
                 ui.label(WARNING).on_hover_text(INSET_WARNING);
             });
             ui.horizontal(|ui| {
-                ui.add(metric_dragger(&mut this.inset_distance, ("m", -3, false)));
-                ui.add_space(ui.available_width());
+                DragValue::new(&mut this.inset_distance)
+                    .speed(0.1)
+                    .range(0.1..=f32::MAX)
+                    .ui(ui);
+                ui.take_available_width();
             });
             ui.end_row();
 

@@ -10,6 +10,12 @@ impl<L: LengthUnit> Length<L> {
     pub fn convert<T: LengthUnit>(&self) -> Length<T> {
         Length::new(self.get::<T>())
     }
+
+    pub fn with<T: LengthUnit>(&mut self, callback: impl FnOnce(&mut f32)) {
+        let mut value = self.convert::<T>();
+        callback(value.raw_mut());
+        *self = value.convert();
+    }
 }
 
 impl<L: TimeUnit> Time<L> {
@@ -30,6 +36,12 @@ impl<L: LengthUnit, T: TimeUnit> Velocity<L, T> {
 
     pub fn convert<L2: LengthUnit, T2: TimeUnit>(&self) -> Velocity<L2, T2> {
         Velocity::new(self.get::<L2, T2>())
+    }
+
+    pub fn with<L2: LengthUnit, T2: TimeUnit>(&mut self, callback: impl FnOnce(&mut f32)) {
+        let mut value = self.convert::<L2, T2>();
+        callback(value.raw_mut());
+        *self = value.convert();
     }
 }
 

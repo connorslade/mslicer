@@ -25,36 +25,38 @@ impl File {
     }
 
     pub fn from_slice_result(result: SliceResult<Layer>) -> Self {
-        let slice_config = result.slice_config;
+        let config = result.slice_config;
         let layers = result.layers.len() as u32;
 
-        let print_time = slice_config.print_time(layers);
+        let print_time = config.print_time(layers);
         let save_time = Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
         Self::new(
             Header {
-                x_resolution: slice_config.platform_resolution.x as u16,
-                y_resolution: slice_config.platform_resolution.y as u16,
-                x_size: slice_config.platform_size.x,
-                y_size: slice_config.platform_size.y,
-                z_size: slice_config.platform_size.z,
+                x_resolution: config.platform_resolution.x as u16,
+                y_resolution: config.platform_resolution.y as u16,
+                x_size: config.platform_size.x,
+                y_size: config.platform_size.y,
+                z_size: config.platform_size.z,
 
                 layer_count: layers,
                 printing_time: print_time.get::<Second>() as u32,
-                layer_thickness: slice_config.slice_height,
-                bottom_layers: slice_config.first_layers,
-                transition_layers: slice_config.transition_layers as u16,
+                layer_thickness: config.slice_height,
+                bottom_layers: config.first_layers,
+                transition_layers: config.transition_layers as u16,
 
-                exposure_time: slice_config.exposure_config.exposure_time,
-                lift_distance: slice_config.exposure_config.lift_distance,
-                lift_speed: slice_config.exposure_config.lift_speed.convert(),
-                retract_distance: slice_config.exposure_config.retract_distance,
-                retract_speed: slice_config.exposure_config.retract_speed.convert(),
+                exposure_time: config.exposure_config.exposure_time,
+                light_pwm: config.exposure_config.pwm,
+                lift_distance: config.exposure_config.lift_distance,
+                lift_speed: config.exposure_config.lift_speed.convert(),
+                retract_distance: config.exposure_config.retract_distance,
+                retract_speed: config.exposure_config.retract_speed.convert(),
 
-                bottom_exposure_time: slice_config.first_exposure_config.exposure_time,
-                bottom_lift_distance: slice_config.first_exposure_config.lift_distance,
-                bottom_lift_speed: slice_config.first_exposure_config.lift_speed.convert(),
-                bottom_retract_distance: slice_config.first_exposure_config.retract_distance,
-                bottom_retract_speed: slice_config.first_exposure_config.retract_speed.convert(),
+                bottom_exposure_time: config.first_exposure_config.exposure_time,
+                bottom_light_pwm: config.first_exposure_config.pwm,
+                bottom_lift_distance: config.first_exposure_config.lift_distance,
+                bottom_lift_speed: config.first_exposure_config.lift_speed.convert(),
+                bottom_retract_distance: config.first_exposure_config.retract_distance,
+                bottom_retract_speed: config.first_exposure_config.retract_speed.convert(),
 
                 file_time: SizedString::new(save_time.as_bytes()),
                 ..Default::default()

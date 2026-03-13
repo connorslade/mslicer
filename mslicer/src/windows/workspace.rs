@@ -66,7 +66,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                 dragger(ui, "", &mut app.config.grid_size, |x| {
                     x.speed(0.1).range(1.0..=f32::MAX)
                 });
-                ui.add_space(ui.available_width());
+                ui.take_available_width();
             });
             ui.end_row();
         });

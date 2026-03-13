@@ -103,17 +103,16 @@ impl Popup {
     }
 
     pub fn simple(title: impl AsRef<str>, icon: PopupIcon, body: impl Into<WidgetText>) -> Self {
-        let id = Id::new(rand::random::<u64>());
-        let title = title.as_ref().to_owned();
         let body = body.into();
-
-        Self::new_with_id(id, title, move |_app, ui| {
+        Self::new(title, move |_app, ui| {
             let mut close = false;
             ui.centered_and_justified(|ui| {
-                Grid::new(id.with("grid")).num_columns(2).show(ui, |ui| {
-                    ui.label(RichText::new(icon.as_char()).size(30.0).color(icon.color()));
-                    ui.add(Label::new(body.clone()).wrap());
-                });
+                Grid::new(ui.id().with("grid"))
+                    .num_columns(2)
+                    .show(ui, |ui| {
+                        ui.label(RichText::new(icon.as_char()).size(30.0).color(icon.color()));
+                        ui.add(Label::new(body.clone()).wrap());
+                    });
                 ui.add_space(5.0);
                 close = ui.button("Close").clicked();
             });
