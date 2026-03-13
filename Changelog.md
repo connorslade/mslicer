@@ -20,6 +20,7 @@
 - Use standard unit (mm/min) for lift/retract speeds and slice height ([#22](https://github.com/connorslade/mslicer/issues/22))
 - Replace about panel with a first time popup that links to the documentation
 - Show individual model volume (before slicing)
+- Model specific relative exposures
 
 ## v0.5.0 &mdash; February 21st, 2026
 

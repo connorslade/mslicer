@@ -28,7 +28,7 @@ pub enum ModelAction {
     Position(Vector3<f32>),
     Scale(Vector3<f32>),
     Rotation(Vector3<f32>),
-    RelativeExposure(f32),
+    RelativeExposure(u8),
 }
 
 impl History {
@@ -116,7 +116,7 @@ impl ModelAction {
                 ModelAction::Rotation(old)
             }
             ModelAction::RelativeExposure(exposure) => {
-                ModelAction::RelativeExposure(mem::replace(&mut model.relative_exposure, exposure))
+                ModelAction::RelativeExposure(mem::replace(&mut model.exposure, exposure))
             }
         })
     }

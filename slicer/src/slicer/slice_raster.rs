@@ -24,7 +24,7 @@ impl Slicer {
         // to find all intersections. This massively speeds up the slicing
         // operation and actually makes it faster than most other slicers. :p
         let segments = (self.models.iter())
-            .map(|x| Segments1D::from_mesh(x, SEGMENT_LAYERS))
+            .map(|model| Segments1D::from_mesh(&model.mesh, SEGMENT_LAYERS))
             .collect::<Vec<_>>();
 
         let layers = (0..self.layers)
@@ -37,12 +37,9 @@ impl Slicer {
                 // intersection will return two points. These can then be
                 // interpreted as line segments making up a polygon.
                 let segments = (self.models.iter().enumerate())
-                    .flat_map(|(idx, mesh)| {
-                        let exposure = self.exposures[idx];
-                        segments[idx]
-                            .intersect_plane(mesh, height)
-                            .into_iter()
-                            .map(move |segment| (segment, exposure))
+                    .flat_map(|(idx, model)| {
+                        let intersections = segments[idx].intersect_plane(&model.mesh, height);
+                        (intersections.into_iter()).map(|segment| (segment, model.exposure))
                     })
                     .collect::<Vec<_>>();
 
@@ -94,9 +91,8 @@ impl Slicer {
                             let (start, length) = (a + y_offset, b - a);
                             (start > last).then(|| encoder.add_run(start - last, 0));
 
-                            let max_exposure =
-                                exposures.iter().rposition(|&x| x > 0).unwrap_or(255);
-                            encoder.add_run(length, max_exposure as u8);
+                            let exposure = exposures.iter().rposition(|&x| x > 0).unwrap_or(255);
+                            encoder.add_run(length, exposure as u8);
 
                             voxels.fetch_add(length, Ordering::Relaxed);
                             last = start + length;

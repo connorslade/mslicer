@@ -183,7 +183,7 @@ fn exposure_config(ui: &mut Ui, config: &mut ExposureConfig) {
             row.col(|ui| {
                 let mut pwm = config.pwm as f32 / 2.55;
                 DragValue::new(&mut pwm).max_decimals(0).suffix('%').ui(ui);
-                config.pwm = (pwm * 2.55) as u8;
+                config.pwm = (pwm * 2.55).round() as u8;
             });
         })
         .body(|mut body| {

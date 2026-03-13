@@ -17,18 +17,22 @@ use slicer::{
 /// Project format version. Value should be incremented whenever the save format
 /// changes, even in development.
 ///
+/// ## v4
+/// Added relative exposure value to models.
+///
 /// ## v3
 /// Added the PWM value to SliceConfig -> ExposureConfig.
 ///
 /// ## v2
 /// A complete rewrite using a custom serilizer/deserilizer because of the bincode drama...
-const VERSION: u16 = 3;
+const VERSION: u16 = 4;
 
 struct ModelInfo {
     mesh: u32,
 
     name: String,
     color: Vector3<f32>,
+    exposure: u8,
     hidden: bool,
 
     position: Vector3<f32>,
@@ -42,6 +46,7 @@ impl ModelInfo {
             mesh,
             name: model.name.to_owned(),
             color: model.color.into(),
+            exposure: model.exposure,
             hidden: model.hidden,
             position: model.mesh.position(),
             scale: model.mesh.scale(),
@@ -59,6 +64,7 @@ impl ModelInfo {
         Model::from_mesh(mesh)
             .with_name(self.name)
             .with_color(self.color.into())
+            .with_exposure(self.exposure)
             .with_hidden(self.hidden)
     }
 
@@ -70,6 +76,7 @@ impl ModelInfo {
         ser.write_u32_be(self.name.len() as u32);
         ser.write_bytes(self.name.as_bytes());
         Vector3::from(self.color).serialize(ser);
+        ser.write_u8(self.exposure);
         ser.write_bool(self.hidden);
 
         // Mesh properties
@@ -78,7 +85,7 @@ impl ModelInfo {
         self.rotation.serialize(ser);
     }
 
-    pub fn deserialize<T: Deserializer>(des: &mut T) -> Self {
+    pub fn deserialize<T: Deserializer>(des: &mut T, version: u16) -> Self {
         Self {
             mesh: des.read_u32_be(),
             name: {
@@ -87,6 +94,7 @@ impl ModelInfo {
                 String::from_utf8_lossy(&data).into_owned()
             },
             color: Vector3::<f32>::deserialize(des),
+            exposure: if version < 4 { 255 } else { des.read_u8() },
             hidden: des.read_bool(),
             position: Vector3::<f32>::deserialize(des),
             scale: Vector3::<f32>::deserialize(des),
@@ -141,7 +149,7 @@ impl Project {
 
         let models = des.read_u32_be();
         let models = (0..models)
-            .map(|_| ModelInfo::deserialize(des))
+            .map(|_| ModelInfo::deserialize(des, version))
             .collect::<Vec<_>>();
 
         let meshes = des.read_u32_be();

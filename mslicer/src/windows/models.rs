@@ -268,21 +268,20 @@ fn model_properties(app: &mut App, ui: &mut Ui, ctx: &Context, action: &mut Acti
             ui.end_row();
 
             ui.label("Relative Exposure");
-            let mut value = model.relative_exposure * 100.0;
+            let mut value = model.exposure as f32 / 2.55;
             let editing = being_edited(
                 &DragValue::new(&mut value)
                     .range(0.0..=100.0)
+                    .max_decimals(0)
                     .suffix("%")
                     .ui(ui),
             );
 
             history_tracked_model(
                 (editing, ui, &mut app.history),
-                (id, || {
-                    ModelAction::RelativeExposure(model.relative_exposure)
-                }),
+                (id, || ModelAction::RelativeExposure(model.exposure)),
             );
-            editing.then(|| model.relative_exposure = value / 100.0);
+            editing.then(|| model.exposure = (value * 2.55).round() as u8);
 
             ui.end_row();
         });

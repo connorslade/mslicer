@@ -24,7 +24,7 @@ use crate::{
     windows::{self, Tab},
 };
 use common::{progress::CombinedProgress, units::Milimeter};
-use slicer::slicer::Slicer;
+use slicer::slicer::{Slicer, SlicerModel};
 
 pub mod config;
 pub mod history;
@@ -143,21 +143,18 @@ impl App {
 
         // Transform models from world-space to platform-space
         let mut out = Vec::new();
-        let mut exposures = Vec::new();
-
         for model in meshes.into_iter() {
-            let mut mesh = model.mesh;
-            mesh.set_scale_unchecked(mesh.scale().component_mul(&mm_to_px));
+            let (mut mesh, exposure) = (model.mesh, model.exposure);
 
             let offset = (platform / 2.0).push(-slice_height / 2.0);
+            mesh.set_scale_unchecked(mesh.scale().component_mul(&mm_to_px));
             mesh.set_position_unchecked(mesh.position().component_mul(&mm_to_px) + offset);
             mesh.update_transformation_matrix();
 
-            out.push(mesh);
-            exposures.push((model.relative_exposure * 255.0) as u8);
+            out.push(SlicerModel { mesh, exposure });
         }
 
-        let slicer = Slicer::new_with_exposures(slice_config, out, exposures);
+        let slicer = Slicer::new(slice_config, out);
         let post_process = CombinedProgress::new();
         let slice_operation = SliceOperation::new(slicer.progress(), post_process.clone());
         self.slice_operation.replace(slice_operation);
