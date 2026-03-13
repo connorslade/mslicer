@@ -3,8 +3,8 @@ use std::f32;
 use common::{misc::subscript_number, units::Centimeter};
 use const_format::concatcp;
 use egui::{
-    CollapsingHeader, Color32, Context, Frame, Label, Popup, Sense, TopBottomPanel, Ui, UiBuilder,
-    Widget, vec2,
+    CollapsingHeader, Color32, Context, DragValue, Frame, Label, Popup, Sense, TopBottomPanel, Ui,
+    UiBuilder, Widget, vec2,
 };
 use egui_phosphor::regular::{
     ARROW_LINE_DOWN, COPY, CURSOR_TEXT, DICE_THREE, EYE, EYE_SLASH, LINK_BREAK, LINK_SIMPLE, TRASH,
@@ -267,9 +267,23 @@ fn model_properties(app: &mut App, ui: &mut Ui, ctx: &Context, action: &mut Acti
             ui.label(format!("{volume:.2} cm³"));
             ui.end_row();
 
-            // ui.label("Relative Exposure");
-            // DragValue::new(&mut 100).suffix("%").ui(ui);
-            // ui.end_row();
+            ui.label("Relative Exposure");
+            let mut value = model.exposure as f32 / 2.55;
+            let editing = being_edited(
+                &DragValue::new(&mut value)
+                    .range(0.0..=100.0)
+                    .max_decimals(0)
+                    .suffix("%")
+                    .ui(ui),
+            );
+
+            history_tracked_model(
+                (editing, ui, &mut app.history),
+                (id, || ModelAction::RelativeExposure(model.exposure)),
+            );
+            editing.then(|| model.exposure = (value * 2.55).round() as u8);
+
+            ui.end_row();
         });
     });
 }

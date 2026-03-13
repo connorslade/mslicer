@@ -17,7 +17,10 @@ use common::{
     slice::SliceConfig,
     units::Milimeter,
 };
-use slicer::{mesh::Mesh, slicer::Slicer};
+use slicer::{
+    mesh::Mesh,
+    slicer::{Slicer, SlicerModel},
+};
 
 mod args;
 
@@ -62,7 +65,10 @@ fn main() -> Result<()> {
             println!(" \\ Model extends outsize of print volume and will be cut off.",);
         }
 
-        meshes.push(mesh);
+        meshes.push(SlicerModel {
+            mesh,
+            exposure: 255,
+        });
     }
 
     let slicer = Slicer::new(slice_config.clone(), meshes);

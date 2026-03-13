@@ -24,7 +24,7 @@ use crate::{
     windows::{self, Tab},
 };
 use common::{progress::CombinedProgress, units::Milimeter};
-use slicer::slicer::Slicer;
+use slicer::slicer::{Slicer, SlicerModel};
 
 pub mod config;
 pub mod history;
@@ -134,7 +134,6 @@ impl App {
         info!("Starting slicing operation");
 
         let slice_config = self.project.slice_config.clone();
-        let mut out = Vec::new();
 
         let slice_height = slice_config.slice_height.get::<Milimeter>();
         let platform_size = (slice_config.platform_size.xy()).map(|x| x.get::<Milimeter>());
@@ -143,15 +142,16 @@ impl App {
         let mm_to_px = platform.component_div(&platform_size).push(1.0);
 
         // Transform models from world-space to platform-space
-        for mesh in meshes.into_iter() {
-            let mut mesh = mesh.mesh;
-            mesh.set_scale_unchecked(mesh.scale().component_mul(&mm_to_px));
+        let mut out = Vec::new();
+        for model in meshes.into_iter() {
+            let (mut mesh, exposure) = (model.mesh, model.exposure);
 
             let offset = (platform / 2.0).push(-slice_height / 2.0);
+            mesh.set_scale_unchecked(mesh.scale().component_mul(&mm_to_px));
             mesh.set_position_unchecked(mesh.position().component_mul(&mm_to_px) + offset);
             mesh.update_transformation_matrix();
 
-            out.push(mesh);
+            out.push(SlicerModel { mesh, exposure });
         }
 
         let slicer = Slicer::new(slice_config, out);

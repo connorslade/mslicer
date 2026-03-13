@@ -34,6 +34,7 @@ pub struct Model {
     pub overhangs: Option<Vec<u32>>,
 
     pub color: LinearRgb<f32>,
+    pub exposure: u8,
     pub hidden: bool,
     pub ui: ModelUi,
 
@@ -82,8 +83,9 @@ impl Model {
 
             color: LinearRgb::repeat(1.0),
             hidden: false,
-
+            exposure: 255,
             ui: ModelUi::default(),
+
             buffers: None,
         }
     }
@@ -100,6 +102,11 @@ impl Model {
 
     pub fn with_color(mut self, color: LinearRgb<f32>) -> Self {
         self.color = color;
+        self
+    }
+
+    pub fn with_exposure(mut self, exposure: u8) -> Self {
+        self.exposure = exposure;
         self
     }
 
@@ -198,6 +205,9 @@ impl Clone for Model {
             color: self.color,
             hidden: self.hidden,
             ui: self.ui.clone(),
+
+            exposure: self.exposure,
+
             buffers: None,
         }
     }

@@ -24,7 +24,7 @@ impl Slicer {
         // to find all intersections. This massively speeds up the slicing
         // operation and actually makes it faster than most other slicers. :p
         let segments = (self.models.iter())
-            .map(|x| Segments1D::from_mesh(x, SEGMENT_LAYERS))
+            .map(|model| Segments1D::from_mesh(&model.mesh, SEGMENT_LAYERS))
             .collect::<Vec<_>>();
 
         let layers = (0..self.layers)
@@ -37,7 +37,10 @@ impl Slicer {
                 // intersection will return two points. These can then be
                 // interpreted as line segments making up a polygon.
                 let segments = (self.models.iter().enumerate())
-                    .flat_map(|(idx, mesh)| segments[idx].intersect_plane(mesh, height))
+                    .flat_map(|(idx, model)| {
+                        let intersections = segments[idx].intersect_plane(&model.mesh, height);
+                        (intersections.into_iter()).map(|segment| (segment, model.exposure))
+                    })
                     .collect::<Vec<_>>();
 
                 // Creates a new encoded for this layer. Because printers can
@@ -58,31 +61,38 @@ impl Slicer {
                     let yf = y as f32 + 0.5;
 
                     let mut intersections = (segments.iter())
-                        .map(|x| (x.0[0], x.0[1], x.1))
+                        .map(|((pos, facing), exposure)| (pos[0], pos[1], facing, exposure))
                         // Filtering to only consider segments with one point
                         // above the current row and one point below.
-                        .filter(|&(a, b, _)| (a.y >= yf) ^ (b.y >= yf))
-                        .map(|(a, b, facing)| {
+                        .filter(|&(a, b, _, _)| (a.y >= yf) ^ (b.y >= yf))
+                        .map(|(a, b, &facing, &exposure)| {
                             // Get the x position of the line segment at this y
                             let t = (yf - a.y) / (b.y - a.y);
                             let pos = a.x + t * (b.x - a.x);
-                            (pos.round() as u64, facing)
+                            (pos.round() as u64, facing, exposure)
                         })
                         .collect::<Vec<_>>();
 
                     // Sort all these intersections for run-length encoding
-                    intersections.sort_by_key(|&(x, _)| x);
+                    intersections.sort_by_key(|&(x, _, _)| x);
 
                     // Convert the intersections into runs of voxels to be
                     // encoded into the layer.
                     let mut depth = 0;
-                    for ((a, a_dir), (b, _)) in intersections.into_iter().tuple_windows() {
-                        depth += 1 - (a_dir as i32) * 2;
+                    let mut exposures = [0; 256];
+                    for ((a, a_dir, a_exposure), (b, _, _)) in
+                        intersections.into_iter().tuple_windows()
+                    {
+                        let delta = 1 - (a_dir as i32) * 2;
+                        depth += delta;
+                        exposures[a_exposure as usize] += delta;
 
                         if depth != 0 && b != a {
                             let (start, length) = (a + y_offset, b - a);
                             (start > last).then(|| encoder.add_run(start - last, 0));
-                            encoder.add_run(length, 255);
+
+                            let exposure = exposures.iter().rposition(|&x| x > 0).unwrap_or(255);
+                            encoder.add_run(length, exposure as u8);
 
                             voxels.fetch_add(length, Ordering::Relaxed);
                             last = start + length;

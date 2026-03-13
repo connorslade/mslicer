@@ -13,17 +13,23 @@ const SEGMENT_LAYERS: usize = 100;
 /// Used to slice a mesh.
 pub struct Slicer {
     slice_config: SliceConfig,
-    models: Vec<Mesh>,
+    models: Vec<SlicerModel>,
+
     layers: u32,
     progress: Progress,
 }
 
+pub struct SlicerModel {
+    pub mesh: Mesh,
+    pub exposure: u8,
+}
+
 impl Slicer {
-    /// Creates a new slicer given a slice config and list of models.
-    pub fn new(slice_config: SliceConfig, models: Vec<Mesh>) -> Self {
+    /// Creates a new slicer given a slice config, list of models, and their relative exposures.
+    pub fn new(slice_config: SliceConfig, models: Vec<SlicerModel>) -> Self {
         let max_z = models.iter().fold(0_f32, |max, model| {
-            let verts = model.vertices().iter();
-            let z = verts.fold(0_f32, |max, &f| max.max(model.transform(&f).z));
+            let verts = model.mesh.vertices().iter();
+            let z = verts.fold(0_f32, |max, &f| max.max(model.mesh.transform(&f).z));
             max.max(z)
         });
 
@@ -37,6 +43,7 @@ impl Slicer {
         Self {
             slice_config,
             models,
+
             layers,
             progress,
         }

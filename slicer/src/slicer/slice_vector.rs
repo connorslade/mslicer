@@ -27,10 +27,8 @@ pub struct SvgFile {
 
 impl Slicer {
     pub fn slice_vector(&self) -> VectorSliceResult<'_> {
-        let segments = self
-            .models
-            .iter()
-            .map(|x| Segments1D::from_mesh(x, SEGMENT_LAYERS))
+        let segments = (self.models.iter())
+            .map(|x| Segments1D::from_mesh(&x.mesh, SEGMENT_LAYERS))
             .collect::<Vec<_>>();
 
         let layers = (0..self.layers)
@@ -39,11 +37,8 @@ impl Slicer {
             .map(|layer| {
                 let height = layer as f32 * self.slice_config.slice_height.get::<Milimeter>();
 
-                let segments = self
-                    .models
-                    .iter()
-                    .enumerate()
-                    .flat_map(|(idx, mesh)| segments[idx].intersect_plane(mesh, height))
+                let segments = (self.models.iter().enumerate())
+                    .flat_map(|(idx, model)| segments[idx].intersect_plane(&model.mesh, height))
                     .flat_map(|x| x.0)
                     .map(|x| x.xy())
                     .collect::<Vec<_>>();
