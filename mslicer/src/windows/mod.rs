@@ -16,7 +16,7 @@ mod slice_config;
 mod slice_operation;
 mod supports;
 mod tasks;
-mod tools;
+pub mod tools;
 mod top_bar;
 mod workspace;
 

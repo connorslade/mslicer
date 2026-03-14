@@ -36,7 +36,7 @@ fn encode_layers<Layer: EncodableLayer>(
         let mut encoder = Layer::new(slice_config.platform_resolution);
         for run in image.runs() {
             encoder.add_run(run.length, run.value);
-            (voxels > 0).then(|| voxels += run.length);
+            (run.value > 0).then(|| voxels += run.length);
         }
 
         encoder.finish(i as u32, slice_config)
