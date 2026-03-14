@@ -19,16 +19,16 @@ pub struct ImageRuns<'a, T = u8> {
 }
 
 impl Image {
-    pub fn blank(width: usize, height: usize) -> Self {
+    pub fn blank(size: Vector2<usize>) -> Self {
         Self {
-            size: Vector2::new(width, height),
-            data: vec![0; width * height],
+            size,
+            data: vec![0; size.x * size.y],
             idx: 0,
         }
     }
 
     pub fn from_decoder(size: Vector2<usize>, decoder: impl Iterator<Item = Run>) -> Self {
-        let mut image = Self::blank(size.x, size.y);
+        let mut image = Self::blank(size);
         decoder.for_each(|run| image.add_run(run.length as usize, run.value));
         image
     }
@@ -66,6 +66,15 @@ impl Image {
 
     pub fn take(self) -> Vec<u8> {
         self.data
+    }
+}
+
+impl Image {
+    pub fn rect(&mut self, (min, max): (Vector2<usize>, Vector2<usize>), value: u8) {
+        for y in min.y..max.y {
+            let offset = self.size.x * y;
+            self.data[(offset + min.x)..(offset + max.x)].fill(value);
+        }
     }
 }
 

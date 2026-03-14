@@ -102,9 +102,12 @@ impl LayerEncoder {
         self.last_value = value;
     }
 
-    pub fn finish(self) -> (Vec<u8>, u8) {
-        let checksum = calculate_checksum(&self.data);
-        (self.data, checksum)
+    pub fn checksum(&self) -> u8 {
+        calculate_checksum(&self.data)
+    }
+
+    pub fn into_inner(self) -> Vec<u8> {
+        self.data
     }
 }
 
@@ -120,11 +123,11 @@ impl EncodableLayer for LayerEncoder {
     }
 
     fn finish(self, layer: u32, slice_config: &SliceConfig) -> Self::Output {
-        let (data, checksum) = self.finish();
         let layer_exposure = slice_config.exposure_config(layer);
+        let checksum = self.checksum();
 
         Layer {
-            data,
+            data: self.data,
             checksum,
             layer_position_z: slice_config.slice_height * (layer + 1) as f32,
 

@@ -1,7 +1,9 @@
 use egui::Vec2;
 use egui_tracing::EventCollector;
 use nalgebra::{Vector2, Vector3};
-use slicer::{mesh::Mesh, supports::line::LineSupportConfig};
+use slicer::{
+    mesh::Mesh, supports::line::LineSupportConfig, tools::exposure_test::ExposureTestGenerator,
+};
 
 #[derive(Default)]
 pub struct UiState {
@@ -23,6 +25,9 @@ pub struct UiState {
     pub working_filename: String,
     pub send_print_completion: bool,
     pub remote_print_connecting: RemotePrintConnectStatus,
+
+    // tools
+    pub exposure_test: ExposureTestGenerator,
 }
 
 #[derive(Default)]

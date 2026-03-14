@@ -122,10 +122,9 @@ impl SlicedFile for File {
     fn overwrite_layer(&mut self, layer: usize, image: Image) {
         let mut encoder = LayerEncoder::new();
         (image.runs()).for_each(|run| encoder.add_run(run.length, run.value));
-        let (data, checksum) = encoder.finish();
 
         let layer = &mut self.layers[layer];
-        layer.data = data;
-        layer.checksum = checksum;
+        layer.checksum = encoder.checksum();
+        layer.data = encoder.into_inner();
     }
 }
