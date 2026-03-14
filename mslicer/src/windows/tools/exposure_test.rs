@@ -7,6 +7,7 @@ use common::{
 };
 use egui::{Button, DragValue, Ui, Widget};
 use image::RgbaImage;
+use nalgebra::Vector2;
 use slicer::util::export;
 
 use crate::{
@@ -15,6 +16,7 @@ use crate::{
         components::grid,
         popup::{Popup, PopupApp},
     },
+    windows::Tab,
 };
 
 pub const DESCRIPTION: &str = "Generates a rectangular prism with a gradient of voxel vales across the top layer. Measuring the printed result will allow you get the value to voxel size mapping.";
@@ -28,6 +30,7 @@ fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
     ui.label(DESCRIPTION);
     ui.add_space(8.0);
 
+    let slicing = app.is_slicing();
     let tool = &mut app.state.tools.exposure_test;
     grid("").show(ui, |ui| {
         ui.label("Size (mm)");
@@ -64,14 +67,9 @@ fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
     });
     ui.add_space(8.0);
 
-    let slicing = (app.slice_operation.as_ref())
-        .map(|x| !x.progress.complete())
-        .unwrap_or_default();
     ui.centered_and_justified(|ui| {
         if ui.add_enabled(!slicing, Button::new("Generate")).clicked() {
-            let config = app.project.slice_config.clone();
-            let tool = tool.clone();
-
+            let (tool, config) = (tool.clone(), app.project.slice_config.clone());
             let operation = SliceOperation::new(Progress::new(), CombinedProgress::new());
             operation.add_preview_image(RgbaImage::new(128, 128)); // blank preview image
 
@@ -79,11 +77,10 @@ fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
                 let mut file = export(&config, tool.generate(&config, &operation.progress));
                 file.0.set_preview(&operation.preview_image());
                 operation.add_result(&config, file);
-
-                operation.progress.set_total(1);
-                operation.progress.set_finished();
             }));
             app.slice_operation.replace(operation);
+            app.panels
+                .focus_tab(Tab::SliceOperation, Vector2::new(700.0, 400.0));
         }
     });
 

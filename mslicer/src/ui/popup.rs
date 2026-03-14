@@ -7,9 +7,12 @@ use egui::{
 use egui_phosphor::regular::X;
 
 use crate::{
-    app::{App, project::Project, remote_print::RemotePrint, slice_operation::SliceOperation},
+    app::{
+        App, is_slicing, project::Project, remote_print::RemotePrint,
+        slice_operation::SliceOperation,
+    },
     app_ref_type,
-    ui::state::UiState,
+    ui::{panels::Panels, state::UiState},
 };
 
 type UiFunction = dyn FnMut(&mut PopupApp, &mut Ui) -> bool;
@@ -31,6 +34,7 @@ pub struct Popup {
 }
 
 pub struct PopupApp<'a> {
+    pub panels: &'a mut Panels,
     pub remote_print: &'a mut RemotePrint,
     pub slice_operation: &'a mut Option<SliceOperation>,
     pub state: &'a mut UiState,
@@ -58,6 +62,7 @@ impl<'a> PopupManagerRef<'a> {
 
         let this = &mut self.app.popup;
         let mut app = PopupApp {
+            panels: &mut self.app.panels,
             remote_print: &mut self.app.remote_print,
             slice_operation: &mut self.app.slice_operation,
             state: &mut self.app.state,
@@ -180,5 +185,12 @@ impl PopupIcon {
             Self::Error => Color32::from_rgb(200, 90, 90),
             Self::Success => Color32::from_rgb(140, 230, 140),
         }
+    }
+}
+
+impl<'a> PopupApp<'a> {
+    // i know, i know…
+    pub fn is_slicing(&self) -> bool {
+        is_slicing(self.slice_operation)
     }
 }

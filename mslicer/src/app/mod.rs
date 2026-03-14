@@ -1,9 +1,8 @@
-use std::{mem, path::PathBuf, thread, time::Instant};
+use std::{path::PathBuf, thread, time::Instant};
 
 use clone_macro::clone;
 use const_format::concatcp;
-use egui::{Theme, Vec2, ViewportCommand, Visuals};
-use egui_dock::{DockState, NodeIndex, Tree};
+use egui::{Theme, ViewportCommand, Visuals};
 use egui_phosphor::regular::CARET_RIGHT;
 use egui_tracing::EventCollector;
 use egui_wgpu::RenderState;
@@ -18,6 +17,7 @@ use crate::{
     render::{Gcx, camera::Camera, preview},
     ui::{
         drag_and_drop,
+        panels::Panels,
         popup::{Popup, PopupIcon, PopupManager},
         state::UiState,
     },
@@ -35,7 +35,7 @@ pub mod task;
 
 pub struct App {
     pub render_state: RenderState,
-    pub dock_state: DockState<Tab>,
+    pub panels: Panels,
     pub fps: FpsTracker,
     pub config_dir: PathBuf,
 
@@ -64,20 +64,6 @@ impl App {
         mut config: Config,
         event_collector: EventCollector,
     ) -> Self {
-        let mut dock_state = DockState::new(vec![Tab::Viewport]);
-        let surface = dock_state.main_surface_mut();
-
-        if let Some(past_state) = &mut config.panels {
-            *surface = mem::take(past_state);
-        } else {
-            default_dock_layout(surface);
-        }
-
-        match surface.find_tab(&Tab::Viewport) {
-            Some((ni, ti)) => surface.set_active_tab(ni, ti),
-            None => *surface = Tree::new(vec![Tab::Viewport]),
-        }
-
         let slice_config = config.default_slice_config.clone();
         let selected_printer = (config.printers.iter())
             .position(|x| {
@@ -89,7 +75,7 @@ impl App {
 
         Self {
             render_state,
-            dock_state,
+            panels: Panels::new(&mut config),
             fps: FpsTracker::new(),
             config_dir,
             popup: PopupManager::default(),
@@ -109,6 +95,10 @@ impl App {
                 ..Default::default()
             },
         }
+    }
+
+    pub fn is_slicing(&self) -> bool {
+        is_slicing(&self.slice_operation)
     }
 
     pub fn slice(&mut self) {
@@ -158,7 +148,8 @@ impl App {
         let post_process = CombinedProgress::new();
         let slice_operation = SliceOperation::new(slicer.progress(), post_process.clone());
         self.slice_operation.replace(slice_operation);
-        self.focus_tab(Tab::SliceOperation, Vector2::new(700.0, 400.0));
+        self.panels
+            .focus_tab(Tab::SliceOperation, Vector2::new(700.0, 400.0));
 
         thread::spawn(clone!(
             [
@@ -183,26 +174,6 @@ impl App {
             device: self.render_state.device.clone(),
             queue: self.render_state.queue.clone(),
         }
-    }
-
-    pub fn focus_tab(&mut self, tab: Tab, size: Vector2<f32>) {
-        if let Some(panel) = self.dock_state.find_tab(&tab) {
-            self.dock_state.set_active_tab(panel);
-        } else {
-            self.add_tab(tab, size);
-        }
-    }
-
-    pub fn add_tab(&mut self, tab: Tab, size: Vector2<f32>) {
-        let window_id = self.dock_state.add_window(vec![tab]);
-        let window = self.dock_state.get_window_state_mut(window_id).unwrap();
-        window.set_size(Vec2::new(size.x, size.y));
-    }
-
-    pub fn reset_ui(&mut self) {
-        self.dock_state = DockState::new(vec![Tab::Viewport]);
-        let surface = self.dock_state.main_surface_mut();
-        default_dock_layout(surface);
     }
 
     pub fn set_title(&mut self, ctx: &egui::Context) {
@@ -242,12 +213,13 @@ impl eframe::App for App {
 
 impl Drop for App {
     fn drop(&mut self) {
-        self.config.panels = Some(self.dock_state.main_surface().clone());
+        // todo: save all surfaces (except slice operation?)
+        self.config.panels = Some(self.panels.dock_state.main_surface().clone());
         if let Err(err) = self.config.save(&self.config_dir) {
             warn!("Failed to save config: {}", err);
-            return;
+        } else {
+            info!("Successfully saved config");
         }
-        info!("Successfully saved config");
     }
 }
 
@@ -271,13 +243,9 @@ impl FpsTracker {
     }
 }
 
-fn default_dock_layout(surface: &mut Tree<Tab>) {
-    let [_old_node, new_node] = surface.split_left(NodeIndex::root(), 0.2, vec![Tab::Models]);
-    let [_old_node, new_node] =
-        surface.split_below(new_node, 0.4, vec![Tab::SliceConfig, Tab::Supports]);
-    surface.split_below(
-        new_node,
-        0.6,
-        vec![Tab::Workspace, Tab::RemotePrint, Tab::Tasks],
-    );
+pub fn is_slicing(slice_operation: &Option<SliceOperation>) -> bool {
+    slice_operation
+        .as_ref()
+        .map(|x| !x.progress.complete())
+        .unwrap_or_default()
 }

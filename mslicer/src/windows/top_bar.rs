@@ -119,22 +119,13 @@ pub fn ui(app: &mut App, ctx: &Context) {
 
                     labeled_separator(ui, "Windows");
                     for tab in Tab::ALL {
-                        let existing = app.dock_state.find_tab(&tab);
-                        let mut open = existing.is_some();
-                        ui.checkbox(&mut open, tab.name());
-
-                        if !open && let Some(tab) = existing {
-                            app.dock_state.remove_tab(tab);
-                        } else if open && existing.is_none() {
-                            app.dock_state.add_window(vec![tab]);
-                        }
+                        app.panels.checkbox(tab, |open| {
+                            ui.checkbox(open, tab.name());
+                        });
                     }
                 });
 
-                let slicing = (app.slice_operation.as_ref())
-                    .map(|x| !x.progress.complete())
-                    .unwrap_or_default();
-                ui.add_enabled_ui(!slicing, |ui| {
+                ui.add_enabled_ui(!app.is_slicing(), |ui| {
                     let slice_button = ui.add(
                         Button::new(concatcp!(STACK, " Slice"))
                             .shortcut_text(ctx.format_shortcut(&SLICE_SHORTCUT)),

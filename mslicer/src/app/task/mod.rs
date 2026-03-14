@@ -103,10 +103,8 @@ impl<'a> TaskManagerRef<'a> {
             this.tasks.extend(result.new_tasks);
         }
 
-        if visible > mem::replace(&mut this.visible_count, visible)
-            && self.app.dock_state.find_tab(&Tab::Tasks).is_none()
-        {
-            self.app.add_tab(Tab::Tasks, Vector2::new(400.0, 200.0));
+        if visible > mem::replace(&mut this.visible_count, visible) {
+            (self.app.panels).add_if_missing(Tab::Tasks, Vector2::new(400.0, 200.0));
         }
     }
 }
