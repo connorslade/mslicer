@@ -16,6 +16,7 @@ mod slice_config;
 mod slice_operation;
 mod supports;
 mod tasks;
+pub mod tools;
 mod top_bar;
 mod workspace;
 
@@ -24,7 +25,7 @@ struct Tabs<'a> {
     ctx: &'a Context,
 }
 
-#[derive(Serialize, Deserialize, Clone, Hash, PartialEq, Eq)]
+#[derive(Copy, Clone, Hash, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Tab {
     Logs,
     Models,
@@ -106,10 +107,10 @@ pub fn ui(app: &mut App, ctx: &Context) {
     about::ui(app, ctx);
     top_bar::ui(app, ctx);
 
-    mem::take(&mut app.state.queue_reset_ui).then(|| app.reset_ui());
+    mem::take(&mut app.state.queue_reset_ui).then(|| app.panels.reset_ui());
     CentralPanel::default().frame(Frame::NONE).show(ctx, |ui| {
-        // i am once again too tired to deal with this
-        let dock_state = unsafe { &mut *(&mut app.dock_state as *mut _) };
+        // i am once again too tired to deal with this (todo!)
+        let dock_state = unsafe { &mut *(&mut app.panels.dock_state as *mut _) };
         DockArea::new(dock_state)
             .show_leaf_close_all_buttons(false)
             .show_leaf_collapse_buttons(false)

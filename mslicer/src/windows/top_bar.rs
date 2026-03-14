@@ -2,9 +2,9 @@ use std::fs::File;
 
 use const_format::concatcp;
 use egui::{
-    Button, Context, Key, KeyboardShortcut, Modifiers, TopBottomPanel, Ui, ViewportCommand,
+    Button, Context, Frame, Key, KeyboardShortcut, Modifiers, TopBottomPanel, Ui, ViewportCommand,
 };
-use egui_phosphor::regular::{CARDS, FILE_TEXT, GIT_DIFF, STACK};
+use egui_phosphor::regular::{CARDS, FILE_TEXT, GIT_DIFF, HAMMER, STACK};
 
 use crate::{
     app::{
@@ -13,7 +13,7 @@ use crate::{
     },
     include_asset,
     ui::components::labeled_separator,
-    windows::Tab,
+    windows::{Tab, tools},
 };
 
 const COMMAND_SHIFT: Modifiers = Modifiers::COMMAND.plus(Modifiers::SHIFT);
@@ -47,91 +47,94 @@ pub fn ui(app: &mut App, ctx: &Context) {
             .then(|| callback(app, ctx));
     }
 
-    TopBottomPanel::top("top_panel").show(ctx, |ui| {
-        ui.horizontal(|ui| {
-            ui.heading("mslicer");
-            ui.separator();
+    TopBottomPanel::top("top_panel")
+        .frame(Frame::side_top_panel(&ctx.style()).inner_margin(4))
+        .show(ctx, |ui| {
+            ui.horizontal(|ui| {
+                ui.style_mut().spacing.item_spacing.x = 4.0;
 
-            ui.menu_button(concatcp!(FILE_TEXT, " File"), |ui| {
-                ui.set_width(150.0);
+                ui.add_space(4.0);
+                ui.heading("mslicer");
+                ui.separator();
 
-                labeled_separator(ui, "Model");
-                menu_button((ui, app, ctx), SHORTCUTS[0], "Import Mesh");
-                menu_button((ui, app, ctx), SHORTCUTS[1], "Utah Teapot");
+                ui.style_mut().spacing.item_spacing.x = 6.0;
+                ui.menu_button(concatcp!(FILE_TEXT, " File"), |ui| {
+                    ui.set_width(150.0);
 
-                labeled_separator(ui, "Project");
-                menu_button((ui, app, ctx), SHORTCUTS[2], "Open");
-                menu_button((ui, app, ctx), SHORTCUTS[3], "Save");
-                ui.add_enabled_ui(app.project.path.is_some(), |ui| {
-                    menu_button((ui, app, ctx), SHORTCUTS[4], "Save As")
+                    labeled_separator(ui, "Model");
+                    menu_button((ui, app, ctx), SHORTCUTS[0], "Import Mesh");
+                    menu_button((ui, app, ctx), SHORTCUTS[1], "Utah Teapot");
+
+                    labeled_separator(ui, "Project");
+                    menu_button((ui, app, ctx), SHORTCUTS[2], "Open");
+                    menu_button((ui, app, ctx), SHORTCUTS[3], "Save");
+                    ui.add_enabled_ui(app.project.path.is_some(), |ui| {
+                        menu_button((ui, app, ctx), SHORTCUTS[4], "Save As")
+                    });
+
+                    ui.add_enabled_ui(!app.config.recent_projects.is_empty(), |ui| {
+                        ui.menu_button("Recent", |ui| {
+                            let mut load = None;
+                            for path in app.config.recent_projects.iter() {
+                                let name = path.file_name().unwrap().to_string_lossy();
+                                if ui.button(name).clicked() {
+                                    ui.close();
+                                    load = Some(path.clone());
+                                }
+                            }
+
+                            if let Some(path) = load {
+                                app.tasks.add(ProjectLoad::new(path));
+                            }
+                        });
+                    });
+
+                    labeled_separator(ui, "Misc");
+                    menu_button((ui, app, ctx), SHORTCUTS[5], "Quit");
                 });
 
-                ui.add_enabled_ui(!app.config.recent_projects.is_empty(), |ui| {
-                    ui.menu_button("Recent", |ui| {
-                        let mut load = None;
-                        for path in app.config.recent_projects.iter() {
-                            let name = path.file_name().unwrap().to_string_lossy();
-                            if ui.button(name).clicked() {
-                                ui.close();
-                                load = Some(path.clone());
-                            }
-                        }
+                ui.menu_button(concatcp!(GIT_DIFF, " Edit"), |ui| {
+                    ui.set_width(150.0);
 
-                        if let Some(path) = load {
-                            app.tasks.add(ProjectLoad::new(path));
-                        }
+                    labeled_separator(ui, "History");
+                    ui.add_enabled_ui(app.history.can_undo(), |ui| {
+                        menu_button((ui, app, ctx), SHORTCUTS[6], "Undo")
+                    });
+                    ui.add_enabled_ui(app.history.can_redo(), |ui| {
+                        menu_button((ui, app, ctx), SHORTCUTS[7], "Redo");
                     });
                 });
 
-                labeled_separator(ui, "Misc");
-                menu_button((ui, app, ctx), SHORTCUTS[5], "Quit");
-            });
-
-            ui.menu_button(concatcp!(GIT_DIFF, " Edit"), |ui| {
-                ui.set_width(150.0);
-
-                labeled_separator(ui, "History");
-                ui.add_enabled_ui(app.history.can_undo(), |ui| {
-                    menu_button((ui, app, ctx), SHORTCUTS[6], "Undo")
+                ui.menu_button(concatcp!(HAMMER, " Tools"), |ui| {
+                    ui.set_width(150.0);
+                    labeled_separator(ui, "Generators");
+                    (ui.button("Exposure Test").clicked()).then(|| tools::exposure_test::open(app));
                 });
-                ui.add_enabled_ui(app.history.can_redo(), |ui| {
-                    menu_button((ui, app, ctx), SHORTCUTS[7], "Redo");
-                });
-            });
 
-            ui.menu_button(concatcp!(CARDS, " View"), |ui| {
-                ui.set_width(150.0);
+                ui.menu_button(concatcp!(CARDS, " View"), |ui| {
+                    ui.set_width(150.0);
 
-                labeled_separator(ui, "Actions");
-                app.config.about |= ui.button("About mslicer").clicked();
-                app.state.queue_reset_ui |= ui.button("Reset Interface").clicked();
+                    labeled_separator(ui, "Actions");
+                    app.config.about |= ui.button("About mslicer").clicked();
+                    app.state.queue_reset_ui |= ui.button("Reset Interface").clicked();
 
-                labeled_separator(ui, "Windows");
-                for tab in Tab::ALL {
-                    let existing = app.dock_state.find_tab(&tab);
-                    let mut open = existing.is_some();
-                    ui.checkbox(&mut open, tab.name());
-
-                    if !open && let Some(tab) = existing {
-                        app.dock_state.remove_tab(tab);
-                    } else if open && existing.is_none() {
-                        app.dock_state.add_window(vec![tab]);
+                    labeled_separator(ui, "Windows");
+                    for tab in Tab::ALL {
+                        app.panels.checkbox(tab, |open| {
+                            ui.checkbox(open, tab.name());
+                        });
                     }
-                }
-            });
+                });
 
-            let slicing = (app.slice_operation.as_ref())
-                .map(|x| !x.progress.complete())
-                .unwrap_or_default();
-            ui.add_enabled_ui(!slicing, |ui| {
-                let slice_button = ui.add(
-                    Button::new(concatcp!(STACK, " Slice"))
-                        .shortcut_text(ctx.format_shortcut(&SLICE_SHORTCUT)),
-                );
-                slice_button.clicked().then(|| app.slice());
+                ui.add_enabled_ui(!app.is_slicing(), |ui| {
+                    let slice_button = ui.add(
+                        Button::new(concatcp!(STACK, " Slice"))
+                            .shortcut_text(ctx.format_shortcut(&SLICE_SHORTCUT)),
+                    );
+                    slice_button.clicked().then(|| app.slice());
+                });
             });
         });
-    });
 }
 
 fn menu_button(

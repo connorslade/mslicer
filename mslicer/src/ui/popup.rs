@@ -1,9 +1,18 @@
-use egui::{Color32, Context, Grid, Id, Label, RichText, Ui, WidgetText, Window, vec2};
+use std::mem;
+
+use egui::{
+    Align, Button, Color32, Context, Grid, Id, Label, Layout, RichText, Ui, UiBuilder, Widget,
+    WidgetText, Window, vec2,
+};
+use egui_phosphor::regular::X;
 
 use crate::{
-    app::{App, remote_print::RemotePrint},
+    app::{
+        App, is_slicing, project::Project, remote_print::RemotePrint,
+        slice_operation::SliceOperation,
+    },
     app_ref_type,
-    ui::state::UiState,
+    ui::{panels::Panels, state::UiState},
 };
 
 type UiFunction = dyn FnMut(&mut PopupApp, &mut Ui) -> bool;
@@ -19,11 +28,17 @@ pub struct Popup {
     title: String,
     id: Id,
     ui: Box<UiFunction>,
+
+    close_button: bool,
+    height: Option<f32>,
 }
 
 pub struct PopupApp<'a> {
-    pub state: &'a mut UiState,
+    pub panels: &'a mut Panels,
     pub remote_print: &'a mut RemotePrint,
+    pub slice_operation: &'a mut Option<SliceOperation>,
+    pub state: &'a mut UiState,
+    pub project: &'a mut Project,
 }
 
 #[allow(dead_code)]
@@ -47,8 +62,11 @@ impl<'a> PopupManagerRef<'a> {
 
         let this = &mut self.app.popup;
         let mut app = PopupApp {
-            state: &mut self.app.state,
+            panels: &mut self.app.panels,
             remote_print: &mut self.app.remote_print,
+            slice_operation: &mut self.app.slice_operation,
+            state: &mut self.app.state,
+            project: &mut self.app.project,
         };
 
         while i < this.popups.len() {
@@ -61,15 +79,31 @@ impl<'a> PopupManagerRef<'a> {
                 .default_size(size)
                 .default_pos((ctx.content_rect().size() - size).to_pos2() / 2.0)
                 .show(ctx, |ui| {
-                    ui.set_height(50.0);
-                    ui.vertical_centered(|ui| {
+                    if let Some(height) = popup.height {
+                        ui.set_height(height);
+                    }
+
+                    let title = ui.vertical_centered(|ui| {
                         ui.heading(popup.title.clone());
                     });
+
+                    if popup.close_button {
+                        ui.scope_builder(
+                            UiBuilder::new()
+                                .max_rect(title.response.rect)
+                                .layout(Layout::right_to_left(Align::Center)),
+                            |ui| {
+                                ui.add_space(4.0);
+                                close |= Button::new(X).frame(false).ui(ui).clicked();
+                            },
+                        );
+                    }
+
                     ui.separator();
-                    close = (popup.ui)(&mut app, ui);
+                    close |= (popup.ui)(&mut app, ui);
                 });
 
-            if close {
+            if mem::take(&mut close) {
                 this.popups.remove(i);
             } else {
                 i += 1;
@@ -88,6 +122,8 @@ impl Popup {
             title,
             id,
             ui: Box::new(ui),
+            close_button: false,
+            height: None,
         }
     }
 
@@ -118,6 +154,17 @@ impl Popup {
             });
             close
         })
+        .height(50.0)
+    }
+
+    pub fn close_button(mut self, close_button: bool) -> Self {
+        self.close_button = close_button;
+        self
+    }
+
+    pub fn height(mut self, height: f32) -> Self {
+        self.height = Some(height);
+        self
     }
 }
 
@@ -138,5 +185,12 @@ impl PopupIcon {
             Self::Error => Color32::from_rgb(200, 90, 90),
             Self::Success => Color32::from_rgb(140, 230, 140),
         }
+    }
+}
+
+impl<'a> PopupApp<'a> {
+    // i know, i know…
+    pub fn is_slicing(&self) -> bool {
+        is_slicing(self.slice_operation)
     }
 }

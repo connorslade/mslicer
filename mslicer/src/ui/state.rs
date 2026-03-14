@@ -3,6 +3,8 @@ use egui_tracing::EventCollector;
 use nalgebra::{Vector2, Vector3};
 use slicer::{mesh::Mesh, supports::line::LineSupportConfig};
 
+use crate::windows::tools::Tools;
+
 #[derive(Default)]
 pub struct UiState {
     pub event_collector: EventCollector,
@@ -23,6 +25,9 @@ pub struct UiState {
     pub working_filename: String,
     pub send_print_completion: bool,
     pub remote_print_connecting: RemotePrintConnectStatus,
+
+    // tools
+    pub tools: Tools,
 }
 
 #[derive(Default)]
