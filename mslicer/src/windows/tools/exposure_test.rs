@@ -58,9 +58,9 @@ fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
 
         ui.label("Steps");
         ui.horizontal(|ui| {
-            DragValue::new(&mut tool.steps).range(1.0..=f32::MAX).ui(ui);
+            DragValue::new(&mut tool.steps).range(1..=256).ui(ui);
 
-            ui.label(format!("({:.2}mm each)", tool.size.x / tool.steps as f32));
+            ui.label(format!("({:.2} mm each)", tool.size.x / tool.steps as f32));
             ui.take_available_width();
         });
         ui.end_row();
