@@ -5,7 +5,8 @@ use crate::{
     serde::{Deserializer, SerdeExt, Serializer},
     slice::Format,
     units::{
-        CentimetersPerSecond, CubicMilimeters, Milimeters, Minutes, Seconds, SquareMilimeters,
+        CentimetersPerSecond, CubicMilimeters, Milimeter, Milimeters, Minutes, Seconds,
+        SquareMilimeters,
     },
 };
 
@@ -55,6 +56,11 @@ impl SliceConfig {
 
     pub fn voxel_volume(&self) -> CubicMilimeters {
         self.pixel_area() * self.slice_height
+    }
+
+    pub fn mm_to_px(&self, mm: Vector2<f32>) -> Vector2<f32> {
+        mm.component_mul(&self.platform_resolution.cast())
+            .component_div(&self.platform_size.xy().map(|x| x.get::<Milimeter>()))
     }
 
     pub fn print_time(&self, layers: u32) -> Seconds {

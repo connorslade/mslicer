@@ -6,6 +6,7 @@ use common::{
     units::Milimeter,
 };
 use egui::{Button, DragValue, Ui, Widget};
+use egui_phosphor::regular::{RULER, SQUARES_FOUR};
 use image::RgbaImage;
 use nalgebra::Vector2;
 use slicer::util::export;
@@ -62,6 +63,26 @@ fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
 
             ui.label(format!("({:.2} mm each)", tool.size.x / tool.steps as f32));
             ui.take_available_width();
+        });
+        ui.end_row();
+
+        ui.horizontal(|ui| {
+            ui.label("Supports");
+            ui.checkbox(&mut tool.supports.enabled, "");
+        });
+        ui.horizontal(|ui| {
+            ui.add_enabled_ui(tool.supports.enabled, |ui| {
+                DragValue::new(&mut tool.supports.height)
+                    .range(0.1..=5.0)
+                    .ui(ui);
+                ui.label(RULER);
+
+                ui.separator();
+                DragValue::new(&mut tool.supports.spacing)
+                    .range(0.1..=5.0)
+                    .ui(ui);
+                ui.label(SQUARES_FOUR);
+            });
         });
         ui.end_row();
     });

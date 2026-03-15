@@ -76,6 +76,20 @@ impl Image {
             self.data[(offset + min.x)..(offset + max.x)].fill(value);
         }
     }
+
+    pub fn circle(&mut self, center: Vector2<usize>, r: Vector2<u32>, value: u8) {
+        let center = center.cast::<i32>();
+        let r = r.cast::<i32>();
+
+        for y in -r.y..=r.y {
+            let dx =
+                (r.x.pow(2) as f32 * (1.0 - y.pow(2) as f32 / r.y.pow(2) as f32)).sqrt() as i32;
+            let (x0, x1) = ((center.x - dx) as usize, (center.x + dx) as usize);
+
+            let offset = (center.y + y) as usize * self.size.x;
+            self.data[(offset + x0)..=(offset + x1)].fill(value);
+        }
+    }
 }
 
 impl Image {
