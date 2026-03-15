@@ -1,4 +1,4 @@
-use std::{borrow::Cow, fs::File, path::Path};
+use std::{borrow::Cow, path::Path};
 
 use egui::{Align2, Color32, Context, FontFamily, FontId, Id, LayerId, Order, pos2};
 use egui_phosphor::regular::{FILE_TEXT, FILES};
@@ -25,8 +25,8 @@ pub fn update(app: &mut App, ctx: &Context) {
                 if format == "mslicer" {
                     app.tasks.add(ProjectLoad::new(path.to_path_buf()));
                 } else {
-                    let file = File::open(path).unwrap();
-                    app.tasks.add(MeshLoad::file(file, name, format.into()));
+                    app.tasks
+                        .add(MeshLoad::file(path.to_path_buf(), name, format.into()));
                 }
             }
         }
