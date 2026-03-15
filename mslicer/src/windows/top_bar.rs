@@ -9,10 +9,11 @@ use egui_phosphor::regular::{CARDS, FILE_TEXT, GIT_DIFF, HAMMER, STACK};
 use crate::{
     app::{
         App,
-        task::{FileDialog, MeshLoad, ProjectLoad, ProjectSave},
+        project::Project,
+        task::{FileDialog, MeshLoad, ProjectLoad},
     },
     include_asset,
-    ui::components::labeled_separator,
+    ui::{components::labeled_separator, popup::Popup},
     windows::{Tab, tools},
 };
 
@@ -22,6 +23,7 @@ const IMPORT_MODEL_SHORTCUT: KeyboardShortcut = KeyboardShortcut::new(Modifiers:
 const LOAD_TEAPOT_SHORTCUT: KeyboardShortcut = KeyboardShortcut::new(Modifiers::COMMAND, Key::T);
 const SAVE_PROJECT_SHORTCUT: KeyboardShortcut = KeyboardShortcut::new(Modifiers::COMMAND, Key::S);
 const SAVE_AS_PROJECT_SHORTCUT: KeyboardShortcut = KeyboardShortcut::new(COMMAND_SHIFT, Key::S);
+const NEW_PROJECT_SHORTCUT: KeyboardShortcut = KeyboardShortcut::new(Modifiers::COMMAND, Key::N);
 const LOAD_PROJECT_SHORTCUT: KeyboardShortcut = KeyboardShortcut::new(Modifiers::COMMAND, Key::O);
 const QUIT_SHORTCUT: KeyboardShortcut = KeyboardShortcut::new(Modifiers::COMMAND, Key::Q);
 const SLICE_SHORTCUT: KeyboardShortcut = KeyboardShortcut::new(Modifiers::COMMAND, Key::R);
@@ -32,6 +34,7 @@ type ShortcutCallback = fn(&mut App, &Context);
 const SHORTCUTS: &[(KeyboardShortcut, ShortcutCallback)] = &[
     (IMPORT_MODEL_SHORTCUT, |app, _ctx| import_model(app)),
     (LOAD_TEAPOT_SHORTCUT, |app, _ctx| import_teapot(app)),
+    (NEW_PROJECT_SHORTCUT, |app, _ctx| new(app)),
     (LOAD_PROJECT_SHORTCUT, |app, _ctx| load(app)),
     (SAVE_PROJECT_SHORTCUT, |app, _ctx| save(app)),
     (SAVE_AS_PROJECT_SHORTCUT, |app, _ctx| save_as(app)),
@@ -66,12 +69,8 @@ pub fn ui(app: &mut App, ctx: &Context) {
                     menu_button((ui, app, ctx), SHORTCUTS[1], "Utah Teapot");
 
                     labeled_separator(ui, "Project");
-                    menu_button((ui, app, ctx), SHORTCUTS[2], "Open");
-                    menu_button((ui, app, ctx), SHORTCUTS[3], "Save");
-                    ui.add_enabled_ui(app.project.path.is_some(), |ui| {
-                        menu_button((ui, app, ctx), SHORTCUTS[4], "Save As")
-                    });
-
+                    menu_button((ui, app, ctx), SHORTCUTS[2], "New");
+                    menu_button((ui, app, ctx), SHORTCUTS[3], "Open");
                     ui.add_enabled_ui(!app.config.recent_projects.is_empty(), |ui| {
                         ui.menu_button("Recent", |ui| {
                             let mut load = None;
@@ -88,9 +87,13 @@ pub fn ui(app: &mut App, ctx: &Context) {
                             }
                         });
                     });
+                    menu_button((ui, app, ctx), SHORTCUTS[4], "Save");
+                    ui.add_enabled_ui(app.project.path.is_some(), |ui| {
+                        menu_button((ui, app, ctx), SHORTCUTS[5], "Save As")
+                    });
 
                     labeled_separator(ui, "Misc");
-                    menu_button((ui, app, ctx), SHORTCUTS[5], "Quit");
+                    menu_button((ui, app, ctx), SHORTCUTS[6], "Quit");
                 });
 
                 ui.menu_button(concatcp!(GIT_DIFF, " Edit"), |ui| {
@@ -98,10 +101,10 @@ pub fn ui(app: &mut App, ctx: &Context) {
 
                     labeled_separator(ui, "History");
                     ui.add_enabled_ui(app.history.can_undo(), |ui| {
-                        menu_button((ui, app, ctx), SHORTCUTS[6], "Undo")
+                        menu_button((ui, app, ctx), SHORTCUTS[7], "Undo")
                     });
                     ui.add_enabled_ui(app.history.can_redo(), |ui| {
-                        menu_button((ui, app, ctx), SHORTCUTS[7], "Redo");
+                        menu_button((ui, app, ctx), SHORTCUTS[8], "Redo");
                     });
                 });
 
@@ -171,35 +174,49 @@ fn import_teapot(app: &mut App) {
     ));
 }
 
-fn save(app: &mut App) {
-    if let Some(path) = app.project.path.clone() {
-        let project = app.project.clone();
-        app.tasks()
-            .add(ProjectSave::new(project, path.to_path_buf()));
-    } else {
-        save_as(app);
+fn new(app: &mut App) {
+    if !app.project.models.is_empty() {
+        app.popup.open(Popup::new("Modified File", |app, ui| {
+            ui.add_space(8.0);
+            if app.project.path.is_some() {
+                ui.label("Do you want to save the changes made to this project?");
+            } else {
+                ui.label("Do you want to save this project?");
+            }
+            ui.add_space(8.0);
+
+            let mut close = false;
+            ui.columns(2, |ui| {
+                ui[0].centered_and_justified(|ui| {
+                    if ui.button("Don't Save").clicked() {
+                        app.project.reset(&app.config.default_slice_config);
+                        close = true;
+                    }
+                });
+                ui[1].centered_and_justified(|ui| {
+                    if ui.button("Save").clicked() {
+                        app.tasks.add_boxed(app.project.save());
+                    }
+                });
+            });
+
+            close
+        }));
     }
 }
 
+fn save(app: &mut App) {
+    let task = app.project.save();
+    app.tasks().add_boxed(task);
+}
+
 fn save_as(app: &mut App) {
-    app.tasks.add(FileDialog::save_file(
-        ("mslicer project", &["mslicer"]),
-        |app, path, tasks| {
-            let path = path.with_extension("mslicer");
-            tasks.push(Box::new(ProjectSave::new(
-                app.project.clone(),
-                path.to_path_buf(),
-            )));
-            app.project.path = Some(path);
-        },
-    ));
+    let task = app.project.save_as();
+    app.tasks().add(task);
 }
 
 fn load(app: &mut App) {
-    app.tasks.add(FileDialog::pick_file(
-        ("mslicer project", &["mslicer"]),
-        |_app, path, tasks| tasks.push(Box::new(ProjectLoad::new(path.to_path_buf()))),
-    ));
+    app.tasks.add(Project::load());
 }
 
 fn quit(ctx: &Context) {

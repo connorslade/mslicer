@@ -67,7 +67,11 @@ app_ref_type!(TaskManager, tasks);
 
 impl TaskManager {
     pub fn add(&mut self, task: impl Task + 'static) {
-        self.tasks.push(Box::new(task));
+        self.add_boxed(Box::new(task));
+    }
+
+    pub fn add_boxed(&mut self, task: Box<dyn Task>) {
+        self.tasks.push(task);
     }
 
     pub fn iter(&self) -> impl Iterator<Item = &Box<dyn Task>> {
