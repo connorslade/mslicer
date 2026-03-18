@@ -31,9 +31,9 @@ pub type CentimetersPerSecond = Velocity<Centimeter, Second>;
 pub type MilimetersPerMinute = Velocity<Milimeter, Minute>;
 
 pub trait Unit {
-    const FACTOR: f32;
+    const FACTOR: f64;
 
-    fn apply(val: f32, power: i32) -> f32 {
+    fn apply(val: f64, power: i32) -> f64 {
         val * Self::FACTOR.powi(power)
     }
 }
@@ -42,5 +42,5 @@ pub trait LengthUnit: Unit {}
 pub trait TimeUnit: Unit {}
 
 pub trait MetricPrefix {
-    const FACTOR: f32;
+    const FACTOR: f64;
 }
