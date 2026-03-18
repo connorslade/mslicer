@@ -1,5 +1,3 @@
-use std::fs::File;
-
 use const_format::concatcp;
 use egui::{
     Button, Context, Frame, Key, KeyboardShortcut, Modifiers, TopBottomPanel, Ui, ViewportCommand,
@@ -160,8 +158,11 @@ fn import_model(app: &mut App) {
             let ext = path.extension();
             let format = ext.unwrap_or_default().to_string_lossy();
 
-            let file = File::open(path).unwrap();
-            tasks.push(Box::new(MeshLoad::file(file, name, format.into())));
+            tasks.push(Box::new(MeshLoad::file(
+                path.to_path_buf(),
+                name,
+                format.into(),
+            )));
         },
     ));
 }
