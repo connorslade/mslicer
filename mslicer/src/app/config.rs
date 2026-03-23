@@ -27,6 +27,7 @@ pub struct Config {
     pub recent_projects: Vec<PathBuf>,
     pub panels: Option<Tree<Tab>>,
     pub about: bool,
+    pub tasks: bool,
     pub default_slice_config: SliceConfig,
 
     // Remote print settings
@@ -107,6 +108,7 @@ impl Default for Config {
             recent_projects: Vec::new(),
             panels: None,
             about: true,
+            tasks: false,
 
             alert_print_completion: false,
             init_remote_print_at_startup: false,

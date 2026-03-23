@@ -1,12 +1,9 @@
-use std::{borrow::Cow, mem};
-
-use nalgebra::Vector2;
+use std::borrow::Cow;
 
 use crate::{
     app::{App, config::Config, project::Project},
     app_ref_type,
     ui::popup::PopupManager,
-    windows::Tab,
 };
 
 mod acceleration_structures;
@@ -51,7 +48,6 @@ pub struct TaskStatus<'a> {
 #[derive(Default)]
 pub struct TaskManager {
     tasks: Vec<Box<dyn Task>>,
-    visible_count: usize,
 }
 
 /// A subset of App fields, excluding `tasks`. This allows mutable access to
@@ -81,6 +77,18 @@ impl TaskManager {
     pub fn any_with_status(&self) -> bool {
         self.iter().any(|x| x.status().is_some())
     }
+
+    pub fn progress(&self) -> f32 {
+        let (mut t, mut n) = (0.0, 0);
+        for task in self.tasks.iter() {
+            if let Some(status) = task.status() {
+                t += status.progress;
+                n += 1;
+            }
+        }
+
+        if n == 0 { 0.0 } else { t / n as f32 }
+    }
 }
 
 impl<'a> TaskManagerRef<'a> {
@@ -93,10 +101,8 @@ impl<'a> TaskManagerRef<'a> {
         };
 
         let mut i = 0;
-        let mut visible = 0;
         while i < this.tasks.len() {
             let task = &mut this.tasks[i];
-            visible += task.status().is_some() as usize;
             let result = task.poll(&mut app);
             if result.complete {
                 this.tasks.remove(i);
@@ -105,10 +111,6 @@ impl<'a> TaskManagerRef<'a> {
             }
 
             this.tasks.extend(result.new_tasks);
-        }
-
-        if visible > mem::replace(&mut this.visible_count, visible) {
-            (self.app.panels).add_if_missing(Tab::Tasks, Vector2::new(400.0, 200.0));
         }
     }
 }

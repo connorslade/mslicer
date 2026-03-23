@@ -28,6 +28,7 @@
 - Exposure test generator ([#24](https://github.com/connorslade/mslicer/pull/24))
 - Button to create new project
 - Fix numerical precision issues introduced when converting units
+- Replace tasks panel with top bar widget
 
 ## v0.5.0 &mdash; February 21st, 2026
 

@@ -1,10 +1,12 @@
-use std::fs::File;
+use std::{f32::consts::TAU, fs::File};
 
 use const_format::concatcp;
 use egui::{
-    Button, Context, Frame, Key, KeyboardShortcut, Modifiers, TopBottomPanel, Ui, ViewportCommand,
+    Align, Align2, Button, Context, FontId, Frame, Grid, Id, Key, KeyboardShortcut, Layout,
+    Modifiers, PopupAnchor, ProgressBar, Stroke, StrokeKind, TopBottomPanel, Ui, ViewportCommand,
+    vec2,
 };
-use egui_phosphor::regular::{CARDS, FILE_TEXT, GIT_DIFF, HAMMER, STACK};
+use egui_phosphor::regular::{CARDS, FILE_TEXT, GIT_DIFF, HAMMER, HOURGLASS, STACK};
 
 use crate::{
     app::{
@@ -136,7 +138,75 @@ pub fn ui(app: &mut App, ctx: &Context) {
                     );
                     slice_button.clicked().then(|| app.slice());
                 });
+
+                ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                    ui.add_space(2.0);
+                    tasks_button(app, ctx, ui);
+                    ui.take_available_width();
+                })
             });
+        });
+}
+
+fn tasks_button(app: &mut App, ctx: &Context, ui: &mut Ui) {
+    let y = ui.spacing().interact_size.y;
+    let (rect, mut response) = ui.allocate_exact_size(vec2(y, y), egui::Sense::click());
+    response = response.on_hover_text("Monitor the progress of async background tasks.");
+    app.config.tasks ^= response.clicked();
+
+    let visuals = ui.style().interact_selectable(&response, app.config.tasks);
+    ui.painter().rect(
+        rect,
+        visuals.corner_radius,
+        visuals.bg_fill,
+        visuals.bg_stroke,
+        StrokeKind::Outside,
+    );
+
+    let f = app.tasks.progress();
+    let f_ease = ctx.animate_value_with_time(ui.id().with("progress"), f, 0.2);
+    if f == 0.0 {
+        ui.painter().text(
+            rect.center(),
+            Align2::CENTER_CENTER,
+            HOURGLASS,
+            FontId::default(),
+            visuals.text_color(),
+        );
+    } else {
+        let stroke = Stroke::new(2.0, visuals.text_color());
+        let points = (0..=10).map(|i| {
+            let t = i as f32 / 10.0 * TAU * f_ease;
+            rect.center() + vec2(t.cos(), t.sin()) * ((y * 0.75 - stroke.width) / 2.0)
+        });
+        ui.painter().line(points.collect(), stroke);
+    }
+
+    let anchor = PopupAnchor::Position(response.rect.max + vec2(0.0, 4.0));
+    egui::Popup::new(Id::new("tasks"), ctx.clone(), anchor, ui.layer_id())
+        .open(app.config.tasks && app.tasks.any_with_status())
+        .show(|ui| {
+            ui.set_width(300.0);
+            Grid::new("slice_config")
+                .num_columns(2)
+                .spacing([40.0, 4.0])
+                .striped(true)
+                .show(ui, |ui| {
+                    for task in app.tasks.iter() {
+                        let Some(status) = task.status() else {
+                            continue;
+                        };
+
+                        let res1 = ui.label(status.name);
+                        let res2 = ui.add(ProgressBar::new(status.progress).show_percentage());
+                        if let Some(details) = status.details {
+                            res1.on_hover_text(&details);
+                            res2.on_hover_text(details);
+                        }
+
+                        ui.end_row();
+                    }
+                });
         });
 }
 

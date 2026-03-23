@@ -37,12 +37,6 @@ impl Panels {
         }
     }
 
-    pub fn add_if_missing(&mut self, tab: Tab, size: Vector2<f32>) {
-        if self.dock_state.find_tab(&tab).is_none() {
-            self.add_tab(tab, size);
-        }
-    }
-
     pub fn add_tab(&mut self, tab: Tab, size: Vector2<f32>) {
         let window_id = self.dock_state.add_window(vec![tab]);
         let window = self.dock_state.get_window_state_mut(window_id).unwrap();
@@ -72,9 +66,5 @@ fn default_dock_layout(surface: &mut Tree<Tab>) {
     let [_old_node, new_node] = surface.split_left(NodeIndex::root(), 0.2, vec![Tab::Models]);
     let [_old_node, new_node] =
         surface.split_below(new_node, 0.4, vec![Tab::SliceConfig, Tab::Supports]);
-    surface.split_below(
-        new_node,
-        0.6,
-        vec![Tab::Workspace, Tab::RemotePrint, Tab::Tasks],
-    );
+    surface.split_below(new_node, 0.6, vec![Tab::Workspace, Tab::RemotePrint]);
 }
