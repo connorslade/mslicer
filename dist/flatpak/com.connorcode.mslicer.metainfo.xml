@@ -29,7 +29,7 @@
 
 	<screenshots>
 		<screenshot type="default">
-			<image type="source">https://github.com/user-attachments/assets/af719967-14e5-4fb3-923d-e63ce450151c</image>
+			<image type="source">https://mslicer.com/supported-dragon.png</image>
 			<caption>Slicing the stanford dragon with supports.</caption>
 		</screenshot>
 	</screenshots>
