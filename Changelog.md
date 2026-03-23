@@ -1,6 +1,6 @@
 # Changelog
 
-## v0.6.0 &mdash; Coming Soon™
+## v0.6.0 &mdash; March 23rd, 2026
 
 - New logo/icon (gnome inspired)
 - Better packaging for MacOS (.app bundle) and Windows (.rc file)

@@ -344,7 +344,7 @@ impl Default for Meta {
             format_version: 2,
             distro: "generic".into(),
             program: "mslicer".into(),
-            version: "0.5.0".into(),
+            version: "0.6.0".into(),
             os: env::consts::OS.into(),
             arch: env::consts::ARCH.into(),
             profile: false,

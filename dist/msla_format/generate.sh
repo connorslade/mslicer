@@ -22,7 +22,7 @@ grep -RIl '' src/common src/ctb src/goo src/nanodlp | xargs sed -i \
     -e 's/use common/use crate/g' \
     -e 's/ignore,msla_format/rust/g' \
     -e 's/mslicer/msla_format/g' \
-    -e 's/0.5.0/0.1.0/g'
+    -e 's/0.6.0/0.1.0/g'
 
 # Remove unused code (Optional)
 rm src/common/slice/layer_iter.rs

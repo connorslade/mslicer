@@ -14,9 +14,9 @@
         <key>CFBundleIconFile</key>
         <string>icon.icns</string>
         <key>CFBundleShortVersionString</key>
-        <string>0.5.0</string>
+        <string>0.6.0</string>
         <key>CFBundleVersion</key>
-        <string>050</string>
+        <string>060</string>
         <key>LSMinimumSystemVersion</key>
         <string>10.15</string>
     </dict>

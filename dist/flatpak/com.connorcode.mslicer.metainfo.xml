@@ -29,12 +29,42 @@
 
 	<screenshots>
 		<screenshot type="default">
-			<image type="source">https://github.com/user-attachments/assets/ca282fea-680d-4825-aca1-36d9e29fc1fe</image>
-			<caption>Slicing a treefrog model.</caption>
+			<image type="source">https://github.com/user-attachments/assets/af719967-14e5-4fb3-923d-e63ce450151c</image>
+			<caption>Slicing the stanford dragon with supports.</caption>
 		</screenshot>
 	</screenshots>
 
 	<releases>
+    	<release version="0.6.0" date="2026-03-23">
+            <description>
+                <ul>
+                    <li>New logo/icon (gnome inspired)</li>
+                    <li>Better packaging for MacOS (.app bundle) and Windows (.rc file)</li>
+                    <li>Keyboard shortcuts use ⌘ on MacOS</li>
+                    <li>Fix panic caused by race condition</li>
+                    <li>Show annotated layers on slice preview slider</li>
+                    <li>Show project file name in window title</li>
+                    <li>Cleanup slice preview scaling</li>
+                    <li>Cleanup model panel UI</li>
+                    <li>Remove accidental doc-tests in stl.rs, which blocking nixpkgs-update build</li>
+                    <li>Make slices at middle of layer height (not bottom)</li>
+                    <li>Fix volume stored in .nanodlp files</li>
+                    <li>Add exposure PWM control to slice config (#21)</li>
+                    <li>Fix layers rendering flipped in slice preview  (#20)</li>
+                    <li>Use standard unit (mm/min) for lift/retract speeds and slice height (#22)</li>
+                    <li>Replace about panel with a first time popup that links to the documentation</li>
+                    <li>Show individual model volume (before slicing)</li>
+                    <li>Model specific relative exposures (#18)</li>
+                    <li>Correctly overwrite render settings when generating preview images</li>
+                    <li>Pick between Perspective or Orthographic camera projections</li>
+                    <li>Camera pitch is no longer locked between (-90°, 90°)</li>
+                    <li>Exposure test generator (#24)</li>
+                    <li>Button to create new project</li>
+                    <li>Fix numerical precision issues introduced when converting units</li>
+                    <li>Replace tasks panel with top bar widget</li>
+                </ul>
+            </description>
+        </release>   
     	<release version="0.5.0" date="2026-02-21">
             <description>
                 <ul>
