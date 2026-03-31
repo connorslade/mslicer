@@ -13,10 +13,11 @@ use std::hint::black_box;
 
 const PLATFORM: Vector2<u32> = Vector2::new(11520, 5120);
 
-fn criterion_benchmark(c: &mut Criterion) {
+fn benchmark(c: &mut Criterion) {
+    let mut g = c.benchmark_group("png");
     let layer = generate_layer();
 
-    c.bench_function("Intersperse Runs", |b| {
+    g.bench_function("Intersperse Runs", |b| {
         b.iter_batched(
             || layer.clone(),
             |mut runs| black_box(intersperse_runs(&mut runs, 0, 11520)),
@@ -24,7 +25,7 @@ fn criterion_benchmark(c: &mut Criterion) {
         )
     });
 
-    c.bench_function("Checksum", |b| {
+    g.bench_function("Checksum", |b| {
         b.iter(|| {
             let mut check = Adler32::new();
             layer.iter().for_each(|run| check.update_run(run));
@@ -35,7 +36,7 @@ fn criterion_benchmark(c: &mut Criterion) {
     let mut rgb = layer.clone();
     intersperse_runs(&mut rgb, 0, 11520);
 
-    c.bench_function("Tokens", |b| {
+    g.bench_function("Tokens", |b| {
         b.iter_batched(
             || rgb.clone(),
             |rgb| black_box(lz77_compress(rgb.into_iter())),
@@ -44,7 +45,7 @@ fn criterion_benchmark(c: &mut Criterion) {
     });
 
     let tokens = lz77_compress(rgb.into_iter());
-    c.bench_function("Huffman", |b| {
+    g.bench_function("Huffman", |b| {
         b.iter(|| {
             let mut out = Vec::new();
             let mut bits = BitVec::new(&mut out, 0);
@@ -53,7 +54,7 @@ fn criterion_benchmark(c: &mut Criterion) {
         });
     });
 
-    c.bench_function("Layer Encode", |b| {
+    g.bench_function("Layer Encode", |b| {
         b.iter_batched(
             || layer.clone(),
             |rgb| {
@@ -71,7 +72,7 @@ fn criterion_benchmark(c: &mut Criterion) {
     });
 }
 
-criterion_group!(benches, criterion_benchmark);
+criterion_group!(benches, benchmark);
 criterion_main!(benches);
 
 fn generate_layer() -> Vec<Run> {

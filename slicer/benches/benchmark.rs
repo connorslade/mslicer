@@ -1,5 +1,7 @@
 use common::{progress::Progress, serde::SliceDeserializer, slice::SliceConfig};
-use criterion::{Criterion, criterion_group, criterion_main};
+use criterion::{
+    BenchmarkGroup, Criterion, criterion_group, criterion_main, measurement::WallTime,
+};
 use slicer::{
     mesh::Mesh,
     slicer::{Slicer, SlicerModel},
@@ -7,9 +9,10 @@ use slicer::{
 use std::{fs, hint::black_box};
 
 fn benchmark(c: &mut Criterion) {
-    slice_benchmark(c, "utah_teapot");
-    slice_benchmark(c, "stanford_dragon");
-    slice_benchmark(c, "stress_test");
+    let g = &mut c.benchmark_group("slicer");
+    slice_benchmark(g, "utah_teapot");
+    slice_benchmark(g, "stanford_dragon");
+    slice_benchmark(g, "stress_test");
 }
 
 criterion_group!(benches, benchmark);
@@ -28,12 +31,11 @@ fn slicer(model: &[u8]) -> Slicer {
     )
 }
 
-fn slice_benchmark(c: &mut Criterion, name: &str) {
+fn slice_benchmark(g: &mut BenchmarkGroup<'_, WallTime>, name: &str) {
     let path = env!("CARGO_MANIFEST_DIR").to_owned() + "/benches/models/" + name + ".stl";
     let data = fs::read(path).unwrap();
     let slicer = slicer(&data);
 
-    let mut g = c.benchmark_group("slicer");
     g.bench_function(name, |b| {
         b.iter(|| black_box(slicer.slice_raster::<goo_format::LayerEncoder>()));
     });

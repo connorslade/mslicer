@@ -1,3 +1,6 @@
+// Uses an Active Edge Table (AET) for faster filling.
+// Reference: https://www.cs.rit.edu/~icss571/filling/how_to.html
+
 use std::{
     collections::VecDeque,
     sync::atomic::{AtomicU64, Ordering},
@@ -20,8 +23,8 @@ use crate::{
 impl Slicer {
     /// Actually runs the slicing operation, it is multithreaded.
     pub fn slice_raster<Layer: EncodableLayer>(&self) -> SliceResult<'_, Layer::Output> {
-        let platform_resolution = self.slice_config.platform_resolution;
-        let pixels = (platform_resolution.x * platform_resolution.y) as u64;
+        let platform = self.slice_config.platform_resolution;
+        let pixels = (platform.x * platform.y) as u64;
         let voxels = AtomicU64::new(0);
 
         // A segment contains a reference to all of the triangles it contains. By
@@ -57,12 +60,12 @@ impl Slicer {
                 let mut encoder = Layer::new(self.slice_config.platform_resolution);
                 let mut last = 0;
 
-                let mut active = Vec::<ActiveEdge>::new();
+                let mut active = Vec::new();
                 let mut y = edges.front().map(|e| e.min.y).unwrap_or(0);
 
-                while !edges.is_empty() || !active.is_empty() {
+                while (!edges.is_empty() || !active.is_empty()) && y < platform.y {
                     update_active_edges(&mut edges, &mut active, y);
-                    let y_offset = (platform_resolution.x * y) as u64;
+                    let y_offset = (platform.x * y) as u64;
 
                     // Convert the intersections into runs of voxels to be
                     // encoded into the layer.
@@ -73,7 +76,7 @@ impl Slicer {
                         depth += delta;
                         exposures[a.exposure as usize] += delta;
 
-                        let (a, b) = (a.x.round() as u64, b.x.round() as u64);
+                        let [a, b] = [a.x, b.x].map(|x| (x.round() as u64).min(platform.x as u64));
                         if depth != 0 && b != a {
                             let (start, length) = (a + y_offset, b - a);
                             (start > last).then(|| encoder.add_run(start - last, 0));
