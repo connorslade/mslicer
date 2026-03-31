@@ -1,4 +1,4 @@
-# mslicer [![Build][actions-badge]][actions] ![][download-badge]
+# mslicer [![Build][actions-badge]][actions] ![][download-badge] [![CodSpeed](https://img.shields.io/endpoint?url=https://codspeed.io/badge.json)](https://codspeed.io/connorslade/mslicer?utm_source=badge)
 
 A high-performance, open-source slicer for MSLA resin printers.
 Supports the following output formats: Chitu (.ctb), Elegoo (.goo), NanoDLP (.nanodlp), and Vector (.svg).
