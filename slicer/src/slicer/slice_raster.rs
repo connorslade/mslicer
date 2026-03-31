@@ -1,10 +1,15 @@
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::{
+    collections::VecDeque,
+    sync::atomic::{AtomicU64, Ordering},
+};
 
 use common::{
     slice::{EncodableLayer, SliceResult},
     units::Milimeter,
 };
 use itertools::Itertools;
+use nalgebra::{Vector2, Vector3};
+use ordered_float::OrderedFloat;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
 use crate::{
@@ -31,17 +36,17 @@ impl Slicer {
             .into_par_iter()
             .map(|layer| {
                 let height = layer as f32 * self.slice_config.slice_height.get::<Milimeter>();
+                let mut voxels_inner = 0;
 
                 // Gets all the intersections between the slice plane and the
                 // model. Because all the faces are triangles, every triangle
                 // intersection will return two points. These can then be
                 // interpreted as line segments making up a polygon.
-                let segments = (self.models.iter().enumerate())
-                    .flat_map(|(idx, model)| {
-                        let intersections = segments[idx].intersect_plane(&model.mesh, height);
-                        (intersections.into_iter()).map(|segment| (segment, model.exposure))
-                    })
-                    .collect::<Vec<_>>();
+                let segments = (self.models.iter().enumerate()).flat_map(|(idx, model)| {
+                    let intersections = segments[idx].intersect_plane(&model.mesh, height);
+                    (intersections.into_iter()).map(|segment| (segment, model.exposure))
+                });
+                let mut edges = global_edge_table(segments);
 
                 // Creates a new encoded for this layer. Because printers can
                 // have very high resolution displays, the uncompressed data for
@@ -52,41 +57,23 @@ impl Slicer {
                 let mut encoder = Layer::new(self.slice_config.platform_resolution);
                 let mut last = 0;
 
-                // For each row of pixels, we find all line segments that go
-                // across and mark that as an intersection to then be run-length
-                // encoded. There is probably a better polygon filling algo, but
-                // this one works surprisingly fast.
-                for y in 0..platform_resolution.y {
+                let mut active = Vec::<ActiveEdge>::new();
+                let mut y = edges.front().map(|e| e.min.y).unwrap_or(0);
+
+                while !edges.is_empty() || !active.is_empty() {
+                    update_active_edges(&mut edges, &mut active, y);
                     let y_offset = (platform_resolution.x * y) as u64;
-                    let yf = y as f32 + 0.5;
-
-                    let mut intersections = (segments.iter())
-                        .map(|((pos, facing), exposure)| (pos[0], pos[1], facing, exposure))
-                        // Filtering to only consider segments with one point
-                        // above the current row and one point below.
-                        .filter(|&(a, b, _, _)| (a.y >= yf) ^ (b.y >= yf))
-                        .map(|(a, b, &facing, &exposure)| {
-                            // Get the x position of the line segment at this y
-                            let t = (yf - a.y) / (b.y - a.y);
-                            let pos = a.x + t * (b.x - a.x);
-                            (pos.round() as u64, facing, exposure)
-                        })
-                        .collect::<Vec<_>>();
-
-                    // Sort all these intersections for run-length encoding
-                    intersections.sort_by_key(|&(x, _, _)| x);
 
                     // Convert the intersections into runs of voxels to be
                     // encoded into the layer.
                     let mut depth = 0;
                     let mut exposures = [0; 256];
-                    for ((a, a_dir, a_exposure), (b, _, _)) in
-                        intersections.into_iter().tuple_windows()
-                    {
-                        let delta = 1 - (a_dir as i32) * 2;
+                    for (a, b) in active.iter().tuple_windows() {
+                        let delta = 1 - (a.direction as i32) * 2;
                         depth += delta;
-                        exposures[a_exposure as usize] += delta;
+                        exposures[a.exposure as usize] += delta;
 
+                        let (a, b) = (a.x.round() as u64, b.x.round() as u64);
                         if depth != 0 && b != a {
                             let (start, length) = (a + y_offset, b - a);
                             (start > last).then(|| encoder.add_run(start - last, 0));
@@ -94,10 +81,12 @@ impl Slicer {
                             let exposure = exposures.iter().rposition(|&x| x > 0).unwrap_or(255);
                             encoder.add_run(length, exposure as u8);
 
-                            voxels.fetch_add(length, Ordering::Relaxed);
+                            voxels_inner += length;
                             last = start + length;
                         }
                     }
+
+                    y += 1;
                 }
 
                 // Turns out that on my printer, the buffer that each layer is
@@ -107,6 +96,7 @@ impl Slicer {
                 (last < pixels).then(|| encoder.add_run(pixels - last, 0));
 
                 // Finished encoding the layer
+                voxels.fetch_add(voxels_inner, Ordering::Relaxed);
                 encoder.finish(layer, &self.slice_config)
             })
             .inspect(|_| self.progress.add_complete(1))
@@ -119,4 +109,66 @@ impl Slicer {
             slice_config: &self.slice_config,
         }
     }
+}
+
+#[derive(Debug)]
+struct Edge {
+    min: Vector2<u32>,
+
+    y_max: u32,
+    inv_slope: f32,
+    direction: bool,
+    exposure: u8,
+}
+
+#[derive(Debug)]
+struct ActiveEdge {
+    x: f32,
+
+    y_max: u32,
+    inv_slope: f32,
+    direction: bool,
+    exposure: u8,
+}
+
+fn global_edge_table(
+    segments: impl Iterator<Item = (([Vector3<f32>; 2], bool), u8)>,
+) -> VecDeque<Edge> {
+    let mut edges = Vec::new();
+    for ((pos, direction), exposure) in segments {
+        let pos = pos.map(|x| x.map(|x| x.round() as u32));
+
+        let dy = pos[1].y as f32 - pos[0].y as f32;
+        let dx = pos[1].x as f32 - pos[0].x as f32;
+        if dy == 0.0 {
+            continue;
+        }
+
+        edges.push(Edge {
+            min: pos[(pos[0].y >= pos[1].y) as usize].xy(),
+            y_max: pos[0].y.max(pos[1].y),
+            inv_slope: dx / dy,
+            direction,
+            exposure,
+        });
+    }
+
+    edges.sort_by(|a, b| a.min.y.cmp(&b.min.y).then_with(|| a.min.x.cmp(&b.min.x)));
+    VecDeque::from(edges)
+}
+
+fn update_active_edges(edges: &mut VecDeque<Edge>, active: &mut Vec<ActiveEdge>, y: u32) {
+    active.retain(|x| x.y_max > y);
+    active.iter_mut().for_each(|e| e.x += e.inv_slope);
+    while !edges.is_empty() && edges[0].min.y == y {
+        let edge = edges.pop_front().unwrap();
+        active.push(ActiveEdge {
+            x: edge.min.x as f32,
+            y_max: edge.y_max,
+            inv_slope: edge.inv_slope,
+            direction: edge.direction,
+            exposure: edge.exposure,
+        });
+    }
+    active.sort_by_key(|x| OrderedFloat(x.x));
 }

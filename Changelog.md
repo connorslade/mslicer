@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.7.0 &mdash; In Development
+
+- Optimize slicing complex layers
+
 ## v0.6.0 &mdash; March 23rd, 2026
 
 - New logo/icon (gnome inspired)

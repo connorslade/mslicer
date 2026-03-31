@@ -12,7 +12,7 @@ pub struct Mesh {
     pub faces: Vec<[u32; 3]>,
 }
 
-pub fn load_mesh<T: Deserializer + Send + 'static>(
+pub fn load_mesh<T: Deserializer + Send>(
     mut des: T,
     format: &str,
     progress: Progress,
