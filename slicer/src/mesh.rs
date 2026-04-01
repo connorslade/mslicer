@@ -72,12 +72,13 @@ impl Mesh {
         self.faces().get(index).unwrap()
     }
 
-    pub fn face_verts(&self, index: usize) -> [Vector3<f32>; 3] {
+    pub fn face_verts_raw(&self, index: usize) -> [Vector3<f32>; 3] {
         let (v, f) = (self.vertices(), self.face(index));
-        let v0 = self.transform(&v[f[0] as usize]);
-        let v1 = self.transform(&v[f[1] as usize]);
-        let v2 = self.transform(&v[f[2] as usize]);
-        [v0, v1, v2]
+        [v[f[0] as usize], v[f[1] as usize], v[f[2] as usize]]
+    }
+
+    pub fn face_verts(&self, index: usize) -> [Vector3<f32>; 3] {
+        self.face_verts_raw(index).map(|x| self.transform(&x))
     }
 
     pub fn normal(&self, index: usize) -> Vector3<f32> {

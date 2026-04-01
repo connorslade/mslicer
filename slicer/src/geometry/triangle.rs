@@ -1,7 +1,7 @@
 use nalgebra::Vector3;
 
 use crate::{
-    geometry::{Hit, Primitive, Ray},
+    geometry::{Primitive, Ray},
     mesh::Mesh,
 };
 
@@ -51,13 +51,9 @@ pub fn plane_triangle_intersection(
 //  - https://www.scratchapixel.com/lessons/3d-basic-rendering/ray-tracing-rendering-a-triangle/ray-triangle-intersection-geometric-solution.html
 //  - https://math.stackexchange.com/questions/4322/check-whether-a-point-is-within-a-3d-triangle
 pub fn triangle_intersection<Type: Primitive>(
-    mesh: &Mesh,
-    face_idx: usize,
+    ([v0, v1, v2], normal): ([Vector3<f32>; 3], Vector3<f32>),
     ray: Ray,
-) -> Option<Hit> {
-    let normal = mesh.transform_normal(&mesh.normal(face_idx));
-    let [v0, v1, v2] = mesh.face_verts(face_idx);
-
+) -> Option<(f32, Vector3<f32>)> {
     // Check if triangle and direction are parallel
     let denominator = normal.dot(&ray.direction);
     if denominator == 0.0 {
@@ -80,16 +76,11 @@ pub fn triangle_intersection<Type: Primitive>(
     let inside_triangle =
         normal.dot(&c0) >= 0.0 && normal.dot(&c1) >= 0.0 && normal.dot(&c2) >= 0.0;
 
-    inside_triangle.then_some(Hit {
-        position: intersection,
-        t,
-        face: face_idx,
-    })
+    inside_triangle.then_some((t, intersection))
 }
 
 // "Closest Point on Triangle to Point" from Real-Time Collision Detection by Christer Ericson
-pub fn closest_point(mesh: &Mesh, face_idx: usize, point: Vector3<f32>) -> Vector3<f32> {
-    let [v0, v1, v2] = mesh.face_verts(face_idx);
+pub fn closest_point([v0, v1, v2]: [Vector3<f32>; 3], point: Vector3<f32>) -> Vector3<f32> {
     let ab = v1 - v0;
     let ac = v2 - v0;
     let bc = v2 - v1;

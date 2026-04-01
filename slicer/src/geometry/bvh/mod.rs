@@ -65,16 +65,21 @@ impl Bvh {
         origin: Vector3<f32>,
         direction: Vector3<f32>,
     ) -> Option<Hit> {
+        let (origin, direction) = (
+            mesh.inv_transform(&origin),
+            mesh.inv_transform_normal(&direction),
+        );
+
         self.intersect::<primitive::Ray>(mesh, Ray { origin, direction })
     }
 
     pub fn intersect_segment(&self, mesh: &Mesh, a: Vector3<f32>, b: Vector3<f32>) -> Option<Hit> {
-        self.intersect::<primitive::Segment>(
-            mesh,
-            Ray {
-                origin: a,
-                direction: b - a,
-            },
-        )
+        let (a, b) = (mesh.inv_transform(&a), mesh.inv_transform(&b));
+        let ray = Ray {
+            origin: a,
+            direction: b - a,
+        };
+
+        self.intersect::<primitive::Segment>(mesh, ray)
     }
 }

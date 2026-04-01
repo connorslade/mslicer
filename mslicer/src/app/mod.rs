@@ -6,7 +6,7 @@ use egui::{Theme, ViewportCommand, Visuals};
 use egui_phosphor::regular::CARET_RIGHT;
 use egui_tracing::EventCollector;
 use egui_wgpu::RenderState;
-use nalgebra::Vector2;
+use nalgebra::{Vector2, Vector3};
 use tracing::{info, warn};
 
 use crate::{
@@ -19,7 +19,7 @@ use crate::{
         drag_and_drop,
         panels::Panels,
         popup::{Popup, PopupIcon, PopupManager},
-        state::UiState,
+        state::{UiState, WorkspaceHover},
     },
     windows::{self, Tab},
 };
@@ -183,6 +183,16 @@ impl App {
             "mslicer".into()
         };
         ctx.send_viewport_cmd(ViewportCommand::Title(title));
+    }
+
+    pub fn hovered_ray(&self) -> Option<(Vector3<f32>, Vector3<f32>)> {
+        let projection = self.config.projection;
+        let workspace @ WorkspaceHover { aspect, uv, .. } = &self.state.workspace;
+        if !workspace.hovered() {
+            return None;
+        }
+
+        Some(self.camera.hovered_ray(projection, *aspect, *uv))
     }
 }
 

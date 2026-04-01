@@ -45,7 +45,7 @@ impl Slicer {
                 // model. Because all the faces are triangles, every triangle
                 // intersection will return two points. These can then be
                 // interpreted as line segments making up a polygon.
-                let segments = (self.models.iter().enumerate()).flat_map(|(idx, model)| {
+                let segments = self.models.iter().enumerate().flat_map(|(idx, model)| {
                     let intersections = segments[idx].intersect_plane(&model.mesh, height);
                     (intersections.into_iter()).map(|segment| (segment, model.exposure))
                 });
@@ -57,7 +57,7 @@ impl Slicer {
                 // use some sort of compression scheme to resolve this issue, so
                 // to use a little memory as needed, the layers are compressed
                 // as they are made.
-                let mut encoder = Layer::new(self.slice_config.platform_resolution);
+                let mut encoder = Layer::new(platform);
                 let mut last = 0;
 
                 let mut active = Vec::new();

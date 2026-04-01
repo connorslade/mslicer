@@ -164,7 +164,9 @@ fn manual_support_placement(app: &mut App) {
         return;
     }
 
-    let (pos, dir) = app.camera.hovered_ray(workspace.aspect, workspace.uv);
+    let Some((pos, dir)) = app.hovered_ray() else {
+        return;
+    };
 
     let mut builder = MeshBuilder::new();
     for model in app.project.models.iter() {
@@ -172,11 +174,7 @@ fn manual_support_placement(app: &mut App) {
             continue;
         };
 
-        let Some(intersection) = bvh.intersect_ray(
-            &model.mesh,
-            model.mesh.inv_transform(&pos),
-            model.mesh.inv_transform_normal(&dir),
-        ) else {
+        let Some(intersection) = bvh.intersect_ray(&model.mesh, pos, dir) else {
             continue;
         };
 

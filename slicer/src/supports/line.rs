@@ -117,13 +117,15 @@ impl<'a> LineSupportGenerator<'a> {
                 let mut intersections = Vec::new();
                 for &idx in overhangs.iter() {
                     let ray = Ray {
-                        origin: pos.to_homogeneous(),
-                        direction: Vector3::z(),
+                        origin: mesh.inv_transform(&pos.to_homogeneous()),
+                        direction: mesh.inv_transform_normal(&Vector3::z()),
                     };
-                    if let Some(intersection) =
-                        triangle_intersection::<primitive::Ray>(mesh, idx, ray)
+                    let face = (mesh.face_verts_raw(idx), mesh.normal(idx));
+                    if let Some(mut intersection) =
+                        triangle_intersection::<primitive::Ray>(face, ray)
                     {
-                        intersections.push((intersection.position, idx));
+                        intersection.1 = mesh.transform(&intersection.1);
+                        intersections.push((intersection.1, idx));
                     }
                 }
 

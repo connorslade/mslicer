@@ -48,7 +48,12 @@ impl Camera {
     }
 
     // returns ray pos (camera pos) and ray dir
-    pub fn hovered_ray(&self, aspect: f32, uv: Vector2<f32>) -> (Vector3<f32>, Vector3<f32>) {
+    pub fn hovered_ray(
+        &self,
+        projection: Projection,
+        aspect: f32,
+        uv: Vector2<f32>,
+    ) -> (Vector3<f32>, Vector3<f32>) {
         let camera_pos = self.position(self.distance) + self.target;
         let pos = 2.0 * Vector2::new(uv.x, 1.0 - uv.y) - Vector2::repeat(1.0);
 
@@ -56,11 +61,22 @@ impl Camera {
         let right = forward.cross(&self.up()).normalize();
         let up = right.cross(&forward).normalize();
 
-        let fov_scale = (self.fov * 0.5).tan();
-        let uv = pos.component_mul(&Vector2::new(aspect, 1.0)) * fov_scale;
-        let dir = (forward + right * uv.x + up * uv.y).normalize();
+        match projection {
+            Projection::Perspective => {
+                let fov_scale = (self.fov * 0.5).tan();
+                let uv = pos.component_mul(&Vector2::new(aspect, 1.0)) * fov_scale;
+                let dir = (forward + right * uv.x + up * uv.y).normalize();
 
-        (camera_pos, dir)
+                (camera_pos, dir)
+            }
+            Projection::Orthographic => {
+                let height = self.distance * (self.fov / 2.0).sin();
+                let width = aspect * height;
+
+                let origin = camera_pos + right * pos.x * width + up * pos.y * height;
+                (origin, forward)
+            }
+        }
     }
 
     pub fn handle_movement(&mut self, response: &Response, ui: &Ui) {

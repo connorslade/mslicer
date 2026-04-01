@@ -3,6 +3,7 @@
 ## v0.7.0 &mdash; In Development
 
 - Optimize slicing complex layers
+- Allow clicking models in the viewport to select them
 
 ## v0.6.0 &mdash; March 23rd, 2026
 

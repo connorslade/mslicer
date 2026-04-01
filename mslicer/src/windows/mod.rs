@@ -115,13 +115,17 @@ pub fn ui(app: &mut App, ctx: &Context) {
 }
 
 fn viewport(app: &mut App, ui: &mut Ui, _ctx: &Context) {
-    let (rect, response) = ui.allocate_exact_size(ui.available_size(), Sense::drag());
+    let (rect, response) = ui.allocate_exact_size(ui.available_size(), Sense::click_and_drag());
     app.camera.handle_movement(&response, ui);
 
     let is_moving = response.dragged();
     let aspect = rect.width() / rect.height();
     let uv = (response.hover_pos().unwrap_or_default() - rect.min) / rect.size();
     app.state.workspace = WorkspaceHover::new(is_moving, aspect, uv);
+
+    if response.clicked() && !is_moving {
+        app.state.selected_model = hovered_model(app);
+    }
 
     let painter = ui.painter();
     let color = match app.config.theme {
@@ -133,6 +137,24 @@ fn viewport(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     let callback = app.get_workspace_render_callback();
     let callback = Callback::new_paint_callback(rect, callback);
     painter.add(callback);
+}
+
+fn hovered_model(app: &App) -> Option<u32> {
+    let Some((pos, dir)) = app.hovered_ray() else {
+        return None;
+    };
+
+    let mut min = (f32::MAX, 0);
+    for model in app.project.models.iter() {
+        if let Some(intersection) =
+            (model.bvh.as_ref()).and_then(|bvh| bvh.intersect_ray(&model.mesh, pos, dir))
+            && intersection.t < min.0
+        {
+            min = (intersection.t, model.id);
+        }
+    }
+
+    (min.0 != f32::MAX).then_some(min.1)
 }
 
 impl App {

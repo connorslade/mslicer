@@ -53,4 +53,8 @@ impl WorkspaceHover {
             uv: Vector2::new(uv.x, uv.y),
         }
     }
+
+    pub fn hovered(&self) -> bool {
+        self.uv.x >= 0.0 && self.uv.y >= 0.0
+    }
 }

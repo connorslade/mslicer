@@ -50,10 +50,15 @@ impl BvhNode {
 
         match self {
             BvhNode::Leaf { faces, .. } => faces.iter().for_each(|&face| {
-                if let Some(hit) = triangle_intersection::<Type>(mesh, face, ray)
-                    && hit.t.abs() < out.t.abs()
+                let triangle = (mesh.face_verts_raw(face), mesh.normal(face));
+                if let Some(hit) = triangle_intersection::<Type>(triangle, ray)
+                    && hit.0.abs() < out.t.abs()
                 {
-                    *out = hit;
+                    *out = Hit {
+                        position: hit.1,
+                        t: hit.0,
+                        face,
+                    };
                 }
             }),
             BvhNode::Node { left, right, .. } => {
@@ -82,7 +87,7 @@ impl BvhNode {
 
         match self {
             BvhNode::Leaf { faces, .. } => faces.iter().for_each(|&face| {
-                let position = closest_point(mesh, face, point);
+                let position = closest_point(mesh.face_verts_raw(face), point);
                 let t = (position - point).magnitude_squared();
                 if t < out.t {
                     *out = Hit { position, t, face };
