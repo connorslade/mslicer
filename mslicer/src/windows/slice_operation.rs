@@ -202,7 +202,9 @@ fn slice_preview(ui: &mut egui::Ui, result: &mut SliceResult) {
         let (width, height) = (info.resolution.x, info.resolution.y);
 
         result.slice_preview_layer = result.slice_preview_layer.clamp(1, info.layers as usize);
-        let new_preview = if result.last_preview_layer != result.slice_preview_layer {
+        let new_preview = if result.last_preview_layer != result.slice_preview_layer
+            || result.annotations.take_updated()
+        {
             result.last_preview_layer = result.slice_preview_layer;
             let size = (width * height) as usize;
 

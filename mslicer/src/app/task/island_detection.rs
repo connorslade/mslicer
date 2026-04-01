@@ -2,7 +2,6 @@ use std::sync::Arc;
 
 use clone_macro::clone;
 use common::{progress::Progress, slice::DynSlicedFile};
-use parking_lot::Mutex;
 use slicer::post_process::island_detection::detect_islands;
 
 use crate::app::{
@@ -16,7 +15,7 @@ pub struct IslandDetection {
 }
 
 impl IslandDetection {
-    pub fn new(file: Arc<DynSlicedFile>, annotations: Arc<Mutex<Annotations>>) -> Self {
+    pub fn new(file: Arc<DynSlicedFile>, annotations: Arc<Annotations>) -> Self {
         let progress = Progress::new();
         Self {
             handle: TaskThread::spawn(clone!([file, progress], move || {

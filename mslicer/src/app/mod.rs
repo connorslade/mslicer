@@ -101,6 +101,50 @@ impl App {
         is_slicing(&self.slice_operation)
     }
 
+    pub fn gcx(&self) -> Gcx {
+        Gcx {
+            device: self.render_state.device.clone(),
+            queue: self.render_state.queue.clone(),
+        }
+    }
+
+    pub fn set_title(&mut self, ctx: &egui::Context) {
+        let title = if let Some(stem) = self.project.path.as_ref().and_then(|x| x.file_stem()) {
+            format!("mslicer — {}", stem.to_string_lossy())
+        } else {
+            "mslicer".into()
+        };
+        ctx.send_viewport_cmd(ViewportCommand::Title(title));
+    }
+
+    pub fn hovered_ray(&self) -> Option<(Vector3<f32>, Vector3<f32>)> {
+        let projection = self.config.projection;
+        let workspace @ WorkspaceHover { aspect, uv, .. } = &self.state.workspace;
+
+        workspace
+            .hovered()
+            .then(|| self.camera.hovered_ray(projection, *aspect, *uv))
+    }
+
+    pub fn hovered_model(&self) -> Option<u32> {
+        let (pos, dir) = self.hovered_ray()?;
+        let mut min = (f32::MAX, 0);
+
+        for model in self.project.models.iter() {
+            if !model.hidden
+                && let Some(bvh) = &model.bvh
+                && let Some(hit) = bvh.intersect_ray(&model.mesh, pos, dir)
+                && hit.t < min.0
+            {
+                min = (hit.t, model.id);
+            }
+        }
+
+        (min.0 != f32::MAX).then_some(min.1)
+    }
+}
+
+impl App {
     pub fn slice(&mut self) {
         let meshes = (self.project.models.iter())
             .filter(|x| !x.hidden)
@@ -167,32 +211,6 @@ impl App {
                 slice_operation.add_result(config, (file, voxels));
             }
         ));
-    }
-
-    pub fn gcx(&self) -> Gcx {
-        Gcx {
-            device: self.render_state.device.clone(),
-            queue: self.render_state.queue.clone(),
-        }
-    }
-
-    pub fn set_title(&mut self, ctx: &egui::Context) {
-        let title = if let Some(stem) = self.project.path.as_ref().and_then(|x| x.file_stem()) {
-            format!("mslicer — {}", stem.to_string_lossy())
-        } else {
-            "mslicer".into()
-        };
-        ctx.send_viewport_cmd(ViewportCommand::Title(title));
-    }
-
-    pub fn hovered_ray(&self) -> Option<(Vector3<f32>, Vector3<f32>)> {
-        let projection = self.config.projection;
-        let workspace @ WorkspaceHover { aspect, uv, .. } = &self.state.workspace;
-        if !workspace.hovered() {
-            return None;
-        }
-
-        Some(self.camera.hovered_ray(projection, *aspect, *uv))
     }
 }
 

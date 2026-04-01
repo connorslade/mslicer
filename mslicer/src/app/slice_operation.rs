@@ -1,7 +1,10 @@
 use std::{
     collections::HashMap,
     ops::Deref,
-    sync::Arc,
+    sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering},
+    },
     time::{Duration, Instant},
 };
 
@@ -36,7 +39,7 @@ pub struct SliceOperationInner {
 pub struct SliceResult {
     pub file: Arc<DynSlicedFile>,
     pub elapsed: Duration,
-    pub annotations: Arc<Mutex<Annotations>>,
+    pub annotations: Arc<Annotations>,
     pub volume: Milliliters,
     pub print_time: Seconds,
 
@@ -52,7 +55,13 @@ pub const ISLAND_COLOR: Color32 = Color32::from_rgb(159, 44, 54);
 
 #[derive(Default)]
 pub struct Annotations {
-    layers: HashMap<usize, Vec<Run<Annotation>>>,
+    layers: Mutex<HashMap<usize, Vec<Run<Annotation>>>>,
+    updated: AtomicBool,
+}
+
+pub struct LockedAnnotations<'a> {
+    layers: MutexGuard<'a, HashMap<usize, Vec<Run<Annotation>>>>,
+    updated: &'a AtomicBool,
 }
 
 #[derive(Clone, Copy)]
@@ -108,7 +117,7 @@ impl SliceOperationInner {
         self.result.lock().replace(SliceResult {
             elapsed,
             file: Arc::new(file),
-            annotations: Arc::new(Mutex::new(Annotations::default())),
+            annotations: Arc::new(Annotations::default()),
             volume,
             print_time,
 
@@ -127,6 +136,19 @@ impl SliceOperationInner {
 }
 
 impl Annotations {
+    pub fn lock(&self) -> LockedAnnotations<'_> {
+        LockedAnnotations {
+            layers: self.layers.lock(),
+            updated: &self.updated,
+        }
+    }
+
+    pub fn take_updated(&self) -> bool {
+        self.updated.swap(false, Ordering::Relaxed)
+    }
+}
+
+impl<'a> LockedAnnotations<'a> {
     pub fn contains(&self, layer: usize) -> bool {
         if let Some(layer) = self.layers.get(&layer) {
             layer.iter().any(|x| !matches!(x.value, Annotation::None))
@@ -160,6 +182,7 @@ impl Annotations {
             })
             .collect::<Vec<_>>();
         self.layers.insert(layer, runs);
+        self.updated.store(true, Ordering::Relaxed);
     }
 }
 

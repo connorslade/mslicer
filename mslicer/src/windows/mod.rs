@@ -8,7 +8,6 @@ use serde::{Deserialize, Serialize};
 
 use crate::{app::App, render::workspace::WorkspaceRenderCallback, ui::state::WorkspaceHover};
 
-mod about;
 mod logs;
 mod models;
 mod remote_print;
@@ -17,6 +16,7 @@ mod slice_operation;
 mod supports;
 pub mod tools;
 mod top_bar;
+mod welcome;
 mod workspace;
 
 struct Tabs<'a> {
@@ -99,7 +99,7 @@ impl TabViewer for Tabs<'_> {
 }
 
 pub fn ui(app: &mut App, ctx: &Context) {
-    about::ui(app, ctx);
+    welcome::ui(app, ctx);
     top_bar::ui(app, ctx);
 
     mem::take(&mut app.state.queue_reset_ui).then(|| app.panels.reset_ui());
@@ -124,7 +124,7 @@ fn viewport(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     app.state.workspace = WorkspaceHover::new(is_moving, aspect, uv);
 
     if response.clicked() && !is_moving {
-        app.state.selected_model = hovered_model(app);
+        app.state.selected_model = app.hovered_model();
     }
 
     let painter = ui.painter();
@@ -137,24 +137,6 @@ fn viewport(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     let callback = app.get_workspace_render_callback();
     let callback = Callback::new_paint_callback(rect, callback);
     painter.add(callback);
-}
-
-fn hovered_model(app: &App) -> Option<u32> {
-    let Some((pos, dir)) = app.hovered_ray() else {
-        return None;
-    };
-
-    let mut min = (f32::MAX, 0);
-    for model in app.project.models.iter() {
-        if let Some(intersection) =
-            (model.bvh.as_ref()).and_then(|bvh| bvh.intersect_ray(&model.mesh, pos, dir))
-            && intersection.t < min.0
-        {
-            min = (intersection.t, model.id);
-        }
-    }
-
-    (min.0 != f32::MAX).then_some(min.1)
 }
 
 impl App {

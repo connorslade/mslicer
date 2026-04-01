@@ -4,6 +4,7 @@
 
 - Optimize slicing complex layers
 - Allow clicking models in the viewport to select them
+- Refresh re-render annotations when updated
 
 ## v0.6.0 &mdash; March 23rd, 2026
 
