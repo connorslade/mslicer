@@ -37,7 +37,9 @@ impl IslandDetection {
 
 impl Task for IslandDetection {
     fn poll(&mut self, app: &mut TaskApp) -> PollResult {
-        (self.handle.poll(app, "...")).into_poll_result(|_| PollResult::complete())
+        self.handle
+            .poll(app, "Unexpected Error Detecting Islands")
+            .into_poll_result(|_| PollResult::complete())
     }
 
     fn status(&self) -> Option<TaskStatus<'_>> {

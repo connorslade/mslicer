@@ -6,8 +6,9 @@ use common::{
 };
 use const_format::concatcp;
 use egui::{
-    CollapsingHeader, Color32, Context, DragValue, Frame, Label, Popup, Sense, TopBottomPanel, Ui,
-    UiBuilder, Widget, vec2,
+    CollapsingHeader, Color32, Context, DragAndDrop, DragValue, Frame, Id, Label, LayerId, Order,
+    Popup, Response, Sense, Stroke, TopBottomPanel, Ui, UiBuilder, Vec2, Widget,
+    emath::TSTransform, vec2,
 };
 use egui_phosphor::regular::{
     ARROW_LINE_DOWN, COPY, CURSOR_TEXT, DICE_THREE, EYE, EYE_SLASH, LINK_BREAK, LINK_SIMPLE, TRASH,
@@ -35,6 +36,11 @@ enum Action {
     Duplicate(usize),
 }
 
+struct DraggedModel {
+    index: usize,
+    offset: Vec2,
+}
+
 pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
     if app.project.models.is_empty() {
         ui.vertical_centered(|ui| {
@@ -45,42 +51,53 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
 
     for i in 0..app.project.models.len() {
         let id = app.project.models[i].id;
+        let eid = Id::new("model").with(id);
 
-        let (rect, response) =
-            ui.allocate_exact_size(vec2(ui.available_width(), 18.0), Sense::click());
+        if ctx.is_being_dragged(eid) {
+            let layer_id = LayerId::new(Order::Tooltip, eid);
+            let response = ui.scope_builder(UiBuilder::new().layer_id(layer_id), |ui| {
+                model_entry(app, ui, i, true)
+            });
 
-        let selected = Some(id) == app.state.selected_model;
-        let color = if selected {
-            ui.visuals().selection.bg_fill
-        } else if response.hovered() {
-            ui.visuals().code_bg_color
-        } else if i % 2 == 1 {
-            ui.visuals().faint_bg_color
+            if let Some(pointer_pos) = ctx.pointer_interact_pos()
+                && let Some(dragged) = DragAndDrop::payload::<DraggedModel>(ctx)
+            {
+                let delta = pointer_pos - response.response.rect.center() - dragged.offset;
+                ctx.transform_layer_shapes(layer_id, TSTransform::from_translation(delta));
+            }
         } else {
-            ui.style().noninteractive().bg_fill
-        };
+            let response = model_entry(app, ui, i, false);
+            if response.drag_started() {
+                ctx.set_dragged_id(eid);
+                let offset = (ctx.pointer_interact_pos())
+                    .map(|p| p - response.rect.center())
+                    .unwrap_or_default();
+                let payload = DraggedModel { index: i, offset };
 
-        let rect_margin = rect.expand2(vec2(2.0, ui.spacing().item_spacing.y / 2.0));
-        ui.painter().rect_filled(rect_margin, 2.0, color);
-
-        if response.clicked() {
-            if selected {
-                app.state.selected_model = None;
-            } else {
-                app.state.selected_model = Some(id);
+                DragAndDrop::set_payload(ctx, payload);
             }
         }
+    }
 
-        ui.scope_builder(UiBuilder::new().max_rect(rect), |ui| {
-            ui.horizontal(|ui| {
-                if selected {
-                    ui.visuals_mut().override_text_color = Some(Color32::WHITE);
-                }
+    if let Some(pointer) = ctx.pointer_interact_pos()
+        && let Some(dragged) = DragAndDrop::payload::<DraggedModel>(ctx)
+    {
+        let rect = ui.max_rect();
 
-                model_entry(app, ui, i);
-                ui.take_available_width();
-            });
-        });
+        let stroke = Stroke::new(1.0, Color32::WHITE);
+        let line = |y| ui.painter().hline(rect.x_range(), y, stroke);
+
+        let entry_height = 18.0 + ui.style().spacing.item_spacing.y;
+        let t = (pointer.y - rect.min.y) / entry_height + 0.5;
+        let new_index = (t as usize).min(app.project.models.len());
+
+        line(rect.min.y + new_index as f32 * entry_height);
+
+        if ctx.input(|i| i.pointer.any_released()) {
+            let insert_index = new_index - (dragged.index < new_index) as usize;
+            let model = app.project.models.remove(dragged.index);
+            app.project.models.insert(insert_index, model);
+        }
     }
 
     if let Some(id) = app.state.selected_model
@@ -112,52 +129,86 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
     response.clicked().then(|| app.state.selected_model = None);
 }
 
-fn model_entry(app: &mut App, ui: &mut Ui, model_idx: usize) {
-    let model = &mut app.project.models[model_idx];
+fn model_entry(app: &mut App, ui: &mut Ui, idx: usize, dragged: bool) -> Response {
+    let model = &mut app.project.models[idx];
     let id = model.id;
 
-    ui.visuals_mut().button_frame = false;
+    let (rect, response) =
+        ui.allocate_exact_size(vec2(ui.available_width(), 18.0), Sense::click_and_drag());
 
-    if ui
-        .button(if model.hidden { EYE_SLASH } else { EYE })
-        .on_hover_text(if model.hidden { "Show" } else { "Hide" })
-        .clicked()
-    {
-        app.history
-            .track_model(model.id, ModelAction::Hidden(model.hidden));
-        model.hidden ^= true;
-    }
-
-    if !model.warnings.is_empty() {
-        let count = model.warnings.bits().count_ones();
-        let mut warn = ui.label(format!("{WARNING}{}", subscript_number(count)));
-        for warning in model.warnings.iter() {
-            let desc = match warning {
-                MeshWarnings::NonManifold => WARN_NON_MANIFOLD,
-                MeshWarnings::OutOfBounds => WARN_OUT_OF_BOUNDS,
-                _ => unreachable!(),
-            };
-            warn = warn.on_hover_text(desc);
-        }
-    }
-
-    if !matches!(model.ui.rename, RenameState::None) {
-        let text_edit = ui.text_edit_singleline(&mut model.name);
-        if matches!(model.ui.rename, RenameState::Starting) {
-            text_edit.request_focus();
-            model.ui.rename = RenameState::Editing;
-        }
-
-        let editing = being_edited(&text_edit);
-        (!editing).then(|| model.ui.rename = RenameState::None);
-
-        history_tracked_model(
-            (editing, ui, &mut app.history),
-            (id, || ModelAction::Name(model.name.clone())),
-        )
+    let selected = Some(id) == app.state.selected_model;
+    let color = if selected && !dragged {
+        ui.visuals().selection.bg_fill
+    } else if response.hovered() || dragged {
+        ui.visuals().code_bg_color
+    } else if idx % 2 == 1 {
+        ui.visuals().faint_bg_color
     } else {
-        Label::new(&model.name).selectable(false).ui(ui);
+        ui.style().noninteractive().bg_fill
+    };
+
+    let rect_margin = rect.expand2(vec2(2.0, ui.spacing().item_spacing.y / 2.0));
+    ui.painter().rect_filled(rect_margin, 2.0, color);
+
+    if response.clicked() {
+        if selected {
+            app.state.selected_model = None;
+        } else {
+            app.state.selected_model = Some(id);
+        }
     }
+
+    ui.scope_builder(UiBuilder::new().max_rect(rect), |ui| {
+        ui.horizontal(|ui| {
+            ui.visuals_mut().override_text_color = selected.then_some(Color32::WHITE);
+            ui.visuals_mut().button_frame = false;
+
+            if ui
+                .button(if model.hidden { EYE_SLASH } else { EYE })
+                .on_hover_text(if model.hidden { "Show" } else { "Hide" })
+                .clicked()
+            {
+                app.history
+                    .track_model(model.id, ModelAction::Hidden(model.hidden));
+                model.hidden ^= true;
+            }
+
+            if !model.warnings.is_empty() {
+                let count = model.warnings.bits().count_ones();
+                let mut warn = ui.label(format!("{WARNING}{}", subscript_number(count)));
+                for warning in model.warnings.iter() {
+                    let desc = match warning {
+                        MeshWarnings::NonManifold => WARN_NON_MANIFOLD,
+                        MeshWarnings::OutOfBounds => WARN_OUT_OF_BOUNDS,
+                        _ => unreachable!(),
+                    };
+                    warn = warn.on_hover_text(desc);
+                }
+            }
+
+            if !matches!(model.ui.rename, RenameState::None) {
+                let text_edit = ui.text_edit_singleline(&mut model.name);
+                if matches!(model.ui.rename, RenameState::Starting) {
+                    text_edit.request_focus();
+                    model.ui.rename = RenameState::Editing;
+                }
+
+                let editing = being_edited(&text_edit);
+                (!editing).then(|| model.ui.rename = RenameState::None);
+
+                history_tracked_model(
+                    (editing, ui, &mut app.history),
+                    (id, || ModelAction::Name(model.name.clone())),
+                )
+            } else {
+                Label::new(&model.name).selectable(false).ui(ui);
+            }
+
+            ui.take_available_width();
+        });
+    });
+
+    response
 }
 
 fn model_properties(app: &mut App, ui: &mut Ui, ctx: &Context, action: &mut Action, i: usize) {

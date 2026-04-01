@@ -4,7 +4,8 @@
 
 - Optimize slicing complex layers
 - Allow clicking models in the viewport to select them
-- Refresh re-render annotations when updated
+- Rerender annotations when updated (island detection finishes)
+- Allow dragging to reorder models in Models panel
 
 ## v0.6.0 &mdash; March 23rd, 2026
 
