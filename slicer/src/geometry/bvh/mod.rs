@@ -53,7 +53,7 @@ impl Bvh {
     pub fn closest(&self, mesh: &Mesh, point: Vector3<f32>) -> Option<Hit> {
         self.nodes.last().map(|root| {
             let mut hit = Hit::default();
-            root.closest(&self.nodes, mesh, point, &mut hit);
+            root.closest(&self.nodes, mesh, mesh.inv_transform(&point), &mut hit);
             hit.t = hit.t.sqrt();
             hit
         })

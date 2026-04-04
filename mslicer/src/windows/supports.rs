@@ -1,5 +1,7 @@
-use egui::{CollapsingHeader, Context, Ui};
-use nalgebra::Vector3;
+use std::f32::consts::PI;
+
+use egui::{CollapsingHeader, Context, Ui, emath::OrderedFloat};
+use nalgebra::{Vector2, Vector3};
 use slicer::{
     builder::MeshBuilder,
     supports::{line::LineSupportGenerator, route_support},
@@ -36,6 +38,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                 let verts = model.mesh.vertices();
                 let mut builder = MeshBuilder::new();
 
+                let mut support_centers = Vec::new();
                 for overhang in model.overhangs.as_ref().unwrap() {
                     let point = model.mesh.transform(&verts[*overhang as usize]);
 
@@ -46,10 +49,47 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                         builder.add_cylinder((lines[0], lines[1]), (r, r), p);
                         builder.add_cylinder((lines[1], lines[2]), (r, r), p);
 
+                        for i in 0..(p * 2) {
+                            let angle = i as f32 / p as f32 * PI;
+                            let normal = Vector2::new(angle.cos(), angle.sin());
+                            support_centers.push(lines[2].xy() + normal * r);
+                        }
+
                         builder.add_sphere(point, 0.2, p);
                         builder.add_sphere(lines[0], r, p);
                         builder.add_sphere(lines[1], r, p);
                     }
+                }
+
+                let hull = convex_hull(&support_centers);
+                let idx = builder.next_idx();
+                for i in 0..hull.len() {
+                    let point = hull[i];
+                    let next = hull[(i + 1) % hull.len()];
+                    let prev = hull[(i + hull.len() - 1) % hull.len()];
+
+                    let edge_1 = next - point;
+                    let edge_2 = point - prev;
+                    let offset = Vector2::new(edge_1.y, -edge_1.x).normalize()
+                        + Vector2::new(edge_2.y, -edge_2.x).normalize();
+
+                    builder.add_vertex(point.push(0.0));
+                    builder.add_vertex((point - offset.normalize()).push(1.0));
+                }
+
+                let verts = builder.next_idx() - idx;
+                for i in (0..verts).step_by(2) {
+                    if i != 0 && i + 3 < verts {
+                        builder.add_face([idx, idx + i, idx + i + 2]);
+                        builder.add_face([idx + i + 3, idx + i + 1, idx + 1]);
+                    }
+
+                    builder.add_quad_flipped([
+                        idx + i % verts,
+                        idx + (i + 1) % verts,
+                        idx + (i + 2) % verts,
+                        idx + (i + 3) % verts,
+                    ]);
                 }
 
                 if !builder.is_empty() {
@@ -180,6 +220,7 @@ fn manual_support_placement(app: &mut App) {
 
         let normal = (model.mesh).transform_normal(&model.mesh.normal(intersection.face));
         let start = intersection.position + normal * 0.1;
+
         if let Some(lines) = route_support(&model.mesh, bvh, start) {
             let (r, p) = (1.0, 100);
             builder.add_cylinder((intersection.position, start), (0.2, r), p);
@@ -193,4 +234,38 @@ fn manual_support_placement(app: &mut App) {
     }
 
     app.state.support_preview = (!builder.is_empty()).then(|| builder.build());
+}
+
+fn convex_hull(points: &[Vector2<f32>]) -> Vec<&Vector2<f32>> {
+    let first = points.iter().min_by_key(|p| OrderedFloat(p.x)).unwrap();
+
+    let mut hull = vec![first];
+    let mut current = first;
+
+    loop {
+        let mut next = current;
+        for point in points {
+            if *point == *current {
+                continue;
+            }
+
+            if *next == *current || is_left_turn(current, next, point) {
+                next = point;
+            }
+        }
+
+        if *next == *first {
+            break;
+        }
+
+        hull.push(next);
+        current = next;
+    }
+
+    hull
+}
+
+fn is_left_turn(a: &Vector2<f32>, b: &Vector2<f32>, c: &Vector2<f32>) -> bool {
+    let cross = (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
+    cross > 0.0 || (cross == 0.0 && (a - c).magnitude_squared() > (a - b).magnitude_squared())
 }

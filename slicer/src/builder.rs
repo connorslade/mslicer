@@ -17,6 +17,10 @@ impl MeshBuilder {
         }
     }
 
+    pub fn next_idx(&self) -> u32 {
+        self.vertices.len() as u32
+    }
+
     pub fn is_empty(&self) -> bool {
         self.faces.is_empty()
     }
@@ -33,6 +37,11 @@ impl MeshBuilder {
     pub fn add_quad(&mut self, quad: [u32; 4]) {
         self.add_face([quad[0], quad[2], quad[1]]);
         self.add_face([quad[1], quad[2], quad[3]]);
+    }
+
+    pub fn add_quad_flipped(&mut self, quad: [u32; 4]) {
+        self.add_face([quad[0], quad[1], quad[2]]);
+        self.add_face([quad[1], quad[3], quad[2]]);
     }
 
     pub fn build(self) -> Mesh {
