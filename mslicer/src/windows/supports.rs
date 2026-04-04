@@ -1,10 +1,8 @@
-use std::f32::consts::PI;
-
-use egui::{CollapsingHeader, Context, Ui, emath::OrderedFloat};
-use nalgebra::{Vector2, Vector3};
+use egui::{CollapsingHeader, Context, Ui};
+use nalgebra::Vector3;
 use slicer::{
     builder::MeshBuilder,
-    supports::{line::LineSupportGenerator, route_support},
+    supports::{SupportGenerator, route_support},
 };
 
 use crate::{
@@ -33,81 +31,13 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
             let model = &mut app.project.models[idx];
             if ui.button(&model.name).clicked() {
                 model.find_overhangs();
-                let bvh = model.bvh.as_ref().unwrap();
-
-                let verts = model.mesh.vertices();
-                let mut builder = MeshBuilder::new();
-
-                let mut support_centers = Vec::new();
-                for overhang in model.overhangs.as_ref().unwrap() {
-                    let point = model.mesh.transform(&verts[*overhang as usize]);
-
-                    let start = point - Vector3::z();
-                    if let Some(lines) = route_support(&model.mesh, bvh, start) {
-                        let (r, p) = (1.0, 10);
-                        builder.add_cylinder((point, start), (0.2, r), p);
-                        builder.add_cylinder((lines[0], lines[1]), (r, r), p);
-                        builder.add_cylinder((lines[1], lines[2]), (r, r), p);
-
-                        for i in 0..(p * 2) {
-                            let angle = i as f32 / p as f32 * PI;
-                            let normal = Vector2::new(angle.cos(), angle.sin());
-                            support_centers.push(lines[2].xy() + normal * r);
-                        }
-
-                        builder.add_sphere(point, 0.2, p);
-                        builder.add_sphere(lines[0], r, p);
-                        builder.add_sphere(lines[1], r, p);
-                    }
-                }
-
-                let hull = convex_hull(&support_centers);
-                let idx = builder.next_idx();
-                for i in 0..hull.len() {
-                    let point = hull[i];
-                    let next = hull[(i + 1) % hull.len()];
-                    let prev = hull[(i + hull.len() - 1) % hull.len()];
-
-                    let edge_1 = next - point;
-                    let edge_2 = point - prev;
-                    let offset = Vector2::new(edge_1.y, -edge_1.x).normalize()
-                        + Vector2::new(edge_2.y, -edge_2.x).normalize();
-
-                    builder.add_vertex(point.push(0.0));
-                    builder.add_vertex((point - offset.normalize()).push(1.0));
-                }
-
-                let verts = builder.next_idx() - idx;
-                for i in (0..verts).step_by(2) {
-                    if i != 0 && i + 3 < verts {
-                        builder.add_face([idx, idx + i, idx + i + 2]);
-                        builder.add_face([idx + i + 3, idx + i + 1, idx + 1]);
-                    }
-
-                    builder.add_quad_flipped([
-                        idx + i % verts,
-                        idx + (i + 1) % verts,
-                        idx + (i + 2) % verts,
-                        idx + (i + 3) % verts,
-                    ]);
-                }
-
-                if !builder.is_empty() {
-                    let mesh = builder.build();
-                    let mut model = Model::from_mesh(mesh)
-                        .with_name("Supports".into())
-                        .with_random_color();
-                    model.update_oob(&app.project.slice_config.platform_size);
-                    app.tasks.add(MeshManifold::new(&model));
-                    app.tasks.add(BuildAccelerationStructures::new(&model));
-                    app.project.models.push(model);
-                }
             }
         }
     });
 
     ui.add_space(8.0);
     ui.heading("Manual Supports");
+    ui.label("Unfinished!");
 
     ui.checkbox(&mut app.state.support_placement, "Support Placement");
 
@@ -120,35 +50,23 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
             ui.style_mut().visuals.button_frame = false;
 
             for idx in 0..app.project.models.len() {
-                let mesh = &app.project.models[idx];
-                if ui.button(&mesh.name).clicked() {
-                    let generator = LineSupportGenerator::new(
-                        &app.state.line_support_config,
-                        app.project.slice_config.platform_size.map(|x| x.convert()),
-                    );
-
-                    app.state.line_support_debug =
-                        generate_support(&mut app.project.models, idx, &generator);
+                if ui.button(&app.project.models[idx].name).clicked() {
+                    app.state.line_support_debug = generate_support(app, idx);
                 }
             }
         });
 
         if ui.button("Generate All").clicked() {
             app.state.line_support_debug = Vec::new();
-            let generator = LineSupportGenerator::new(
-                &app.state.line_support_config,
-                app.project.slice_config.platform_size.map(|x| x.convert()),
-            );
-
             for i in 0..app.project.models.len() {
-                let debug = generate_support(&mut app.project.models, i, &generator);
+                let debug = generate_support(app, i);
                 app.state.line_support_debug.extend_from_slice(&debug);
             }
         }
     });
 
     ui.add_space(8.0);
-    let support = &mut app.state.line_support_config;
+    let support = &mut app.state.support_config;
 
     CollapsingHeader::new("Overhang Detection").show(ui, |ui| {
         dragger(ui, "Min Angle", &mut support.min_angle, |x| x.speed(0.01));
@@ -163,38 +81,38 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     CollapsingHeader::new("Support Generation").show(ui, |ui| {
         for (name, value) in [
             ("Support Radius", &mut support.support_radius),
-            ("Arm Height", &mut support.arm_height),
-            ("Base Radius", &mut support.base_radius),
-            ("Base Height", &mut support.base_height),
+            ("Tip Radius", &mut support.tip_radius),
+            ("Raft Height", &mut support.raft_height),
+            ("Raft Offset", &mut support.raft_offset),
         ] {
             dragger(ui, name, value, |x| x.speed(0.1));
         }
 
-        dragger(
-            ui,
-            "Support Precision",
-            &mut support.support_precision,
-            |x| x,
-        );
+        dragger(ui, "Support Precision", &mut support.precision, |x| x);
     });
 
     (app.state.support_placement).then(|| manual_support_placement(app));
 }
 
-fn generate_support(
-    meshes: &mut Vec<Model>,
-    idx: usize,
-    support: &LineSupportGenerator,
-) -> Vec<[Vector3<f32>; 2]> {
-    let mesh = &meshes[idx];
+fn generate_support(app: &mut App, model: usize) -> Vec<[Vector3<f32>; 2]> {
+    let model = &app.project.models[model];
+    let half_edge = model.half_edge.as_ref().unwrap();
+    let bvh = model.bvh.as_ref().unwrap();
 
-    let half_edge = mesh.half_edge.as_ref().unwrap();
-    let (supports, debug) = support.generate_line_supports(&mesh.mesh, half_edge);
-    let mesh = Model::from_mesh(supports)
-        .with_name(format!("Supports {}", mesh.name))
+    let generator = SupportGenerator::new(
+        &app.state.support_config,
+        app.project.slice_config.platform_size.map(|x| x.convert()),
+    );
+    let (supports, debug) = generator.generate_supports(&model.mesh, half_edge, bvh);
+
+    let mut model = Model::from_mesh(supports)
+        .with_name(format!("Supports {}", model.name))
         .with_random_color();
+    model.update_oob(&app.project.slice_config.platform_size);
+    app.tasks.add(MeshManifold::new(&model));
+    app.tasks.add(BuildAccelerationStructures::new(&model));
+    app.project.models.push(model);
 
-    meshes.push(mesh);
     debug
 }
 
@@ -234,38 +152,4 @@ fn manual_support_placement(app: &mut App) {
     }
 
     app.state.support_preview = (!builder.is_empty()).then(|| builder.build());
-}
-
-fn convex_hull(points: &[Vector2<f32>]) -> Vec<&Vector2<f32>> {
-    let first = points.iter().min_by_key(|p| OrderedFloat(p.x)).unwrap();
-
-    let mut hull = vec![first];
-    let mut current = first;
-
-    loop {
-        let mut next = current;
-        for point in points {
-            if *point == *current {
-                continue;
-            }
-
-            if *next == *current || is_left_turn(current, next, point) {
-                next = point;
-            }
-        }
-
-        if *next == *first {
-            break;
-        }
-
-        hull.push(next);
-        current = next;
-    }
-
-    hull
-}
-
-fn is_left_turn(a: &Vector2<f32>, b: &Vector2<f32>, c: &Vector2<f32>) -> bool {
-    let cross = (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
-    cross > 0.0 || (cross == 0.0 && (a - c).magnitude_squared() > (a - b).magnitude_squared())
 }

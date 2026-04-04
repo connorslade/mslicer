@@ -1,14 +1,14 @@
 use egui::Vec2;
 use egui_tracing::EventCollector;
 use nalgebra::{Vector2, Vector3};
-use slicer::{mesh::Mesh, supports::line::LineSupportConfig};
+use slicer::{mesh::Mesh, supports::SupportConfig};
 
 use crate::windows::tools::Tools;
 
 #[derive(Default)]
 pub struct UiState {
     pub event_collector: EventCollector,
-    pub line_support_config: LineSupportConfig,
+    pub support_config: SupportConfig,
     pub line_support_debug: Vec<[Vector3<f32>; 2]>,
     pub queue_reset_ui: bool,
 
