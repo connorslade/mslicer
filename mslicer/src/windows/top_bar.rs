@@ -114,6 +114,8 @@ pub fn ui(app: &mut App, ctx: &Context) {
                     ui.set_width(150.0);
                     labeled_separator(ui, "Generators");
                     (ui.button("Exposure Test").clicked()).then(|| tools::exposure_test::open(app));
+                    (ui.button("Internal Exposure Test").clicked())
+                        .then(|| tools::internal_exposure_test::open(app));
                 });
 
                 ui.menu_button(concatcp!(CARDS, " View"), |ui| {
