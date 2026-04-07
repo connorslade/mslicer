@@ -39,7 +39,7 @@ pub struct SupportConfig {
     pub precision: u32,
 
     /// Overhang detection
-    pub min_angle: f32,
+    pub max_angle: f32,
     pub face_support_spacing: f32,
 }
 
@@ -53,7 +53,7 @@ impl<'a> SupportGenerator<'a> {
         mesh: &Mesh,
         half_edge: &HalfEdgeMesh,
         bvh: &Bvh,
-    ) -> (Mesh, Vec<[Vector3<f32>; 2]>) {
+    ) -> Option<Mesh> {
         let mut overhangs = Vec::new();
 
         let point_overhangs = detect_point_overhangs(mesh, half_edge, |_, pos, _| pos);
@@ -70,12 +70,11 @@ impl<'a> SupportGenerator<'a> {
         );
 
         let mut builder = MeshBuilder::new();
-        let debug_points = Vec::new();
 
         let raft_points = self.build_support_mesh(mesh, bvh, &overhangs, &mut builder);
         self.build_raft_mesh(&raft_points, &mut builder);
 
-        (builder.build(), debug_points)
+        (!builder.is_empty()).then(|| builder.build())
     }
 
     fn detect_face_overhangs(&self, mesh: &Mesh) -> Vec<Vector3<f32>> {
@@ -84,12 +83,9 @@ impl<'a> SupportGenerator<'a> {
 
         for face in 0..mesh.face_count() {
             let normal = mesh.transform_normal(&mesh.normal(face));
-            if normal.z >= 0.0 {
-                continue;
-            }
 
-            let angle = normal.angle(&Vector3::z());
-            if angle < self.config.min_angle {
+            let angle = normal.angle(&-Vector3::z());
+            if angle > self.config.max_angle {
                 continue;
             }
 
@@ -212,8 +208,8 @@ impl Default for SupportConfig {
             raft_height: 1.0,
             raft_offset: 1.0,
             precision: 10,
-            min_angle: 30.0,
-            face_support_spacing: 1.0,
+            max_angle: 30.0,
+            face_support_spacing: 5.0,
         }
     }
 }

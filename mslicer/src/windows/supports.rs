@@ -1,5 +1,4 @@
 use egui::{CollapsingHeader, Context, Ui};
-use nalgebra::Vector3;
 use slicer::{
     builder::MeshBuilder,
     supports::{SupportGenerator, route_support},
@@ -51,16 +50,14 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
 
             for idx in 0..app.project.models.len() {
                 if ui.button(&app.project.models[idx].name).clicked() {
-                    app.state.line_support_debug = generate_support(app, idx);
+                    generate_support(app, idx);
                 }
             }
         });
 
         if ui.button("Generate All").clicked() {
-            app.state.line_support_debug = Vec::new();
             for i in 0..app.project.models.len() {
-                let debug = generate_support(app, i);
-                app.state.line_support_debug.extend_from_slice(&debug);
+                generate_support(app, i);
             }
         }
     });
@@ -69,7 +66,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     let support = &mut app.state.support_config;
 
     CollapsingHeader::new("Overhang Detection").show(ui, |ui| {
-        dragger(ui, "Min Angle", &mut support.min_angle, |x| x.speed(0.01));
+        dragger(ui, "Max Angle", &mut support.max_angle, |x| x.speed(0.01));
         dragger(
             ui,
             "Face Support Spacing",
@@ -94,7 +91,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     (app.state.support_placement).then(|| manual_support_placement(app));
 }
 
-fn generate_support(app: &mut App, model: usize) -> Vec<[Vector3<f32>; 2]> {
+fn generate_support(app: &mut App, model: usize) {
     let model = &app.project.models[model];
     let half_edge = model.half_edge.as_ref().unwrap();
     let bvh = model.bvh.as_ref().unwrap();
@@ -103,7 +100,9 @@ fn generate_support(app: &mut App, model: usize) -> Vec<[Vector3<f32>; 2]> {
         &app.state.support_config,
         app.project.slice_config.platform_size.map(|x| x.convert()),
     );
-    let (supports, debug) = generator.generate_supports(&model.mesh, half_edge, bvh);
+    let Some(supports) = generator.generate_supports(&model.mesh, half_edge, bvh) else {
+        return;
+    };
 
     let mut model = Model::from_mesh(supports)
         .with_name(format!("Supports {}", model.name))
@@ -112,8 +111,6 @@ fn generate_support(app: &mut App, model: usize) -> Vec<[Vector3<f32>; 2]> {
     app.tasks.add(MeshManifold::new(&model));
     app.tasks.add(BuildAccelerationStructures::new(&model));
     app.project.models.push(model);
-
-    debug
 }
 
 fn manual_support_placement(app: &mut App) {

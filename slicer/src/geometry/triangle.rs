@@ -47,9 +47,9 @@ pub fn plane_triangle_intersection(
     (n == 2).then_some(out)
 }
 
-// References:
-//  - https://www.scratchapixel.com/lessons/3d-basic-rendering/ray-tracing-rendering-a-triangle/ray-triangle-intersection-geometric-solution.html
-//  - https://math.stackexchange.com/questions/4322/check-whether-a-point-is-within-a-3d-triangle
+/// References:
+///  - [Ray-Tracing: Rendering a Triangle](https://www.scratchapixel.com/lessons/3d-basic-rendering/ray-tracing-rendering-a-triangle/ray-triangle-intersection-geometric-solution.html)
+///  - [Check whether a point is within a 3D Triangle](https://math.stackexchange.com/questions/4322/check-whether-a-point-is-within-a-3d-triangle)
 pub fn triangle_intersection<Type: Primitive>(
     ([v0, v1, v2], normal): ([Vector3<f32>; 3], Vector3<f32>),
     ray: Ray,
@@ -79,7 +79,7 @@ pub fn triangle_intersection<Type: Primitive>(
     inside_triangle.then_some((t, intersection))
 }
 
-// "Closest Point on Triangle to Point" from Real-Time Collision Detection by Christer Ericson
+/// Reference: "Closest Point on Triangle to Point" from Real-Time Collision Detection by Christer Ericson
 pub fn closest_point([v0, v1, v2]: [Vector3<f32>; 3], point: Vector3<f32>) -> Vector3<f32> {
     let ab = v1 - v0;
     let ac = v2 - v0;
