@@ -1,3 +1,5 @@
+use std::iter::repeat_n;
+
 use common::{container::Image, progress::Progress, slice::SliceConfig, units::Milimeter};
 use nalgebra::Vector2;
 
@@ -18,36 +20,41 @@ impl InternalExposureTest {
         let layers = (self.size.y / slice_height).round() as usize;
         progress.set_total(layers as u64);
 
+        let outer = self.layer(config, false);
+        let inner = self.layer(config, true);
+
+        let wall_layers = (self.wall / slice_height).round() as usize;
+        repeat_n(outer.clone(), wall_layers)
+            .chain(repeat_n(inner, layers - wall_layers * 2))
+            .chain(repeat_n(outer, wall_layers))
+            .inspect(|_| progress.add_complete(1))
+    }
+
+    fn layer(&self, config: &SliceConfig, internal: bool) -> Image {
         let size = config.mm_to_px(self.size).map(|x| x.round() as u32);
         let min = ((config.platform_resolution - size.xy()) / 2).cast();
         let max = min + size.xy().cast();
 
-        let diff = config
-            .mm_to_px(Vector2::repeat(self.wall))
-            .map(|x| x.round() as usize);
-        let min_diff = Vector2::new(min.x + diff.x, min.y + diff.y);
-        let max_diff = Vector2::new(max.x - diff.x, max.y - diff.y);
-        let segment_width = (max_diff.x - min_diff.x) as f32 / 256.0;
+        let mut image = Image::blank(config.platform_resolution.cast());
+        image.rect((min, max), (self.border_exposure * 255.0) as u8);
 
-        let wall_layers = (self.wall / slice_height).round() as usize;
-        let border_value = (self.border_exposure * 255.0) as u8;
-        (0..layers).map(move |layer| {
-            let mut image = Image::blank(config.platform_resolution.cast());
-            image.rect((min, max), border_value);
+        if internal {
+            let diff = config
+                .mm_to_px(Vector2::repeat(self.wall))
+                .map(|x| x.round() as usize);
+            let min_diff = Vector2::new(min.x + diff.x, min.y + diff.y);
+            let max_diff = Vector2::new(max.x - diff.x, max.y - diff.y);
+            let segment_width = (max_diff.x - min_diff.x) as f32 / 256.0;
 
-            if layer > wall_layers && layer < layers - wall_layers {
-                for i in 0..=255 {
-                    let p_min =
-                        min_diff + Vector2::x() * (i as f32 * segment_width).round() as usize;
-                    let p_max = Vector2::new(min_diff.x, max_diff.y)
-                        + Vector2::x() * ((i + 1) as f32 * segment_width).round() as usize;
-                    image.rect((p_min, p_max), i as u8);
-                }
+            for i in 0..=255 {
+                let p_min = min_diff + Vector2::x() * (i as f32 * segment_width).round() as usize;
+                let p_max = Vector2::new(min_diff.x, max_diff.y)
+                    + Vector2::x() * ((i + 1) as f32 * segment_width).round() as usize;
+                image.rect((p_min, p_max), i as u8);
             }
+        }
 
-            progress.add_complete(1);
-            image
-        })
+        image
     }
 }
 
