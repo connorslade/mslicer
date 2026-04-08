@@ -10,7 +10,7 @@ use crate::{
 };
 
 pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
-    ui.heading("Config");
+    ui.heading("Workspace");
 
     ui.horizontal_wrapped(|ui| {
         if ui

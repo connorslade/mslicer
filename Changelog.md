@@ -8,6 +8,7 @@
 - Allow dragging to reorder models in Models panel
 - Automatic support generation progress
 - Internal exposure test tool
+- Remote print preferred service ports
 
 ## v0.6.0 &mdash; March 23rd, 2026
 

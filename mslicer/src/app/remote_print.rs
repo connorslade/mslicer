@@ -1,6 +1,6 @@
 use std::{
     io::ErrorKind,
-    net::{IpAddr, SocketAddr, TcpListener, UdpSocket},
+    net::{IpAddr, Ipv4Addr, SocketAddr, SocketAddrV4, TcpListener, UdpSocket},
     str::FromStr,
     sync::Arc,
     thread::{self, JoinHandle},
@@ -48,7 +48,7 @@ struct Services {
 
     mqtt_port: u16,
     http_port: u16,
-    _udp_port: u16,
+    udp_port: u16,
 }
 
 pub struct Printer {
@@ -78,6 +78,10 @@ impl RemotePrint {
         self.printers.lock()
     }
 
+    pub fn ports(&self) -> Option<(u16, u16, u16)> {
+        (self.services.as_ref()).map(|s| (s.mqtt_port, s.http_port, s.udp_port))
+    }
+
     pub fn mqtt(&self) -> &Mqtt {
         &self.services.as_ref().unwrap().mqtt
     }
@@ -87,44 +91,13 @@ impl RemotePrint {
     }
 
     pub fn set_network_timeout(&self, timeout: Duration) {
-        let services = self.services.as_ref().unwrap();
-        services.udp.set_read_timeout(Some(timeout)).unwrap();
-    }
-
-    pub fn init(&mut self) -> Result<()> {
-        info!("Starting remote print services");
-
-        let mqtt_listener = TcpListener::bind("0.0.0.0:0")?;
-        let mqtt_port = mqtt_listener.local_addr()?.port();
-        let mqtt = Mqtt::new();
-        MqttServer::new(mqtt.clone()).start_async(mqtt_listener)?;
-
-        let http_listener = TcpListener::bind("0.0.0.0:0")?;
-        let http_port = http_listener.local_addr()?.port();
-        let http = HttpServer::new(http_listener, &mqtt);
-        http.start_async();
-
-        let udp = UdpSocket::bind("0.0.0.0:0")?;
-        udp.set_broadcast(true)?;
-        let _udp_port = udp.local_addr()?.port();
-
-        info!("Binds: {{ UDP: {_udp_port}, MQTT: {mqtt_port}, HTTP: {http_port} }}");
-
-        self.been_started = true;
-        self.services = Some(Arc::new(Services {
-            mqtt,
-            http,
-            udp,
-
-            mqtt_port,
-            http_port,
-            _udp_port,
-        }));
-
-        Ok(())
+        if let Some(services) = self.services.as_ref() {
+            services.udp.set_read_timeout(Some(timeout)).unwrap();
+        }
     }
 
     pub fn shutdown(&mut self) {
+        self.been_started = false;
         if let Some(services) = self.services.take() {
             info!("Shutting down remote print services");
             services.http.shutdown();
@@ -227,18 +200,63 @@ impl RemotePrint {
 }
 
 impl<'a> RemotePrintRef<'a> {
-    pub fn tick(&mut self) {
-        if !self.been_started
-            && !self.is_initialized()
-            && self.app.config.init_remote_print_at_startup
-        {
-            self.init().unwrap();
-            self.set_network_timeout(Duration::from_secs_f32(self.app.config.network_timeout));
+    pub fn init(&mut self) {
+        if let Err(e) = self._init() {
+            self.app.popup.open(Popup::simple(
+                "Failed to Start Remote Print",
+                PopupIcon::Error,
+                e.to_string(),
+            ));
+        }
+    }
 
+    fn _init(&mut self) -> Result<()> {
+        info!("Starting remote print services");
+        let addr = |port| SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, port);
+        let config = &self.app.config;
+
+        let mqtt_listener =
+            TcpListener::bind(addr(config.mqtt_port)).context("Failed to bind MQTT")?;
+        let mqtt_port = mqtt_listener.local_addr()?.port();
+        let mqtt = Mqtt::new();
+        MqttServer::new(mqtt.clone()).start_async(mqtt_listener)?;
+
+        let http_listener =
+            TcpListener::bind(addr(config.http_port)).context("Failed to bind HTTP")?;
+        let http_port = http_listener.local_addr()?.port();
+        let http = HttpServer::new(http_listener, &mqtt);
+        http.start_async();
+
+        let udp = UdpSocket::bind(addr(config.udp_port)).context("Failed to bind UDP")?;
+        udp.set_broadcast(true)?;
+        let _udp_port = udp.local_addr()?.port();
+
+        info!("Binds: {{ UDP: {_udp_port}, MQTT: {mqtt_port}, HTTP: {http_port} }}");
+
+        self.been_started = true;
+        self.services = Some(Arc::new(Services {
+            mqtt,
+            http,
+            udp,
+
+            mqtt_port,
+            http_port,
+            udp_port: _udp_port,
+        }));
+
+        Ok(())
+    }
+
+    pub fn tick(&mut self) {
+        if !self.is_initialized() && self.app.config.init_remote_print_at_startup {
+            self.init();
+        }
+
+        if !self.been_started && self.is_initialized() {
+            self.been_started = true;
+            self.set_network_timeout(Duration::from_secs_f32(self.app.config.network_timeout));
             let services = self.services.as_ref().unwrap();
-            services
-                .http
-                .set_proxy_enabled(self.app.config.http_status_proxy);
+            (services.http).set_proxy_enabled(self.app.config.http_status_proxy);
         }
 
         let mut i = 0;

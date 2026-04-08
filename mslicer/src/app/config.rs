@@ -36,6 +36,9 @@ pub struct Config {
     pub http_status_proxy: bool,
     pub network_timeout: f32,
     pub network_broadcast_address: IpAddr,
+    pub mqtt_port: u16,
+    pub http_port: u16,
+    pub udp_port: u16,
 
     // Advanced Settings
     pub render_style: RenderStyle,
@@ -115,6 +118,9 @@ impl Default for Config {
             http_status_proxy: false,
             network_timeout: 5.0,
             network_broadcast_address: IpAddr::V4(Ipv4Addr::new(192, 168, 1, 255)),
+            mqtt_port: 0,
+            http_port: 0,
+            udp_port: 0,
 
             render_style: RenderStyle::Rendered,
             projection: Projection::Perspective,

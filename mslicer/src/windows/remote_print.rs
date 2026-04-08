@@ -8,9 +8,10 @@ use chrono::DateTime;
 use common::{misc::human_duration, slice::Format, units::Miliseconds};
 use const_format::concatcp;
 use egui::{
-    Align, Context, DragValue, Grid, Layout, ProgressBar, Separator, Spinner, TextEdit, Ui, vec2,
+    Align, Context, DragValue, Grid, Layout, OutputCommand, ProgressBar, Separator, Spinner,
+    TextEdit, Ui, vec2,
 };
-use egui_phosphor::regular::{NETWORK, PLUGS, PRINTER, STOP, TRASH_SIMPLE, UPLOAD_SIMPLE};
+use egui_phosphor::regular::{COPY, NETWORK, PLUGS, PRINTER, STOP, TRASH_SIMPLE, UPLOAD_SIMPLE};
 use notify_rust::Notification;
 use remote_send::status::{FileTransferStatus, PrintInfoStatus};
 use rfd::FileDialog;
@@ -19,10 +20,13 @@ use tracing::info;
 use crate::{
     app::App,
     ui::{
+        components::grid,
         popup::{Popup, PopupIcon},
         state::RemotePrintConnectStatus,
     },
 };
+
+const PORTS_DESCRIPTION: &str = "The default service ports can be changed while remote print is disabled. Zero means a random port will be picked.";
 
 enum Action {
     None,
@@ -30,15 +34,15 @@ enum Action {
     UploadFile { mainboard_id: String },
 }
 
-pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
+pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
     if !app.remote_print.is_initialized() {
         ui.heading("Initialization");
-        ui.label("Remote print services have not been initialized. Because multiple network servers are required, this feature is disabled by default for security reasons.");
+        ui.label("Remote print services have not been initialized. This feature is disabled by default for security reasons.");
         ui.add_space(8.0);
 
         ui.vertical_centered(|ui| {
             if ui.button(concatcp!(NETWORK, " Initialize")).clicked() {
-                app.remote_print.init().unwrap();
+                app.remote_print().init();
                 app.remote_print
                     .set_network_timeout(Duration::from_secs_f32(app.config.network_timeout));
             }
@@ -288,57 +292,82 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
         }
     }
 
-    ui.add_space(16.0);
-    ui.heading("Config");
-
+    ui.add_space(8.0);
     if app.remote_print.is_initialized() {
-        if ui
-            .button(concatcp!(STOP, " Disable Remote Print"))
+        ui.button(concatcp!(STOP, " Disable Remote Print"))
             .clicked()
-        {
-            app.remote_print.shutdown();
-        }
+            .then(|| app.remote_print.shutdown());
         ui.add_space(8.0);
     }
 
-    ui.checkbox(
-        &mut app.config.alert_print_completion,
-        "Send toast on print complete",
-    );
+    ui.collapsing("Services", |ui| {
+        ui.label(PORTS_DESCRIPTION);
+        let initialized = app.remote_print.is_initialized();
 
-    ui.checkbox(
-        &mut app.config.init_remote_print_at_startup,
-        "Initialize remote print at startup",
-    );
+        let mut ports = app.remote_print.ports();
+        let (mqtt, http, udp) = if let Some(ports) = ports.as_mut() {
+            (&mut ports.0, &mut ports.1, &mut ports.2)
+        } else {
+            let cfg = &mut app.config;
+            (&mut cfg.mqtt_port, &mut cfg.http_port, &mut cfg.udp_port)
+        };
 
-    let last_status_proxy = app.config.http_status_proxy;
-    ui.checkbox(
-        &mut app.config.http_status_proxy,
-        "Enable HTTP status proxy",
-    );
-
-    if last_status_proxy != app.config.http_status_proxy {
-        app.remote_print
-            .http()
-            .set_proxy_enabled(app.config.http_status_proxy);
-    }
-
-    let last_timeout = app.config.network_timeout;
-    ui.horizontal(|ui| {
-        ui.add(
-            DragValue::new(&mut app.config.network_timeout)
-                .suffix("s")
-                .max_decimals(1)
-                .speed(0.1)
-                .range(0.1..=60.0),
-        );
-        ui.label("Network timeout");
+        ui.add_space(8.0);
+        grid("ports").show(ui, |ui| {
+            for (proto, port) in [("MQTT", mqtt), ("HTTP", http), ("UDP", udp)] {
+                ui.label(proto);
+                ui.horizontal(|ui| {
+                    ui.add_enabled(!initialized, DragValue::new(port));
+                    if initialized && ui.button(COPY).clicked() {
+                        ctx.send_cmd(OutputCommand::CopyText(port.to_string()));
+                    }
+                    ui.take_available_width();
+                });
+                ui.end_row();
+            }
+        });
     });
 
-    if app.remote_print.is_initialized() && last_timeout != app.config.network_timeout {
-        app.remote_print
-            .set_network_timeout(Duration::from_secs_f32(app.config.network_timeout));
-    }
+    ui.collapsing("Config", |ui| {
+        ui.checkbox(
+            &mut app.config.alert_print_completion,
+            "Send toast on print complete",
+        );
+
+        ui.checkbox(
+            &mut app.config.init_remote_print_at_startup,
+            "Initialize remote print at startup",
+        );
+
+        let last_status_proxy = app.config.http_status_proxy;
+        ui.checkbox(
+            &mut app.config.http_status_proxy,
+            "Enable HTTP status proxy",
+        );
+
+        if last_status_proxy != app.config.http_status_proxy {
+            app.remote_print
+                .http()
+                .set_proxy_enabled(app.config.http_status_proxy);
+        }
+
+        let last_timeout = app.config.network_timeout;
+        ui.horizontal(|ui| {
+            ui.add(
+                DragValue::new(&mut app.config.network_timeout)
+                    .suffix("s")
+                    .max_decimals(1)
+                    .speed(0.1)
+                    .range(0.1..=60.0),
+            );
+            ui.label("Network timeout");
+        });
+
+        if app.remote_print.is_initialized() && last_timeout != app.config.network_timeout {
+            app.remote_print
+                .set_network_timeout(Duration::from_secs_f32(app.config.network_timeout));
+        }
+    });
 }
 
 fn upload_file(app: &mut App, mainboard_id: String) {

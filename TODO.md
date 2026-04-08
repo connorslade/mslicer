@@ -63,7 +63,7 @@
 - [x] Make model loading async
 - [ ] Allow changing broadcast address
 - [x] Actually init remote print at startup if requested
-- [ ] Preferred service ports
+- [x] Preferred service ports
 - [x] Button to disable remote print services
 - [x] Check if files are removed from the file server after being downloaded once
 - [x] Don't allow adding the same printer multiple times
