@@ -36,7 +36,7 @@ pub struct RemotePrint {
     been_started: bool,
     services: Option<Arc<Services>>,
     printers: Arc<Mutex<Vec<Printer>>>,
-    jobs: Vec<AsyncJob>,
+    jobs: Vec<AsyncJob>, // todo: replace with task system
 }
 
 app_ref_type!(RemotePrint, remote_print);
@@ -126,7 +126,7 @@ impl RemotePrint {
         Ok(())
     }
 
-    pub fn scan_for_printers(&mut self, broadcast: IpAddr) {
+    pub fn scan_for_printers(&mut self, broadcast: Ipv4Addr) {
         self.jobs.push(AsyncJob::new(
             thread::spawn(clone!(
                 [{ self.printers } as printers, { self.services } as services],
@@ -326,12 +326,12 @@ fn add_printer(
 fn scan_for_printers(
     services: Arc<Services>,
     printers: Arc<Mutex<Vec<Printer>>>,
-    broadcast: IpAddr,
+    broadcast: Ipv4Addr,
 ) -> Result<()> {
     info!("Scanning for printers on {broadcast}");
     services
         .udp
-        .send_to(b"M99999", SocketAddr::new(broadcast, 3000))?;
+        .send_to(b"M99999", SocketAddr::new(broadcast.into(), 3000))?;
 
     let mut buffer = [0; 1024];
     loop {

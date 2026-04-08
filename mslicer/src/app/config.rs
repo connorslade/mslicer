@@ -1,6 +1,6 @@
 use std::{
     fs, iter,
-    net::{IpAddr, Ipv4Addr},
+    net::Ipv4Addr,
     path::{Path, PathBuf},
 };
 
@@ -46,7 +46,7 @@ pub struct RemotePrintConfig {
     pub init_at_startup: bool,
     pub status_proxy: bool,
     pub timeout: f32,
-    pub broadcast_address: IpAddr,
+    pub broadcast_address: Ipv4Addr,
     pub mqtt_port: u16,
     pub http_port: u16,
     pub udp_port: u16,
@@ -139,7 +139,7 @@ impl Default for RemotePrintConfig {
             init_at_startup: false,
             status_proxy: false,
             timeout: 5.0,
-            broadcast_address: IpAddr::V4(Ipv4Addr::new(192, 168, 1, 255)),
+            broadcast_address: Ipv4Addr::BROADCAST,
             mqtt_port: 0,
             http_port: 0,
             udp_port: 0,
