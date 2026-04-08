@@ -6,6 +6,8 @@
 - Allow clicking models in the viewport to select them
 - Rerender annotations when updated (island detection finishes)
 - Allow dragging to reorder models in Models panel
+- Automatic support generation progress
+- Internal exposure test tool
 
 ## v0.6.0 &mdash; March 23rd, 2026
 

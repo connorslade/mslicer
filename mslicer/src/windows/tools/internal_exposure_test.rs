@@ -10,13 +10,15 @@ use crate::{
     },
 };
 
+pub const DESCRIPTION: &str = "Generates a rectangular prism with a gradient of voxel vales inside. Intended for use with translucent resins.";
+
 pub fn open(app: &mut App) {
     app.popup
         .open(Popup::new("Internal Exposure Test", interface).close_button(true));
 }
 
 fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
-    ui.label("DESCRIPTION");
+    ui.label(DESCRIPTION);
     ui.add_space(8.0);
 
     let slicing = app.is_slicing();
