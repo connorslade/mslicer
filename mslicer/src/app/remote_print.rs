@@ -213,7 +213,7 @@ impl<'a> RemotePrintRef<'a> {
     fn _init(&mut self) -> Result<()> {
         info!("Starting remote print services");
         let addr = |port| SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, port);
-        let config = &self.app.config;
+        let config = &self.app.config.remote_print;
 
         let mqtt_listener =
             TcpListener::bind(addr(config.mqtt_port)).context("Failed to bind MQTT")?;
@@ -248,15 +248,17 @@ impl<'a> RemotePrintRef<'a> {
     }
 
     pub fn tick(&mut self) {
-        if !self.is_initialized() && self.app.config.init_remote_print_at_startup {
+        if !self.is_initialized() && self.app.config.remote_print.init_at_startup {
             self.init();
         }
 
         if !self.been_started && self.is_initialized() {
             self.been_started = true;
-            self.set_network_timeout(Duration::from_secs_f32(self.app.config.network_timeout));
+
+            let config = &self.app.config.remote_print;
             let services = self.services.as_ref().unwrap();
-            (services.http).set_proxy_enabled(self.app.config.http_status_proxy);
+            self.set_network_timeout(Duration::from_secs_f32(config.timeout));
+            services.http.set_proxy_enabled(config.status_proxy);
         }
 
         let mut i = 0;

@@ -30,22 +30,26 @@ pub struct Config {
     pub tasks: bool,
     pub default_slice_config: SliceConfig,
 
-    // Remote print settings
-    pub alert_print_completion: bool,
-    pub init_remote_print_at_startup: bool,
-    pub http_status_proxy: bool,
-    pub network_timeout: f32,
-    pub network_broadcast_address: IpAddr,
-    pub mqtt_port: u16,
-    pub http_port: u16,
-    pub udp_port: u16,
+    pub remote_print: RemotePrintConfig,
 
-    // Advanced Settings
     pub render_style: RenderStyle,
     pub projection: Projection,
     pub show_normals: bool,
     pub max_buffer_size: u64,
     pub printers: Vec<PrinterDefaults>,
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+#[serde(default)]
+pub struct RemotePrintConfig {
+    pub alert_completion: bool,
+    pub init_at_startup: bool,
+    pub status_proxy: bool,
+    pub timeout: f32,
+    pub broadcast_address: IpAddr,
+    pub mqtt_port: u16,
+    pub http_port: u16,
+    pub udp_port: u16,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -113,14 +117,7 @@ impl Default for Config {
             about: true,
             tasks: false,
 
-            alert_print_completion: false,
-            init_remote_print_at_startup: false,
-            http_status_proxy: false,
-            network_timeout: 5.0,
-            network_broadcast_address: IpAddr::V4(Ipv4Addr::new(192, 168, 1, 255)),
-            mqtt_port: 0,
-            http_port: 0,
-            udp_port: 0,
+            remote_print: Default::default(),
 
             render_style: RenderStyle::Rendered,
             projection: Projection::Perspective,
@@ -131,6 +128,21 @@ impl Default for Config {
                 resolution: Vector2::new(11_520, 5_120),
                 size: Vector3::new(218.88, 122.904, 260.0).map(Milimeters::new),
             }],
+        }
+    }
+}
+
+impl Default for RemotePrintConfig {
+    fn default() -> Self {
+        Self {
+            alert_completion: false,
+            init_at_startup: false,
+            status_proxy: false,
+            timeout: 5.0,
+            broadcast_address: IpAddr::V4(Ipv4Addr::new(192, 168, 1, 255)),
+            mqtt_port: 0,
+            http_port: 0,
+            udp_port: 0,
         }
     }
 }

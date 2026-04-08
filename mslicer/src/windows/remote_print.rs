@@ -43,8 +43,9 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
         ui.vertical_centered(|ui| {
             if ui.button(concatcp!(NETWORK, " Initialize")).clicked() {
                 app.remote_print().init();
-                app.remote_print
-                    .set_network_timeout(Duration::from_secs_f32(app.config.network_timeout));
+
+                let timeout = Duration::from_secs_f32(app.config.remote_print.timeout);
+                app.remote_print.set_network_timeout(timeout); // todo: move into init function
             }
         });
     } else {
@@ -132,7 +133,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
                     ui.label(format!("in {print_time}"));
                 });
 
-                if app.config.alert_print_completion && !app.state.send_print_completion {
+                if app.config.remote_print.alert_completion && !app.state.send_print_completion {
                     app.state.send_print_completion = true;
                     Notification::new()
                         .summary("Print Complete")
@@ -250,7 +251,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
                     if scan.clicked() {
                         app.state.remote_print_connecting = RemotePrintConnectStatus::Scanning;
                         app.remote_print
-                            .scan_for_printers(app.config.network_broadcast_address);
+                            .scan_for_printers(app.config.remote_print.broadcast_address);
                     }
 
                     ui.add_sized(vec2(2.0, height), Separator::default());
@@ -308,7 +309,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
         let (mqtt, http, udp) = if let Some(ports) = ports.as_mut() {
             (&mut ports.0, &mut ports.1, &mut ports.2)
         } else {
-            let cfg = &mut app.config;
+            let cfg = &mut app.config.remote_print;
             (&mut cfg.mqtt_port, &mut cfg.http_port, &mut cfg.udp_port)
         };
 
@@ -329,32 +330,26 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
     });
 
     ui.collapsing("Config", |ui| {
-        ui.checkbox(
-            &mut app.config.alert_print_completion,
-            "Send toast on print complete",
-        );
+        let config = &mut app.config.remote_print;
+
+        ui.checkbox(&mut config.alert_completion, "Send toast on print complete");
 
         ui.checkbox(
-            &mut app.config.init_remote_print_at_startup,
+            &mut config.init_at_startup,
             "Initialize remote print at startup",
         );
 
-        let last_status_proxy = app.config.http_status_proxy;
-        ui.checkbox(
-            &mut app.config.http_status_proxy,
-            "Enable HTTP status proxy",
-        );
+        let last_status_proxy = config.status_proxy;
+        ui.checkbox(&mut config.status_proxy, "Enable HTTP status proxy");
 
-        if last_status_proxy != app.config.http_status_proxy {
-            app.remote_print
-                .http()
-                .set_proxy_enabled(app.config.http_status_proxy);
+        if last_status_proxy != config.status_proxy {
+            (app.remote_print.http()).set_proxy_enabled(config.status_proxy);
         }
 
-        let last_timeout = app.config.network_timeout;
+        let last_timeout = config.timeout;
         ui.horizontal(|ui| {
             ui.add(
-                DragValue::new(&mut app.config.network_timeout)
+                DragValue::new(&mut config.timeout)
                     .suffix("s")
                     .max_decimals(1)
                     .speed(0.1)
@@ -363,9 +358,9 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
             ui.label("Network timeout");
         });
 
-        if app.remote_print.is_initialized() && last_timeout != app.config.network_timeout {
+        if app.remote_print.is_initialized() && last_timeout != config.timeout {
             app.remote_print
-                .set_network_timeout(Duration::from_secs_f32(app.config.network_timeout));
+                .set_network_timeout(Duration::from_secs_f32(config.timeout));
         }
     });
 }
