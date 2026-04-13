@@ -1,4 +1,4 @@
-use nalgebra::Vector3;
+use nalgebra::{Vector2, Vector3};
 
 use crate::{geometry::triangle::plane_triangle_intersection, mesh::Mesh};
 
@@ -20,9 +20,7 @@ impl Segments1D {
         let (min, max) = mesh.bounds();
 
         // Caching transformed points makes slicing faster.
-        let transformed_points = mesh
-            .vertices()
-            .iter()
+        let transformed_points = (mesh.vertices().iter())
             .map(|x| mesh.transform(x))
             .collect::<Vec<_>>();
 
@@ -54,7 +52,7 @@ impl Segments1D {
 
     /// Intersects a plane with the mesh this Segments instance was built with.
     /// Returns a list of line segments along with the direction of the face (left or right).
-    pub fn intersect_plane(&self, mesh: &Mesh, height: f32) -> Vec<([Vector3<f32>; 2], bool)> {
+    pub fn intersect_plane(&self, mesh: &Mesh, height: f32) -> Vec<([Vector2<f32>; 2], bool)> {
         let mut out = Vec::new();
 
         let layer = (height - self.start_height) / self.layer_height;

@@ -20,6 +20,7 @@ use crate::{
     slicer::{SEGMENT_LAYERS, Slicer},
 };
 
+// separate-encoding-todo: add vector support back!
 pub struct SvgFile {
     layers: Vec<VectorLayer>,
     area: Vector2<u32>,

@@ -1,28 +1,27 @@
 // Uses an Active Edge Table (AET) for faster filling.
 // Reference: https://www.cs.rit.edu/~icss571/filling/how_to.html
 
-use std::{
-    collections::VecDeque,
-    sync::atomic::{AtomicU64, Ordering},
-};
+use std::collections::VecDeque;
 
 use common::{container::Run, slice::Layer, units::Milimeter};
 use itertools::Itertools;
-use nalgebra::{Vector2, Vector3};
+use nalgebra::Vector2;
 use ordered_float::OrderedFloat;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
 use crate::{
     geometry::Segments1D,
+    post_process::downsample::downsample_adjacent,
     slicer::{SEGMENT_LAYERS, Slicer},
 };
 
 impl Slicer {
     /// Actually runs the slicing operation, it is multithreaded.
     pub fn slice_raster(&self) -> Vec<Layer> {
-        let platform = self.slice_config.platform_resolution;
+        let supersample = self.slice_config.supersample_factor();
+        let platform = (self.slice_config.platform_resolution)
+            .component_mul(&Vector2::new(supersample as u32, 1));
         let pixels = (platform.x * platform.y) as u64;
-        let voxels = AtomicU64::new(0);
 
         // A segment contains a reference to all of the triangles it contains. By
         // splitting the mesh into segments, not all triangles need to be tested
@@ -36,7 +35,6 @@ impl Slicer {
             .into_par_iter()
             .map(|layer| {
                 let height = layer as f32 * self.slice_config.slice_height.get::<Milimeter>();
-                let mut voxels_inner = 0;
 
                 // Gets all the intersections between the slice plane and the
                 // model. Because all the faces are triangles, every triangle
@@ -44,7 +42,17 @@ impl Slicer {
                 // interpreted as line segments making up a polygon.
                 let segments = self.models.iter().enumerate().flat_map(|(idx, model)| {
                     let intersections = segments[idx].intersect_plane(&model.mesh, height);
-                    (intersections.into_iter()).map(|segment| (segment, model.exposure))
+                    (intersections.into_iter()).map(|segment| {
+                        (
+                            (
+                                segment.0.map(|x| {
+                                    x.component_mul(&Vector2::new(supersample as f32, 1.0))
+                                }),
+                                segment.1,
+                            ),
+                            model.exposure,
+                        )
+                    })
                 });
                 let mut edges = global_edge_table(segments);
 
@@ -74,8 +82,6 @@ impl Slicer {
 
                             let exposure = exposures.iter().rposition(|&x| x > 0).unwrap_or(255);
                             runs.push(Run::new(length, exposure as u8));
-
-                            voxels_inner += length;
                             last = start + length;
                         }
                     }
@@ -90,9 +96,8 @@ impl Slicer {
                 (last < pixels).then(|| runs.push(Run::new(pixels - last, 0)));
 
                 // Finished encoding the layer
-                voxels.fetch_add(voxels_inner, Ordering::Relaxed);
                 Layer {
-                    data: runs,
+                    data: downsample_adjacent(supersample, runs.into()),
                     exposure: self.slice_config.exposure_config(layer).clone(),
                 }
             })
@@ -122,7 +127,7 @@ struct ActiveEdge {
 }
 
 fn global_edge_table(
-    segments: impl Iterator<Item = (([Vector3<f32>; 2], bool), u8)>,
+    segments: impl Iterator<Item = (([Vector2<f32>; 2], bool), u8)>,
 ) -> VecDeque<Edge> {
     let mut edges = Vec::new();
     for ((pos, direction), exposure) in segments {
@@ -135,7 +140,7 @@ fn global_edge_table(
         }
 
         edges.push(Edge {
-            min: pos[(pos[0].y >= pos[1].y) as usize].xy(),
+            min: pos[(pos[0].y >= pos[1].y) as usize],
             y_max: pos[0].y.max(pos[1].y),
             inv_slope: dx / dy,
             direction,

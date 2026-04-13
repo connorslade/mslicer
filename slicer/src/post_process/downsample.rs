@@ -34,7 +34,9 @@ impl Downsample {
     }
 }
 
-fn downsample_adjacent(factor: u8, mut runs: VecDeque<Run>) -> Vec<Run> {
+pub fn downsample_adjacent(factor: u8, mut runs: VecDeque<Run>) -> Vec<Run> {
+    assert!(runs.iter().map(|x| x.length).sum::<u64>() % factor as u64 == 0);
+
     let factor = factor as u64;
     let mut out = Vec::new();
 
@@ -52,12 +54,12 @@ fn downsample_adjacent(factor: u8, mut runs: VecDeque<Run>) -> Vec<Run> {
         // if not a clean split, we will need to do some averaging
         let mut interp = remaining * run.value as u64;
         while remaining > 0 {
-            let length = factor - remaining;
-
             // try to complete remaining by pulling from next run
             let next = runs.front_mut().unwrap();
+            let length = (factor - remaining).min(next.length);
+
             interp += length * next.value as u64;
-            next.length = next.length.saturating_sub(length);
+            next.length -= length;
             (next.length == 0).then(|| runs.pop_front());
 
             remaining += length;
