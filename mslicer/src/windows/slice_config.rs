@@ -2,17 +2,15 @@ use const_format::concatcp;
 use egui::{ComboBox, Context, DragValue, Grid, Ui, Widget};
 use egui_extras::{Column, TableBuilder};
 use egui_phosphor::regular::{ARROW_COUNTER_CLOCKWISE, INFO, NOTE_PENCIL, WARNING};
-use slicer::post_process::{anti_alias::AntiAlias, elephant_foot_fixer::ElephantFootFixer};
+use slicer::post_process::elephant_foot_fixer::ElephantFootFixer;
 
-use crate::{
-    app::App,
-    ui::components::{dragger, vec2_dragger},
-};
+use crate::{app::App, ui::components::vec2_dragger};
 use common::{
     slice::{ExposureConfig, Format},
     units::{Milimeter, Minute, Mircometer},
 };
 
+const ANTI_ALIAS_TOOLTIP: &str = "Uses supersampling anti-aliasing (SSAA) to pick grayscale values that more accurately represent the model being sliced.";
 const TRANSITION_LAYER_TOOLTIP: &str = "Transition layers interpolate between the first exposure settings and the normal exposure settings.";
 const SLICE_FORMAT_TOOLTIP: &str =
     "Only .goo and .ctb files can be sent with the 'Remote Print' module.";
@@ -118,6 +116,20 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
             });
             ui.end_row();
 
+            ui.horizontal(|ui| {
+                ui.label("Anti-aliasing");
+                ui.label(INFO).on_hover_text(ANTI_ALIAS_TOOLTIP);
+            });
+            ui.horizontal(|ui| {
+                DragValue::new(&mut slice_config.supersample)
+                    .custom_formatter(|val, _| (1 << val as u8).to_string())
+                    .custom_parser(|val| val.parse::<u8>().ok().map(|x| x.ilog2() as f64))
+                    .suffix("×")
+                    .speed(0.1)
+                    .range(0..=4)
+                    .ui(ui);
+            });
+
             ui.label("First Layers");
             DragValue::new(&mut slice_config.first_layers).ui(ui);
             ui.end_row();
@@ -148,9 +160,6 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     ui.add_space(8.0);
 
     let post_processing = &mut app.project.post_processing;
-    ui.collapsing("Anti Alias", |ui| {
-        anti_alias(&mut post_processing.anti_alias, ui)
-    });
     ui.collapsing("Elephant Foot Fixer", |ui| {
         elephant_foot_fixer(&mut post_processing.elephant_foot_fixer, ui)
     });
@@ -243,16 +252,6 @@ fn exposure_config(ui: &mut Ui, config: &mut ExposureConfig) {
                 });
             });
         });
-}
-
-pub fn anti_alias(this: &mut AntiAlias, ui: &mut Ui) {
-    ui.label("Applies a blur to each layer to smooth the edges.");
-    ui.checkbox(&mut this.enabled, "Enabled");
-
-    ui.add_space(8.0);
-    dragger(ui, "Radius", &mut this.radius, |x| {
-        x.speed(0.1).range(0.1..=10.0)
-    });
 }
 
 pub fn elephant_foot_fixer(this: &mut ElephantFootFixer, ui: &mut Ui) {

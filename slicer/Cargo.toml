@@ -25,7 +25,6 @@ const_format.workspace = true
 image.workspace = true
 imageproc.workspace = true
 itertools.workspace = true
-libblur.workspace = true
 nalgebra.workspace = true
 ordered-float.workspace = true
 parking_lot.workspace = true

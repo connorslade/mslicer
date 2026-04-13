@@ -83,8 +83,8 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                         });
 
                         if ui.button(concatcp!(FLOPPY_DISK_BACK, " Save")).clicked() {
-                            // todo: no longer has to be RCed
-                            // todo: move the .file call into the async task??
+                            // separate-encoding-todo: no longer has to be RCed
+                            // separate-encoding-todo: move the .file call into the async task??
                             let file = Arc::new(result.file(&slice_operation.preview_image()));
                             let task = FileDialog::save_file(
                                 (format.name(), &[format.extension()]),

@@ -14,6 +14,7 @@ use crate::{
 #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct SliceConfig {
     pub format: Format,
+    pub supersample: u8,
 
     pub platform_resolution: Vector2<u32>,
     pub platform_size: Vector3<Milimeters>,
@@ -54,6 +55,10 @@ impl SliceConfig {
         x * y
     }
 
+    pub fn supersample_factor(&self) -> u8 {
+        1 << self.supersample
+    }
+
     pub fn voxel_volume(&self) -> CubicMilimeters {
         self.pixel_area() * self.slice_height
     }
@@ -90,6 +95,7 @@ impl Default for SliceConfig {
     fn default() -> Self {
         Self {
             format: Format::Ctb,
+            supersample: 1,
 
             platform_resolution: Vector2::new(11_520, 5_120),
             platform_size: Vector3::new(218.88, 122.904, 260.0).map(Milimeters::new),
@@ -126,6 +132,7 @@ impl Default for ExposureConfig {
 impl SliceConfig {
     pub fn serialize<T: Serializer>(&self, ser: &mut T) {
         self.format.serialize(ser);
+        ser.write_u8(self.supersample);
         self.platform_resolution.serialize(ser);
         self.platform_size.map(|x| x.raw()).serialize(ser);
         ser.write_f32_be(self.slice_height.raw());
@@ -138,6 +145,7 @@ impl SliceConfig {
     pub fn deserialize<T: Deserializer>(des: &mut T, version: u16) -> Result<Self> {
         Ok(Self {
             format: Format::deserialize(des)?,
+            supersample: if version < 5 { 1 } else { des.read_u8() },
             platform_resolution: Vector2::deserialize(des),
             platform_size: Vector3::deserialize(des).map(Milimeters::new),
             slice_height: Milimeters::new(des.read_f32_be()),

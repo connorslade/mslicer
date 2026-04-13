@@ -8,7 +8,7 @@ use common::{
     progress::CombinedProgress,
     slice::{DynSlicedFile, SliceConfig},
 };
-use slicer::post_process::{anti_alias::AntiAlias, elephant_foot_fixer::ElephantFootFixer};
+use slicer::post_process::elephant_foot_fixer::ElephantFootFixer;
 
 pub mod model;
 pub mod storage;
@@ -23,7 +23,6 @@ pub struct Project {
 
 #[derive(Default, Clone)]
 pub struct PostProcessing {
-    pub anti_alias: AntiAlias,
     pub elephant_foot_fixer: ElephantFootFixer,
 }
 
@@ -71,9 +70,9 @@ impl Project {
 }
 
 impl PostProcessing {
+    // separate-encoding-todo: call this!!!
     pub fn process(&self, file: &mut DynSlicedFile, progress: CombinedProgress<2>) {
         self.elephant_foot_fixer
             .post_slice(file, progress[0].clone());
-        self.anti_alias.post_slice(file, progress[1].clone());
     }
 }
