@@ -1,7 +1,8 @@
 use std::sync::Arc;
 
 use clone_macro::clone;
-use common::{progress::Progress, slice::DynSlicedFile};
+use common::{progress::Progress, slice::Layer};
+use nalgebra::Vector2;
 use slicer::post_process::island_detection::detect_islands;
 
 use crate::app::{
@@ -15,11 +16,15 @@ pub struct IslandDetection {
 }
 
 impl IslandDetection {
-    pub fn new(file: Arc<DynSlicedFile>, annotations: Arc<Annotations>) -> Self {
+    pub fn new(
+        resolution: Vector2<u32>,
+        layers: Arc<Vec<Layer>>,
+        annotations: Arc<Annotations>,
+    ) -> Self {
         let progress = Progress::new();
         Self {
-            handle: TaskThread::spawn(clone!([file, progress], move || {
-                let islands = detect_islands(&file, progress, true);
+            handle: TaskThread::spawn(clone!([layers, progress], move || {
+                let islands = detect_islands(resolution, &layers, progress, true);
 
                 let mut annotations = annotations.lock();
                 for (layer, runs) in islands

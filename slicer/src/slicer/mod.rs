@@ -1,9 +1,6 @@
-use common::{
-    progress::Progress,
-    slice::{DynSlicedFile, Format, SliceConfig},
-};
+use common::{progress::Progress, slice::SliceConfig};
 
-use crate::{mesh::Mesh, slicer::slice_vector::SvgFile};
+use crate::mesh::Mesh;
 
 mod slice_raster;
 mod slice_vector;
@@ -12,7 +9,7 @@ const SEGMENT_LAYERS: usize = 100;
 
 /// Used to slice a mesh.
 pub struct Slicer {
-    slice_config: SliceConfig,
+    pub slice_config: SliceConfig,
     models: Vec<SlicerModel>,
 
     layers: u32,
@@ -49,10 +46,6 @@ impl Slicer {
         }
     }
 
-    pub fn slice_config(&self) -> &SliceConfig {
-        &self.slice_config
-    }
-
     pub fn layer_count(&self) -> u32 {
         self.layers
     }
@@ -60,29 +53,5 @@ impl Slicer {
     /// Gets an instance of the slicing [`Progress`] struct.
     pub fn progress(&self) -> Progress {
         self.progress.clone()
-    }
-
-    pub fn slice(&self) -> (DynSlicedFile, u64) {
-        match self.slice_config.format {
-            Format::Goo => {
-                let result = self.slice_raster::<goo_format::LayerEncoder>();
-                let voxels = result.voxels;
-                let file = Box::new(goo_format::File::from_slice_result(result));
-                (file, voxels)
-            }
-            Format::Ctb => {
-                let result = self.slice_raster::<ctb_format::LayerEncoder>();
-                let voxels = result.voxels;
-                let file = Box::new(ctb_format::File::from_slice_result(result));
-                (file, voxels)
-            }
-            Format::NanoDLP => {
-                let result = self.slice_raster::<nanodlp_format::LayerEncoder>();
-                let voxels = result.voxels;
-                let file = Box::new(nanodlp_format::File::from_slice_result(result));
-                (file, voxels)
-            }
-            Format::Svg => (Box::new(SvgFile::new(self.slice_vector())), 0),
-        }
     }
 }

@@ -18,7 +18,6 @@ macro_rules! generator_tool {
         use nalgebra::Vector2;
 
         use common::progress::{CombinedProgress, Progress};
-        use slicer::util::export;
         use $crate::{app::slice_operation::SliceOperation, windows::Tab};
 
         let config = $app.project.slice_config.clone();
@@ -27,9 +26,8 @@ macro_rules! generator_tool {
         let tool = $tool.clone();
 
         std::thread::spawn(clone!([operation], move || {
-            let mut file = export(&config, tool.generate(&config, &operation.progress));
-            file.0.set_preview(&operation.preview_image());
-            operation.add_result(&config, file);
+            let layers = tool.generate(&config, &operation.progress);
+            operation.add_result(config, layers);
         }));
         $app.slice_operation.replace(operation);
         $app.panels

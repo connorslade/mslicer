@@ -48,7 +48,7 @@ pub trait EncodableLayer {
 
     fn new(platform: Vector2<u32>) -> Self;
     fn add_run(&mut self, length: u64, value: u8);
-    fn finish(self, layer: u32, config: &SliceConfig) -> Self::Output;
+    fn finish(self, layer: u32, config: &SliceConfig, exposure: &ExposureConfig) -> Self::Output;
 }
 
 /// Format agnostic sliced file info.
@@ -59,13 +59,9 @@ pub struct SliceInfo {
     pub bottom_layers: u32,
 }
 
-/// Output of a slicing operations, contains layers and slice config.
-///
-/// To be use with `File::from_slice_result`.
-pub struct SliceResult<'a, Layer> {
-    pub layers: Vec<Layer>,
-    pub voxels: u64,
-    pub slice_config: &'a SliceConfig,
+pub struct Layer {
+    pub data: Vec<Run>,
+    pub exposure: ExposureConfig,
 }
 
 pub type Polygon = Vec<Vector2<f32>>;

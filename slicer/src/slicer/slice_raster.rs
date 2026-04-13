@@ -6,10 +6,7 @@ use std::{
     sync::atomic::{AtomicU64, Ordering},
 };
 
-use common::{
-    slice::{EncodableLayer, SliceResult},
-    units::Milimeter,
-};
+use common::{container::Run, slice::Layer, units::Milimeter};
 use itertools::Itertools;
 use nalgebra::{Vector2, Vector3};
 use ordered_float::OrderedFloat;
@@ -22,7 +19,7 @@ use crate::{
 
 impl Slicer {
     /// Actually runs the slicing operation, it is multithreaded.
-    pub fn slice_raster<Layer: EncodableLayer>(&self) -> SliceResult<'_, Layer::Output> {
+    pub fn slice_raster(&self) -> Vec<Layer> {
         let platform = self.slice_config.platform_resolution;
         let pixels = (platform.x * platform.y) as u64;
         let voxels = AtomicU64::new(0);
@@ -35,7 +32,7 @@ impl Slicer {
             .map(|model| Segments1D::from_mesh(&model.mesh, SEGMENT_LAYERS))
             .collect::<Vec<_>>();
 
-        let layers = (0..self.layers)
+        (0..self.layers)
             .into_par_iter()
             .map(|layer| {
                 let height = layer as f32 * self.slice_config.slice_height.get::<Milimeter>();
@@ -51,13 +48,7 @@ impl Slicer {
                 });
                 let mut edges = global_edge_table(segments);
 
-                // Creates a new encoded for this layer. Because printers can
-                // have very high resolution displays, the uncompressed data for
-                // a sliced model can easily be over 30 Gigabytes. Most formats
-                // use some sort of compression scheme to resolve this issue, so
-                // to use a little memory as needed, the layers are compressed
-                // as they are made.
-                let mut encoder = Layer::new(platform);
+                let mut runs = Vec::new();
                 let mut last = 0;
 
                 let mut active = Vec::new();
@@ -79,10 +70,10 @@ impl Slicer {
                         let [a, b] = [a.x, b.x].map(|x| (x.round() as u64).min(platform.x as u64));
                         if depth != 0 && b != a {
                             let (start, length) = (a + y_offset, b - a);
-                            (start > last).then(|| encoder.add_run(start - last, 0));
+                            (start > last).then(|| runs.push(Run::new(start - last, 0)));
 
                             let exposure = exposures.iter().rposition(|&x| x > 0).unwrap_or(255);
-                            encoder.add_run(length, exposure as u8);
+                            runs.push(Run::new(length, exposure as u8));
 
                             voxels_inner += length;
                             last = start + length;
@@ -96,21 +87,17 @@ impl Slicer {
                 // decoded into is just uninitialized memory. So if the last run
                 // doesn't fill the buffer, the printer will just print whatever
                 // was in the buffer before which just makes a huge mess.
-                (last < pixels).then(|| encoder.add_run(pixels - last, 0));
+                (last < pixels).then(|| runs.push(Run::new(pixels - last, 0)));
 
                 // Finished encoding the layer
                 voxels.fetch_add(voxels_inner, Ordering::Relaxed);
-                encoder.finish(layer, &self.slice_config)
+                Layer {
+                    data: runs,
+                    exposure: self.slice_config.exposure_config(layer).clone(),
+                }
             })
             .inspect(|_| self.progress.add_complete(1))
-            .collect::<Vec<_>>();
-
-        self.progress.set_finished();
-        SliceResult {
-            layers,
-            voxels: voxels.load(Ordering::Relaxed),
-            slice_config: &self.slice_config,
-        }
+            .collect::<Vec<_>>()
     }
 }
 

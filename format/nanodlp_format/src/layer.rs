@@ -7,7 +7,7 @@ use common::{
         },
     },
     serde::DynamicSerializer,
-    slice::{EncodableLayer, SliceConfig},
+    slice::{EncodableLayer, ExposureConfig, SliceConfig},
     units::Milimeters,
 };
 use image::{GrayImage, RgbImage};
@@ -71,7 +71,7 @@ impl EncodableLayer for LayerEncoder {
         self.runs.push(Run { length, value });
     }
 
-    fn finish(self, _layer: u32, config: &SliceConfig) -> Self::Output {
+    fn finish(self, _layer: u32, config: &SliceConfig, _exposure: &ExposureConfig) -> Self::Output {
         let nonzero = rle::bits::from_runs(&self.runs);
         let chunks = rle::bits::chunks(&nonzero, config.platform_resolution.x as u64);
 

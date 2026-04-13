@@ -202,13 +202,11 @@ impl App {
             ],
             move || {
                 let slice_operation = slice_operation.as_ref().unwrap();
-                let (mut file, voxels) = slicer.slice();
+                let layers = slicer.slice_raster();
 
-                post_processing.process(&mut file, post_process);
-                file.set_preview(&slice_operation.preview_image());
+                // post_processing.process(&mut file, post_process);
 
-                let config = slicer.slice_config();
-                slice_operation.add_result(config, (file, voxels));
+                slice_operation.add_result(slicer.slice_config, layers);
             }
         ));
     }

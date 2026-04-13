@@ -8,7 +8,7 @@ use common::{
     container::{Image, Run},
     progress::Progress,
     serde::{DynamicSerializer, Serializer},
-    slice::{Format, SliceInfo, SliceResult, SlicedFile},
+    slice::{Format, SliceConfig, SliceInfo, SlicedFile},
 };
 use image::{DynamicImage, RgbaImage};
 use nalgebra::{Vector2, Vector3};
@@ -37,11 +37,10 @@ pub struct File {
 }
 
 impl File {
-    pub fn from_slice_result(result: SliceResult<Layer>) -> Self {
+    pub fn from_layers(config: &SliceConfig, layers: Vec<Layer>, voxels: u64) -> Self {
         let (layers, layer_info): (Vec<_>, Vec<_>) =
-            result.layers.into_iter().map(|x| (x.inner, x.info)).unzip();
+            layers.into_iter().map(|x| (x.inner, x.info)).unzip();
 
-        let config = result.slice_config;
         let pixel_size = Vector2::new(
             config.platform_size.x / config.platform_resolution.x as f32,
             config.platform_size.y / config.platform_resolution.y as f32,
@@ -55,7 +54,7 @@ impl File {
             meta: Default::default(),
             plate: Plate {
                 processed: true,
-                total_solid_area: voxel_volume.convert() * result.voxels as f32,
+                total_solid_area: voxel_volume.convert() * voxels as f32,
                 layers_count: layers.len() as u32,
                 x_min: min.x,
                 x_max: max.x,

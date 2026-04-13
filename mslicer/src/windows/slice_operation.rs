@@ -22,8 +22,8 @@ use crate::{
     ui::popup::Popup,
 };
 use common::{
-    misc::human_duration, progress::Progress, serde::DynamicSerializer, slice::Format,
-    units::Centimeter,
+    container::rle, misc::human_duration, progress::Progress, serde::DynamicSerializer,
+    slice::Format, units::Centimeter,
 };
 
 const FILENAME_POPUP_TEXT: &str =
@@ -36,7 +36,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
         let progress = &slice_operation.progress;
 
         if let Some(result) = slice_operation.result().as_mut() {
-            let format = result.file.format();
+            let format = app.project.slice_config.format;
 
             ui.horizontal(|ui| {
                 ui.label(format!("Slicing completed in {}!", result.completion()));
@@ -69,7 +69,9 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                                         );
 
                                     let mut serializer = DynamicSerializer::new();
-                                    result.file.serialize(&mut serializer, Progress::new());
+                                    result
+                                        .file(&slice_operation.preview_image())
+                                        .serialize(&mut serializer, Progress::new());
                                     let data = Arc::new(serializer.into_inner());
 
                                     let mainboard_id = printer.mainboard_id.clone();
@@ -81,7 +83,9 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                         });
 
                         if ui.button(concatcp!(FLOPPY_DISK_BACK, " Save")).clicked() {
-                            let file = result.file.clone();
+                            // todo: no longer has to be RCed
+                            // todo: move the .file call into the async task??
+                            let file = Arc::new(result.file(&slice_operation.preview_image()));
                             let task = FileDialog::save_file(
                                 (format.name(), &[format.extension()]),
                                 move |_app, path, tasks| {
@@ -107,7 +111,8 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                             {
                                 result.detected_islands = true;
                                 app.tasks.add(IslandDetection::new(
-                                    result.file.clone(),
+                                    result.config.platform_resolution,
+                                    result.layers.clone(),
                                     result.annotations.clone(),
                                 ));
                             }
@@ -129,7 +134,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                         let layer_digits = result.layer_count.1 as usize;
                         ui.add(
                             DragValue::new(&mut result.slice_preview_layer)
-                                .range(1..=result.file.info().layers)
+                                .range(1..=result.layer_count.0)
                                 .custom_formatter(|n, _| {
                                     format!("{:0>layer_digits$}/{}", n, result.layer_count.0)
                                 }),
@@ -193,15 +198,13 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
 }
 
 fn slice_preview(ui: &mut egui::Ui, result: &mut SliceResult) {
-    let info = result.file.info();
-
     ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
         layer_slider(ui, result);
 
         let available_size = ui.available_size() - Vec2::new(5.0, 5.0);
-        let (width, height) = (info.resolution.x, info.resolution.y);
+        let [width, height] = *result.config.platform_resolution.as_ref();
 
-        result.slice_preview_layer = result.slice_preview_layer.clamp(1, info.layers as usize);
+        result.slice_preview_layer = result.slice_preview_layer.clamp(1, result.layer_count.0);
         let new_preview = if result.last_preview_layer != result.slice_preview_layer
             || result.annotations.take_updated()
         {
@@ -210,7 +213,7 @@ fn slice_preview(ui: &mut egui::Ui, result: &mut SliceResult) {
 
             let mut layer = vec![0u8; size];
             let layer_idx = result.slice_preview_layer - 1;
-            result.file.decode_layer(layer_idx, &mut layer);
+            rle::decode_into(result.layers[layer_idx].data.iter(), &mut layer);
 
             let mut layer_annotations = vec![0u8; size];
             (result.annotations.lock()).decode_layer(layer_idx, &mut layer_annotations);
@@ -238,7 +241,8 @@ fn slice_preview(ui: &mut egui::Ui, result: &mut SliceResult) {
                 if let Some(pointer) = response.hover_pos()
                     && rect.contains(pointer)
                 {
-                    let dimensions = Vec2::new(info.resolution.x as f32, info.resolution.y as f32);
+                    let dimensions = result.config.platform_resolution;
+                    let dimensions = Vec2::new(dimensions.x as f32, dimensions.y as f32);
                     let aspect = rect.width() / rect.height() * dimensions.y / dimensions.x;
 
                     let scroll = ui.input(|x| x.smooth_scroll_delta);
@@ -258,7 +262,7 @@ fn slice_preview(ui: &mut egui::Ui, result: &mut SliceResult) {
                 let callback = Callback::new_paint_callback(
                     rect,
                     SlicePreviewRenderCallback {
-                        dimensions: Vector2::new(info.resolution.x, info.resolution.y),
+                        dimensions: result.config.platform_resolution,
                         offset: result.preview_offset,
                         aspect: rect.width() / rect.height(),
                         scale: result.preview_scale.powi(2),
@@ -271,17 +275,17 @@ fn slice_preview(ui: &mut egui::Ui, result: &mut SliceResult) {
 }
 
 fn layer_slider(ui: &mut egui::Ui, result: &mut SliceResult) {
-    let info = result.file.info();
-
     ui.spacing_mut().slider_width = ui.available_size().y;
-    let slider = Slider::new(&mut result.slice_preview_layer, 1..=info.layers as usize)
+
+    let layer_count = result.layer_count.0;
+    let slider = Slider::new(&mut result.slice_preview_layer, 1..=layer_count)
         .vertical()
         .handle_shape(HandleShape::Rect { aspect_ratio: 1.0 })
         .show_value(false)
         .ui(ui);
 
     let painter = ui.painter_at(slider.rect);
-    let slice = slider.rect.height() / info.layers as f32;
+    let slice = slider.rect.height() / layer_count as f32;
 
     let visuals = ui.style().interact(&slider);
     let rail = ui.spacing().slider_rail_height;
@@ -289,14 +293,14 @@ fn layer_slider(ui: &mut egui::Ui, result: &mut SliceResult) {
     let height = slider.rect.height() - 2.0 * handle_r;
     let pos = |t: f32| slider.rect.center_bottom() - Vec2::Y * (handle_r + height * t);
 
-    let slider_t = (result.slice_preview_layer - 1) as f32 / (info.layers - 1) as f32;
+    let slider_t = (result.slice_preview_layer - 1) as f32 / (layer_count - 1) as f32;
     let handle_inner_r = handle_r - visuals.fg_stroke.width;
     let handle_t = (handle_inner_r + visuals.expansion) / height;
 
     let annotations = result.annotations.lock();
-    for i in 0..info.layers {
-        if annotations.contains(i as usize) {
-            let t = i as f32 / (info.layers.saturating_sub(1)) as f32;
+    for i in 0..layer_count {
+        if annotations.contains(i) {
+            let t = i as f32 / (layer_count.saturating_sub(1)) as f32;
             let width = if (slider_t - t).abs() < handle_t {
                 handle_inner_r * 2.0 + visuals.expansion
             } else {

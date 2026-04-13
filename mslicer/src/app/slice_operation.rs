@@ -12,13 +12,14 @@ use common::{
     container::Run,
     misc::human_duration,
     progress::{CombinedProgress, Progress},
-    slice::{DynSlicedFile, SliceConfig},
+    slice::{DynSlicedFile, Layer, SliceConfig},
     units::{Miliseconds, Milliliters, Seconds},
 };
 use egui::Color32;
 use image::RgbaImage;
 use nalgebra::Vector2;
 use parking_lot::{Condvar, MappedMutexGuard, Mutex, MutexGuard};
+use slicer::util;
 use tracing::info;
 
 #[derive(Clone)]
@@ -37,14 +38,19 @@ pub struct SliceOperationInner {
 }
 
 pub struct SliceResult {
-    pub file: Arc<DynSlicedFile>,
-    pub elapsed: Duration,
+    pub config: SliceConfig,
+    pub layers: Arc<Vec<Layer>>,
     pub annotations: Arc<Annotations>,
+
+    pub elapsed: Duration,
+    pub voxels: u64,
     pub volume: Milliliters,
     pub print_time: Seconds,
 
     pub detected_islands: bool,
     pub slice_preview_layer: usize,
+
+    // tbh should be moved to app.state
     pub last_preview_layer: usize,
     pub preview_offset: Vector2<f32>,
     pub preview_scale: f32,
@@ -106,18 +112,25 @@ impl SliceOperationInner {
         MutexGuard::map(preview_image, |image| image.as_mut().unwrap())
     }
 
-    pub fn add_result(&self, config: &SliceConfig, (file, voxels): (DynSlicedFile, u64)) {
+    pub fn add_result(&self, config: SliceConfig, layers: Vec<Layer>) {
+        let voxels = (layers.iter())
+            .map(|x| (x.data.iter().filter(|x| x.value != 0).map(|x| x.length)).sum::<u64>())
+            .sum::<u64>();
+
         let elapsed = self.start_time.elapsed();
         info!("Slice operation completed in {:?}", elapsed);
 
-        let layers = file.info().layers as usize;
+        let layer_count = layers.len();
         let volume = (voxels as f32 * config.voxel_volume()).convert();
-        let print_time = config.print_time(layers as u32);
+        let print_time = config.print_time(layer_count as u32);
 
         self.result.lock().replace(SliceResult {
-            elapsed,
-            file: Arc::new(file),
+            config,
+            layers: Arc::new(layers),
             annotations: Arc::new(Annotations::default()),
+
+            elapsed,
+            voxels,
             volume,
             print_time,
 
@@ -126,7 +139,7 @@ impl SliceOperationInner {
             last_preview_layer: 0,
             preview_offset: Vector2::new(0.0, 0.0),
             preview_scale: 1.0,
-            layer_count: (layers, layers.to_string().len() as u8),
+            layer_count: (layer_count, layer_count.to_string().len() as u8),
         });
     }
 
@@ -190,6 +203,13 @@ impl SliceResult {
     pub fn completion(&self) -> String {
         let time = self.elapsed.as_millis() as f32;
         human_duration(Miliseconds::new(time))
+    }
+
+    /// Assumes result is not None
+    pub fn file(&self, preview_image: &RgbaImage) -> DynSlicedFile {
+        let mut file = util::export(&self.config, self.layers.iter(), self.voxels);
+        file.set_preview(preview_image);
+        file
     }
 }
 
