@@ -9,7 +9,7 @@
 - Automatic support generation progress
 - Internal exposure test tool
 - Remote print preferred service ports
-- Remote print default broadcast address changed to `255.255.255.255`
+- Remote print will use limited broadcast by default to find printers on the network
 
 ## v0.6.0 &mdash; March 23rd, 2026
 
