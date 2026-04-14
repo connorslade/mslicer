@@ -10,7 +10,7 @@ use common::{
     units::{Milimeter, Minute, Mircometer},
 };
 
-const ANTI_ALIAS_TOOLTIP: &str = "Uses supersampling anti-aliasing (SSAA) to pick grayscale values that more accurately represent the model being sliced.";
+const ANTI_ALIAS_TOOLTIP: &str = "Uses supersampling anti-aliasing (SSAA) to pick grayscale values that more accurately represent the actual model geometry.";
 const TRANSITION_LAYER_TOOLTIP: &str = "Transition layers interpolate between the first exposure settings and the normal exposure settings.";
 const SLICE_FORMAT_TOOLTIP: &str =
     "Only .goo and .ctb files can be sent with the 'Remote Print' module.";

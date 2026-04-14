@@ -20,5 +20,5 @@ pub use common::{
 pub mod slice {
     //! Simplified configuration for slicing a model.
     pub(crate) use crate::common::slice::*;
-    pub use crate::common::slice::{ExposureConfig, SliceConfig, SliceResult};
+    pub use crate::common::slice::{ExposureConfig, SliceConfig};
 }

@@ -10,6 +10,10 @@
 - Internal exposure test tool
 - Remote print preferred service ports
 - Remote print will use limited broadcast by default to find printers on the network
+- Separate slicing from layer encoding
+- Native 3D anti-aliasing!
+  - Uses supersampling anti-aliasing (SSAA)
+  - Replaces the old AA post processing effect
 
 ## v0.6.0 &mdash; March 23rd, 2026
 

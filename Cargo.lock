@@ -3054,6 +3054,7 @@ dependencies = [
  "chrono",
  "crc32fast",
  "image",
+ "itertools 0.14.0",
  "nalgebra 0.34.1",
  "serde",
  "serde_json",

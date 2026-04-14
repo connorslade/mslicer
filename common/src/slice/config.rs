@@ -95,7 +95,7 @@ impl Default for SliceConfig {
     fn default() -> Self {
         Self {
             format: Format::Ctb,
-            supersample: 1,
+            supersample: 0,
 
             platform_resolution: Vector2::new(11_520, 5_120),
             platform_size: Vector3::new(218.88, 122.904, 260.0).map(Milimeters::new),
