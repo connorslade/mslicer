@@ -5,6 +5,7 @@ use common::{
     progress::Progress,
     slice::DynSlicedFile,
 };
+use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -35,7 +36,7 @@ impl Downsample {
 }
 
 pub fn downsample_adjacent(factor: u8, mut runs: VecDeque<Run>) -> Vec<Run> {
-    assert!(runs.iter().map(|x| x.length).sum::<u64>() % factor as u64 == 0);
+    debug_assert!(runs.iter().map(|x| x.length).sum::<u64>() % factor as u64 == 0);
 
     let factor = factor as u64;
     let mut out = Vec::new();
@@ -78,24 +79,56 @@ pub fn downsample_adjacent(factor: u8, mut runs: VecDeque<Run>) -> Vec<Run> {
     out
 }
 
-// |--|--|--|--|
-//  aa aa ab bb
+pub fn downsample(mut chunks: Vec<VecDeque<Run>>) -> Vec<Run> {
+    let mut out = Vec::new();
 
-//  a×5, b×3
-// 5 % 2 = 1
+    while !chunks[0].is_empty() {
+        let shortest = (chunks.iter())
+            .position_min_by_key(|x| x.front().unwrap().length)
+            .unwrap();
+
+        let length = chunks[shortest].front().unwrap().length;
+        let mut value = 0;
+
+        for chunk in chunks.iter_mut() {
+            let front = chunk.front_mut().unwrap();
+            value += front.value as u64;
+
+            if front.length - length == 0 {
+                chunk.pop_front();
+            } else {
+                front.length -= length;
+            }
+        }
+
+        out.push(Run::new(length, (value / chunks.len() as u64) as u8));
+    }
+
+    out
+}
+
+// 1111000011
+// 0011111000
+// ↓
+// ½½11½½½0½½
+
+// or
+
+// |11111111|00|
+// |111111|0000|
+// ↓
+// 111111½½00
+//
+// 1. match up runs
+// |111111|11|00|
+// |111111|00|00|
 
 #[test]
-fn test_downsample_row() {
+fn test_downsample() {
     let input = vec![
-        Run {
-            length: 5,
-            value: 255,
-        },
-        Run {
-            length: 3,
-            value: 0,
-        },
+        vec![Run::new(8, 255), Run::new(2, 0)].into(),
+        vec![Run::new(6, 255), Run::new(4, 0)].into(),
     ];
-    let out = downsample_adjacent(2, input.into());
+    let out = downsample(input);
     dbg!(out);
 }

@@ -1,7 +1,7 @@
 // Uses an Active Edge Table (AET) for faster filling.
 // Reference: https://www.cs.rit.edu/~icss571/filling/how_to.html
 
-use std::collections::VecDeque;
+use std::{collections::VecDeque, mem};
 
 use common::{container::Run, slice::Layer, units::Milimeter};
 use itertools::Itertools;
@@ -11,7 +11,7 @@ use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
 use crate::{
     geometry::Segments1D,
-    post_process::downsample::downsample_adjacent,
+    post_process::downsample::{downsample, downsample_adjacent},
     slicer::{SEGMENT_LAYERS, Slicer},
 };
 
@@ -19,9 +19,8 @@ impl Slicer {
     /// Actually runs the slicing operation, it is multithreaded.
     pub fn slice_raster(&self) -> Vec<Layer> {
         let supersample = self.slice_config.supersample_factor();
-        let platform = (self.slice_config.platform_resolution)
-            .component_mul(&Vector2::new(supersample as u32, 1));
-        let pixels = (platform.x * platform.y) as u64;
+        let real_platform = self.slice_config.platform_resolution;
+        let platform = real_platform * supersample as u32;
 
         // A segment contains a reference to all of the triangles it contains. By
         // splitting the mesh into segments, not all triangles need to be tested
@@ -42,34 +41,35 @@ impl Slicer {
                 // interpreted as line segments making up a polygon.
                 let segments = self.models.iter().enumerate().flat_map(|(idx, model)| {
                     let intersections = segments[idx].intersect_plane(&model.mesh, height);
-                    (intersections.into_iter()).map(|segment| {
-                        (
-                            (
-                                segment.0.map(|x| {
-                                    x.component_mul(&Vector2::new(supersample as f32, 1.0))
-                                }),
-                                segment.1,
-                            ),
-                            model.exposure,
-                        )
+                    intersections.into_iter().map(|(pos, dir)| {
+                        ((pos.map(|x| x * supersample as f32), dir), model.exposure)
                     })
                 });
                 let mut edges = global_edge_table(segments);
 
                 let mut runs = Vec::new();
-                let mut last = 0;
 
                 let mut active = Vec::new();
-                let mut y = edges.front().map(|e| e.min.y).unwrap_or(0);
+                let first_y = edges.front().map(|e| e.min.y).unwrap_or(0);
 
+                runs.push(Run::new(
+                    (first_y as u64 / supersample as u64) * real_platform.x as u64,
+                    0,
+                ));
+
+                let mut y = first_y;
+
+                // for each row
+                let mut rows = Vec::new();
+                let mut row = Vec::new();
                 while (!edges.is_empty() || !active.is_empty()) && y < platform.y {
                     update_active_edges(&mut edges, &mut active, y);
-                    let y_offset = (platform.x * y) as u64;
 
                     // Convert the intersections into runs of voxels to be
                     // encoded into the layer.
                     let mut depth = 0;
                     let mut exposures = [0; 256];
+                    let mut last = 0;
                     for (a, b) in active.iter().tuple_windows() {
                         let delta = 1 - (a.direction as i32) * 2;
                         depth += delta;
@@ -77,27 +77,38 @@ impl Slicer {
 
                         let [a, b] = [a.x, b.x].map(|x| (x.round() as u64).min(platform.x as u64));
                         if depth != 0 && b != a {
-                            let (start, length) = (a + y_offset, b - a);
-                            (start > last).then(|| runs.push(Run::new(start - last, 0)));
+                            let (start, length) = (a, b - a);
+                            (start > last).then(|| row.push(Run::new(start - last, 0)));
 
                             let exposure = exposures.iter().rposition(|&x| x > 0).unwrap_or(255);
-                            runs.push(Run::new(length, exposure as u8));
+                            row.push(Run::new(length, exposure as u8));
                             last = start + length;
                         }
                     }
 
+                    // Fill the empty space at the end of the row
+                    let padding = platform.x as u64 - last;
+                    (padding > 0).then(|| row.push(Run::new(padding, 0)));
+                    rows.push(downsample_adjacent(supersample, mem::take(&mut row).into()).into());
+
                     y += 1;
+                    if y % supersample as u32 == 0 {
+                        runs.extend(downsample(mem::take(&mut rows)));
+                    }
                 }
 
                 // Turns out that on my printer, the buffer that each layer is
                 // decoded into is just uninitialized memory. So if the last run
                 // doesn't fill the buffer, the printer will just print whatever
                 // was in the buffer before which just makes a huge mess.
-                (last < pixels).then(|| runs.push(Run::new(pixels - last, 0)));
+                if y < platform.y {
+                    let rows = (real_platform.y - y / supersample as u32) as u64;
+                    runs.push(Run::new(rows * real_platform.x as u64, 0));
+                }
 
                 // Finished encoding the layer
                 Layer {
-                    data: downsample_adjacent(supersample, runs.into()),
+                    data: runs,
                     exposure: self.slice_config.exposure_config(layer).clone(),
                 }
             })
