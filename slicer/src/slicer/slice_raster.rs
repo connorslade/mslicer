@@ -3,15 +3,21 @@
 
 use std::{collections::VecDeque, mem};
 
-use common::{container::Run, slice::Layer, units::Milimeter};
+use common::{
+    container::{
+        Run,
+        rle::{downsample, downsample_adjacent},
+    },
+    slice::Layer,
+    units::Milimeter,
+};
 use itertools::Itertools;
 use nalgebra::Vector2;
 use ordered_float::OrderedFloat;
-use rayon::iter::{IntoParallelIterator, ParallelIterator};
+use rayon::iter::{IndexedParallelIterator, IntoParallelIterator, ParallelIterator};
 
 use crate::{
     geometry::Segments1D,
-    post_process::downsample::{downsample, downsample_adjacent},
     slicer::{SEGMENT_LAYERS, Slicer},
 };
 
@@ -30,10 +36,11 @@ impl Slicer {
             .map(|model| Segments1D::from_mesh(&model.mesh, SEGMENT_LAYERS))
             .collect::<Vec<_>>();
 
-        (0..self.layers)
+        (0..self.layers * supersample as u32)
             .into_par_iter()
             .map(|layer| {
-                let height = layer as f32 * self.slice_config.slice_height.get::<Milimeter>();
+                let height = layer as f32 / supersample as f32
+                    * self.slice_config.slice_height.get::<Milimeter>();
 
                 // Gets all the intersections between the slice plane and the
                 // model. Because all the faces are triangles, every triangle
@@ -106,11 +113,13 @@ impl Slicer {
                     runs.push(Run::new(rows * real_platform.x as u64, 0));
                 }
 
-                // Finished encoding the layer
-                Layer {
-                    data: runs,
-                    exposure: self.slice_config.exposure_config(layer).clone(),
-                }
+                runs.into()
+            })
+            .chunks(supersample as usize)
+            .enumerate()
+            .map(|(i, chunk)| Layer {
+                data: downsample(chunk),
+                exposure: self.slice_config.exposure_config(i as u32).clone(),
             })
             .inspect(|_| self.progress.add_complete(1))
             .collect::<Vec<_>>()
