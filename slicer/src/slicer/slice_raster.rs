@@ -53,24 +53,21 @@ impl Slicer {
                         ((pos.map(|x| x * supersample as f32), dir), model.exposure)
                     })
                 });
+
                 let mut edges = global_edge_table(segments);
-
-                let mut runs = Vec::new();
-
                 let mut active = Vec::new();
                 let first_y = edges.front().map(|e| e.min.y).unwrap_or(0);
 
-                runs.push(Run::new(
-                    (first_y as u64 / supersample as u64) * real_platform.x as u64,
-                    0,
-                ));
-
-                let mut y = first_y;
+                let mut runs = Vec::new();
+                let padding = (first_y as u64 / supersample as u64) * real_platform.x as u64;
+                runs.push(Run::new(padding, 0));
 
                 let mut rows = vec![Vec::new(); supersample as usize];
                 let mut row = Vec::new();
+                let mut y = first_y;
                 while (!edges.is_empty() || !active.is_empty()) && y < platform.y {
                     update_active_edges(&mut edges, &mut active, y);
+                    let out = if supersample > 1 { &mut row } else { &mut runs };
 
                     // Convert the intersections into runs of voxels to be
                     // encoded into the layer.
@@ -85,27 +82,30 @@ impl Slicer {
                         let [a, b] = [a.x, b.x].map(|x| (x.round() as u64).min(platform.x as u64));
                         if depth != 0 && b != a {
                             let (start, length) = (a, b - a);
-                            (start > last).then(|| row.push(Run::new(start - last, 0)));
+                            (start > last).then(|| out.push(Run::new(start - last, 0)));
 
                             let exposure = exposures.iter().rposition(|&x| x > 0).unwrap_or(255);
-                            row.push(Run::new(length, exposure as u8));
+                            out.push(Run::new(length, exposure as u8));
                             last = start + length;
                         }
                     }
 
                     // Fill the empty space at the end of the row
                     let padding = platform.x as u64 - last;
-                    (padding > 0).then(|| row.push(Run::new(padding, 0)));
+                    (padding > 0).then(|| out.push(Run::new(padding, 0)));
 
-                    let ss_row = ((y - first_y) % supersample as u32) as usize;
-                    downsample_adjacent(supersample, &row, &mut rows[ss_row]);
-                    row.clear();
+                    if supersample > 1 {
+                        let ss_row = ((y - first_y) % supersample as u32) as usize;
+                        downsample_adjacent(supersample, &row, &mut rows[ss_row]);
+                        row.clear();
+
+                        if (y + 1) % supersample as u32 == 0 {
+                            downsample(&rows, platform.x as u64, &mut runs);
+                            rows.iter_mut().for_each(Vec::clear);
+                        }
+                    }
 
                     y += 1;
-                    if y % supersample as u32 == 0 {
-                        downsample(&rows, platform.x as u64, &mut runs);
-                        rows.iter_mut().for_each(Vec::clear);
-                    }
                 }
 
                 // Turns out that on my printer, the buffer that each layer is
@@ -121,9 +121,12 @@ impl Slicer {
             })
             .chunks(supersample as usize)
             .enumerate()
-            .map(|(i, chunk)| {
-                let mut data = Vec::new();
-                downsample(&chunk, pixels, &mut data);
+            .map(|(i, mut chunk)| {
+                let data = if supersample > 1 {
+                    downsample_to_vec(&chunk, pixels)
+                } else {
+                    chunk.pop().unwrap()
+                };
 
                 let exposure = self.slice_config.exposure_config(i as u32).clone();
                 Layer { data, exposure }
@@ -193,4 +196,10 @@ fn update_active_edges(edges: &mut VecDeque<Edge>, active: &mut Vec<ActiveEdge>,
         });
     }
     active.sort_by_key(|x| OrderedFloat(x.x));
+}
+
+fn downsample_to_vec(chunks: &[Vec<Run>], width: u64) -> Vec<Run> {
+    let mut out = Vec::new();
+    downsample(chunks, width, &mut out);
+    out
 }
