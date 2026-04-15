@@ -2,6 +2,7 @@ use const_format::concatcp;
 use egui::{ComboBox, Context, DragValue, Grid, Ui, Widget};
 use egui_extras::{Column, TableBuilder};
 use egui_phosphor::regular::{ARROW_COUNTER_CLOCKWISE, INFO, NOTE_PENCIL, WARNING};
+use num_integer::cbrt;
 use slicer::post_process::elephant_foot_fixer::ElephantFootFixer;
 
 use crate::{app::App, ui::components::vec2_dragger};
@@ -10,7 +11,7 @@ use common::{
     units::{Milimeter, Minute, Mircometer},
 };
 
-const ANTI_ALIAS_TOOLTIP: &str = "Uses supersampling anti-aliasing (SSAA) to pick grayscale values that more accurately represent the actual model geometry.";
+const ANTI_ALIAS_TOOLTIP: &str = "Uses supersampling anti-aliasing (SSAA) to pick grayscale values that more accurately represent the actual model geometry. The actual value of this setting is the number of effective samples per voxel.";
 const TRANSITION_LAYER_TOOLTIP: &str = "Transition layers interpolate between the first exposure settings and the normal exposure settings.";
 const SLICE_FORMAT_TOOLTIP: &str =
     "Only .goo and .ctb files can be sent with the 'Remote Print' module.";
@@ -117,16 +118,16 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
             ui.end_row();
 
             ui.horizontal(|ui| {
-                ui.label("Anti-aliasing");
+                ui.label("Anti Aliasing");
                 ui.label(INFO).on_hover_text(ANTI_ALIAS_TOOLTIP);
             });
             ui.horizontal(|ui| {
                 DragValue::new(&mut slice_config.supersample)
-                    .custom_formatter(|val, _| (1 << val as u8).to_string())
-                    .custom_parser(|val| val.parse::<u8>().ok().map(|x| x.ilog2() as f64))
+                    .custom_formatter(|val, _| (val as u32).pow(3).to_string())
+                    .custom_parser(|val| val.parse::<u32>().ok().map(|x| cbrt(x) as f64))
                     .suffix("×")
                     .speed(0.1)
-                    .range(0..=4)
+                    .range(1..=16)
                     .ui(ui);
             });
 

@@ -70,7 +70,7 @@ impl Project {
 }
 
 impl PostProcessing {
-    // separate-encoding-todo: call this!!!
+    // anti-alias-todo: call this!!!
     pub fn process(&self, file: &mut DynSlicedFile, progress: CombinedProgress<2>) {
         self.elephant_foot_fixer
             .post_slice(file, progress[0].clone());

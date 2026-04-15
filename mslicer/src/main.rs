@@ -6,7 +6,7 @@ use anyhow::Result;
 use eframe::NativeOptions;
 use egui::{FontDefinitions, IconData, Vec2, ViewportBuilder};
 use egui_wgpu::{WgpuConfiguration, WgpuSetup, WgpuSetupCreateNew};
-use tracing::level_filters::LevelFilter;
+use tracing::{info, level_filters::LevelFilter};
 use tracing_subscriber::{filter, layer::SubscriberExt, util::SubscriberInitExt};
 use wgpu::{DeviceDescriptor, Features, Limits, TextureFormat};
 
@@ -39,6 +39,7 @@ fn main() -> Result<()> {
         .with(format)
         .with(collector.clone())
         .init();
+    info!("Starting mslicer v{}", env!("CARGO_PKG_VERSION"));
 
     let config_dir = dirs::config_dir().unwrap().join("mslicer");
     let config = Config::load_or_default(&config_dir);

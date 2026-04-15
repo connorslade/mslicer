@@ -7,6 +7,7 @@ use common::{
     units::{Milimeters, MilimetersPerMinute, Seconds},
 };
 use nalgebra::{ArrayStorage, Const, Matrix, Scalar, U1, Vector2, Vector3};
+use num_integer::cbrt;
 
 /// mslicer command line interface.
 #[derive(Debug, Parser)]
@@ -115,7 +116,7 @@ impl Args {
 
         Ok(SliceConfig {
             format,
-            supersample: self.supersample.ilog2() as u8,
+            supersample: cbrt(self.supersample) as u8,
             platform_resolution: self.platform_resolution,
             platform_size: self.platform_size.map(Milimeters::new),
             slice_height: Milimeters::new(self.layer_height),

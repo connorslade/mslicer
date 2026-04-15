@@ -168,7 +168,6 @@ impl App {
         info!("Starting slicing operation");
 
         let slice_config = self.project.slice_config.clone();
-
         let slice_height = slice_config.slice_height.get::<Milimeter>();
         let platform_size = (slice_config.platform_size.xy()).map(|x| x.get::<Milimeter>());
 

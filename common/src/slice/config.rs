@@ -55,10 +55,6 @@ impl SliceConfig {
         x * y
     }
 
-    pub fn supersample_factor(&self) -> u8 {
-        1 << self.supersample
-    }
-
     pub fn voxel_volume(&self) -> CubicMilimeters {
         self.pixel_area() * self.slice_height
     }

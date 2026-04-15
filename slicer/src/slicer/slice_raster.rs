@@ -1,12 +1,12 @@
 // Uses an Active Edge Table (AET) for faster filling.
 // Reference: https://www.cs.rit.edu/~icss571/filling/how_to.html
 
-use std::{collections::VecDeque, mem};
+use std::collections::VecDeque;
 
 use common::{
     container::{
         Run,
-        rle::{downsample, downsample_adjacent},
+        rle::downsample::{downsample, downsample_adjacent},
     },
     slice::Layer,
     units::Milimeter,
@@ -24,9 +24,10 @@ use crate::{
 impl Slicer {
     /// Actually runs the slicing operation, it is multithreaded.
     pub fn slice_raster(&self) -> Vec<Layer> {
-        let supersample = self.slice_config.supersample_factor();
+        let supersample = self.slice_config.supersample;
         let real_platform = self.slice_config.platform_resolution;
         let platform = real_platform * supersample as u32;
+        let pixels = platform.x as u64 * platform.y as u64;
 
         // A segment contains a reference to all of the triangles it contains. By
         // splitting the mesh into segments, not all triangles need to be tested
@@ -66,8 +67,7 @@ impl Slicer {
 
                 let mut y = first_y;
 
-                // for each row
-                let mut rows = Vec::new();
+                let mut rows = vec![Vec::new(); supersample as usize];
                 let mut row = Vec::new();
                 while (!edges.is_empty() || !active.is_empty()) && y < platform.y {
                     update_active_edges(&mut edges, &mut active, y);
@@ -96,11 +96,15 @@ impl Slicer {
                     // Fill the empty space at the end of the row
                     let padding = platform.x as u64 - last;
                     (padding > 0).then(|| row.push(Run::new(padding, 0)));
-                    rows.push(downsample_adjacent(supersample, mem::take(&mut row).into()).into());
+
+                    let ss_row = ((y - first_y) % supersample as u32) as usize;
+                    downsample_adjacent(supersample, &row, &mut rows[ss_row]);
+                    row.clear();
 
                     y += 1;
                     if y % supersample as u32 == 0 {
-                        runs.extend(downsample(mem::take(&mut rows)));
+                        downsample(&rows, platform.x as u64, &mut runs);
+                        rows.iter_mut().for_each(Vec::clear);
                     }
                 }
 
@@ -113,13 +117,16 @@ impl Slicer {
                     runs.push(Run::new(rows * real_platform.x as u64, 0));
                 }
 
-                runs.into()
+                runs
             })
             .chunks(supersample as usize)
             .enumerate()
-            .map(|(i, chunk)| Layer {
-                data: downsample(chunk),
-                exposure: self.slice_config.exposure_config(i as u32).clone(),
+            .map(|(i, chunk)| {
+                let mut data = Vec::new();
+                downsample(&chunk, pixels, &mut data);
+
+                let exposure = self.slice_config.exposure_config(i as u32).clone();
+                Layer { data, exposure }
             })
             .inspect(|_| self.progress.add_complete(1))
             .collect::<Vec<_>>()

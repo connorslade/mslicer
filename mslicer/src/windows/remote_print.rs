@@ -100,7 +100,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
                 app.state.send_print_completion = false;
                 ui.add_space(8.0);
                 ui.horizontal(|ui| {
-                    ui.label("Printing ");
+                    ui.label("Printing");
                     ui.monospace(&print_info.filename);
                     ui.label(format!("({:?})", print_info.status));
                 });
