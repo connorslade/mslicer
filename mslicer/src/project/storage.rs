@@ -3,7 +3,7 @@ use std::{collections::HashMap, sync::Arc};
 use anyhow::{Result, ensure};
 use nalgebra::Vector3;
 
-use crate::app::project::{PostProcessing, Project, model::Model};
+use crate::project::{PostProcessing, Project, model::Model};
 use common::{
     progress::Progress,
     serde::{Deserializer, SerdeExt, Serializer},

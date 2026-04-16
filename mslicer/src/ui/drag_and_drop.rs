@@ -4,8 +4,8 @@ use egui::{Align2, Color32, Context, FontFamily, FontId, Id, LayerId, Order, pos
 use egui_phosphor::regular::{FILE_TEXT, FILES};
 use itertools::Itertools;
 
-use crate::app::{
-    App,
+use crate::{
+    app::App,
     task::{MeshLoad, ProjectLoad},
 };
 
@@ -39,13 +39,10 @@ pub fn update(app: &mut App, ctx: &Context) {
 
         painter.rect_filled(rect, 0.0, HOVER_BACKGROUND);
 
-        let icon = if hovering == 1 { FILE_TEXT } else { FILES };
-        let text = "Drop files to import";
-
         painter.text(
             pos2(center.x, center.y - 54.0),
             Align2::CENTER_CENTER,
-            icon,
+            if hovering == 1 { FILE_TEXT } else { FILES },
             FontId::new(64.0, FontFamily::Proportional),
             Color32::WHITE,
         );
@@ -53,7 +50,7 @@ pub fn update(app: &mut App, ctx: &Context) {
         painter.text(
             center,
             Align2::CENTER_CENTER,
-            text,
+            "Drop files to import",
             FontId::default(),
             Color32::WHITE,
         );

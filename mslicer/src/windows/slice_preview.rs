@@ -16,9 +16,9 @@ use crate::{
     app::{
         App,
         slice_operation::{GenericSliceResult, ISLAND_COLOR, RasterSliceResult},
-        task::{FileDialog, IslandDetection, SaveResult},
     },
     render::slice_preview::SlicePreviewRenderCallback,
+    task::{FileDialog, IslandDetection, SaveResult},
     ui::{popup::Popup, state::UiState},
 };
 use common::{

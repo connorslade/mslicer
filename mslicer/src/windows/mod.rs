@@ -12,7 +12,7 @@ mod logs;
 mod models;
 mod remote_print;
 mod slice_config;
-mod slice_operation;
+mod slice_preview;
 mod supports;
 pub mod tools;
 mod top_bar;
@@ -30,7 +30,7 @@ pub enum Tab {
     Models,
     RemotePrint,
     SliceConfig,
-    SliceOperation,
+    SlicePreview,
     Supports,
     Viewport,
     Workspace,
@@ -42,7 +42,7 @@ impl Tab {
         Tab::Models,
         Tab::RemotePrint,
         Tab::SliceConfig,
-        Tab::SliceOperation,
+        Tab::SlicePreview,
         Tab::Supports,
         Tab::Workspace,
     ];
@@ -53,7 +53,7 @@ impl Tab {
             Tab::Models => "Models",
             Tab::RemotePrint => "Remote Print",
             Tab::SliceConfig => "Slice Config",
-            Tab::SliceOperation => "Slice Operation",
+            Tab::SlicePreview => "Slice Operation",
             Tab::Supports => "Supports",
             Tab::Viewport => "Viewport",
             Tab::Workspace => "Workspace",
@@ -74,7 +74,7 @@ impl TabViewer for Tabs<'_> {
             Tab::Models => models::ui(self.app, ui, self.ctx),
             Tab::RemotePrint => remote_print::ui(self.app, ui, self.ctx),
             Tab::SliceConfig => slice_config::ui(self.app, ui, self.ctx),
-            Tab::SliceOperation => slice_operation::ui(self.app, ui, self.ctx),
+            Tab::SlicePreview => slice_preview::ui(self.app, ui, self.ctx),
             Tab::Supports => supports::ui(self.app, ui, self.ctx),
             Tab::Viewport => viewport(self.app, ui, self.ctx),
             Tab::Workspace => workspace::ui(self.app, ui, self.ctx),

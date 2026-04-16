@@ -10,7 +10,7 @@ use mesh_format::load_mesh;
 use slicer::mesh::Mesh;
 use tracing::info;
 
-use crate::app::{
+use crate::{
     project::model::Model,
     task::{
         MeshManifold, PollResult, Task, TaskApp, TaskStatus,

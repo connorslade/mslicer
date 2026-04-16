@@ -4,10 +4,8 @@ use clone_macro::clone;
 use tracing::trace;
 
 use crate::{
-    app::{
-        remote_print::{RemotePrint, add_printer, scan_for_printers},
-        task::{PollResult, Task, TaskApp, thread::TaskThread},
-    },
+    app::remote_print::{RemotePrint, add_printer, scan_for_printers},
+    task::{PollResult, Task, TaskApp, thread::TaskThread},
     ui::state::RemotePrintConnectStatus,
 };
 

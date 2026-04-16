@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use crate::app::{
+use crate::{
     project::model::Model,
     task::{FileDialog, ProjectLoad, ProjectSave, Task},
 };

@@ -11,7 +11,7 @@ use common::{
 };
 use tracing::info;
 
-use crate::app::{
+use crate::{
     project::Project,
     task::{
         BuildAccelerationStructures, MeshManifold, PollResult, Task, TaskApp, TaskStatus,

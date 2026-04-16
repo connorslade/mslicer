@@ -20,10 +20,8 @@ use rfd::FileDialog;
 use tracing::info;
 
 use crate::{
-    app::{
-        App,
-        task::{PrinterConnect, PrinterScan},
-    },
+    app::App,
+    task::{PrinterConnect, PrinterScan},
     ui::{
         components::grid,
         popup::{Popup, PopupIcon},

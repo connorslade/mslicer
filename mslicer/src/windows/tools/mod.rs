@@ -31,6 +31,6 @@ macro_rules! generator_tool {
         }));
         $app.slice_operation.replace(operation);
         $app.panels
-            .focus_tab(Tab::SliceOperation, Vector2::new(700.0, 400.0));
+            .focus_tab(Tab::SlicePreview, Vector2::new(700.0, 400.0));
     }};
 }

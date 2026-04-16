@@ -8,10 +8,11 @@ use egui_phosphor::regular::X;
 
 use crate::{
     app::{
-        App, config::Config, is_slicing, project::Project, remote_print::RemotePrint,
-        slice_operation::SliceOperation, task::TaskManager,
+        App, config::Config, is_slicing, remote_print::RemotePrint, slice_operation::SliceOperation,
     },
     app_ref_type,
+    project::Project,
+    task::TaskManager,
     ui::{panels::Panels, state::UiState},
 };
 

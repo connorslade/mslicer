@@ -5,8 +5,8 @@ use common::{progress::Progress, slice::Layer};
 use nalgebra::Vector2;
 use slicer::post_process::island_detection::detect_islands;
 
-use crate::app::{
-    slice_operation::{Annotation, Annotations},
+use crate::{
+    app::slice_operation::{Annotation, Annotations},
     task::{PollResult, Task, TaskApp, TaskStatus, thread::TaskThread},
 };
 

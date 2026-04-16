@@ -144,4 +144,5 @@
 - [ ] Add exposure remapping post processing
 - [ ] Move the .file call into the async task
 - [ ] Replace slice format with a picker in the save dialog, use .ctb for remote send
-- [ ] Refactor/cleanup slicing stuff
+- [x] Refactor/cleanup slicing stuff
+- [ ] Optimize tools with new slicer/encoder separation

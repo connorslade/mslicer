@@ -5,11 +5,9 @@ use slicer::{
 };
 
 use crate::{
-    app::{
-        App,
-        project::model::Model,
-        task::{BuildAccelerationStructures, MeshManifold},
-    },
+    app::App,
+    project::model::Model,
+    task::{BuildAccelerationStructures, MeshManifold},
     ui::components::dragger,
 };
 

@@ -3,7 +3,7 @@ use std::sync::Arc;
 use clone_macro::clone;
 use common::{progress::Progress, serde::DynamicSerializer, slice::DynSlicedFile};
 
-use crate::app::task::{PollResult, Task, TaskApp, TaskStatus, thread::TaskThread};
+use crate::task::{PollResult, Task, TaskApp, TaskStatus, thread::TaskThread};
 
 pub struct SaveResult {
     progress: Progress,

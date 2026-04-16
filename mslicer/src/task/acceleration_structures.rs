@@ -4,7 +4,7 @@ use clone_macro::clone;
 use common::progress::Progress;
 use slicer::{geometry::bvh::Bvh, half_edge::HalfEdgeMesh};
 
-use crate::app::{
+use crate::{
     project::model::Model,
     task::{PollResult, Task, TaskApp, TaskStatus, thread::TaskThread},
 };

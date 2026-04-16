@@ -17,11 +17,8 @@ use egui_phosphor::regular::{
 use nalgebra::Vector3;
 
 use crate::{
-    app::{
-        App,
-        history::ModelAction,
-        project::model::{MeshWarnings, RenameState},
-    },
+    app::{App, history::ModelAction},
+    project::model::{MeshWarnings, RenameState},
     ui::components::{
         being_edited, grid, history_tracked_model, vec3_dragger, vec3_dragger_proportional,
     },

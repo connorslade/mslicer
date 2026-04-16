@@ -11,10 +11,12 @@ use tracing::{info, warn};
 
 use crate::{
     app::{
-        config::Config, history::History, project::Project, remote_print::RemotePrint,
-        slice_operation::SliceOperation, task::TaskManager,
+        config::Config, history::History, remote_print::RemotePrint,
+        slice_operation::SliceOperation,
     },
+    project::Project,
     render::{Gcx, camera::Camera, preview},
+    task::TaskManager,
     ui::{
         drag_and_drop,
         panels::Panels,
@@ -28,10 +30,8 @@ use slicer::slicer::{Slicer, SlicerModel};
 
 pub mod config;
 pub mod history;
-pub mod project;
 pub mod remote_print;
 pub mod slice_operation;
-pub mod task;
 
 pub struct App {
     pub render_state: RenderState,
@@ -192,7 +192,7 @@ impl App {
         let slice_operation = SliceOperation::new(slicer.progress(), post_process.clone());
         self.slice_operation.replace(slice_operation);
         self.panels
-            .focus_tab(Tab::SliceOperation, Vector2::new(700.0, 400.0));
+            .focus_tab(Tab::SlicePreview, Vector2::new(700.0, 400.0));
 
         thread::spawn(clone!(
             [

@@ -1,7 +1,7 @@
 use std::thread::{self, JoinHandle};
 
 use crate::{
-    app::task::{PollResult, TaskApp},
+    task::{PollResult, TaskApp},
     ui::popup::{Popup, PopupIcon},
 };
 

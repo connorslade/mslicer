@@ -9,12 +9,10 @@ use egui::{
 use egui_phosphor::regular::{CARDS, FILE_TEXT, GIT_DIFF, HAMMER, HOURGLASS, STACK};
 
 use crate::{
-    app::{
-        App,
-        project::Project,
-        task::{FileDialog, MeshLoad, ProjectLoad},
-    },
+    app::App,
     include_asset,
+    project::Project,
+    task::{FileDialog, MeshLoad, ProjectLoad},
     ui::{components::labeled_separator, popup::Popup},
     windows::{Tab, tools},
 };

@@ -3,7 +3,7 @@ use std::path::Path;
 use poll_promise::Promise;
 use rfd::{AsyncFileDialog, FileHandle};
 
-use crate::app::task::{PollResult, Task, TaskApp};
+use crate::task::{PollResult, Task, TaskApp};
 
 type Callback = Box<dyn FnOnce(&mut TaskApp, &Path, &mut Vec<Box<dyn Task>>)>;
 

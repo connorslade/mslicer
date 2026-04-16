@@ -1,7 +1,7 @@
 use clone_macro::clone;
 use common::progress::Progress;
 
-use crate::app::{
+use crate::{
     project::model::{MeshWarnings, Model},
     task::{PollResult, Task, TaskApp, TaskStatus, thread::TaskThread},
 };
