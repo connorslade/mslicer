@@ -3,7 +3,7 @@ use std::borrow::Cow;
 use crate::{
     app::{App, config::Config, project::Project},
     app_ref_type,
-    ui::popup::PopupManager,
+    ui::{popup::PopupManager, state::UiState},
 };
 
 mod acceleration_structures;
@@ -12,6 +12,7 @@ mod island_detection;
 mod mesh_load;
 mod mesh_manifold;
 mod project;
+mod remote_print;
 mod save_result;
 mod thread;
 pub use self::{
@@ -21,6 +22,7 @@ pub use self::{
     mesh_load::MeshLoad,
     mesh_manifold::MeshManifold,
     project::{ProjectLoad, ProjectSave},
+    remote_print::{PrinterConnect, PrinterScan},
     save_result::SaveResult,
 };
 
@@ -55,6 +57,7 @@ pub struct TaskManager {
 /// TaskManager.
 pub struct TaskApp<'a> {
     pub popup: &'a mut PopupManager,
+    pub state: &'a mut UiState,
     pub config: &'a mut Config,
     pub project: &'a mut Project,
 }
@@ -96,6 +99,7 @@ impl<'a> TaskManagerRef<'a> {
         let this = &mut self.app.tasks;
         let mut app = TaskApp {
             popup: &mut self.app.popup,
+            state: &mut self.app.state,
             config: &mut self.app.config,
             project: &mut self.app.project,
         };

@@ -16,6 +16,7 @@
 - Native 3D anti-aliasing!
   - Uses supersampling anti-aliasing (SSAA)
   - Replaces the old AA post processing effect
+- Fix scanning for printers never ending on linux
 
 ## v0.6.0 &mdash; March 23rd, 2026
 

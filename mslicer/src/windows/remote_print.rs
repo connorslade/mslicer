@@ -1,5 +1,7 @@
 use std::{
     fs,
+    net::Ipv4Addr,
+    str::FromStr,
     sync::{Arc, atomic::Ordering},
     time::Duration,
 };
@@ -18,7 +20,10 @@ use rfd::FileDialog;
 use tracing::info;
 
 use crate::{
-    app::App,
+    app::{
+        App,
+        task::{PrinterConnect, PrinterScan},
+    },
     ui::{
         components::grid,
         popup::{Popup, PopupIcon},
@@ -250,17 +255,20 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
                     let height = scan.rect.height();
                     if scan.clicked() {
                         app.state.remote_print_connecting = RemotePrintConnectStatus::Scanning;
-                        app.remote_print
-                            .scan_for_printers(app.config.remote_print.broadcast_address);
+                        app.tasks.add(PrinterScan::new(
+                            &app.remote_print,
+                            app.config.remote_print.broadcast_address,
+                        ));
                     }
 
                     ui.add_sized(vec2(2.0, height), Separator::default());
                     if ui.button(concatcp!(PLUGS, " Connect")).clicked() {
-                        if app
-                            .remote_print
-                            .add_printer(&app.state.working_address)
-                            .is_err()
-                        {
+                        if let Ok(address) = Ipv4Addr::from_str(&app.state.working_address) {
+                            app.state.remote_print_connecting =
+                                RemotePrintConnectStatus::Connecting;
+                            app.tasks
+                                .add(PrinterConnect::new(&app.remote_print, address));
+                        } else {
                             app.popup.open(Popup::simple(
                                 "Remote Print Error",
                                 PopupIcon::Error,
@@ -270,9 +278,6 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
                                 ),
                             ));
                             app.state.working_address.clear();
-                        } else {
-                            app.state.remote_print_connecting =
-                                RemotePrintConnectStatus::Connecting;
                         }
                     }
 

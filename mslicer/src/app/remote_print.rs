@@ -1,14 +1,11 @@
 use std::{
     io::ErrorKind,
-    net::{IpAddr, Ipv4Addr, SocketAddr, SocketAddrV4, TcpListener, UdpSocket},
-    str::FromStr,
+    net::{Ipv4Addr, SocketAddr, SocketAddrV4, TcpListener, UdpSocket},
     sync::Arc,
-    thread::{self, JoinHandle},
     time::Duration,
 };
 
 use anyhow::{Context, Result};
-use clone_macro::clone;
 use common::slice::Format;
 use parking_lot::{Mutex, MutexGuard};
 use tracing::{info, warn};
@@ -25,23 +22,19 @@ use remote_send::{
 use crate::{
     app::App,
     app_ref_type,
-    ui::{
-        popup::{Popup, PopupIcon},
-        state::{RemotePrintConnectStatus, UiState},
-    },
+    ui::popup::{Popup, PopupIcon},
     util::random_string,
 };
 
 pub struct RemotePrint {
     been_started: bool,
-    services: Option<Arc<Services>>,
-    printers: Arc<Mutex<Vec<Printer>>>,
-    jobs: Vec<AsyncJob>, // todo: replace with task system
+    pub services: Option<Arc<Services>>,
+    pub printers: Arc<Mutex<Vec<Printer>>>,
 }
 
 app_ref_type!(RemotePrint, remote_print);
 
-struct Services {
+pub struct Services {
     mqtt: Mqtt,
     http: HttpServer,
     udp: UdpSocket,
@@ -55,18 +48,12 @@ pub struct Printer {
     pub mainboard_id: String,
 }
 
-struct AsyncJob {
-    handle: JoinHandle<Result<()>>,
-    action: Box<dyn FnOnce(&mut UiState)>,
-}
-
 impl RemotePrint {
     pub fn uninitialized() -> Self {
         Self {
             been_started: false,
             services: None,
             printers: Arc::new(Mutex::new(Vec::new())),
-            jobs: Vec::new(),
         }
     }
 
@@ -105,50 +92,11 @@ impl RemotePrint {
         }
     }
 
-    pub fn add_printer(&mut self, address: &str) -> Result<()> {
-        let address = IpAddr::from_str(address)?;
-        let address = SocketAddr::new(address, 3000);
-
-        self.jobs.push(AsyncJob::new(
-            thread::spawn(clone!(
-                [{ self.printers } as printers, { self.services } as services],
-                move || {
-                    add_printer(services.unwrap(), printers, address)
-                        .with_context(|| format!("Error adding printer at {}.", address.ip()))
-                }
-            )),
-            |ui_state| {
-                ui_state.remote_print_connecting = RemotePrintConnectStatus::None;
-                ui_state.working_address.clear();
-            },
-        ));
-
-        Ok(())
-    }
-
-    pub fn scan_for_printers(&mut self, broadcast: Ipv4Addr) {
-        self.jobs.push(AsyncJob::new(
-            thread::spawn(clone!(
-                [{ self.printers } as printers, { self.services } as services],
-                move || {
-                    scan_for_printers(services.unwrap(), printers, broadcast)
-                        .context("Error scanning for printers.")
-                }
-            )),
-            |ui_state| {
-                ui_state.remote_print_connecting = RemotePrintConnectStatus::None;
-            },
-        ));
-    }
-
     pub fn remove_printer(&mut self, index: usize) -> Result<()> {
         let services = self.services.as_ref().unwrap();
         let printer = self.printers.lock().remove(index);
 
-        services
-            .mqtt
-            .send_command(&printer.mainboard_id, DisconnectCommand)?;
-
+        (services.mqtt).send_command(&printer.mainboard_id, DisconnectCommand)?;
         Ok(())
     }
 
@@ -260,52 +208,16 @@ impl<'a> RemotePrintRef<'a> {
             self.set_network_timeout(Duration::from_secs_f32(config.timeout));
             services.http.set_proxy_enabled(config.status_proxy);
         }
-
-        let mut i = 0;
-        while i < self.jobs.len() {
-            if self.jobs[i].is_finished() {
-                let AsyncJob { handle, action } = self.jobs.remove(i);
-                action(&mut self.app.state);
-                if let Err(e) = handle.join().unwrap() {
-                    let mut body = String::new();
-                    for link in e.chain() {
-                        body.push_str(&link.to_string());
-                        body.push(' ');
-                    }
-
-                    self.app.popup.open(Popup::simple(
-                        "Remote Print Error",
-                        PopupIcon::Error,
-                        &body[..body.len() - 1],
-                    ));
-                }
-                continue;
-            }
-
-            i += 1;
-        }
     }
 }
 
-impl AsyncJob {
-    fn new(handle: JoinHandle<Result<()>>, action: impl FnOnce(&mut UiState) + 'static) -> Self {
-        Self {
-            handle,
-            action: Box::new(action),
-        }
-    }
-
-    fn is_finished(&self) -> bool {
-        self.handle.is_finished()
-    }
-}
-
-fn add_printer(
+pub fn add_printer(
     services: Arc<Services>,
     printers: Arc<Mutex<Vec<Printer>>>,
-    address: SocketAddr,
+    address: Ipv4Addr,
 ) -> Result<()> {
-    info!("Attempting to connect to printer at {}", address.ip());
+    info!("Attempting to connect to printer at {address}");
+    let address = SocketAddr::new(address.into(), 3000);
 
     services.udp.send_to(b"M99999", address)?;
 
@@ -323,21 +235,19 @@ fn add_printer(
     Ok(())
 }
 
-fn scan_for_printers(
+pub fn scan_for_printers(
     services: Arc<Services>,
     printers: Arc<Mutex<Vec<Printer>>>,
     broadcast: Ipv4Addr,
 ) -> Result<()> {
     info!("Scanning for printers on {broadcast}");
-    services
-        .udp
-        .send_to(b"M99999", SocketAddr::new(broadcast.into(), 3000))?;
+    (services.udp).send_to(b"M99999", SocketAddr::new(broadcast.into(), 3000))?;
 
     let mut buffer = [0; 1024];
     loop {
         let (len, addr) = match services.udp.recv_from(&mut buffer) {
             Ok(data) => data,
-            Err(e) if e.kind() == ErrorKind::TimedOut => break,
+            Err(e) if matches!(e.kind(), ErrorKind::TimedOut | ErrorKind::WouldBlock) => break,
             Err(_) => continue,
         };
 
