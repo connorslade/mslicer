@@ -201,7 +201,9 @@ impl App {
             ],
             move || {
                 let slice_operation = slice_operation.as_ref().unwrap();
-                let layers = slicer.slice_raster();
+                let mut layers = slicer.slice_raster();
+                post_processing.process(&slicer.slice_config, &mut layers, post_process);
+
                 slice_operation.add_result(slicer.slice_config, layers);
             }
         ));

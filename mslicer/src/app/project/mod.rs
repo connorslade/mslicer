@@ -6,7 +6,7 @@ use crate::app::{
 };
 use common::{
     progress::CombinedProgress,
-    slice::{DynSlicedFile, SliceConfig},
+    slice::{Layer, SliceConfig},
 };
 use slicer::post_process::elephant_foot_fixer::ElephantFootFixer;
 
@@ -70,9 +70,13 @@ impl Project {
 }
 
 impl PostProcessing {
-    // anti-alias-todo: call this!!!
-    pub fn process(&self, file: &mut DynSlicedFile, progress: CombinedProgress<2>) {
+    pub fn process(
+        &self,
+        config: &SliceConfig,
+        layers: &mut [Layer],
+        progress: CombinedProgress<1>,
+    ) {
         self.elephant_foot_fixer
-            .post_slice(file, progress[0].clone());
+            .post_slice(config, layers, progress[0].clone());
     }
 }

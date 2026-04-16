@@ -1,12 +1,13 @@
 use std::{mem, time::Instant};
 
 use common::{
+    container::{Image, rle},
     progress::Progress,
     serde::{Deserializer, Serializer},
-    slice::{DynSlicedFile, SliceLayerIterator},
+    slice::{Layer, SliceConfig},
     units::Milimeter,
 };
-use image::Luma;
+use image::{GrayImage, Luma};
 use imageproc::{morphology::Mask, point::Point};
 use itertools::Itertools;
 use rayon::iter::{ParallelBridge, ParallelIterator};
@@ -21,21 +22,21 @@ pub struct ElephantFootFixer {
 }
 
 impl ElephantFootFixer {
-    pub fn post_slice(&self, file: &mut DynSlicedFile, progress: Progress) {
+    pub fn post_slice(&self, config: &SliceConfig, layers: &mut [Layer], progress: Progress) {
         if !self.enabled {
             return;
         }
 
-        let info = file.info();
-        let (width, height) = (info.resolution.x as usize, info.resolution.y as usize);
+        let [width, height] = *config.platform_resolution.as_ref();
+        let platform = config.platform_size;
 
         let (x_radius, y_radius) = (
-            (self.inset_distance * (width as f32 / info.size.x).get::<Milimeter>()) as usize,
-            (self.inset_distance * (height as f32 / info.size.y).get::<Milimeter>()) as usize,
+            (self.inset_distance * (width as f32 / platform.x).get::<Milimeter>()) as usize,
+            (self.inset_distance * (height as f32 / platform.y).get::<Milimeter>()) as usize,
         );
         info!(
             "Eroding {} bottom layers with radius ({}, {})",
-            info.bottom_layers, x_radius, y_radius
+            config.first_layers, x_radius, y_radius
         );
 
         let intensity = self.intensity_multiplier / 100.0;
@@ -44,20 +45,25 @@ impl ElephantFootFixer {
         let darken = |value: u8| (value as f32 * intensity).round() as u8;
 
         let start = Instant::now();
-        progress.set_total(info.bottom_layers as u64);
-        SliceLayerIterator::new(file)
-            .take(info.bottom_layers as usize)
+        progress.set_total(config.first_layers as u64);
+
+        layers
+            .iter_mut()
+            .take(config.first_layers as usize)
             .par_bridge()
-            .for_each(|mut layer| {
-                progress.add_complete(1);
-                layer.gray_image(|layer| {
-                    let erode = imageproc::morphology::grayscale_erode(layer, &mask);
-                    for (x, y, pixel) in layer.enumerate_pixels_mut() {
-                        if erode.get_pixel(x, y)[0] == 0 && pixel[0] != 0 {
-                            *pixel = Luma([darken(pixel[0])]);
-                        }
+            .for_each(|layer| {
+                let inner = rle::decode_vec(&layer.data);
+                let mut image = GrayImage::from_raw(width, height, inner).unwrap();
+
+                let erode = imageproc::morphology::grayscale_erode(&image, &mask);
+                for (x, y, pixel) in image.enumerate_pixels_mut() {
+                    if erode.get_pixel(x, y)[0] == 0 && pixel[0] != 0 {
+                        *pixel = Luma([darken(pixel[0])]);
                     }
-                })
+                }
+
+                let image = Image::from_raw(config.platform_resolution.cast(), image.into_raw());
+                layer.data = image.runs().collect();
             });
 
         progress.set_finished();

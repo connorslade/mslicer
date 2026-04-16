@@ -1,6 +1,6 @@
 //! Tools for working with run length encoded (RLE) data.
 
-use std::borrow::Borrow;
+use std::{borrow::Borrow, iter::repeat_n};
 
 pub mod bits;
 pub mod downsample;
@@ -33,4 +33,20 @@ where
         image[pixel..(pixel + length)].fill(run.value.clone());
         pixel += length;
     }
+}
+
+pub fn decode_vec<T, R, D>(decoder: D) -> Vec<T>
+where
+    T: Clone,
+    R: Borrow<Run<T>>,
+    D: IntoIterator<Item = R>,
+{
+    let mut out = Vec::new();
+    for run in decoder {
+        let run = run.borrow();
+        let length = run.length as usize;
+        out.extend(repeat_n(run.value.clone(), length));
+    }
+
+    out
 }
