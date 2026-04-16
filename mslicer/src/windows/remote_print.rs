@@ -15,7 +15,7 @@ use egui::{
 };
 use egui_phosphor::regular::{COPY, NETWORK, PLUGS, PRINTER, STOP, TRASH_SIMPLE, UPLOAD_SIMPLE};
 use notify_rust::Notification;
-use remote_send::status::{FileTransferStatus, PrintInfoStatus};
+use remote_print::status::{FileTransferStatus, PrintInfoStatus};
 use rfd::FileDialog;
 use tracing::info;
 

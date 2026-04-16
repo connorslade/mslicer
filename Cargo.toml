@@ -9,7 +9,7 @@ members = [
     "format/mesh_format",
     "format/nanodlp_format",
     "mslicer",
-    "remote_send",
+    "remote_print",
     "slicer"
 ]
 
@@ -19,7 +19,7 @@ ctb_format = { path = "format/ctb_format" }
 goo_format = { path = "format/goo_format" }
 mesh_format = { path = "format/mesh_format" }
 nanodlp_format = { path = "format/nanodlp_format" }
-remote_send = { path = "remote_send" }
+remote_print = { path = "remote_print" }
 slicer = { path = "slicer" }
 
 aes = "0.8.4"

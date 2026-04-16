@@ -360,7 +360,7 @@ fn name_popup(mainboard_id: String, data: Arc<Vec<u8>>, format: Format) -> Popup
         let min_size = Vec2::new(width, 0.0);
 
         let mut close = false;
-        let id = Id::new(&mainboard_id).with("remote_send");
+        let id = Id::new(&mainboard_id).with("remote_print");
         ui.centered_and_justified(|ui| {
             Grid::new(id)
                 .min_col_width(width)

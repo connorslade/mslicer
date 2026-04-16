@@ -7,7 +7,7 @@ use std::{
 };
 
 use anyhow::Result;
-use remote_send::{
+use remote_print::{
     Response,
     commands::{StartPrinting, UploadFile},
     http_server::HttpServer,

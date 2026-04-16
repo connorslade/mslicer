@@ -10,7 +10,7 @@ use common::slice::Format;
 use parking_lot::{Mutex, MutexGuard};
 use tracing::{info, warn};
 
-use remote_send::{
+use remote_print::{
     Response,
     commands::{DisconnectCommand, StartPrinting, UploadFile},
     http_server::HttpServer,
