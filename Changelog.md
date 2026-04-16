@@ -10,6 +10,7 @@
 - Internal exposure test tool
 - Remote print preferred service ports
 - Remote print default broadcast address changed to `255.255.255.255`
+- Fix crash on macOS (Observed on macOS Sequoia on a laptop with a touch bar)
 
 ## v0.6.0 &mdash; March 23rd, 2026
 

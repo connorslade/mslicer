@@ -69,6 +69,9 @@ fn main() -> Result<()> {
                 }),
                 ..Default::default()
             },
+            // Fixes crash on macOS (Observed on MacBook with touchbar running Sequoia)
+            // See https://github.com/emilk/egui/discussions/7857
+            persist_window: false,
             ..Default::default()
         },
         Box::new(|cc| {
