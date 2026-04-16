@@ -27,7 +27,7 @@ macro_rules! generator_tool {
 
         std::thread::spawn(clone!([operation], move || {
             let layers = tool.generate(&config, &operation.progress);
-            operation.add_result(config, layers);
+            operation.add_raster_result(config, layers);
         }));
         $app.slice_operation.replace(operation);
         $app.panels

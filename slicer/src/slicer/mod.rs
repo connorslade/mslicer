@@ -3,7 +3,7 @@ use common::{progress::Progress, slice::SliceConfig};
 use crate::mesh::Mesh;
 
 mod slice_raster;
-mod slice_vector;
+pub mod slice_vector;
 
 const SEGMENT_LAYERS: usize = 100;
 

@@ -15,11 +15,11 @@ use nalgebra::Vector2;
 use crate::{
     app::{
         App,
-        slice_operation::{ISLAND_COLOR, SliceResult},
+        slice_operation::{GenericSliceResult, ISLAND_COLOR, RasterSliceResult},
         task::{FileDialog, IslandDetection, SaveResult},
     },
     render::slice_preview::SlicePreviewRenderCallback,
-    ui::popup::Popup,
+    ui::{popup::Popup, state::UiState},
 };
 use common::{
     container::rle, misc::human_duration, progress::Progress, serde::DynamicSerializer,
@@ -37,6 +37,16 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
 
         if let Some(result) = slice_operation.result().as_mut() {
             let format = app.project.slice_config.format;
+
+            if mem::take(&mut result.fresh) {
+                app.state.slice_preview_layer = 0;
+                app.state.last_preview_layer = 0;
+                app.state.preview_offset = Vector2::zeros();
+                app.state.preview_scale = 1.0;
+
+                let layers = result.inner.layers();
+                app.state.layer_count = (layers, layers.to_string().len() as u8);
+            }
 
             ui.horizontal(|ui| {
                 ui.label(format!("Slicing completed in {}!", result.completion()));
@@ -103,17 +113,21 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                         }
 
                         ui.separator();
-                        ui.add_enabled_ui(!result.detected_islands, |ui| {
+                        let can_detect = (result.inner.as_raster())
+                            .map(|x| !x.detected_islands)
+                            .unwrap_or_default();
+                        ui.add_enabled_ui(can_detect, |ui| {
                             if ui
                                 .button(concatcp!(CROSSHAIR, " Detect Islands"))
                                 .on_hover_text(DETECT_ISLANDS_DESC)
                                 .clicked()
+                                && let GenericSliceResult::Raster(raster) = &mut result.inner
                             {
-                                result.detected_islands = true;
+                                raster.detected_islands = true;
                                 app.tasks.add(IslandDetection::new(
                                     result.config.platform_resolution,
-                                    result.layers.clone(),
-                                    result.annotations.clone(),
+                                    raster.layers.clone(),
+                                    raster.annotations.clone(),
                                 ));
                             }
                             slice_preview
@@ -122,48 +136,49 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                 });
             });
 
-            if !format.supports_preview() {
-                ui.add_space(8.0);
-                ui.label(format!(
-                    "The {} format doesn't yet support previews...",
-                    format.name()
-                ));
-            } else {
-                ui.with_layout(Layout::bottom_up(Align::Min), |ui| {
-                    ui.horizontal(|ui| {
-                        let layer_digits = result.layer_count.1 as usize;
-                        ui.add(
-                            DragValue::new(&mut result.slice_preview_layer)
-                                .range(1..=result.layer_count.0)
-                                .custom_formatter(|n, _| {
-                                    format!("{:0>layer_digits$}/{}", n, result.layer_count.0)
-                                }),
-                        );
-                        result.slice_preview_layer +=
-                            ui.button(RichText::new(CARET_UP)).clicked() as usize;
-                        result.slice_preview_layer -=
-                            ui.button(RichText::new(CARET_DOWN)).clicked() as usize;
-
-                        ui.separator();
-                        if ui.button(concatcp!(CORNERS_IN, " Reset View")).clicked() {
-                            result.preview_offset = Vector2::zeros();
-                            result.preview_scale = 1.0;
-                        }
-
-                        ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                            let duration = human_duration(result.print_time.convert());
-                            ui.label(format!("{CLOCK} {duration}"));
+            match &mut result.inner {
+                GenericSliceResult::Raster(raster) => {
+                    ui.with_layout(Layout::bottom_up(Align::Min), |ui| {
+                        let state = &mut app.state;
+                        ui.horizontal(|ui| {
+                            let layer_digits = state.layer_count.1 as usize;
+                            ui.add(
+                                DragValue::new(&mut state.slice_preview_layer)
+                                    .range(1..=state.layer_count.0)
+                                    .custom_formatter(|n, _| {
+                                        format!("{:0>layer_digits$}/{}", n, state.layer_count.0)
+                                    }),
+                            );
+                            state.slice_preview_layer +=
+                                ui.button(RichText::new(CARET_UP)).clicked() as usize;
+                            state.slice_preview_layer -=
+                                ui.button(RichText::new(CARET_DOWN)).clicked() as usize;
 
                             ui.separator();
-                            let volume = result.volume.get::<Centimeter>(); // cm³ = ml
-                            ui.label(format!("{DROP} {volume:.2} ml"));
+                            if ui.button(concatcp!(CORNERS_IN, " Reset View")).clicked() {
+                                state.preview_offset = Vector2::zeros();
+                                state.preview_scale = 1.0;
+                            }
 
-                            ui.take_available_width();
-                        })
+                            ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                                let duration = human_duration(raster.print_time.convert());
+                                ui.label(format!("{CLOCK} {duration}"));
+
+                                ui.separator();
+                                let volume = raster.volume.get::<Centimeter>(); // cm³ = ml
+                                ui.label(format!("{DROP} {volume:.2} ml"));
+
+                                ui.take_available_width();
+                            })
+                        });
+
+                        slice_preview(state, ui, raster, result.config.platform_resolution);
                     });
-
-                    slice_preview(ui, result);
-                });
+                }
+                GenericSliceResult::Vector(_) => {
+                    ui.add_space(8.0);
+                    ui.label("Vector formats doesn't yet support previews...");
+                }
             }
         } else {
             Grid::new("slice_operation")
@@ -177,7 +192,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                     let post_process = &slice_operation.post_processing_progress;
                     for i in 0..post_process.count() {
                         let progress = post_process[i].progress();
-                        let name = ["Elephant Foot Fixer", "Anti Aliasing"][i];
+                        let name = ["Elephant Foot Fixer"][i];
                         if progress > 0.0 {
                             ui.label(name);
                             ui.add(ProgressBar::new(progress).show_percentage());
@@ -197,22 +212,27 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     }
 }
 
-fn slice_preview(ui: &mut egui::Ui, result: &mut SliceResult) {
+fn slice_preview(
+    state: &mut UiState,
+    ui: &mut egui::Ui,
+    result: &mut RasterSliceResult,
+    platform: Vector2<u32>,
+) {
     ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
-        layer_slider(ui, result);
+        layer_slider(state, ui, result);
 
         let available_size = ui.available_size() - Vec2::new(5.0, 5.0);
-        let [width, height] = *result.config.platform_resolution.as_ref();
+        let [width, height] = *platform.as_ref();
 
-        result.slice_preview_layer = result.slice_preview_layer.clamp(1, result.layer_count.0);
-        let new_preview = if result.last_preview_layer != result.slice_preview_layer
+        state.slice_preview_layer = state.slice_preview_layer.clamp(1, state.layer_count.0);
+        let new_preview = if state.last_preview_layer != state.slice_preview_layer
             || result.annotations.take_updated()
         {
-            result.last_preview_layer = result.slice_preview_layer;
+            state.last_preview_layer = state.slice_preview_layer;
             let size = (width * height) as usize;
 
             let mut layer = vec![0u8; size];
-            let layer_idx = result.slice_preview_layer - 1;
+            let layer_idx = state.slice_preview_layer - 1;
             rle::decode_into(result.layers[layer_idx].data.iter(), &mut layer);
 
             let mut layer_annotations = vec![0u8; size];
@@ -233,39 +253,37 @@ fn slice_preview(ui: &mut egui::Ui, result: &mut SliceResult) {
 
                 let drag = response.drag_delta();
                 let aspect = rect.width() / rect.height() * height as f32 / width as f32;
-                let preview_scale = result.preview_scale.powi(2);
-                result.preview_offset.x -=
+                let preview_scale = state.preview_scale.powi(2);
+                state.preview_offset.x -=
                     drag.x / rect.width() * width as f32 / preview_scale * aspect;
-                result.preview_offset.y += drag.y / rect.height() * height as f32 / preview_scale;
+                state.preview_offset.y += drag.y / rect.height() * height as f32 / preview_scale;
 
                 if let Some(pointer) = response.hover_pos()
                     && rect.contains(pointer)
                 {
-                    let dimensions = result.config.platform_resolution;
-                    let dimensions = Vec2::new(dimensions.x as f32, dimensions.y as f32);
+                    let dimensions = Vec2::new(width as f32, height as f32);
                     let aspect = rect.width() / rect.height() * dimensions.y / dimensions.x;
 
                     let scroll = ui.input(|x| x.smooth_scroll_delta);
-                    result.preview_scale =
-                        (result.preview_scale + scroll.y * 0.01).clamp(0.5, 10.0);
+                    state.preview_scale = (state.preview_scale + scroll.y * 0.01).clamp(0.5, 10.0);
 
                     if scroll.y != 0.0 {
                         // Scale around the cursor, not the center of the layer
                         let t = (pointer - rect.min) / (rect.max - rect.min) - Vec2::splat(0.5);
                         let delta = (t * Vec2::new(aspect, 1.0) * dimensions)
-                            * (preview_scale.recip() - result.preview_scale.powi(-2));
-                        result.preview_offset.x += delta.x;
-                        result.preview_offset.y -= delta.y;
+                            * (preview_scale.recip() - state.preview_scale.powi(-2));
+                        state.preview_offset.x += delta.x;
+                        state.preview_offset.y -= delta.y;
                     }
                 }
 
                 let callback = Callback::new_paint_callback(
                     rect,
                     SlicePreviewRenderCallback {
-                        dimensions: result.config.platform_resolution,
-                        offset: result.preview_offset,
+                        dimensions: platform,
+                        offset: state.preview_offset,
                         aspect: rect.width() / rect.height(),
-                        scale: result.preview_scale.powi(2),
+                        scale: state.preview_scale.powi(2),
                         new_preview,
                     },
                 );
@@ -274,11 +292,11 @@ fn slice_preview(ui: &mut egui::Ui, result: &mut SliceResult) {
     });
 }
 
-fn layer_slider(ui: &mut egui::Ui, result: &mut SliceResult) {
+fn layer_slider(state: &mut UiState, ui: &mut egui::Ui, result: &mut RasterSliceResult) {
     ui.spacing_mut().slider_width = ui.available_size().y;
 
-    let layer_count = result.layer_count.0;
-    let slider = Slider::new(&mut result.slice_preview_layer, 1..=layer_count)
+    let layer_count = state.layer_count.0;
+    let slider = Slider::new(&mut state.slice_preview_layer, 1..=layer_count)
         .vertical()
         .handle_shape(HandleShape::Rect { aspect_ratio: 1.0 })
         .show_value(false)
@@ -293,7 +311,7 @@ fn layer_slider(ui: &mut egui::Ui, result: &mut SliceResult) {
     let height = slider.rect.height() - 2.0 * handle_r;
     let pos = |t: f32| slider.rect.center_bottom() - Vec2::Y * (handle_r + height * t);
 
-    let slider_t = (result.slice_preview_layer - 1) as f32 / (layer_count - 1) as f32;
+    let slider_t = (state.slice_preview_layer - 1) as f32 / (layer_count - 1) as f32;
     let handle_inner_r = handle_r - visuals.fg_stroke.width;
     let handle_t = (handle_inner_r + visuals.expansion) / height;
 

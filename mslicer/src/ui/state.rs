@@ -26,6 +26,13 @@ pub struct UiState {
     pub send_print_completion: bool,
     pub remote_print_connecting: RemotePrintConnectStatus,
 
+    // slice preview
+    pub slice_preview_layer: usize,
+    pub last_preview_layer: usize,
+    pub preview_offset: Vector2<f32>,
+    pub preview_scale: f32,
+    pub layer_count: (usize, u8),
+
     // tools
     pub tools: Tools,
 }

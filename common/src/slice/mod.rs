@@ -66,7 +66,3 @@ pub struct Layer {
 
 pub type Polygon = Vec<Vector2<f32>>;
 pub type VectorLayer = Vec<Polygon>;
-pub struct VectorSliceResult<'a> {
-    pub layers: Vec<VectorLayer>,
-    pub slice_config: &'a SliceConfig,
-}

@@ -143,3 +143,5 @@
 - [ ] Optimize elephant foot post processing
 - [ ] Add exposure remapping post processing
 - [ ] Move the .file call into the async task
+- [ ] Replace slice format with a picker in the save dialog, use .ctb for remote send
+- [ ] Refactor/cleanup slicing stuff

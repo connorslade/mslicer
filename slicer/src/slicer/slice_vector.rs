@@ -4,7 +4,7 @@ use common::{
     container::{Image, Run},
     progress::Progress,
     serde::{DynamicSerializer, Serializer},
-    slice::{Format, SliceInfo, SlicedFile, VectorLayer, VectorSliceResult},
+    slice::{Format, SliceInfo, SlicedFile, VectorLayer},
     units::Milimeter,
 };
 use nalgebra::{Vector2, Vector3};
@@ -20,14 +20,13 @@ use crate::{
     slicer::{SEGMENT_LAYERS, Slicer},
 };
 
-// anti-alias-todo: add vector support back!
 pub struct SvgFile {
     layers: Vec<VectorLayer>,
     area: Vector2<u32>,
 }
 
 impl Slicer {
-    pub fn slice_vector(&self) -> VectorSliceResult<'_> {
+    pub fn slice_vector(&self) -> Vec<VectorLayer> {
         let segments = (self.models.iter())
             .map(|x| Segments1D::from_mesh(&x.mesh, SEGMENT_LAYERS))
             .collect::<Vec<_>>();
@@ -49,10 +48,7 @@ impl Slicer {
             .collect::<Vec<_>>();
 
         self.progress.set_finished();
-        VectorSliceResult {
-            layers,
-            slice_config: &self.slice_config,
-        }
+        layers
     }
 }
 
@@ -94,11 +90,8 @@ fn join_segments(segments_raw: &[Vector2<f32>]) -> Vec<Vec<Vector2<f32>>> {
 }
 
 impl SvgFile {
-    pub fn new(result: VectorSliceResult) -> Self {
-        Self {
-            layers: result.layers,
-            area: result.slice_config.platform_resolution,
-        }
+    pub fn new(area: Vector2<u32>, layers: Vec<VectorLayer>) -> Self {
+        Self { layers, area }
     }
 
     pub fn serialize<T: Serializer>(&self, ser: &mut T) {
