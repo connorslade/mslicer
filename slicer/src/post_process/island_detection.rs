@@ -6,23 +6,28 @@ use common::{
         rle::{self, bits::ClusterRun},
     },
     progress::Progress,
-    slice::DynSlicedFile,
+    slice::Layer,
 };
+use nalgebra::Vector2;
 
-pub fn detect_islands(file: &DynSlicedFile, progress: Progress, cascade: bool) -> Vec<Vec<u64>> {
-    let info = file.info();
-    let [width, rows] = *info.resolution.as_ref();
-    progress.set_total(info.layers as u64);
+pub fn detect_islands(
+    resolution: Vector2<u32>,
+    layers: &[Layer],
+    progress: Progress,
+    cascade: bool,
+) -> Vec<Vec<u64>> {
+    let [width, rows] = *resolution.cast::<u64>().as_ref();
+    progress.set_total(layers.len() as u64);
 
     let mut prev = Vec::new();
-    let mut curr = condensed_layer_rows(file, 0);
+    let mut curr = condensed_layer_rows(&layers[0], width);
 
     let mut annotations = Vec::new();
-    for layer in 1..info.layers as usize {
+    for layer in layers.iter().skip(1) {
         // Convert the layer data to a mask of non-zero voxels, split by each row.
-        progress.set_complete(layer as u64);
+        progress.add_complete(1);
         mem::swap(&mut prev, &mut curr);
-        curr = condensed_layer_rows(file, layer);
+        curr = condensed_layer_rows(layer, width);
 
         // Group areas of adjacent pixels
         let mut clusters = Clusters::default();
@@ -51,7 +56,7 @@ pub fn detect_islands(file: &DynSlicedFile, progress: Progress, cascade: bool) -
                 curr[run.row][run.index - 1] += mem::take(&mut curr[run.row][run.index]);
             }
 
-            let start = run.row as u64 * width as u64 + run.position;
+            let start = run.row as u64 * width + run.position;
             layer.push(start - pos);
             layer.push(run.size);
             pos = start + run.size;
@@ -64,10 +69,9 @@ pub fn detect_islands(file: &DynSlicedFile, progress: Progress, cascade: bool) -
     annotations
 }
 
-fn condensed_layer_rows(file: &DynSlicedFile, layer: usize) -> Vec<Vec<u64>> {
-    let layer = rle::bits::from_runs(&file.runs(layer).collect::<Vec<_>>());
-    let size = file.info().resolution;
-    rle::bits::chunks(&layer, size.x as u64)
+fn condensed_layer_rows(layer: &Layer, width: u64) -> Vec<Vec<u64>> {
+    let layer = rle::bits::from_runs(&layer.data);
+    rle::bits::chunks(&layer, width)
 }
 
 fn row_overlaps(rows: &[Vec<u64>], run: &ClusterRun) -> bool {

@@ -6,9 +6,9 @@ use crate::app::{
 };
 use common::{
     progress::CombinedProgress,
-    slice::{DynSlicedFile, SliceConfig},
+    slice::{Layer, SliceConfig},
 };
-use slicer::post_process::{anti_alias::AntiAlias, elephant_foot_fixer::ElephantFootFixer};
+use slicer::post_process::elephant_foot_fixer::ElephantFootFixer;
 
 pub mod model;
 pub mod storage;
@@ -23,7 +23,6 @@ pub struct Project {
 
 #[derive(Default, Clone)]
 pub struct PostProcessing {
-    pub anti_alias: AntiAlias,
     pub elephant_foot_fixer: ElephantFootFixer,
 }
 
@@ -71,9 +70,13 @@ impl Project {
 }
 
 impl PostProcessing {
-    pub fn process(&self, file: &mut DynSlicedFile, progress: CombinedProgress<2>) {
+    pub fn process(
+        &self,
+        config: &SliceConfig,
+        layers: &mut [Layer],
+        progress: CombinedProgress<1>,
+    ) {
         self.elephant_foot_fixer
-            .post_slice(file, progress[0].clone());
-        self.anti_alias.post_slice(file, progress[1].clone());
+            .post_slice(config, layers, progress[0].clone());
     }
 }

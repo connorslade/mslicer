@@ -20,6 +20,7 @@ use common::{
 use slicer::{
     mesh::Mesh,
     slicer::{Slicer, SlicerModel},
+    util::export_raster,
 };
 
 mod args;
@@ -82,8 +83,8 @@ fn main() -> Result<()> {
         RgbaImage::new(290, 290)
     };
 
-    let file = thread::spawn(move || slicer.slice());
-    let (mut file, _) = monitor_progress(file, progress, |progress| {
+    let file = thread::spawn(move || export_raster(&slicer.slice_config, slicer.slice_raster(), 0));
+    let mut file = monitor_progress(file, progress, |progress| {
         format!(
             "\rLayer: {}/{total}, {:.1}%",
             progress.get_complete(),

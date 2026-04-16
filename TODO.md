@@ -122,8 +122,8 @@
   - [ ] Manual support visualization
 - [x] Overhaul save format
 - [ ] Add more printer configs
-- [ ] Antialiasing without post-processing?
-  - [ ] Explore 3D post processing (mentioned in #7)
+- [x] Antialiasing without post-processing?
+  - [x] Explore 3D post processing (mentioned in #7)
 - [ ] Reference count BVH and half_edge meshes
 - [x] Make sliced file serialization an async task
 - [x] Redo the while slice operating thing, its gotten out of hand...
@@ -133,3 +133,15 @@
 - [x] Finish nanodlp format (#8)
 - [x] Parse speeds with any time unit (#11)
 - [ ] Auto reload annotations on current layer when island detection finishes
+- [ ] Fix light direction calculation for orthographic camera
+- [ ] Fix scanning for printers never going away on linux
+- [ ] Fix crash when slicing without ever seeing workspace
+- [ ] Fix model scale being applied after rotation
+- [ ] Fix slicing with geometry extending past y=0
+- [ ] Add saved projects to recent
+- [ ] 'Do you want to save this project' popup when loading a project into a non-empty workspace
+- [ ] Optimize elephant foot post processing
+- [ ] Add exposure remapping post processing
+- [ ] Move the .file call into the async task
+- [ ] Replace slice format with a picker in the save dialog, use .ctb for remote send
+- [ ] Refactor/cleanup slicing stuff

@@ -11,11 +11,15 @@ use common::{
 };
 use slicer::{
     mesh::{Mesh, MeshInner},
-    post_process::{anti_alias::AntiAlias, elephant_foot_fixer::ElephantFootFixer},
+    post_process::elephant_foot_fixer::ElephantFootFixer,
 };
 
 /// Project format version. Value should be incremented whenever the save format
 /// changes, even in development.
+///
+/// ## v5
+/// Replaced the (inaccurate and incredibly slow) blur based anti aliasing with
+/// a super sampling approach.
 ///
 /// ## v4
 /// Added relative exposure value to models.
@@ -24,8 +28,9 @@ use slicer::{
 /// Added the PWM value to SliceConfig -> ExposureConfig.
 ///
 /// ## v2
-/// A complete rewrite using a custom serilizer/deserilizer because of the bincode drama...
-const VERSION: u16 = 4;
+/// A complete rewrite using a custom serilizer/deserilizer because of the
+/// bincode drama...
+const VERSION: u16 = 5;
 
 struct ModelInfo {
     mesh: u32,
@@ -145,7 +150,7 @@ impl Project {
         );
 
         let slice_config = SliceConfig::deserialize(des, version)?;
-        let post_processing = PostProcessing::deserialize(des);
+        let post_processing = PostProcessing::deserialize(des, version);
 
         let models = des.read_u32_be();
         let models = (0..models)
@@ -177,13 +182,12 @@ impl Project {
 
 impl PostProcessing {
     pub fn serialize<T: Serializer>(&self, ser: &mut T) {
-        self.anti_alias.serialize(ser);
         self.elephant_foot_fixer.serialize(ser);
     }
 
-    pub fn deserialize<T: Deserializer>(des: &mut T) -> Self {
+    pub fn deserialize<T: Deserializer>(des: &mut T, version: u16) -> Self {
+        (version < 5).then(|| des.advance_by(5));
         Self {
-            anti_alias: AntiAlias::deserialize(des),
             elephant_foot_fixer: ElephantFootFixer::deserialize(des),
         }
     }

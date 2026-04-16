@@ -1,4 +1,4 @@
-use nalgebra::Vector3;
+use nalgebra::{Vector2, Vector3};
 
 use crate::{
     geometry::{Primitive, Ray},
@@ -11,7 +11,7 @@ pub fn plane_triangle_intersection(
     points: &[Vector3<f32>],
     face: usize,
     height: f32,
-) -> Option<[Vector3<f32>; 2]> {
+) -> Option<[Vector2<f32>; 2]> {
     // Get all the vertices of the face
     let face = mesh.face(face);
     let v0 = points[face[0] as usize];
@@ -24,13 +24,13 @@ pub fn plane_triangle_intersection(
     let (a, b, c) = (v0.z - height, v1.z - height, v2.z - height);
     let (a_pos, b_pos, c_pos) = (a > 0.0, b > 0.0, c > 0.0);
 
-    let mut out = [Vector3::zeros(); 2];
+    let mut out = [Vector2::zeros(); 2];
     let mut n = 0;
 
     // Closure called when the line segment from v0 to v1 is intersecting the
     // plane. t is how far along the line the intersection is and intersections,
     // it well the point that is intersecting with the plane.
-    let mut push_intersection = |a: f32, b: f32, v0: Vector3<f32>, v1: Vector3<f32>| {
+    let mut push_intersection = |a: f32, b: f32, v0: Vector2<f32>, v1: Vector2<f32>| {
         let t = a / (a - b);
         let intersection = v0 + t * (v1 - v0);
         out[n] = intersection;
@@ -40,9 +40,9 @@ pub fn plane_triangle_intersection(
     // And as you can see my aversion to else blocks now includes if blocks...
     // Anyway here we just check each line segment of the face is intersecting,
     // if it is we push the intersection to the out vec.
-    (a_pos ^ b_pos).then(|| push_intersection(a, b, v0, v1));
-    (b_pos ^ c_pos).then(|| push_intersection(b, c, v1, v2));
-    (c_pos ^ a_pos).then(|| push_intersection(c, a, v2, v0));
+    (a_pos ^ b_pos).then(|| push_intersection(a, b, v0.xy(), v1.xy()));
+    (b_pos ^ c_pos).then(|| push_intersection(b, c, v1.xy(), v2.xy()));
+    (c_pos ^ a_pos).then(|| push_intersection(c, a, v2.xy(), v0.xy()));
 
     (n == 2).then_some(out)
 }

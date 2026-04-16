@@ -7,10 +7,14 @@ use common::{
     units::{Milimeters, MilimetersPerMinute, Seconds},
 };
 use nalgebra::{ArrayStorage, Const, Matrix, Scalar, U1, Vector2, Vector3};
+use num_integer::cbrt;
 
 /// mslicer command line interface.
 #[derive(Debug, Parser)]
 pub struct Args {
+    #[arg(long, default_value_t = 1)]
+    /// Supersampling anti-aliasing (SSAA) factor.
+    pub supersample: u8,
     #[arg(long, default_value = "11520, 5120", value_parser = vector_value_parser::<u32, 2>, )]
     /// Resolution of the printer mask display in pixels.
     pub platform_resolution: Vector2<u32>,
@@ -112,6 +116,7 @@ impl Args {
 
         Ok(SliceConfig {
             format,
+            supersample: cbrt(self.supersample) as u8,
             platform_resolution: self.platform_resolution,
             platform_size: self.platform_size.map(Milimeters::new),
             slice_height: Milimeters::new(self.layer_height),

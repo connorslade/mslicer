@@ -1,6 +1,6 @@
 use common::{
     container::Run,
-    slice::{EncodableLayer, SliceConfig},
+    slice::{EncodableLayer, ExposureConfig, SliceConfig},
 };
 use nalgebra::Vector2;
 
@@ -122,21 +122,23 @@ impl EncodableLayer for LayerEncoder {
         self.add_run(length, value);
     }
 
-    fn finish(self, layer: u32, slice_config: &SliceConfig) -> Self::Output {
-        let layer_exposure = slice_config.exposure_config(layer);
-        let checksum = self.checksum();
-
+    fn finish(
+        self,
+        layer: u32,
+        slice_config: &SliceConfig,
+        exposure: &ExposureConfig,
+    ) -> Self::Output {
         Layer {
+            checksum: self.checksum(),
             data: self.data,
-            checksum,
             layer_position_z: slice_config.slice_height * (layer + 1) as f32,
 
-            layer_exposure_time: layer_exposure.exposure_time,
-            light_pwm: layer_exposure.pwm,
-            lift_distance: layer_exposure.lift_distance,
-            lift_speed: layer_exposure.lift_speed.convert(),
-            retract_distance: layer_exposure.retract_distance,
-            retract_speed: layer_exposure.retract_speed.convert(),
+            layer_exposure_time: exposure.exposure_time,
+            light_pwm: exposure.pwm,
+            lift_distance: exposure.lift_distance,
+            lift_speed: exposure.lift_speed.convert(),
+            retract_distance: exposure.retract_distance,
+            retract_speed: exposure.retract_speed.convert(),
             pause_position_z: slice_config.platform_size.z,
             ..Default::default()
         }

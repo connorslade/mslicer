@@ -12,13 +12,13 @@ use common::{
     container::Run,
     misc::human_duration,
     progress::{CombinedProgress, Progress},
-    slice::{DynSlicedFile, SliceConfig},
+    slice::{DynSlicedFile, Layer, SliceConfig, VectorLayer},
     units::{Miliseconds, Milliliters, Seconds},
 };
 use egui::Color32;
 use image::RgbaImage;
-use nalgebra::Vector2;
 use parking_lot::{Condvar, MappedMutexGuard, Mutex, MutexGuard};
+use slicer::{slicer::slice_vector::SvgFile, util};
 use tracing::info;
 
 #[derive(Clone)]
@@ -29,7 +29,7 @@ pub struct SliceOperation {
 pub struct SliceOperationInner {
     start_time: Instant,
     pub progress: Progress,
-    pub post_processing_progress: CombinedProgress<2>,
+    pub post_processing_progress: CombinedProgress<1>,
     pub result: Mutex<Option<SliceResult>>,
 
     preview_image: Mutex<Option<RgbaImage>>,
@@ -37,18 +37,30 @@ pub struct SliceOperationInner {
 }
 
 pub struct SliceResult {
-    pub file: Arc<DynSlicedFile>,
+    pub config: SliceConfig,
     pub elapsed: Duration,
+    pub fresh: bool,
+
+    pub inner: GenericSliceResult,
+}
+
+pub enum GenericSliceResult {
+    Raster(RasterSliceResult),
+    Vector(VectorSliceResult),
+}
+
+pub struct RasterSliceResult {
+    pub layers: Arc<Vec<Layer>>,
     pub annotations: Arc<Annotations>,
+    pub detected_islands: bool,
+
+    pub voxels: u64,
     pub volume: Milliliters,
     pub print_time: Seconds,
+}
 
-    pub detected_islands: bool,
-    pub slice_preview_layer: usize,
-    pub last_preview_layer: usize,
-    pub preview_offset: Vector2<f32>,
-    pub preview_scale: f32,
-    pub layer_count: (usize, u8),
+pub struct VectorSliceResult {
+    pub layers: Vec<VectorLayer>,
 }
 
 pub const ISLAND_COLOR: Color32 = Color32::from_rgb(159, 44, 54);
@@ -72,7 +84,7 @@ pub enum Annotation {
 }
 
 impl SliceOperation {
-    pub fn new(slice: Progress, post_process: CombinedProgress<2>) -> Self {
+    pub fn new(slice: Progress, post_process: CombinedProgress<1>) -> Self {
         Self {
             inner: Arc::new(SliceOperationInner {
                 start_time: Instant::now(),
@@ -106,27 +118,41 @@ impl SliceOperationInner {
         MutexGuard::map(preview_image, |image| image.as_mut().unwrap())
     }
 
-    pub fn add_result(&self, config: &SliceConfig, (file, voxels): (DynSlicedFile, u64)) {
+    pub fn add_raster_result(&self, config: SliceConfig, layers: Vec<Layer>) {
+        let voxels = (layers.iter())
+            .map(|x| (x.data.iter().filter(|x| x.value != 0).map(|x| x.length)).sum::<u64>())
+            .sum::<u64>();
+
         let elapsed = self.start_time.elapsed();
-        info!("Slice operation completed in {:?}", elapsed);
+        info!("Raster slice operation completed in {:?}", elapsed);
 
-        let layers = file.info().layers as usize;
-        let volume = (voxels as f32 * config.voxel_volume()).convert();
-        let print_time = config.print_time(layers as u32);
+        let raster = RasterSliceResult {
+            voxels,
+            volume: (voxels as f32 * config.voxel_volume()).convert(),
+            print_time: config.print_time(layers.len() as u32),
 
-        self.result.lock().replace(SliceResult {
-            elapsed,
-            file: Arc::new(file),
+            layers: Arc::new(layers),
             annotations: Arc::new(Annotations::default()),
-            volume,
-            print_time,
-
             detected_islands: false,
-            slice_preview_layer: 0,
-            last_preview_layer: 0,
-            preview_offset: Vector2::new(0.0, 0.0),
-            preview_scale: 1.0,
-            layer_count: (layers, layers.to_string().len() as u8),
+        };
+
+        self.result().replace(SliceResult {
+            config,
+            elapsed,
+            fresh: true,
+            inner: raster.into(),
+        });
+    }
+
+    pub fn add_vector_result(&self, config: SliceConfig, layers: Vec<VectorLayer>) {
+        let elapsed = self.start_time.elapsed();
+        info!("Vector slice operation completed in {:?}", elapsed);
+
+        self.result().replace(SliceResult {
+            config,
+            elapsed,
+            fresh: true,
+            inner: VectorSliceResult { layers }.into(),
         });
     }
 
@@ -191,6 +217,39 @@ impl SliceResult {
         let time = self.elapsed.as_millis() as f32;
         human_duration(Miliseconds::new(time))
     }
+
+    /// Assumes result is not None
+    pub fn file(&self, preview_image: &RgbaImage) -> DynSlicedFile {
+        match &self.inner {
+            GenericSliceResult::Raster(result) => {
+                let mut file =
+                    util::export_raster(&self.config, result.layers.iter(), result.voxels);
+                file.set_preview(preview_image);
+                file
+            }
+            GenericSliceResult::Vector(result) => {
+                let platform = self.config.platform_resolution.xy();
+                let file = SvgFile::new(platform, result.layers.clone());
+                Box::new(file)
+            }
+        }
+    }
+}
+
+impl GenericSliceResult {
+    pub fn as_raster(&self) -> Option<&RasterSliceResult> {
+        match self {
+            GenericSliceResult::Raster(raster) => Some(raster),
+            _ => None,
+        }
+    }
+
+    pub fn layers(&self) -> usize {
+        match self {
+            GenericSliceResult::Raster(raster) => raster.layers.len(),
+            GenericSliceResult::Vector(vector) => vector.layers.len(),
+        }
+    }
 }
 
 impl Deref for SliceOperation {
@@ -198,5 +257,17 @@ impl Deref for SliceOperation {
 
     fn deref(&self) -> &Self::Target {
         &self.inner
+    }
+}
+
+impl From<RasterSliceResult> for GenericSliceResult {
+    fn from(value: RasterSliceResult) -> Self {
+        Self::Raster(value)
+    }
+}
+
+impl From<VectorSliceResult> for GenericSliceResult {
+    fn from(value: VectorSliceResult) -> Self {
+        Self::Vector(value)
     }
 }

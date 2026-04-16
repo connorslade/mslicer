@@ -1,6 +1,11 @@
 use std::iter;
 
-use common::{container::Image, progress::Progress, slice::SliceConfig, units::Milimeter};
+use common::{
+    container::Image,
+    progress::Progress,
+    slice::{Layer, SliceConfig},
+    units::Milimeter,
+};
 use nalgebra::{Vector2, Vector3};
 
 #[derive(Clone)]
@@ -18,11 +23,7 @@ pub struct Supports {
 }
 
 impl ExposureTest {
-    pub fn generate(
-        &self,
-        config: &SliceConfig,
-        progress: &Progress,
-    ) -> impl Iterator<Item = Image> {
+    pub fn generate(&self, config: &SliceConfig, progress: &Progress) -> Vec<Layer> {
         let slice_height = config.slice_height.get::<Milimeter>();
         let layers = (self.size.z / slice_height).round() as u64;
         let support_layers = if self.supports.enabled {
@@ -92,7 +93,13 @@ impl ExposureTest {
                         image
                     }),
             )
+            .enumerate()
+            .map(|(layer, image)| Layer {
+                data: image.runs().collect(),
+                exposure: config.exposure_config(layer as u32).clone(),
+            })
             .inspect(|_| progress.add_complete(1))
+            .collect()
     }
 
     fn steps(&self) -> impl Iterator<Item = (usize, u8)> {

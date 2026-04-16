@@ -23,7 +23,7 @@ use crate::{
     },
     windows::{self, Tab},
 };
-use common::{progress::CombinedProgress, units::Milimeter};
+use common::{progress::CombinedProgress, slice::Format, units::Milimeter};
 use slicer::slicer::{Slicer, SlicerModel};
 
 pub mod config;
@@ -168,7 +168,6 @@ impl App {
         info!("Starting slicing operation");
 
         let slice_config = self.project.slice_config.clone();
-
         let slice_height = slice_config.slice_height.get::<Milimeter>();
         let platform_size = (slice_config.platform_size.xy()).map(|x| x.get::<Milimeter>());
 
@@ -202,13 +201,15 @@ impl App {
             ],
             move || {
                 let slice_operation = slice_operation.as_ref().unwrap();
-                let (mut file, voxels) = slicer.slice();
 
-                post_processing.process(&mut file, post_process);
-                file.set_preview(&slice_operation.preview_image());
-
-                let config = slicer.slice_config();
-                slice_operation.add_result(config, (file, voxels));
+                if matches!(slicer.slice_config.format, Format::Svg) {
+                    let layers = slicer.slice_vector();
+                    slice_operation.add_vector_result(slicer.slice_config, layers);
+                } else {
+                    let mut layers = slicer.slice_raster();
+                    post_processing.process(&slicer.slice_config, &mut layers, post_process);
+                    slice_operation.add_raster_result(slicer.slice_config, layers);
+                }
             }
         ));
     }

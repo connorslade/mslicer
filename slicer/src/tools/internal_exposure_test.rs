@@ -1,6 +1,11 @@
 use std::iter::repeat_n;
 
-use common::{container::Image, progress::Progress, slice::SliceConfig, units::Milimeter};
+use common::{
+    container::Image,
+    progress::Progress,
+    slice::{Layer, SliceConfig},
+    units::Milimeter,
+};
 use nalgebra::Vector2;
 
 #[derive(Clone)]
@@ -11,11 +16,7 @@ pub struct InternalExposureTest {
 }
 
 impl InternalExposureTest {
-    pub fn generate(
-        &self,
-        config: &SliceConfig,
-        progress: &Progress,
-    ) -> impl Iterator<Item = Image> {
+    pub fn generate(&self, config: &SliceConfig, progress: &Progress) -> Vec<Layer> {
         let slice_height = config.slice_height.get::<Milimeter>();
         let layers = (self.size.y / slice_height).round() as usize;
         progress.set_total(layers as u64);
@@ -27,7 +28,13 @@ impl InternalExposureTest {
         repeat_n(outer.clone(), wall_layers)
             .chain(repeat_n(inner, layers - wall_layers * 2))
             .chain(repeat_n(outer, wall_layers))
+            .enumerate()
+            .map(|(layer, image)| Layer {
+                data: image.runs().collect(),
+                exposure: config.exposure_config(layer as u32).clone(),
+            })
             .inspect(|_| progress.add_complete(1))
+            .collect()
     }
 
     fn layer(&self, config: &SliceConfig, internal: bool) -> Image {

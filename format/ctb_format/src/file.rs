@@ -9,7 +9,7 @@ use common::{
     container::{Image, Run},
     progress::Progress,
     serde::{Deserializer, DynamicSerializer, Serializer, SliceDeserializer},
-    slice::{Format, SliceInfo, SliceResult, SlicedFile},
+    slice::{Format, SliceConfig, SliceInfo, SlicedFile},
     units::{Milimeters, MilimetersPerMinute, Seconds},
 };
 use image::imageops::FilterType;
@@ -380,9 +380,8 @@ impl File {
 }
 
 impl File {
-    pub fn from_slice_result(result: SliceResult<Layer>) -> Self {
-        let config = result.slice_config;
-        let layer_count = result.layers.len();
+    pub fn from_layers(config: &SliceConfig, layers: Vec<Layer>) -> Self {
+        let layer_count = layers.len();
 
         let epoch = SystemTime::now()
             .duration_since(UNIX_EPOCH)
@@ -390,7 +389,7 @@ impl File {
             .as_secs();
 
         Self {
-            layers: result.layers,
+            layers,
             checksum: 0,
             disclaimer: DISCLAIMER.into(),
             modified: (epoch / 60) as u32,

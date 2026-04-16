@@ -37,6 +37,6 @@ fn slice_benchmark(g: &mut BenchmarkGroup<'_, WallTime>, name: &str) {
     let slicer = slicer(&data);
 
     g.bench_function(name, |b| {
-        b.iter(|| black_box(slicer.slice_raster::<goo_format::LayerEncoder>()));
+        b.iter(|| black_box(slicer.slice_raster()));
     });
 }

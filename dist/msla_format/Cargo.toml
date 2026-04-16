@@ -16,6 +16,7 @@ repository = "https://github.com/connorslade/mslicer"
 anyhow.workspace = true
 crc32fast.workspace = true
 image.workspace = true
+itertools.workspace = true
 nalgebra.workspace = true
 serde.workspace = true
 

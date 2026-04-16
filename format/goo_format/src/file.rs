@@ -5,7 +5,7 @@ use common::{
     container::{Image, Run},
     progress::Progress,
     serde::{DynamicSerializer, Serializer, SizedString, SliceDeserializer},
-    slice::{Format, SliceInfo, SliceResult, SlicedFile},
+    slice::{Format, SliceConfig, SliceInfo, SlicedFile},
     units::Second,
 };
 use image::{RgbaImage, imageops::FilterType};
@@ -24,11 +24,10 @@ impl File {
         Self { header, layers }
     }
 
-    pub fn from_slice_result(result: SliceResult<Layer>) -> Self {
-        let config = result.slice_config;
-        let layers = result.layers.len() as u32;
+    pub fn from_layers(config: &SliceConfig, layers: Vec<Layer>) -> Self {
+        let layer_count = layers.len() as u32;
 
-        let print_time = config.print_time(layers);
+        let print_time = config.print_time(layer_count);
         let save_time = Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
         Self::new(
             Header {
@@ -38,7 +37,7 @@ impl File {
                 y_size: config.platform_size.y,
                 z_size: config.platform_size.z,
 
-                layer_count: layers,
+                layer_count,
                 printing_time: print_time.get::<Second>() as u32,
                 layer_thickness: config.slice_height,
                 bottom_layers: config.first_layers,
@@ -61,7 +60,7 @@ impl File {
                 file_time: SizedString::new(save_time.as_bytes()),
                 ..Default::default()
             },
-            result.layers,
+            layers,
         )
     }
 

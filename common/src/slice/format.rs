@@ -42,6 +42,7 @@ impl Format {
         }
     }
 
+    // todo: remove this
     pub fn supports_preview(&self) -> bool {
         matches!(self, Format::Goo | Format::Ctb | Format::NanoDLP)
     }

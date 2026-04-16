@@ -1,6 +1,6 @@
 use common::{
     container::Run,
-    slice::{EncodableLayer, SliceConfig},
+    slice::{EncodableLayer, ExposureConfig, SliceConfig},
     units::{Milimeters, MilimetersPerMinute, Seconds},
 };
 use nalgebra::Vector2;
@@ -115,25 +115,23 @@ impl EncodableLayer for LayerEncoder {
         self.add_run(length, value);
     }
 
-    fn finish(self, layer: u32, config: &SliceConfig) -> Self::Output {
-        let layer_exposure = config.exposure_config(layer);
+    fn finish(self, layer: u32, config: &SliceConfig, exposure: &ExposureConfig) -> Self::Output {
         // note that retract_distance is not used...
-
         Layer {
             position_z: config.slice_height * (layer + 1) as f32,
-            exposure_time: layer_exposure.exposure_time,
+            exposure_time: exposure.exposure_time,
             light_off_delay: Seconds::new(0.0),
-            lift_height: layer_exposure.lift_distance,
-            lift_speed: layer_exposure.lift_speed.convert(),
+            lift_height: exposure.lift_distance,
+            lift_speed: exposure.lift_speed.convert(),
             lift_height_2: Milimeters::new(0.0),
             lift_speed_2: MilimetersPerMinute::new(0.0),
-            retract_speed: layer_exposure.retract_speed.convert(),
+            retract_speed: exposure.retract_speed.convert(),
             retract_height_2: Milimeters::new(0.0),
             retract_speed_2: MilimetersPerMinute::new(0.0),
             rest_time_before_lift: Seconds::new(0.0),
             rest_time_after_lift: Seconds::new(0.0),
             rest_time_after_retract: Seconds::new(1.0),
-            light_pwm: layer_exposure.pwm as f32,
+            light_pwm: exposure.pwm as f32,
             data: self.data,
         }
     }

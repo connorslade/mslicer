@@ -38,20 +38,20 @@ criterion = "0.8.1"
 dirs = "6.0.0"
 eframe = { version = "0.33.3", features = ["wgpu", "serde"] }
 egui = "0.33.3"
-egui_extras = { version = "0.33.3", features = ["image"] }
 egui-phosphor = "0.11.0"
 egui-wgpu = "0.33.3"
 egui_dock = { version = "0.18.0", features = ["serde"] }
+egui_extras = { version = "0.33.3", features = ["image"] }
 egui_tracing = { git = "https://github.com/Sigma-8214/egui_tracing" }
 encase = "0.12.0"
 image = { version = "=0.25.6", default-features = false, features = ["png"] }
 imageproc = "0.25.0"
 itertools = "0.14.0"
-libblur = "0.22.0"
 markdown = "0.3.0"
 md5 = "0.8.0"
 nalgebra = { version = "0.34.1", features = ["serde-serialize", "encase"] }
 notify-rust = "4.11.7"
+num-integer = "0.1.46"
 open = "5.3.2"
 ordered-float = "5.0.0"
 parking_lot = "0.12.4"

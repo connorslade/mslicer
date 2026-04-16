@@ -20,7 +20,7 @@ impl Default for Header {
             blur_level: 0,
             small_preview: PreviewImage::empty(),
             big_preview: PreviewImage::empty(),
-            layer_count: 171,
+            layer_count: 0,
             x_resolution: 11520,
             y_resolution: 5102,
             x_mirror: false,
