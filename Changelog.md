@@ -10,6 +10,8 @@
 - Internal exposure test tool
 - Remote print preferred service ports
 - Remote print will use limited broadcast by default to find printers on the network
+- Remote print default broadcast address changed to `255.255.255.255`
+- Fix crash on macOS (Observed on macOS Sequoia on a laptop with a touch bar)
 - Separate slicing from layer encoding
 - Native 3D anti-aliasing!
   - Uses supersampling anti-aliasing (SSAA)
