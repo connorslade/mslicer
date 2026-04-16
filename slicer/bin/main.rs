@@ -14,7 +14,7 @@ use image::{ImageReader, RgbaImage};
 use common::{
     progress::Progress,
     serde::{DynamicSerializer, ReaderDeserializer},
-    slice::SliceConfig,
+    slice::{SliceConfig, format::RasterFormat},
     units::Milimeter,
 };
 use slicer::{
@@ -33,7 +33,9 @@ fn main() -> Result<()> {
     let extension = (args.output.extension())
         .context("Output file has no extension")?
         .to_string_lossy();
-    let slice_config = args.slice_config(&extension)?;
+    let format = RasterFormat::from_extension(&extension).context("Unknown output format")?;
+
+    let slice_config = args.slice_config()?;
     let mm_to_px = args.mm_to_px();
 
     let mut meshes = Vec::new();
@@ -83,7 +85,9 @@ fn main() -> Result<()> {
         RgbaImage::new(290, 290)
     };
 
-    let file = thread::spawn(move || export_raster(&slicer.slice_config, slicer.slice_raster(), 0));
+    let file = thread::spawn(move || {
+        export_raster(&slicer.slice_config, slicer.slice_raster(), 0, format)
+    });
     let mut file = monitor_progress(file, progress, |progress| {
         format!(
             "\rLayer: {}/{total}, {:.1}%",

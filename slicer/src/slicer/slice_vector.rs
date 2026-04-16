@@ -4,7 +4,7 @@ use common::{
     container::{Image, Run},
     progress::Progress,
     serde::{DynamicSerializer, Serializer},
-    slice::{Format, SliceInfo, SlicedFile, VectorLayer},
+    slice::{SliceInfo, SlicedFile, VectorLayer},
     units::Milimeter,
 };
 use nalgebra::{Vector2, Vector3};
@@ -154,10 +154,6 @@ impl SlicedFile for SvgFile {
             size: Vector3::default(),
             bottom_layers: 0,
         }
-    }
-
-    fn format(&self) -> Format {
-        Format::Svg
     }
 
     fn runs(&self, _layer: usize) -> Box<dyn Iterator<Item = Run> + '_> {

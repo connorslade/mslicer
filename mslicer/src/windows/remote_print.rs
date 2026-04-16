@@ -7,7 +7,7 @@ use std::{
 };
 
 use chrono::DateTime;
-use common::{misc::human_duration, slice::Format, units::Miliseconds};
+use common::{misc::human_duration, slice::format::RasterFormat, units::Miliseconds};
 use const_format::concatcp;
 use egui::{
     Align, Context, DragValue, Grid, Layout, OutputCommand, ProgressBar, Separator, Spinner,
@@ -235,10 +235,10 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
                 ui.add(Spinner::new());
                 match app.state.remote_print_connecting {
                     RemotePrintConnectStatus::Connecting => {
-                        ui.label("Connecting to printer...");
+                        ui.label("Connecting to printer…");
                     }
                     RemotePrintConnectStatus::Scanning => {
-                        ui.label("Scanning for printers...");
+                        ui.label("Scanning for printers…");
                     }
                     _ => {}
                 };
@@ -376,7 +376,7 @@ fn upload_file(app: &mut App, mainboard_id: String) {
         let Some(format) = file
             .extension()
             .and_then(|x| x.to_str())
-            .and_then(Format::from_extension)
+            .and_then(RasterFormat::from_extension)
         else {
             app.popup.open(Popup::simple(
                 "Invalid File",

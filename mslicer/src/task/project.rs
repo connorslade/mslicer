@@ -108,8 +108,10 @@ impl Task for ProjectLoad {
 
 impl Task for ProjectSave {
     fn poll(&mut self, app: &mut TaskApp) -> PollResult {
-        (self.handle.poll(app, "Failed to Save Project"))
-            .into_poll_result(|_| PollResult::complete())
+        (self.handle.poll(app, "Failed to Save Project")).into_poll_result(|_| {
+            app.config.add_recent_project(self.path.to_path_buf());
+            PollResult::complete()
+        })
     }
 
     fn status(&self) -> Option<TaskStatus<'_>> {

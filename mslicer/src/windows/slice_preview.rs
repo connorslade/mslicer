@@ -22,8 +22,15 @@ use crate::{
     ui::{popup::Popup, state::UiState},
 };
 use common::{
-    container::rle, misc::human_duration, progress::Progress, serde::DynamicSerializer,
-    slice::Format, units::Centimeter,
+    container::rle,
+    misc::human_duration,
+    progress::Progress,
+    serde::DynamicSerializer,
+    slice::{
+        DynSlicedFile, SliceMode,
+        format::{Format, RasterFormat},
+    },
+    units::Centimeter,
 };
 
 const FILENAME_POPUP_TEXT: &str =
@@ -36,7 +43,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
         let progress = &slice_operation.progress;
 
         if let Some(result) = slice_operation.result().as_mut() {
-            let format = app.project.slice_config.format;
+            let format = app.project.slice_config.mode;
 
             if mem::take(&mut result.fresh) {
                 app.state.slice_preview_layer = 0;
@@ -54,7 +61,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                 ui.with_layout(Layout::default().with_cross_align(Align::Max), |ui| {
                     ui.horizontal(|ui| {
                         let enabled =
-                            app.remote_print.is_initialized() && format.supports_preview();
+                            app.remote_print.is_initialized() && format == SliceMode::Raster;
                         ui.add_enabled_ui(enabled, |ui| {
                             ui.menu_button(concatcp!(PAPER_PLANE_TILT, " Send to Printer"), |ui| {
                                 let mqtt = app.remote_print.mqtt();
@@ -80,37 +87,36 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
 
                                     let mut serializer = DynamicSerializer::new();
                                     result
-                                        .file(&slice_operation.preview_image())
+                                        .file(
+                                            RasterFormat::Ctb.into(),
+                                            &slice_operation.preview_image(),
+                                        )
                                         .serialize(&mut serializer, Progress::new());
                                     let data = Arc::new(serializer.into_inner());
 
                                     let mainboard_id = printer.mainboard_id.clone();
                                     if ui.button(layout_job).clicked() {
-                                        app.popup.open(name_popup(mainboard_id, data, format));
+                                        app.popup.open(name_popup(mainboard_id, data));
                                     }
                                 }
                             });
                         });
 
-                        if ui.button(concatcp!(FLOPPY_DISK_BACK, " Save")).clicked() {
-                            // anti-alias-todo: no longer has to be RCed
-                            // anti-alias-todo: move the .file call into the async task??
-                            let file = Arc::new(result.file(&slice_operation.preview_image()));
-                            let task = FileDialog::save_file(
-                                (format.name(), &[format.extension()]),
-                                move |_app, path, tasks| {
-                                    let path = path.with_extension(format.extension());
-                                    let file_name = path.file_name().unwrap().to_string_lossy();
-                                    let mut out = File::create(&path).unwrap();
+                        ui.menu_button(concatcp!(FLOPPY_DISK_BACK, " Save"), |ui| {
+                            let formats: &[Format] = match result.config.mode {
+                                SliceMode::Raster => &Format::RASTER,
+                                SliceMode::Vector => &Format::VECTOR,
+                            };
 
-                                    tasks.push(Box::new(SaveResult::new(
-                                        (file, file_name.into_owned()),
-                                        move |bytes| out.write_all(&bytes).unwrap(),
-                                    )));
-                                },
-                            );
-                            app.tasks.add(task);
-                        }
+                            ui.set_width(150.0);
+                            for &format in formats {
+                                if ui.button(format.name()).clicked() {
+                                    let file =
+                                        result.file(format, &slice_operation.preview_image());
+                                    app.tasks.add(save_file(format, Arc::new(file)));
+                                }
+                            }
+                        });
 
                         ui.separator();
                         let can_detect = (result.inner.as_raster())
@@ -177,7 +183,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                 }
                 GenericSliceResult::Vector(_) => {
                     ui.add_space(8.0);
-                    ui.label("Vector formats doesn't yet support previews...");
+                    ui.label("Vector formats don't yet support previews…");
                 }
             }
         } else {
@@ -344,7 +350,7 @@ fn layer_slider(state: &mut UiState, ui: &mut egui::Ui, result: &mut RasterSlice
     );
 }
 
-fn name_popup(mainboard_id: String, data: Arc<Vec<u8>>, format: Format) -> Popup {
+fn name_popup(mainboard_id: String, data: Arc<Vec<u8>>) -> Popup {
     Popup::new("Remote Send", move |app, ui| {
         ui.horizontal(|ui| {
             ui.label("File Name:");
@@ -373,7 +379,7 @@ fn name_popup(mainboard_id: String, data: Arc<Vec<u8>>, format: Format) -> Popup
                             .replace([' ', '/'], "_")
                             .replace("..", "");
                         app.remote_print
-                            .upload(&mainboard_id, data.clone(), name, format)
+                            .upload(&mainboard_id, data.clone(), name, RasterFormat::Ctb)
                             .unwrap();
                     }
                 });
@@ -381,4 +387,20 @@ fn name_popup(mainboard_id: String, data: Arc<Vec<u8>>, format: Format) -> Popup
 
         close
     })
+}
+
+fn save_file(format: Format, file: Arc<DynSlicedFile>) -> FileDialog {
+    FileDialog::save_file(
+        (format.name(), &[format.extension()]),
+        move |_app, path, tasks| {
+            let path = path.with_extension(format.extension());
+            let file_name = path.file_name().unwrap().to_string_lossy();
+            let mut out = File::create(&path).unwrap();
+
+            tasks.push(Box::new(SaveResult::new(
+                (file, file_name.into_owned()),
+                move |bytes| out.write_all(&bytes).unwrap(),
+            )));
+        },
+    )
 }

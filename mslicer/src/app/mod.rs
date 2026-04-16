@@ -25,7 +25,7 @@ use crate::{
     },
     windows::{self, Tab},
 };
-use common::{progress::CombinedProgress, slice::Format, units::Milimeter};
+use common::{progress::CombinedProgress, slice::SliceMode, units::Milimeter};
 use slicer::slicer::{Slicer, SlicerModel};
 
 pub mod config;
@@ -202,13 +202,16 @@ impl App {
             move || {
                 let slice_operation = slice_operation.as_ref().unwrap();
 
-                if matches!(slicer.slice_config.format, Format::Svg) {
-                    let layers = slicer.slice_vector();
-                    slice_operation.add_vector_result(slicer.slice_config, layers);
-                } else {
-                    let mut layers = slicer.slice_raster();
-                    post_processing.process(&slicer.slice_config, &mut layers, post_process);
-                    slice_operation.add_raster_result(slicer.slice_config, layers);
+                match slicer.slice_config.mode {
+                    SliceMode::Raster => {
+                        let mut layers = slicer.slice_raster();
+                        post_processing.process(&slicer.slice_config, &mut layers, post_process);
+                        slice_operation.add_raster_result(slicer.slice_config, layers);
+                    }
+                    SliceMode::Vector => {
+                        let layers = slicer.slice_vector();
+                        slice_operation.add_vector_result(slicer.slice_config, layers);
+                    }
                 }
             }
         ));

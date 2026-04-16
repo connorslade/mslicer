@@ -17,6 +17,10 @@ use slicer::{
 /// Project format version. Value should be incremented whenever the save format
 /// changes, even in development.
 ///
+/// ## v6
+/// Store SliceMode (raster / vector) instead of the specific Format to save to.
+/// Since slicing and encoding are now separated.
+///
 /// ## v5
 /// Replaced the (inaccurate and incredibly slow) blur based anti aliasing with
 /// a super sampling approach.
@@ -30,7 +34,7 @@ use slicer::{
 /// ## v2
 /// A complete rewrite using a custom serilizer/deserilizer because of the
 /// bincode drama...
-const VERSION: u16 = 5;
+const VERSION: u16 = 6;
 
 struct ModelInfo {
     mesh: u32,

@@ -6,7 +6,7 @@ use std::{
 };
 
 use anyhow::{Context, Result};
-use common::slice::Format;
+use common::slice::format::RasterFormat;
 use parking_lot::{Mutex, MutexGuard};
 use tracing::{info, warn};
 
@@ -105,7 +105,7 @@ impl RemotePrint {
         mainboard_id: &str,
         data: Arc<Vec<u8>>,
         mut filename: String,
-        format: Format,
+        format: RasterFormat,
     ) -> Result<()> {
         let services = self.services.as_ref().unwrap();
 

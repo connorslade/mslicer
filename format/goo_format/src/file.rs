@@ -5,7 +5,7 @@ use common::{
     container::{Image, Run},
     progress::Progress,
     serde::{DynamicSerializer, Serializer, SizedString, SliceDeserializer},
-    slice::{Format, SliceConfig, SliceInfo, SlicedFile},
+    slice::{SliceConfig, SliceInfo, SlicedFile},
     units::Second,
 };
 use image::{RgbaImage, imageops::FilterType};
@@ -107,10 +107,6 @@ impl SlicedFile for File {
             size: Vector3::new(self.header.x_size, self.header.y_size, self.header.x_size),
             bottom_layers: self.header.bottom_layers,
         }
-    }
-
-    fn format(&self) -> Format {
-        Format::Goo
     }
 
     fn runs(&self, layer: usize) -> Box<dyn Iterator<Item = Run> + '_> {

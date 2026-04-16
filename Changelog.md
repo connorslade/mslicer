@@ -17,6 +17,7 @@
   - Uses supersampling anti-aliasing (SSAA)
   - Replaces the old AA post processing effect
 - Fix scanning for printers never ending on linux
+- Select save format when exporting, not before slicing
 
 ## v0.6.0 &mdash; March 23rd, 2026
 

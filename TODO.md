@@ -138,7 +138,7 @@
 - [ ] Fix crash when slicing without ever seeing workspace
 - [ ] Fix model scale being applied after rotation
 - [ ] Fix slicing with geometry extending past y=0
-- [ ] Add saved projects to recent
+- [x] Add saved projects to recent
 - [ ] 'Do you want to save this project' popup when loading a project into a non-empty workspace
 - [ ] Optimize elephant foot post processing
 - [ ] Add exposure remapping post processing

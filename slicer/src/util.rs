@@ -1,31 +1,46 @@
 use std::borrow::Borrow;
 
-use common::slice::{self, DynSlicedFile, EncodableLayer, Format, SliceConfig};
+use common::slice::{
+    self, DynSlicedFile, EncodableLayer, SliceConfig, VectorLayer,
+    format::{RasterFormat, VectorFormat},
+};
+
+use crate::slicer::slice_vector::SvgFile;
 
 pub fn export_raster<Layers, Layer>(
     config: &SliceConfig,
     layers: Layers,
     voxels: u64,
+    format: RasterFormat,
 ) -> DynSlicedFile
 where
     Layers: IntoIterator<Item = Layer>,
     Layer: Borrow<slice::Layer>,
 {
-    match config.format {
-        Format::Goo => Box::new(goo_format::File::from_layers(
+    match format {
+        RasterFormat::Goo => Box::new(goo_format::File::from_layers(
             config,
             encode_raster_layers::<goo_format::LayerEncoder, _, _>(config, layers),
         )),
-        Format::Ctb => Box::new(ctb_format::File::from_layers(
+        RasterFormat::Ctb => Box::new(ctb_format::File::from_layers(
             config,
             encode_raster_layers::<ctb_format::LayerEncoder, _, _>(config, layers),
         )),
-        Format::NanoDLP => Box::new(nanodlp_format::File::from_layers(
+        RasterFormat::NanoDLP => Box::new(nanodlp_format::File::from_layers(
             config,
             encode_raster_layers::<nanodlp_format::LayerEncoder, _, _>(config, layers),
             voxels,
         )),
-        Format::Svg => panic!(),
+    }
+}
+
+pub fn export_vector(
+    config: &SliceConfig,
+    layers: Vec<VectorLayer>,
+    format: VectorFormat,
+) -> DynSlicedFile {
+    match format {
+        VectorFormat::Svg => Box::new(SvgFile::new(config.platform_resolution.xy(), layers)),
     }
 }
 

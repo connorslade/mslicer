@@ -3,7 +3,7 @@ use nalgebra::{Vector2, Vector3};
 
 use crate::{
     serde::{Deserializer, SerdeExt, Serializer},
-    slice::Format,
+    slice::format::SliceMode,
     units::{
         CentimetersPerSecond, CubicMilimeters, Milimeter, Milimeters, Minutes, Seconds,
         SquareMilimeters,
@@ -13,7 +13,7 @@ use crate::{
 /// Configuration for slicing a model.
 #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct SliceConfig {
-    pub format: Format,
+    pub mode: SliceMode,
     pub supersample: u8,
 
     pub platform_resolution: Vector2<u32>,
@@ -90,7 +90,7 @@ impl SliceConfig {
 impl Default for SliceConfig {
     fn default() -> Self {
         Self {
-            format: Format::Ctb,
+            mode: SliceMode::Raster,
             supersample: 0,
 
             platform_resolution: Vector2::new(11_520, 5_120),
@@ -127,7 +127,7 @@ impl Default for ExposureConfig {
 
 impl SliceConfig {
     pub fn serialize<T: Serializer>(&self, ser: &mut T) {
-        self.format.serialize(ser);
+        self.mode.serialize(ser);
         ser.write_u8(self.supersample);
         self.platform_resolution.serialize(ser);
         self.platform_size.map(|x| x.raw()).serialize(ser);
@@ -140,7 +140,11 @@ impl SliceConfig {
 
     pub fn deserialize<T: Deserializer>(des: &mut T, version: u16) -> Result<Self> {
         Ok(Self {
-            format: Format::deserialize(des)?,
+            mode: if version < 6 {
+                [SliceMode::Raster, SliceMode::Vector][(des.read_u8() == 2) as usize]
+            } else {
+                SliceMode::deserialize(des)?
+            },
             supersample: if version < 5 { 1 } else { des.read_u8() },
             platform_resolution: Vector2::deserialize(des),
             platform_size: Vector3::deserialize(des).map(Milimeters::new),

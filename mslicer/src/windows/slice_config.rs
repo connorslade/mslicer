@@ -7,14 +7,12 @@ use slicer::post_process::elephant_foot_fixer::ElephantFootFixer;
 
 use crate::{app::App, ui::components::vec2_dragger};
 use common::{
-    slice::{ExposureConfig, Format},
+    slice::{ExposureConfig, SliceMode},
     units::{Milimeter, Minute, Mircometer},
 };
 
 const ANTI_ALIAS_TOOLTIP: &str = "Uses supersampling anti-aliasing (SSAA) to pick grayscale values that more accurately represent the actual model geometry. The actual value of this setting is the number of effective samples per voxel.";
 const TRANSITION_LAYER_TOOLTIP: &str = "Transition layers interpolate between the first exposure settings and the normal exposure settings.";
-const SLICE_FORMAT_TOOLTIP: &str =
-    "Only .goo and .ctb files can be sent with the 'Remote Print' module.";
 const PRINTER_TOOLTIP: &str = "You can add to this list by manually editing config.toml in the config directory. (See Workspace tab)";
 
 pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
@@ -40,16 +38,13 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
         .spacing([40.0, 4.0])
         .striped(true)
         .show(ui, |ui| {
-            ui.horizontal(|ui| {
-                ui.label("Slice Format");
-                ui.label(INFO).on_hover_text(SLICE_FORMAT_TOOLTIP);
-            });
-            let format = slice_config.format;
-            ComboBox::new("slice_format", "")
-                .selected_text(format!("{} (.{})", format.name(), format.extension()))
+            ui.label("Slice Mode");
+            let format = slice_config.mode;
+            ComboBox::new("slice_mode", "")
+                .selected_text(format.name())
                 .show_ui(ui, |ui| {
-                    for format in Format::ALL {
-                        ui.selectable_value(&mut slice_config.format, format, format.name());
+                    for format in SliceMode::ALL {
+                        ui.selectable_value(&mut slice_config.mode, format, format.name());
                     }
                 });
             ui.end_row();

@@ -8,7 +8,7 @@ use common::{
     container::{Image, Run},
     progress::Progress,
     serde::{DynamicSerializer, Serializer},
-    slice::{Format, SliceConfig, SliceInfo, SlicedFile},
+    slice::{SliceConfig, SliceInfo, SlicedFile},
 };
 use image::{DynamicImage, RgbaImage};
 use nalgebra::{Vector2, Vector3};
@@ -200,10 +200,6 @@ impl SlicedFile for File {
             size: Vector3::default(), // todo: this
             bottom_layers: self.profile.support_layer_number,
         }
-    }
-
-    fn format(&self) -> Format {
-        Format::NanoDLP
     }
 
     fn runs(&self, layer: usize) -> Box<dyn Iterator<Item = Run> + '_> {

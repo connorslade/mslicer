@@ -4,10 +4,10 @@ use image::RgbaImage;
 use nalgebra::{Vector2, Vector3};
 
 mod config;
-mod format;
+pub mod format;
 mod layer_iter;
 pub use config::{ExposureConfig, SliceConfig};
-pub use format::Format;
+pub use format::SliceMode;
 pub use layer_iter::SliceLayerIterator;
 
 use crate::{
@@ -27,7 +27,6 @@ pub trait SlicedFile {
     fn serialize(&self, ser: &mut DynamicSerializer, progress: Progress);
     fn set_preview(&mut self, preview: &RgbaImage);
     fn info(&self) -> SliceInfo;
-    fn format(&self) -> Format;
 
     fn runs(&self, layer: usize) -> Box<dyn Iterator<Item = Run> + '_>;
     fn overwrite_layer(&mut self, layer: usize, image: Image);

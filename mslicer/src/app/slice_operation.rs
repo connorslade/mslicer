@@ -12,7 +12,7 @@ use common::{
     container::Run,
     misc::human_duration,
     progress::{CombinedProgress, Progress},
-    slice::{DynSlicedFile, Layer, SliceConfig, VectorLayer},
+    slice::{DynSlicedFile, Layer, SliceConfig, VectorLayer, format::Format},
     units::{Miliseconds, Milliliters, Seconds},
 };
 use egui::Color32;
@@ -219,11 +219,12 @@ impl SliceResult {
     }
 
     /// Assumes result is not None
-    pub fn file(&self, preview_image: &RgbaImage) -> DynSlicedFile {
+    pub fn file(&self, format: Format, preview_image: &RgbaImage) -> DynSlicedFile {
         match &self.inner {
             GenericSliceResult::Raster(result) => {
+                let format = format.as_raster().unwrap();
                 let mut file =
-                    util::export_raster(&self.config, result.layers.iter(), result.voxels);
+                    util::export_raster(&self.config, result.layers.iter(), result.voxels, format);
                 file.set_preview(preview_image);
                 file
             }

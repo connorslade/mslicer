@@ -9,7 +9,7 @@ use common::{
     container::{Image, Run},
     progress::Progress,
     serde::{Deserializer, DynamicSerializer, Serializer, SliceDeserializer},
-    slice::{Format, SliceConfig, SliceInfo, SlicedFile},
+    slice::{SliceConfig, SliceInfo, SlicedFile},
     units::{Milimeters, MilimetersPerMinute, Seconds},
 };
 use image::imageops::FilterType;
@@ -470,10 +470,6 @@ impl SlicedFile for File {
             size: self.size,
             bottom_layers: self.bottom_layer_count,
         }
-    }
-
-    fn format(&self) -> Format {
-        Format::Ctb
     }
 
     fn runs(&self, layer: usize) -> Box<dyn Iterator<Item = Run> + '_> {
