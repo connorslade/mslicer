@@ -22,6 +22,7 @@
 - Optimized tools with new slicer/encoder separation
 - Fix light direction calculation with nonzero target point
 - Scale models before rotating
+- Encode file in async task
 
 ## v0.6.0 &mdash; March 23rd, 2026
 

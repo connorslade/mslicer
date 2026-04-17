@@ -12,6 +12,7 @@ pub struct Segments1D {
 
     layers: Vec<Vec<usize>>,
     transformed_points: Vec<Vector3<f32>>,
+    transformed_normals: Vec<bool>,
 }
 
 impl Segments1D {
@@ -19,10 +20,13 @@ impl Segments1D {
     pub fn from_mesh(mesh: &Mesh, layer_count: usize) -> Self {
         let (min, max) = mesh.bounds();
 
-        // Caching transformed points makes slicing faster.
+        // Caching transformed points / normals makes slicing faster.
         let transformed_points = (mesh.vertices().iter())
             .map(|x| mesh.transform(x))
             .collect::<Vec<_>>();
+        let transformed_normals = (0..mesh.face_count())
+            .map(|x| mesh.transform_normal(&mesh.normal(x)).x > 0.0)
+            .collect();
 
         // Create a bin for each layer
         let layer_height = (max.z - min.z) / layer_count as f32;
@@ -47,6 +51,7 @@ impl Segments1D {
 
             layers,
             transformed_points,
+            transformed_normals,
         }
     }
 
@@ -63,7 +68,7 @@ impl Segments1D {
         for &face in self.layers[layer as usize].iter() {
             let segment = plane_triangle_intersection(mesh, &self.transformed_points, face, height);
             if let Some(segment) = segment {
-                out.push((segment, mesh.transform_normal(&mesh.normal(face)).x > 0.0));
+                out.push((segment, self.transformed_normals[face]));
             }
         }
 

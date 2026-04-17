@@ -142,7 +142,7 @@
 - [ ] 'Do you want to save this project' popup when loading a project into a non-empty workspace
 - [ ] Optimize elephant foot post processing
 - [ ] Add exposure remapping post processing
-- [ ] Move the .file call into the async task
+- [x] Move the .file call into the async task
 - [x] Replace slice format with a picker in the save dialog, use .ctb for remote send
 - [x] Refactor/cleanup slicing stuff
 - [x] Optimize tools with new slicer/encoder separation

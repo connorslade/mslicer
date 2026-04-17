@@ -17,7 +17,7 @@ use common::{
 };
 use egui::Color32;
 use image::RgbaImage;
-use parking_lot::{Condvar, MappedMutexGuard, Mutex, MutexGuard};
+use parking_lot::{Condvar, Mutex, MutexGuard};
 use slicer::{slicer::slice_vector::SvgFile, util};
 use tracing::info;
 
@@ -32,7 +32,7 @@ pub struct SliceOperationInner {
     pub post_processing_progress: CombinedProgress<1>,
     pub result: Mutex<Option<SliceResult>>,
 
-    preview_image: Mutex<Option<RgbaImage>>,
+    preview_image: Mutex<Option<Arc<RgbaImage>>>,
     preview_condvar: Condvar,
 }
 
@@ -49,6 +49,12 @@ pub enum GenericSliceResult {
     Vector(VectorSliceResult),
 }
 
+#[derive(Clone)]
+pub enum GenericSliceData {
+    Raster { data: Arc<Vec<Layer>>, voxels: u64 },
+    Vector { data: Arc<Vec<VectorLayer>> },
+}
+
 pub struct RasterSliceResult {
     pub layers: Arc<Vec<Layer>>,
     pub annotations: Arc<Annotations>,
@@ -60,7 +66,7 @@ pub struct RasterSliceResult {
 }
 
 pub struct VectorSliceResult {
-    pub layers: Vec<VectorLayer>,
+    pub layers: Arc<Vec<VectorLayer>>,
 }
 
 pub const ISLAND_COLOR: Color32 = Color32::from_rgb(159, 44, 54);
@@ -105,17 +111,17 @@ impl SliceOperationInner {
     }
 
     pub fn add_preview_image(&self, image: RgbaImage) {
-        self.preview_image.lock().replace(image);
+        self.preview_image.lock().replace(Arc::new(image));
         self.preview_condvar.notify_all();
     }
 
-    pub fn preview_image(&self) -> MappedMutexGuard<'_, RgbaImage> {
+    pub fn preview_image(&self) -> Arc<RgbaImage> {
         let mut preview_image = self.preview_image.lock();
         while preview_image.is_none() {
             self.preview_condvar.wait(&mut preview_image);
         }
 
-        MutexGuard::map(preview_image, |image| image.as_mut().unwrap())
+        preview_image.as_ref().unwrap().clone()
     }
 
     pub fn add_raster_result(&self, config: SliceConfig, layers: Vec<Layer>) {
@@ -144,7 +150,7 @@ impl SliceOperationInner {
         });
     }
 
-    pub fn add_vector_result(&self, config: SliceConfig, layers: Vec<VectorLayer>) {
+    pub fn add_vector_result(&self, config: SliceConfig, layers: Arc<Vec<VectorLayer>>) {
         let elapsed = self.start_time.elapsed();
         info!("Vector slice operation completed in {:?}", elapsed);
 
@@ -219,20 +225,15 @@ impl SliceResult {
     }
 
     /// Assumes result is not None
-    pub fn file(&self, format: Format, preview_image: &RgbaImage) -> DynSlicedFile {
+    pub fn slice_data(&self) -> GenericSliceData {
         match &self.inner {
-            GenericSliceResult::Raster(result) => {
-                let format = format.as_raster().unwrap();
-                let mut file =
-                    util::export_raster(&self.config, result.layers.iter(), result.voxels, format);
-                file.set_preview(preview_image);
-                file
-            }
-            GenericSliceResult::Vector(result) => {
-                let platform = self.config.platform_resolution.xy();
-                let file = SvgFile::new(platform, result.layers.clone());
-                Box::new(file)
-            }
+            GenericSliceResult::Raster(result) => GenericSliceData::Raster {
+                data: result.layers.clone(),
+                voxels: result.voxels,
+            },
+            GenericSliceResult::Vector(result) => GenericSliceData::Vector {
+                data: result.layers.clone(),
+            },
         }
     }
 }
@@ -249,6 +250,29 @@ impl GenericSliceResult {
         match self {
             GenericSliceResult::Raster(raster) => raster.layers.len(),
             GenericSliceResult::Vector(vector) => vector.layers.len(),
+        }
+    }
+}
+
+impl GenericSliceData {
+    pub fn file(
+        &self,
+        config: &SliceConfig,
+        preview_image: &RgbaImage,
+        format: Format,
+    ) -> DynSlicedFile {
+        match &self {
+            GenericSliceData::Raster { data, voxels } => {
+                let format = format.as_raster().unwrap();
+                let mut file = util::export_raster(config, data.iter(), *voxels, format);
+                file.set_preview(preview_image);
+                file
+            }
+            GenericSliceData::Vector { data } => {
+                let platform = config.platform_resolution.xy();
+                let file = SvgFile::new(platform, data.clone());
+                Box::new(file)
+            }
         }
     }
 }

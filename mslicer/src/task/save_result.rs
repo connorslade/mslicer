@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use clone_macro::clone;
 use common::{progress::Progress, serde::DynamicSerializer, slice::DynSlicedFile};
 
@@ -13,7 +11,7 @@ pub struct SaveResult {
 
 impl SaveResult {
     pub fn new(
-        (file, file_name): (Arc<DynSlicedFile>, String),
+        (file, file_name): (DynSlicedFile, String),
         callback: impl FnOnce(Vec<u8>) + Send + 'static,
     ) -> Self {
         let progress = Progress::new();

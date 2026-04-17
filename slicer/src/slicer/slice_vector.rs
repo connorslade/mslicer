@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::{collections::HashSet, sync::Arc};
 
 use common::{
     container::{Image, Run},
@@ -21,7 +21,7 @@ use crate::{
 };
 
 pub struct SvgFile {
-    layers: Vec<VectorLayer>,
+    layers: Arc<Vec<VectorLayer>>,
     area: Vector2<u32>,
 }
 
@@ -90,7 +90,7 @@ fn join_segments(segments_raw: &[Vector2<f32>]) -> Vec<Vec<Vector2<f32>>> {
 }
 
 impl SvgFile {
-    pub fn new(area: Vector2<u32>, layers: Vec<VectorLayer>) -> Self {
+    pub fn new(area: Vector2<u32>, layers: Arc<Vec<VectorLayer>>) -> Self {
         Self { layers, area }
     }
 

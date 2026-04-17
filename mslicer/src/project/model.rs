@@ -187,7 +187,6 @@ impl Model {
     }
 }
 
-// todo: this really bad...
 impl Clone for Model {
     fn clone(&self) -> Self {
         Self {

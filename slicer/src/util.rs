@@ -1,4 +1,4 @@
-use std::borrow::Borrow;
+use std::{borrow::Borrow, sync::Arc};
 
 use common::slice::{
     self, DynSlicedFile, EncodableLayer, SliceConfig, VectorLayer,
@@ -36,7 +36,7 @@ where
 
 pub fn export_vector(
     config: &SliceConfig,
-    layers: Vec<VectorLayer>,
+    layers: Arc<Vec<VectorLayer>>,
     format: VectorFormat,
 ) -> DynSlicedFile {
     match format {

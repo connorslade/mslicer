@@ -10,12 +10,13 @@ use egui_phosphor::regular::{
     CARET_DOWN, CARET_UP, CLOCK, CORNERS_IN, CROSSHAIR, DROP, FLOPPY_DISK_BACK, PAPER_PLANE_TILT,
 };
 use egui_wgpu::Callback;
+use image::RgbaImage;
 use nalgebra::Vector2;
 
 use crate::{
     app::{
         App,
-        slice_operation::{GenericSliceResult, ISLAND_COLOR, RasterSliceResult},
+        slice_operation::{GenericSliceData, GenericSliceResult, ISLAND_COLOR, RasterSliceResult},
     },
     render::slice_preview::SlicePreviewRenderCallback,
     task::{FileDialog, IslandDetection, SaveResult},
@@ -27,7 +28,7 @@ use common::{
     progress::Progress,
     serde::DynamicSerializer,
     slice::{
-        DynSlicedFile, SliceMode,
+        SliceConfig, SliceMode,
         format::{Format, RasterFormat},
     },
     units::Centimeter,
@@ -85,17 +86,18 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                                             Align::LEFT,
                                         );
 
-                                    let mut serializer = DynamicSerializer::new();
-                                    result
-                                        .file(
-                                            RasterFormat::Ctb.into(),
-                                            &slice_operation.preview_image(),
-                                        )
-                                        .serialize(&mut serializer, Progress::new());
-                                    let data = Arc::new(serializer.into_inner());
-
                                     let mainboard_id = printer.mainboard_id.clone();
                                     if ui.button(layout_job).clicked() {
+                                        let file = result.slice_data().file(
+                                            &result.config,
+                                            &slice_operation.preview_image(),
+                                            RasterFormat::Ctb.into(),
+                                        );
+
+                                        let mut serializer = DynamicSerializer::new();
+                                        file.serialize(&mut serializer, Progress::new());
+                                        let data = Arc::new(serializer.into_inner());
+
                                         app.popup.open(name_popup(mainboard_id, data));
                                     }
                                 }
@@ -111,9 +113,12 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                             ui.set_width(150.0);
                             for &format in formats {
                                 if ui.button(format.name()).clicked() {
-                                    let file =
-                                        result.file(format, &slice_operation.preview_image());
-                                    app.tasks.add(save_file(format, Arc::new(file)));
+                                    app.tasks.add(save_file(
+                                        result.config.clone(),
+                                        slice_operation.preview_image(),
+                                        format,
+                                        result.slice_data(),
+                                    ));
                                 }
                             }
                         });
@@ -389,7 +394,12 @@ fn name_popup(mainboard_id: String, data: Arc<Vec<u8>>) -> Popup {
     })
 }
 
-fn save_file(format: Format, file: Arc<DynSlicedFile>) -> FileDialog {
+fn save_file(
+    config: SliceConfig,
+    preview_image: Arc<RgbaImage>,
+    format: Format,
+    data: GenericSliceData,
+) -> FileDialog {
     FileDialog::save_file(
         (format.name(), &[format.extension()]),
         move |_app, path, tasks| {
@@ -397,6 +407,7 @@ fn save_file(format: Format, file: Arc<DynSlicedFile>) -> FileDialog {
             let file_name = path.file_name().unwrap().to_string_lossy();
             let mut out = File::create(&path).unwrap();
 
+            let file = data.file(&config, &preview_image, format);
             tasks.push(Box::new(SaveResult::new(
                 (file, file_name.into_owned()),
                 move |bytes| out.write_all(&bytes).unwrap(),

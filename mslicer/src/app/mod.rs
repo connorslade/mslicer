@@ -1,4 +1,4 @@
-use std::{path::PathBuf, thread, time::Instant};
+use std::{path::PathBuf, sync::Arc, thread, time::Instant};
 
 use clone_macro::clone;
 use const_format::concatcp;
@@ -210,7 +210,7 @@ impl App {
                     }
                     SliceMode::Vector => {
                         let layers = slicer.slice_vector();
-                        slice_operation.add_vector_result(slicer.slice_config, layers);
+                        slice_operation.add_vector_result(slicer.slice_config, Arc::new(layers));
                     }
                 }
             }
