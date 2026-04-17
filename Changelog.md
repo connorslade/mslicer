@@ -19,6 +19,7 @@
 - Fix scanning for printers never ending on linux
 - Select save format when exporting, not before slicing
 - Modify printer presets within mslicer
+- Optimized tools with new slicer/encoder separation
 
 ## v0.6.0 &mdash; March 23rd, 2026
 

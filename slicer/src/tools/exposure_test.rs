@@ -1,4 +1,4 @@
-use std::iter;
+use std::iter::{self, repeat_n};
 
 use common::{
     container::Image,
@@ -31,28 +31,37 @@ impl ExposureTest {
         } else {
             0
         };
-        progress.set_total(support_layers + layers);
+        progress.set_total(support_layers + self.steps as u64);
 
         let size = config.mm_to_px(self.size.xy()).map(|x| x.round() as u32);
         let min = ((config.platform_resolution - size.xy()) / 2).cast();
         let max = min + size.xy().cast();
 
         let mut top = Image::blank(config.platform_resolution.cast());
+        let mut body = Image::blank(config.platform_resolution.cast());
+        body.rect((min, max), 255);
+        let raft = body.clone();
+
         let strip_width = (size.x / self.steps) as usize;
         for (i, value) in self.steps() {
             let a = Vector2::new(min.x + strip_width * i, min.y);
             let b = Vector2::new(a.x + strip_width, max.y);
             top.rect((a, b), value);
+
+            let a = Vector2::new(min.x + strip_width * i, max.y - 1);
+            let b = Vector2::new(a.x + strip_width, a.y + 1);
+            body.rect((a, b), value);
+            progress.add_complete(1);
         }
 
+        let [raft, top, body] = [raft, top, body].map(|x| x.runs().collect::<Vec<_>>());
         (0..support_layers)
             .map(move |layer| {
-                let mut image = Image::blank(config.platform_resolution.cast());
                 if layer < config.first_layers as u64 {
-                    image.rect((min, max), 255);
-                    return image;
+                    return raft.clone();
                 }
 
+                let mut image = Image::blank(config.platform_resolution.cast());
                 let t = layer as f32 / (support_layers - 1) as f32;
                 let r = if t >= 0.5 {
                     lerp(0.5, 0.3, t / 0.5 - 1.0)
@@ -74,31 +83,16 @@ impl ExposureTest {
                     }
                 }
 
-                image
-            })
-            .chain(
-                (0..layers)
-                    .map(move |_layer| {
-                        let mut image = Image::blank(config.platform_resolution.cast());
-                        image.rect((min, max), 255);
-                        image
-                    })
-                    .chain(iter::once(top))
-                    .map(move |mut image| {
-                        for (i, value) in self.steps() {
-                            let a = Vector2::new(min.x + strip_width * i, max.y - 1);
-                            let b = Vector2::new(a.x + strip_width, a.y + 1);
-                            image.rect((a, b), value);
-                        }
-                        image
-                    }),
-            )
-            .enumerate()
-            .map(|(layer, image)| Layer {
-                data: image.runs().collect(),
-                exposure: config.exposure_config(layer as u32).clone(),
+                image.runs().collect::<Vec<_>>()
             })
             .inspect(|_| progress.add_complete(1))
+            .chain(repeat_n(body, layers as usize))
+            .chain(iter::once(top))
+            .enumerate()
+            .map(|(layer, data)| Layer {
+                data,
+                exposure: config.exposure_config(layer as u32).clone(),
+            })
             .collect()
     }
 

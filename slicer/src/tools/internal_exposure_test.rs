@@ -1,7 +1,7 @@
 use std::iter::repeat_n;
 
 use common::{
-    container::Image,
+    container::{Image, Run},
     progress::Progress,
     slice::{Layer, SliceConfig},
     units::Milimeter,
@@ -29,15 +29,15 @@ impl InternalExposureTest {
             .chain(repeat_n(inner, layers - wall_layers * 2))
             .chain(repeat_n(outer, wall_layers))
             .enumerate()
-            .map(|(layer, image)| Layer {
-                data: image.runs().collect(),
+            .map(|(layer, data)| Layer {
+                data,
                 exposure: config.exposure_config(layer as u32).clone(),
             })
             .inspect(|_| progress.add_complete(1))
             .collect()
     }
 
-    fn layer(&self, config: &SliceConfig, internal: bool) -> Image {
+    fn layer(&self, config: &SliceConfig, internal: bool) -> Vec<Run> {
         let size = config.mm_to_px(self.size).map(|x| x.round() as u32);
         let min = ((config.platform_resolution - size.xy()) / 2).cast();
         let max = min + size.xy().cast();
@@ -61,7 +61,7 @@ impl InternalExposureTest {
             }
         }
 
-        image
+        image.runs().collect()
     }
 }
 

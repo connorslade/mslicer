@@ -145,4 +145,4 @@
 - [ ] Move the .file call into the async task
 - [ ] Replace slice format with a picker in the save dialog, use .ctb for remote send
 - [x] Refactor/cleanup slicing stuff
-- [ ] Optimize tools with new slicer/encoder separation
+- [x] Optimize tools with new slicer/encoder separation
