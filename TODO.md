@@ -136,13 +136,13 @@
 - [x] Fix light direction calculation for orthographic camera
 - [x] Fix scanning for printers never going away on linux
 - [ ] Fix crash when slicing without ever seeing workspace
-- [ ] Fix model scale being applied after rotation
+- [x] Fix model scale being applied after rotation
 - [ ] Fix slicing with geometry extending past y=0
 - [x] Add saved projects to recent
 - [ ] 'Do you want to save this project' popup when loading a project into a non-empty workspace
 - [ ] Optimize elephant foot post processing
 - [ ] Add exposure remapping post processing
 - [ ] Move the .file call into the async task
-- [ ] Replace slice format with a picker in the save dialog, use .ctb for remote send
+- [x] Replace slice format with a picker in the save dialog, use .ctb for remote send
 - [x] Refactor/cleanup slicing stuff
 - [x] Optimize tools with new slicer/encoder separation
