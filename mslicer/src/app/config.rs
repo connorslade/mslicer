@@ -146,3 +146,13 @@ impl Default for RemotePrintConfig {
         }
     }
 }
+
+impl Default for PrinterDefaults {
+    fn default() -> Self {
+        Self {
+            name: "New Printer".into(),
+            resolution: Vector2::new(10_000, 5_000),
+            size: Vector3::repeat(100.0).map(Milimeters::new),
+        }
+    }
+}

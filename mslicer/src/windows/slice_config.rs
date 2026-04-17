@@ -1,11 +1,19 @@
 use const_format::concatcp;
 use egui::{ComboBox, Context, DragValue, Grid, Ui, Widget};
 use egui_extras::{Column, TableBuilder};
-use egui_phosphor::regular::{ARROW_COUNTER_CLOCKWISE, INFO, NOTE_PENCIL, WARNING};
+use egui_phosphor::regular::{
+    ARROW_COUNTER_CLOCKWISE, INFO, NOTE_PENCIL, PENCIL, PLUS, TRASH, WARNING,
+};
 use num_integer::cbrt;
 use slicer::post_process::elephant_foot_fixer::ElephantFootFixer;
 
-use crate::{app::App, ui::components::vec2_dragger};
+use crate::{
+    app::App,
+    ui::{
+        components::{grid, vec2_dragger},
+        popup::{Popup, PopupApp},
+    },
+};
 use common::{
     slice::{ExposureConfig, SliceMode},
     units::{Milimeter, Minute, Mircometer},
@@ -13,7 +21,6 @@ use common::{
 
 const ANTI_ALIAS_TOOLTIP: &str = "Uses supersampling anti-aliasing (SSAA) to pick grayscale values that more accurately represent the actual model geometry. The actual value of this setting is the number of effective samples per voxel.";
 const TRANSITION_LAYER_TOOLTIP: &str = "Transition layers interpolate between the first exposure settings and the normal exposure settings.";
-const PRINTER_TOOLTIP: &str = "You can add to this list by manually editing config.toml in the config directory. (See Workspace tab)";
 
 pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     ui.heading("Slice Config");
@@ -33,26 +40,21 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     ui.add_space(8.0);
 
     let slice_config = &mut app.project.slice_config;
-    Grid::new("slice_config")
-        .num_columns(2)
-        .spacing([40.0, 4.0])
-        .striped(true)
-        .show(ui, |ui| {
-            ui.label("Slice Mode");
-            let format = slice_config.mode;
-            ComboBox::new("slice_mode", "")
-                .selected_text(format.name())
-                .show_ui(ui, |ui| {
-                    for format in SliceMode::ALL {
-                        ui.selectable_value(&mut slice_config.mode, format, format.name());
-                    }
-                });
-            ui.end_row();
-
-            ui.horizontal(|ui| {
-                ui.label("Printer");
-                ui.label(INFO).on_hover_text(PRINTER_TOOLTIP);
+    grid("slice_config").show(ui, |ui| {
+        ui.label("Slice Mode");
+        let format = slice_config.mode;
+        ComboBox::new("slice_mode", "")
+            .selected_text(format.name())
+            .show_ui(ui, |ui| {
+                for format in SliceMode::ALL {
+                    ui.selectable_value(&mut slice_config.mode, format, format.name());
+                }
             });
+        ui.end_row();
+
+        ui.label("Printer");
+        ui.horizontal(|ui| {
+            ui.style_mut().spacing.item_spacing.x = 4.0;
             ComboBox::new("printer", "")
                 .selected_text(match app.state.selected_printer {
                     0 => "Custom",
@@ -71,72 +73,78 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                             ));
                     }
                 });
+
+            if ui.button(PENCIL).clicked() {
+                app.popup
+                    .open(Popup::new("Edit Printer Presets", edit_presets).close_button(true));
+            }
+        });
+        ui.end_row();
+
+        let platform = &mut slice_config.platform_size;
+        let prev = *platform;
+        if app.state.selected_printer == 0 {
+            ui.label("Platform Resolution");
+            vec2_dragger(ui, slice_config.platform_resolution.as_mut(), |x| x);
             ui.end_row();
 
-            let platform = &mut slice_config.platform_size;
-            let prev = *platform;
-            if app.state.selected_printer == 0 {
-                ui.label("Platform Resolution");
-                vec2_dragger(ui, slice_config.platform_resolution.as_mut(), |x| x);
-                ui.end_row();
-
-                ui.label("Platform Size (mm)");
-                ui.horizontal(|ui| {
-                    ui.add(DragValue::new(platform.x.raw_mut()));
-                    ui.label("×");
-                    ui.add(DragValue::new(platform.y.raw_mut()));
-                    ui.label("×");
-                    ui.add(DragValue::new(platform.z.raw_mut()));
-                });
-                ui.end_row();
-            } else {
-                let printer = &app.config.printers[app.state.selected_printer - 1];
-                slice_config.platform_resolution = printer.resolution;
-                *platform = printer.size;
-            }
-
-            if *platform != prev {
-                (app.project.models.iter_mut())
-                    .for_each(|model| model.update_oob(&slice_config.platform_size));
-            }
-
-            ui.label("Slice Height");
+            ui.label("Platform Size (mm)");
             ui.horizontal(|ui| {
-                slice_config.slice_height.with::<Mircometer>(|value| {
-                    DragValue::new(value)
-                        .suffix(" μm")
-                        .range(1.0..=f32::MAX)
-                        .ui(ui);
-                });
-                ui.take_available_width();
+                ui.add(DragValue::new(platform.x.raw_mut()));
+                ui.label("×");
+                ui.add(DragValue::new(platform.y.raw_mut()));
+                ui.label("×");
+                ui.add(DragValue::new(platform.z.raw_mut()));
             });
             ui.end_row();
+        } else {
+            let printer = &app.config.printers[app.state.selected_printer - 1];
+            slice_config.platform_resolution = printer.resolution;
+            *platform = printer.size;
+        }
 
-            ui.horizontal(|ui| {
-                ui.label("Anti Aliasing");
-                ui.label(INFO).on_hover_text(ANTI_ALIAS_TOOLTIP);
-            });
-            ui.horizontal(|ui| {
-                DragValue::new(&mut slice_config.supersample)
-                    .custom_formatter(|val, _| (val as u32).pow(3).to_string())
-                    .custom_parser(|val| val.parse::<u32>().ok().map(|x| cbrt(x) as f64))
-                    .suffix("×")
-                    .speed(0.1)
-                    .range(1..=16)
+        if *platform != prev {
+            (app.project.models.iter_mut())
+                .for_each(|model| model.update_oob(&slice_config.platform_size));
+        }
+
+        ui.label("Slice Height");
+        ui.horizontal(|ui| {
+            slice_config.slice_height.with::<Mircometer>(|value| {
+                DragValue::new(value)
+                    .suffix(" μm")
+                    .range(1.0..=f32::MAX)
                     .ui(ui);
             });
-
-            ui.label("First Layers");
-            DragValue::new(&mut slice_config.first_layers).ui(ui);
-            ui.end_row();
-
-            ui.horizontal(|ui| {
-                ui.label("Transition Layers");
-                ui.label(INFO).on_hover_text(TRANSITION_LAYER_TOOLTIP);
-            });
-            DragValue::new(&mut slice_config.transition_layers).ui(ui);
-            ui.end_row();
+            ui.take_available_width();
         });
+        ui.end_row();
+
+        ui.horizontal(|ui| {
+            ui.label("Anti Aliasing");
+            ui.label(INFO).on_hover_text(ANTI_ALIAS_TOOLTIP);
+        });
+        ui.horizontal(|ui| {
+            DragValue::new(&mut slice_config.supersample)
+                .custom_formatter(|val, _| (val as u32).pow(3).to_string())
+                .custom_parser(|val| val.parse::<u32>().ok().map(|x| cbrt(x) as f64))
+                .suffix("×")
+                .speed(0.1)
+                .range(1..=16)
+                .ui(ui);
+        });
+
+        ui.label("First Layers");
+        DragValue::new(&mut slice_config.first_layers).ui(ui);
+        ui.end_row();
+
+        ui.horizontal(|ui| {
+            ui.label("Transition Layers");
+            ui.label(INFO).on_hover_text(TRANSITION_LAYER_TOOLTIP);
+        });
+        DragValue::new(&mut slice_config.transition_layers).ui(ui);
+        ui.end_row();
+    });
 
     ui.add_space(8.0);
     ui.collapsing("Normal Layers", |ui| {
@@ -250,7 +258,68 @@ fn exposure_config(ui: &mut Ui, config: &mut ExposureConfig) {
         });
 }
 
-pub fn elephant_foot_fixer(this: &mut ElephantFootFixer, ui: &mut Ui) {
+fn edit_presets(app: &mut PopupApp, ui: &mut Ui) -> bool {
+    TableBuilder::new(ui)
+        .striped(true)
+        .column(Column::auto())
+        .column(Column::exact(150.0))
+        .column(Column::auto())
+        .column(Column::auto())
+        .header(16.0, |mut row| {
+            row.col(|_ui| {});
+            for label in ["Name", "Resolution", "Size"] {
+                row.col(|ui| {
+                    ui.label(label);
+                });
+            }
+        })
+        .body(|mut body| {
+            let mut delete = None;
+            for (i, preset) in app.config.printers.iter_mut().enumerate() {
+                body.row(16.0, |mut row| {
+                    row.col(|ui| {
+                        ui.visuals_mut().button_frame = false;
+                        if ui.button(TRASH).clicked() {
+                            delete = Some(i);
+                        }
+                    });
+
+                    row.col(|ui| {
+                        ui.text_edit_singleline(&mut preset.name);
+                    });
+
+                    row.col(|ui| {
+                        vec2_dragger(ui, preset.resolution.as_mut(), |x| x);
+                    });
+
+                    row.col(|ui| {
+                        ui.horizontal(|ui| {
+                            ui.add(DragValue::new(preset.size.x.raw_mut()).fixed_decimals(2));
+                            ui.label("×");
+                            ui.add(DragValue::new(preset.size.y.raw_mut()).fixed_decimals(2));
+                            ui.label("×");
+                            ui.add(DragValue::new(preset.size.z.raw_mut()).fixed_decimals(2));
+                        });
+                    });
+                });
+            }
+
+            if let Some(delete) = delete {
+                app.config.printers.remove(delete);
+            }
+        });
+
+    ui.add_space(8.0);
+    ui.vertical_centered(|ui| {
+        if ui.button(concatcp!(PLUS, " New")).clicked() {
+            app.config.printers.push(Default::default());
+        }
+    });
+
+    false
+}
+
+fn elephant_foot_fixer(this: &mut ElephantFootFixer, ui: &mut Ui) {
     ui.label("Fixes the 'Elephant Foot' effect by exposing the edges of the bottom layers at a lower intensity. You may have to make a few test prints to find the right settings for your printer and resin.");
     ui.checkbox(&mut this.enabled, "Enabled");
     ui.add_space(8.0);

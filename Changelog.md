@@ -18,6 +18,7 @@
   - Replaces the old AA post processing effect
 - Fix scanning for printers never ending on linux
 - Select save format when exporting, not before slicing
+- Modify printer presets within mslicer
 
 ## v0.6.0 &mdash; March 23rd, 2026
 
