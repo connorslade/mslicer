@@ -34,7 +34,6 @@ struct ModelUniforms {
     build_volume: Vector3<f32>,
     model_color: Vector3<f32>,
     camera_position: Vector3<f32>,
-    camera_target: Vector3<f32>,
     render_style: u32,
     overhang_angle: f32,
 }
@@ -143,7 +142,6 @@ impl ModelPipeline {
                 build_volume,
                 model_color: model.color.to_srgb().into(),
                 camera_position: app.camera.position(app.camera.distance),
-                camera_target: app.camera.target,
                 render_style: app.config.render_style as u32,
                 overhang_angle,
             };
@@ -172,7 +170,6 @@ impl ModelPipeline {
                 build_volume: Vector3::repeat(f32::MAX),
                 model_color: model.color.to_srgb().into(),
                 camera_position: camera.position(camera.distance),
-                camera_target: camera.target,
                 render_style: RenderStyle::Rendered as u32,
                 overhang_angle: 0.0,
             };

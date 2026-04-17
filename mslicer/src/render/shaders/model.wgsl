@@ -13,7 +13,6 @@ struct Context {
     build_volume: vec3f,
     model_color: vec3f,
     camera_position: vec3f,
-    camera_target: vec3f,
     render_style: u32,
     overhang_angle: f32
 }
@@ -62,8 +61,7 @@ fn frag(
             color = select(vec3f(.5), color, is_front);
             color = select(color, OOB_COLOR, outside_build_volume(in.world_position));
 
-            let camera_direction = normalize(context.camera_position + context.camera_target);
-            let intensity = blinn_phong(normal, camera_direction);
+            let intensity = blinn_phong(normal, normalize(context.camera_position));
             return vec4f(intensity * color, 1.0);
         }
         default: {

@@ -133,7 +133,7 @@
 - [x] Finish nanodlp format (#8)
 - [x] Parse speeds with any time unit (#11)
 - [ ] Auto reload annotations on current layer when island detection finishes
-- [ ] Fix light direction calculation for orthographic camera
+- [x] Fix light direction calculation for orthographic camera
 - [x] Fix scanning for printers never going away on linux
 - [ ] Fix crash when slicing without ever seeing workspace
 - [ ] Fix model scale being applied after rotation
