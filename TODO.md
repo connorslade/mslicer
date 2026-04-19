@@ -135,7 +135,7 @@
 - [ ] Auto reload annotations on current layer when island detection finishes
 - [x] Fix light direction calculation for orthographic camera
 - [x] Fix scanning for printers never going away on linux
-- [ ] Fix crash when slicing without ever seeing workspace
+- [x] Fix crash when slicing without ever seeing workspace
 - [x] Fix model scale being applied after rotation
 - [ ] Fix slicing with geometry extending past y=0
 - [x] Add saved projects to recent

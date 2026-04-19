@@ -118,14 +118,11 @@ impl ModelPipeline {
     pub fn prepare(&mut self, gcx: &Gcx, app: &mut App) {
         let (show_overhang, overhang_angle) = app.config.overhang_visualization;
         let overhang_angle = show_overhang.then_some(overhang_angle);
+        let view_projection = app.view_projection();
 
         self.bind_groups.clear();
-        let mut to_generate = Vec::new();
-
-        for (idx, model) in app.project.models.iter().enumerate() {
-            if model.try_get_buffers().is_none() {
-                to_generate.push(idx);
-            }
+        for model in app.project.models.iter_mut() {
+            model.get_buffers(&gcx.device);
 
             let model_transform = *model.mesh.transformation_matrix();
             let overhang_angle = overhang_angle
@@ -137,7 +134,7 @@ impl ModelPipeline {
                 .map(|x| x.get::<Milimeter>());
 
             let uniforms = ModelUniforms {
-                transform: app.view_projection() * model_transform,
+                transform: view_projection * model_transform,
                 model_transform,
                 build_volume,
                 model_color: model.color.to_srgb().into(),
@@ -147,20 +144,12 @@ impl ModelPipeline {
             };
             self.bind_groups.push(self.bind_group(gcx, uniforms));
         }
-
-        if !to_generate.is_empty() {
-            for idx in to_generate {
-                app.project.models[idx].get_buffers(&gcx.device);
-            }
-        }
     }
 
     pub fn prepare_preview(&mut self, gcx: &Gcx, app: &mut App, camera: Camera) {
         self.bind_groups.clear();
-        for model in app.project.models.iter() {
-            if model.try_get_buffers().is_none() {
-                continue;
-            }
+        for model in app.project.models.iter_mut() {
+            model.get_buffers(&gcx.device);
 
             let view_projection = camera.view_projection_matrix(Projection::Perspective, 1.0);
             let model_transform = *model.mesh.transformation_matrix();
