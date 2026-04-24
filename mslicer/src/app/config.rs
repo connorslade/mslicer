@@ -42,14 +42,31 @@ pub struct Config {
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct RemotePrintConfig {
-    pub alert_completion: bool,
     pub init_at_startup: bool,
     pub status_proxy: bool,
     pub timeout: f32,
+
     pub broadcast_address: Ipv4Addr,
     pub mqtt_port: u16,
     pub http_port: u16,
     pub udp_port: u16,
+
+    pub alert_completion: bool,
+    pub webhook: Webhook,
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+pub struct Webhook {
+    pub enabled: bool,
+    pub url: String,
+    pub body: String,
+    pub content_type: ContentType,
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub enum ContentType {
+    Text,
+    Json,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -104,6 +121,24 @@ impl Config {
     }
 }
 
+impl ContentType {
+    pub const ALL: &[Self] = &[Self::Text, Self::Json];
+
+    pub fn name(&self) -> &str {
+        match self {
+            ContentType::Text => "Text",
+            ContentType::Json => "Json",
+        }
+    }
+
+    pub fn header(&self) -> &str {
+        match self {
+            ContentType::Text => "text/plain; charset=utf-8",
+            ContentType::Json => "application/json",
+        }
+    }
+}
+
 impl Default for Config {
     fn default() -> Self {
         Self {
@@ -143,6 +178,12 @@ impl Default for RemotePrintConfig {
             mqtt_port: 0,
             http_port: 0,
             udp_port: 0,
+            webhook: Webhook {
+                enabled: false,
+                url: String::new(),
+                body: "Print %file% finished!".into(),
+                content_type: ContentType::Text,
+            },
         }
     }
 }

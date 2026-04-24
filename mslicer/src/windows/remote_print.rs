@@ -10,8 +10,8 @@ use chrono::DateTime;
 use common::{misc::human_duration, slice::format::RasterFormat, units::Miliseconds};
 use const_format::concatcp;
 use egui::{
-    Align, Context, DragValue, Grid, Layout, OutputCommand, ProgressBar, Separator, Spinner,
-    TextEdit, Ui, vec2,
+    Align, ComboBox, Context, DragValue, Grid, Layout, OutputCommand, ProgressBar, Separator,
+    Spinner, TextEdit, Ui, vec2,
 };
 use egui_phosphor::regular::{COPY, NETWORK, PLUGS, PRINTER, STOP, TRASH_SIMPLE, UPLOAD_SIMPLE};
 use notify_rust::Notification;
@@ -20,8 +20,8 @@ use rfd::FileDialog;
 use tracing::info;
 
 use crate::{
-    app::App,
-    task::{PrinterConnect, PrinterScan},
+    app::{App, config::ContentType},
+    task::{PrinterConnect, PrinterScan, Webhook},
     ui::{
         components::grid,
         popup::{Popup, PopupIcon},
@@ -30,6 +30,8 @@ use crate::{
 };
 
 const PORTS_DESCRIPTION: &str = "The default service ports can be changed while remote print is disabled. Zero means a random port will be picked.";
+const WEBHOOK_DESCRIPTION: &str =
+    "Once a print is finished, a webhook (HTTP POST) can be sent to a service of your choice.";
 
 enum Action {
     None,
@@ -136,16 +138,31 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
                     ui.label(format!("in {print_time}"));
                 });
 
-                if app.config.remote_print.alert_completion && !app.state.send_print_completion {
+                if !app.state.send_print_completion {
                     app.state.send_print_completion = true;
-                    Notification::new()
-                        .summary("Print Complete")
-                        .body(&format!(
-                            "Printer `{}` has finished printing `{}`.",
-                            attributes.name, print_info.filename
-                        ))
-                        .show()
-                        .unwrap();
+
+                    let config = &app.config.remote_print;
+                    if config.alert_completion {
+                        Notification::new()
+                            .summary("Print Complete")
+                            .body(&format!(
+                                "Printer `{}` has finished printing `{}`.",
+                                attributes.name, print_info.filename
+                            ))
+                            .show()
+                            .unwrap();
+                    }
+
+                    if config.webhook.enabled {
+                        let body = (config.webhook.body)
+                            .replace("%file%", &print_info.filename)
+                            .replace("%printer%", &attributes.name);
+                        app.tasks.add(Webhook::new(
+                            &config.webhook.url,
+                            body,
+                            config.webhook.content_type,
+                        ));
+                    }
                 }
             }
 
@@ -329,6 +346,52 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
                 });
                 ui.end_row();
             }
+        });
+    });
+
+    ui.collapsing("Webhook", |ui| {
+        ui.horizontal_wrapped(|ui| {
+            ui.label(WEBHOOK_DESCRIPTION);
+            ui.label("In the body, you can use the formatters");
+            ui.code("%file%");
+            ui.label("for the file name and");
+            ui.code("%printer%");
+            ui.label("for the printer name");
+        });
+        ui.add_space(16.0);
+
+        let webhook = &mut app.config.remote_print.webhook;
+        grid("webhook").show(ui, |ui| {
+            ui.label("Event");
+            ComboBox::new("event", "")
+                .selected_text(["Never", "Print Completion"][webhook.enabled as usize])
+                .show_ui(ui, |ui| {
+                    ui.selectable_value(&mut webhook.enabled, false, "Never");
+                    ui.selectable_value(&mut webhook.enabled, true, "Print Completion");
+                });
+            ui.end_row();
+
+            ui.label("Content Type");
+            ComboBox::new("content_type", "")
+                .selected_text(webhook.content_type.name())
+                .show_ui(ui, |ui| {
+                    for content_type in ContentType::ALL {
+                        ui.selectable_value(
+                            &mut webhook.content_type,
+                            *content_type,
+                            content_type.name(),
+                        );
+                    }
+                });
+            ui.end_row();
+
+            ui.label("URL");
+            ui.text_edit_singleline(&mut webhook.url);
+            ui.end_row();
+
+            ui.label("Body");
+            ui.text_edit_singleline(&mut webhook.body);
+            ui.end_row();
         });
     });
 
