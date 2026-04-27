@@ -21,7 +21,6 @@
 - Modify printer presets within mslicer
 - Optimized tools with new slicer/encoder separation
 - Fix light direction calculation with nonzero target point
-- Scale models before rotating
 - Encode file in async task
 - Fix crash when slicing without ever seeing workspace
 - Send custom webhooks on print completion
