@@ -1,4 +1,7 @@
-use std::iter;
+use std::{
+    iter,
+    ops::{Add, Mul},
+};
 
 use crate::units::Miliseconds;
 
@@ -50,4 +53,11 @@ pub fn subscript_number(num: impl Into<u64>) -> String {
     }
 
     out
+}
+
+pub fn lerp<T>(a: T, b: T, t: f32) -> T
+where
+    T: Mul<f32, Output = T> + Add<Output = T>,
+{
+    a * (1.0 - t) + b * t
 }

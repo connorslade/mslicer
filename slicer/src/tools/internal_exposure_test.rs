@@ -31,7 +31,7 @@ impl InternalExposureTest {
             .enumerate()
             .map(|(layer, data)| Layer {
                 data,
-                exposure: config.exposure_config(layer as u32).clone(),
+                exposure: config.exposure_config(layer as u32).into_owned(),
             })
             .inspect(|_| progress.add_complete(1))
             .collect()

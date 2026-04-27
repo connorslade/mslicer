@@ -1,7 +1,10 @@
+use std::borrow::Cow;
+
 use anyhow::Result;
 use nalgebra::{Vector2, Vector3};
 
 use crate::{
+    misc::lerp,
     serde::{Deserializer, SerdeExt, Serializer},
     slice::format::SliceMode,
     units::{
@@ -42,11 +45,14 @@ pub struct ExposureConfig {
 }
 
 impl SliceConfig {
-    pub fn exposure_config(&self, layer: u32) -> &ExposureConfig {
+    pub fn exposure_config(&self, layer: u32) -> Cow<'_, ExposureConfig> {
         if layer < self.first_layers {
-            &self.first_exposure_config
+            Cow::Borrowed(&self.first_exposure_config)
+        } else if layer < self.first_layers + self.transition_layers {
+            let t = (layer - self.first_layers) as f32 / self.transition_layers as f32;
+            Cow::Owned(self.first_exposure_config.lerp(&self.exposure_config, t))
         } else {
-            &self.exposure_config
+            Cow::Borrowed(&self.exposure_config)
         }
     }
 
@@ -183,6 +189,18 @@ impl ExposureConfig {
 
             retract_distance: Milimeters::new(des.read_f32_be()),
             retract_speed: CentimetersPerSecond::new(des.read_f32_be()),
+        }
+    }
+
+    pub fn lerp(&self, other: &Self, t: f32) -> Self {
+        Self {
+            exposure_time: lerp(self.exposure_time, other.exposure_time, t),
+            exposure_delay: lerp(self.exposure_delay, other.exposure_delay, t),
+            pwm: lerp(self.pwm as f32, other.pwm as f32, t) as u8,
+            lift_distance: lerp(self.lift_distance, other.lift_distance, t),
+            lift_speed: lerp(self.lift_speed, other.lift_speed, t),
+            retract_distance: lerp(self.retract_distance, other.retract_distance, t),
+            retract_speed: lerp(self.retract_speed, other.retract_speed, t),
         }
     }
 }

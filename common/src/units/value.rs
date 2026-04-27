@@ -73,6 +73,14 @@ impl<T1: TimeUnit, T2: TimeUnit> ops::Add<Time<T2>> for Time<T1> {
     }
 }
 
+impl<L1: LengthUnit, L2: LengthUnit> ops::Add<Length<L2>> for Length<L1> {
+    type Output = Self;
+
+    fn add(self, rhs: Length<L2>) -> Self::Output {
+        Length::new(self.value + rhs.get::<L1>())
+    }
+}
+
 impl<A: LengthUnit, B: LengthUnit> ops::Div<Length<B>> for Length<A> {
     type Output = f32;
 
@@ -112,6 +120,16 @@ impl<L1: LengthUnit, L2: LengthUnit> ops::Mul<Length<L2>> for Area<L1> {
     fn mul(self, rhs: Length<L2>) -> Self::Output {
         let base = L1::apply(self.value as _, 2) * L2::apply(rhs.value as _, 1);
         Volume::new(L1::apply(base, -3) as _)
+    }
+}
+
+impl<L1: LengthUnit, T1: TimeUnit, L2: LengthUnit, T2: TimeUnit> ops::Add<Velocity<L2, T2>>
+    for Velocity<L1, T1>
+{
+    type Output = Self;
+
+    fn add(self, rhs: Velocity<L2, T2>) -> Self::Output {
+        Self::new(self.value + rhs.get::<L1, T2>())
     }
 }
 

@@ -128,7 +128,7 @@ impl Slicer {
                     chunk.pop().unwrap()
                 };
 
-                let exposure = self.slice_config.exposure_config(i as u32).clone();
+                let exposure = self.slice_config.exposure_config(i as u32).into_owned();
                 Layer { data, exposure }
             })
             .inspect(|_| self.progress.add_complete(1))

@@ -91,7 +91,7 @@ impl ExposureTest {
             .enumerate()
             .map(|(layer, data)| Layer {
                 data,
-                exposure: config.exposure_config(layer as u32).clone(),
+                exposure: config.exposure_config(layer as u32).into_owned(),
             })
             .collect()
     }
