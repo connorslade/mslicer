@@ -17,6 +17,10 @@ use slicer::{
 /// Project format version. Value should be incremented whenever the save format
 /// changes, even in development.
 ///
+/// ## v7
+///
+/// Added exposure delay option to exposure config.
+///
 /// ## v6
 /// Store SliceMode (raster / vector) instead of the specific Format to save to.
 /// Since slicing and encoding are now separated.
@@ -34,7 +38,7 @@ use slicer::{
 /// ## v2
 /// A complete rewrite using a custom serilizer/deserilizer because of the
 /// bincode drama...
-const VERSION: u16 = 6;
+const VERSION: u16 = 7;
 
 struct ModelInfo {
     mesh: u32,

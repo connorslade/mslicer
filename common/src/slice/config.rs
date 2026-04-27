@@ -31,6 +31,7 @@ pub struct SliceConfig {
 #[serde(default)]
 pub struct ExposureConfig {
     pub exposure_time: Seconds,
+    pub exposure_delay: Seconds,
     pub pwm: u8,
 
     pub lift_distance: Milimeters,
@@ -76,10 +77,12 @@ impl SliceConfig {
 
         let layer_time = exp.exposure_time
             + exp.lift_distance / exp.lift_speed
-            + exp.retract_distance / exp.retract_speed;
+            + exp.retract_distance / exp.retract_speed
+            + exp.exposure_delay;
         let bottom_layer_time = fexp.exposure_time
             + fexp.lift_distance / fexp.lift_speed
-            + fexp.retract_distance / fexp.retract_speed;
+            + fexp.retract_distance / fexp.retract_speed
+            + fexp.exposure_delay;
 
         regular_layers as f32 * layer_time
             + first_layers as f32 * bottom_layer_time
@@ -113,6 +116,7 @@ impl Default for SliceConfig {
 impl Default for ExposureConfig {
     fn default() -> Self {
         Self {
+            exposure_delay: Seconds::new(1.0),
             exposure_time: Seconds::new(3.0),
             pwm: 255,
 
@@ -160,6 +164,7 @@ impl SliceConfig {
 impl ExposureConfig {
     pub fn serialize<T: Serializer>(&self, ser: &mut T) {
         ser.write_f32_be(self.exposure_time.raw());
+        ser.write_f32_be(self.exposure_delay.raw());
         ser.write_u8(self.pwm);
         ser.write_f32_be(self.lift_distance.raw());
         ser.write_f32_be(self.lift_speed.raw());
@@ -170,6 +175,7 @@ impl ExposureConfig {
     pub fn deserialize<T: Deserializer>(des: &mut T, version: u16) -> Self {
         Self {
             exposure_time: Seconds::new(des.read_f32_be()),
+            exposure_delay: Seconds::new(if version < 7 { 0.0 } else { des.read_f32_be() }),
             pwm: if version < 3 { 255 } else { des.read_u8() },
 
             lift_distance: Milimeters::new(des.read_f32_be()),

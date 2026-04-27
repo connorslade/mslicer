@@ -130,7 +130,7 @@ impl EncodableLayer for LayerEncoder {
             retract_speed_2: MilimetersPerMinute::new(0.0),
             rest_time_before_lift: Seconds::new(0.0),
             rest_time_after_lift: Seconds::new(0.0),
-            rest_time_after_retract: Seconds::new(1.0),
+            rest_time_after_retract: exposure.exposure_delay,
             light_pwm: exposure.pwm as f32,
             data: self.data,
         }

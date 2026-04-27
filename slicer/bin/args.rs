@@ -36,6 +36,9 @@ pub struct Args {
     #[arg(long, default_value_t = 3.0)]
     /// Layer exposure time in seconds.
     pub exposure_time: f32,
+    #[arg(long, default_value_t = 1.0)]
+    /// Time between build plate stopping and the exposure, in seconds.
+    pub exposure_delay: f32,
     #[arg(long, default_value_t = 100.0)]
     /// Layer exposure PWM (overall brightness). 0%–100%.
     pub exposure_pwm: f32,
@@ -54,6 +57,9 @@ pub struct Args {
     #[arg(long, default_value_t = 30.0)]
     /// First layer exposure time in seconds.
     pub first_exposure_time: f32,
+    #[arg(long, default_value_t = 1.0)]
+    /// Time between build plate stopping and the exposure for first layers, in seconds.
+    pub first_exposure_delay: f32,
     #[arg(long, default_value_t = 100.0)]
     /// First layer exposure PWM (overall brightness). 0%–100%.
     pub first_exposure_pwm: f32,
@@ -120,6 +126,7 @@ impl Args {
             slice_height: Milimeters::new(self.layer_height),
             exposure_config: ExposureConfig {
                 exposure_time: Seconds::new(self.exposure_time),
+                exposure_delay: Seconds::new(self.exposure_delay),
                 pwm: (self.exposure_pwm.clamp(0.0, 100.0) * 2.55) as u8,
                 lift_distance: Milimeters::new(self.lift_distance),
                 lift_speed: MilimetersPerMinute::new(self.lift_speed).convert(),
@@ -128,6 +135,7 @@ impl Args {
             },
             first_exposure_config: ExposureConfig {
                 exposure_time: Seconds::new(self.first_exposure_time),
+                exposure_delay: Seconds::new(self.first_exposure_delay),
                 pwm: (self.first_exposure_pwm.clamp(0.0, 100.0) * 2.55) as u8,
                 lift_distance: Milimeters::new(self.first_lift_distance),
                 lift_speed: MilimetersPerMinute::new(self.first_lift_speed).convert(),

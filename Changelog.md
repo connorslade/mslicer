@@ -25,6 +25,7 @@
 - Encode file in async task
 - Fix crash when slicing without ever seeing workspace
 - Send custom webhooks on print completion
+- Customable exposure delay
 
 ## v0.6.0 &mdash; March 23rd, 2026
 

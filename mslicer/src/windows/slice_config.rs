@@ -2,7 +2,7 @@ use const_format::concatcp;
 use egui::{ComboBox, Context, DragValue, Grid, Ui, Widget};
 use egui_extras::{Column, TableBuilder};
 use egui_phosphor::regular::{
-    ARROW_COUNTER_CLOCKWISE, INFO, NOTE_PENCIL, PENCIL, PLUS, TRASH, WARNING,
+    ARROW_COUNTER_CLOCKWISE, INFO, NOTE_PENCIL, PENCIL, PLUS, TIMER, TRASH, WARNING,
 };
 use num_integer::cbrt;
 use slicer::post_process::elephant_foot_fixer::ElephantFootFixer;
@@ -194,9 +194,18 @@ fn exposure_config(ui: &mut Ui, config: &mut ExposureConfig) {
             });
 
             row.col(|ui| {
-                let mut pwm = config.pwm as f32 / 2.55;
-                DragValue::new(&mut pwm).max_decimals(0).suffix('%').ui(ui);
-                config.pwm = (pwm * 2.55).round() as u8;
+                ui.horizontal(|ui| {
+                    let mut pwm = config.pwm as f32 / 2.55;
+                    DragValue::new(&mut pwm).max_decimals(0).suffix('%').ui(ui);
+                    config.pwm = (pwm * 2.55).round() as u8;
+
+                    ui.label(TIMER).on_hover_text("Exposure delay");
+                    DragValue::new(config.exposure_delay.raw_mut())
+                        .suffix(" s")
+                        .speed(0.1)
+                        .range(0.0..=f32::MAX)
+                        .ui(ui);
+                });
             });
         })
         .body(|mut body| {
