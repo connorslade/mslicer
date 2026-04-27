@@ -10,8 +10,10 @@ use serde::{Deserialize, Serialize};
 pub struct Mesh {
     inner: Arc<MeshInner>,
 
-    transformation_matrix: Matrix4<f32>,
-    inv_transformation_matrix: Matrix4<f32>,
+    transform: Matrix4<f32>,
+    t_transform: Matrix4<f32>,
+    inv_transform: Matrix4<f32>,
+    inv_t_transform: Matrix4<f32>,
 
     position: Vector3<f32>,
     scale: Vector3<f32>,
@@ -127,45 +129,47 @@ impl Mesh {
             Matrix4::from_euler_angles(self.rotation.x, self.rotation.y, self.rotation.z);
         let translation = Matrix4::new_translation(&self.position);
 
-        self.transformation_matrix = translation * scale * rotation;
-        self.inv_transformation_matrix = self.transformation_matrix.try_inverse().unwrap();
+        self.transform = translation * rotation * scale;
+        self.t_transform = self.transform.transpose();
+        self.inv_transform = self.transform.try_inverse().unwrap();
+        self.inv_t_transform = self.inv_transform.transpose();
     }
 
     /// Transforms a point according to the models translation, scale, and rotation.
     pub fn transform(&self, pos: &Vector3<f32>) -> Vector3<f32> {
-        (self.transformation_matrix * pos.push(1.0)).xyz()
+        (self.transform * pos.push(1.0)).xyz()
     }
 
     /// Transforms a normal according to the models scale and rotation.
     pub fn transform_normal(&self, normal: &Vector3<f32>) -> Vector3<f32> {
-        (self.transformation_matrix * normal.to_homogeneous()).xyz()
+        (self.inv_t_transform * normal.to_homogeneous()).xyz()
     }
 
     /// Undoes the transformation of a point from the models translation, scale, and rotation.
     pub fn inv_transform(&self, pos: &Vector3<f32>) -> Vector3<f32> {
-        (self.inv_transformation_matrix * pos.push(1.0)).xyz()
+        (self.inv_transform * pos.push(1.0)).xyz()
     }
 
     pub fn inv_transform_normal(&self, normal: &Vector3<f32>) -> Vector3<f32> {
-        (self.inv_transformation_matrix * normal.to_homogeneous()).xyz()
+        (self.t_transform * normal.to_homogeneous()).xyz()
     }
 
     /// Get the minimum and maximum of each component of every vertex in the
     /// model. These points define the bounding box of the model.
     pub fn bounds(&self) -> (Vector3<f32>, Vector3<f32>) {
-        vertex_bounds(self.vertices(), &self.transformation_matrix)
+        vertex_bounds(self.vertices(), &self.transform)
     }
 }
 
 impl Mesh {
     /// Gets the current transformation matrix of the model.
     pub fn transformation_matrix(&self) -> &Matrix4<f32> {
-        &self.transformation_matrix
+        &self.transform
     }
 
     /// Gets the inverse of the current transformation matrix of the model.
     pub fn inv_transformation_matrix(&self) -> &Matrix4<f32> {
-        &self.inv_transformation_matrix
+        &self.inv_transform
     }
 
     /// Changes the position of the model, automatically updating the internal
@@ -235,8 +239,10 @@ impl Default for Mesh {
                 faces: Box::new([]),
             }),
 
-            transformation_matrix: Matrix4::identity(),
-            inv_transformation_matrix: Matrix4::identity(),
+            transform: Matrix4::identity(),
+            t_transform: Matrix4::identity(),
+            inv_transform: Matrix4::identity(),
+            inv_t_transform: Matrix4::identity(),
 
             position: Vector3::repeat(0.0),
             scale: Vector3::repeat(1.0),
