@@ -410,7 +410,7 @@ impl File {
             transition_layer_count: config.transition_layers,
             anti_alias_flag: 7,
             anti_alias_level: 0,
-            per_layer_settings: 0,
+            per_layer_settings: 0x40,
             print_time: 0,
             material_milliliters: 0.0,
             material_grams: 0.0,
@@ -438,11 +438,11 @@ impl File {
             rest_time_after_lift: Seconds::new(0.0),
             bottom_retract_speed: config.first_exposure_config.retract_speed.convert(),
             bottom_retract_speed_2: MilimetersPerMinute::new(90.0), // make a setting
-            rest_time_after_retract_2: Seconds::new(1.0),
+            rest_time_after_retract_2: config.first_exposure_config.exposure_delay,
             rest_time_after_lift_3: Seconds::new(0.0),
             rest_time_before_lift: Seconds::new(0.0),
             bottom_retract_height_2: Milimeters::new(1.5),
-            rest_time_after_retract: Seconds::new(1.0),
+            rest_time_after_retract: config.exposure_config.exposure_delay,
             rest_time_after_lift_2: Seconds::new(0.0),
         }
     }

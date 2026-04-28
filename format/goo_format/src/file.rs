@@ -44,6 +44,7 @@ impl File {
                 transition_layers: config.transition_layers as u16,
 
                 exposure_time: config.exposure_config.exposure_time,
+                after_retract_time: config.exposure_config.exposure_delay,
                 light_pwm: config.exposure_config.pwm,
                 lift_distance: config.exposure_config.lift_distance,
                 lift_speed: config.exposure_config.lift_speed.convert(),
@@ -51,6 +52,7 @@ impl File {
                 retract_speed: config.exposure_config.retract_speed.convert(),
 
                 bottom_exposure_time: config.first_exposure_config.exposure_time,
+                bottom_after_retract_time: config.first_exposure_config.exposure_delay,
                 bottom_light_pwm: config.first_exposure_config.pwm,
                 bottom_lift_distance: config.first_exposure_config.lift_distance,
                 bottom_lift_speed: config.first_exposure_config.lift_speed.convert(),
