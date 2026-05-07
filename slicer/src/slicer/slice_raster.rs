@@ -160,22 +160,43 @@ fn global_edge_table(
     segments: impl Iterator<Item = (([Vector2<f32>; 2], bool), u8)>,
 ) -> VecDeque<Edge> {
     let mut edges = Vec::new();
-    for ((pos, direction), exposure) in segments {
-        let pos = pos.map(|x| x.map(|x| x.round() as u32));
+    for (([p0, p1], direction), exposure) in segments {
+        let delta = p1 - p0;
 
-        let dy = pos[1].y as f32 - pos[0].y as f32;
-        let dx = pos[1].x as f32 - pos[0].x as f32;
-        if dy == 0.0 {
-            continue;
+        let (mut t_vals, mut t_len) = ([0.0, 1.0, 0.0, 0.0], 2);
+        let mut add_t = |t: f32| {
+            if (0.0..=1.0).contains(&t) {
+                t_vals[t_len] = t;
+                t_len += 1;
+            }
+        };
+
+        (delta.x != 0.0).then(|| add_t(-p0.x / delta.x));
+        (delta.y != 0.0).then(|| add_t(-p0.y / delta.y));
+
+        let t_slice = &mut t_vals[..t_len];
+        t_slice.sort_by(|a, b| a.partial_cmp(b).unwrap());
+
+        for (t0, t1) in t_slice.iter().tuple_windows() {
+            let [p0, p1] = [t0, t1].map(|&t| (p0 + delta * t).map(|x| x.max(0.0)));
+            if p0.y == p1.y {
+                continue;
+            }
+
+            let inv_slope = (p1.x - p0.x) / (p1.y - p0.y);
+            let pos = [p0, p1].map(|p| p.map(|x| x.round() as u32));
+            if pos[0].y == pos[1].y {
+                continue;
+            }
+
+            edges.push(Edge {
+                min: pos[(pos[0].y >= pos[1].y) as usize],
+                y_max: pos[0].y.max(pos[1].y),
+                inv_slope,
+                direction,
+                exposure,
+            });
         }
-
-        edges.push(Edge {
-            min: pos[(pos[0].y >= pos[1].y) as usize],
-            y_max: pos[0].y.max(pos[1].y),
-            inv_slope: dx / dy,
-            direction,
-            exposure,
-        });
     }
 
     edges.sort_by(|a, b| a.min.y.cmp(&b.min.y).then_with(|| a.min.x.cmp(&b.min.x)));

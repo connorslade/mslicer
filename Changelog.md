@@ -26,7 +26,6 @@
 - Send custom webhooks on print completion
 - Customable exposure delay
 - Correctly interpolate between first and normal layer exposures in transition layers
-- Scale models before rotating
 
 ## v0.6.0 &mdash; March 23rd, 2026
 

@@ -128,7 +128,7 @@ impl Mesh {
             Matrix4::from_euler_angles(self.rotation.x, self.rotation.y, self.rotation.z);
         let translation = Matrix4::new_translation(&self.position);
 
-        self.transform = translation * rotation * scale;
+        self.transform = translation * scale * rotation;
         self.inv_transform = self.transform.try_inverse().unwrap();
         self.inv_t_transform = self.inv_transform.transpose();
     }
