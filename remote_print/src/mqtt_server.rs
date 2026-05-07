@@ -161,7 +161,7 @@ impl Mqtt {
 
     pub fn get_client(&self, mainboard_id: &str) -> MappedRwLockReadGuard<'_, MqttClient> {
         RwLockReadGuard::map(self.clients.read(), |clients| {
-            clients.get(mainboard_id).unwrap()
+            clients.get(mainboard_id).unwrap() // panics sometimes
         })
     }
 

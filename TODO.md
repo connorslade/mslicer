@@ -146,3 +146,5 @@
 - [x] Replace slice format with a picker in the save dialog, use .ctb for remote send
 - [x] Refactor/cleanup slicing stuff
 - [x] Optimize tools with new slicer/encoder separation
+- [ ] Move remote print print completion check to its own thread / event based
+- [ ] Don't crash when interacting with remote print after the printer has disconnected

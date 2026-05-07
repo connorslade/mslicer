@@ -11,7 +11,6 @@ pub struct Mesh {
     inner: Arc<MeshInner>,
 
     transform: Matrix4<f32>,
-    t_transform: Matrix4<f32>,
     inv_transform: Matrix4<f32>,
     inv_t_transform: Matrix4<f32>,
 
@@ -130,7 +129,6 @@ impl Mesh {
         let translation = Matrix4::new_translation(&self.position);
 
         self.transform = translation * rotation * scale;
-        self.t_transform = self.transform.transpose();
         self.inv_transform = self.transform.try_inverse().unwrap();
         self.inv_t_transform = self.inv_transform.transpose();
     }
@@ -151,7 +149,7 @@ impl Mesh {
     }
 
     pub fn inv_transform_normal(&self, normal: &Vector3<f32>) -> Vector3<f32> {
-        (self.t_transform * normal.to_homogeneous()).xyz()
+        (self.inv_transform * normal.to_homogeneous()).xyz()
     }
 
     /// Get the minimum and maximum of each component of every vertex in the
@@ -240,7 +238,6 @@ impl Default for Mesh {
             }),
 
             transform: Matrix4::identity(),
-            t_transform: Matrix4::identity(),
             inv_transform: Matrix4::identity(),
             inv_t_transform: Matrix4::identity(),
 
