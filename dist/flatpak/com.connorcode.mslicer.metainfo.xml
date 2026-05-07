@@ -16,7 +16,7 @@
 		<name>Connor Slade</name>
 	</developer>
 
-	<summary>Masked stereolithography slicer</summary>
+	<summary>MSLA slicer</summary>
 	<description>
 		<p>
 		    A high-performance, open-source slicer for MSLA resin printers.
@@ -35,6 +35,33 @@
 	</screenshots>
 
 	<releases>
+	    <release version="0.7.0" date="2026-05-07">
+			<description>
+			    <li>Optimize slicing complex layers</li>
+			    <li>Allow clicking models in the viewport to select them</li>
+			    <li>Rerender annotations when updated (island detection finishes)</li>
+			    <li>Allow dragging to reorder models in Models panel</li>
+			    <li>Automatic support generation progress</li>
+			    <li>Internal exposure test tool</li>
+			    <li>Remote print preferred service ports</li>
+			    <li>Remote print will use limited broadcast by default to find printers on the network</li>
+			    <li>Remote print default broadcast address changed to `255.255.255.255`</li>
+			    <li>Fix crash on macOS (Observed on macOS Sequoia on a laptop with a touch bar)</li>
+			    <li>Separate slicing from layer encoding</li>
+			    <li>Native 3D anti-aliasing! Uses supersampling anti-aliasing (SSAA).</li>
+			    <li>Fix scanning for printers never ending on linux</li>
+			    <li>Select save format when exporting, not before slicing</li>
+			    <li>Modify printer presets within mslicer</li>
+			    <li>Optimized tools with new slicer/encoder separation</li>
+			    <li>Fix light direction calculation with nonzero target point</li>
+			    <li>Encode file in async task</li>
+			    <li>Fix crash when slicing without ever seeing workspace</li>
+			    <li>Send custom webhooks on print completion</li>
+			    <li>Customable exposure delay</li>
+			    <li>Correctly interpolate between first and normal layer exposures in transition layers</li>
+			    <li>Scale models before rotating</li>
+			</description>
+		</release>
     	<release version="0.6.0" date="2026-03-23">
             <description>
                 <ul>
