@@ -49,7 +49,7 @@ The video is also hosted on YouTube ([here][demo-yt]) if the one below doesn't p
 [hero-image]: https://github.com/user-attachments/assets/af719967-14e5-4fb3-923d-e63ce450151c
 [demo-yt]: https://youtu.be/_Xu0jFAEYLc
 [project page]: https://connorcode.com/projects/mslicer
-[benchmark results]: https://files.connorcode.com/Documents/mslicer/speed-chart.pdf
+[benchmark results]: https://mslicer.com/docs/benchmark
 
 [flathub-badge]: https://flathub.org/api/badge?svg&locale=en
 [nixpkgs-badge]: https://raw.githubusercontent.com/dch82/Nixpkgs-Badges/main/nixpkgs-badge-dark.svg
