@@ -3,8 +3,8 @@ use std::{fs, net::Ipv4Addr, str::FromStr, sync::Arc, time::Duration};
 use common::{misc::human_duration, slice::format::RasterFormat, units::Miliseconds};
 use const_format::concatcp;
 use egui::{
-    Align, ComboBox, Context, DragValue, Layout, OutputCommand, ProgressBar, Separator, Spinner,
-    TextEdit, Ui, vec2,
+    Align, CollapsingHeader, ComboBox, Context, DragValue, Layout, OutputCommand, ProgressBar,
+    Separator, Spinner, TextEdit, Ui, vec2,
 };
 use egui_phosphor::regular::{COPY, NETWORK, PLUGS, PRINTER, STOP, TRASH_SIMPLE, UPLOAD_SIMPLE};
 use notify_rust::Notification;
@@ -56,152 +56,141 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
             ui.label("No printers have been added yet.");
         }
 
-        let printer_count = printers.len();
         for (i, printer) in printers.iter_mut().enumerate() {
             let client = mqtt.get_client(&printer.mainboard_id);
             let attributes = &client.attributes;
 
+            ui.with_layout(Layout::right_to_left(Align::Min), |ui| {
+                if ui.button(TRASH_SIMPLE).on_hover_text("Delate").clicked() {
+                    action = Action::Remove(i);
+                }
+
+                if ui.button(UPLOAD_SIMPLE).on_hover_text("Upload").clicked() {
+                    action = Action::UploadFile {
+                        mainboard_id: attributes.mainboard_id.clone(),
+                    };
+                }
+
+                CollapsingHeader::new(format!("{} ({})", attributes.name, attributes.mainboard_id))
+                    .default_open(true)
+                    .show(ui, |ui| {
+                        let status = client.status.lock();
+
+                        let print_info = &status.print_info;
+                        let printing = !matches!(
+                            print_info.status,
+                            PrintInfoStatus::None | PrintInfoStatus::Complete
+                        );
+                        if printing {
+                            printer.sent_print_completion = false;
+                            ui.add_space(8.0);
+                            ui.horizontal(|ui| {
+                                ui.label("Printing");
+                                ui.monospace(&print_info.filename);
+                                ui.label(format!("({:?})", print_info.status));
+                            });
+
+                            if print_info.total_ticks != 0 {
+                                let eta = human_duration(Miliseconds::new(
+                                    (print_info.total_ticks - print_info.current_ticks) as f32,
+                                ));
+                                ui.label(format!("ETA: {eta}"));
+                            }
+
+                            ui.add(
+                                ProgressBar::new(
+                                    print_info.current_layer as f32 / print_info.total_layer as f32,
+                                )
+                                .text(format!(
+                                    "{}/{}",
+                                    print_info.current_layer, print_info.total_layer
+                                ))
+                                .desired_width(ui.available_width()),
+                            );
+                            ui.add_space(8.0);
+                        }
+
+                        if print_info.status == PrintInfoStatus::Complete {
+                            let print_time =
+                                human_duration(Miliseconds::new(print_info.total_ticks as f32));
+                            ui.horizontal(|ui| {
+                                ui.label("Finished printing");
+                                ui.monospace(&print_info.filename);
+                                ui.label(format!("in {print_time}"));
+                            });
+
+                            // todo: move to mqtt thread?
+                            if !printer.sent_print_completion {
+                                printer.sent_print_completion = true;
+
+                                let config = &app.config.remote_print;
+                                if config.alert_completion {
+                                    Notification::new()
+                                        .summary("Print Complete")
+                                        .body(&format!(
+                                            "Printer `{}` has finished printing `{}`.",
+                                            attributes.name, print_info.filename
+                                        ))
+                                        .show()
+                                        .unwrap();
+                                }
+
+                                if config.webhook.enabled {
+                                    let body = (config.webhook.body)
+                                        .replace("%file%", &print_info.filename)
+                                        .replace("%printer%", &attributes.name);
+                                    app.tasks.add(Webhook::new(
+                                        &config.webhook.url,
+                                        body,
+                                        config.webhook.content_type,
+                                    ));
+                                }
+                            }
+                        }
+
+                        let file_transfer = &status.file_transfer_info;
+                        if file_transfer.status == FileTransferStatus::None
+                            && file_transfer.file_total_size != 0
+                        {
+                            ui.add_space(8.0);
+                            ui.horizontal(|ui| {
+                                ui.label("Transferring");
+                                ui.monospace(&file_transfer.filename);
+                            });
+                            ui.add(
+                                ProgressBar::new(
+                                    file_transfer.download_offset as f32
+                                        / file_transfer.file_total_size as f32,
+                                )
+                                .show_percentage()
+                                .desired_width(ui.available_width()),
+                            );
+                            ui.add_space(8.0);
+                        }
+
+                        if file_transfer.status == FileTransferStatus::Done && !printing {
+                            ui.add_space(8.0);
+                            ui.horizontal(|ui| {
+                                ui.label("File transfer of");
+                                ui.monospace(&file_transfer.filename);
+                                ui.label("is complete.");
+                            });
+                            if ui.button(concatcp!(PRINTER, " Print")).clicked() {
+                                app.remote_print
+                                    .print(&attributes.mainboard_id, &file_transfer.filename)
+                                    .unwrap();
+                            }
+                        }
+                    });
+            });
+
             // TODO: Disconnected icon if last update was too long ago
             // let last_update = client.last_update.load(Ordering::Relaxed);
             // let last_update = DateTime::from_timestamp(last_update, 0).unwrap();
-
-            ui.with_layout(
-                Layout::left_to_right(Align::Min).with_main_justify(true),
-                |ui| {
-                    ui.horizontal(|ui| {
-                        ui.strong(&attributes.name);
-                        ui.monospace(&attributes.mainboard_id);
-                    });
-
-                    ui.with_layout(Layout::right_to_left(Align::Min), |ui| {
-                        if ui.button(concatcp!(TRASH_SIMPLE, " Delete")).clicked() {
-                            action = Action::Remove(i);
-                        }
-
-                        if ui.button(concatcp!(UPLOAD_SIMPLE, " Upload")).clicked() {
-                            action = Action::UploadFile {
-                                mainboard_id: attributes.mainboard_id.clone(),
-                            };
-                        }
-
-                        ui.take_available_width();
-                    })
-                },
-            );
-
-            let status = client.status.lock();
-
-            let print_info = &status.print_info;
-            let printing = !matches!(
-                print_info.status,
-                PrintInfoStatus::None | PrintInfoStatus::Complete
-            );
-            if printing {
-                printer.sent_print_completion = false;
-                ui.add_space(8.0);
-                ui.horizontal(|ui| {
-                    ui.label("Printing");
-                    ui.monospace(&print_info.filename);
-                    ui.label(format!("({:?})", print_info.status));
-                });
-
-                if print_info.total_ticks != 0 {
-                    let eta = human_duration(Miliseconds::new(
-                        (print_info.total_ticks - print_info.current_ticks) as f32,
-                    ));
-                    ui.label(format!("ETA: {eta}"));
-                }
-
-                ui.add(
-                    ProgressBar::new(
-                        print_info.current_layer as f32 / print_info.total_layer as f32,
-                    )
-                    .text(format!(
-                        "{}/{}",
-                        print_info.current_layer, print_info.total_layer
-                    ))
-                    .desired_width(ui.available_width()),
-                );
-                ui.add_space(8.0);
-            }
-
-            if print_info.status == PrintInfoStatus::Complete {
-                let print_time = human_duration(Miliseconds::new(print_info.total_ticks as f32));
-                ui.horizontal(|ui| {
-                    ui.label("Finished printing");
-                    ui.monospace(&print_info.filename);
-                    ui.label(format!("in {print_time}"));
-                });
-
-                // todo: move to mqtt thread?
-                if !printer.sent_print_completion {
-                    printer.sent_print_completion = true;
-
-                    let config = &app.config.remote_print;
-                    if config.alert_completion {
-                        Notification::new()
-                            .summary("Print Complete")
-                            .body(&format!(
-                                "Printer `{}` has finished printing `{}`.",
-                                attributes.name, print_info.filename
-                            ))
-                            .show()
-                            .unwrap();
-                    }
-
-                    if config.webhook.enabled {
-                        let body = (config.webhook.body)
-                            .replace("%file%", &print_info.filename)
-                            .replace("%printer%", &attributes.name);
-                        app.tasks.add(Webhook::new(
-                            &config.webhook.url,
-                            body,
-                            config.webhook.content_type,
-                        ));
-                    }
-                }
-            }
-
-            let file_transfer = &status.file_transfer_info;
-            if file_transfer.status == FileTransferStatus::None
-                && file_transfer.file_total_size != 0
-            {
-                ui.add_space(8.0);
-                ui.horizontal(|ui| {
-                    ui.label("Transferring");
-                    ui.monospace(&file_transfer.filename);
-                });
-                ui.add(
-                    ProgressBar::new(
-                        file_transfer.download_offset as f32 / file_transfer.file_total_size as f32,
-                    )
-                    .show_percentage()
-                    .desired_width(ui.available_width()),
-                );
-                ui.add_space(8.0);
-            }
-
-            if file_transfer.status == FileTransferStatus::Done && !printing {
-                ui.add_space(8.0);
-                ui.horizontal(|ui| {
-                    ui.label("File transfer of");
-                    ui.monospace(&file_transfer.filename);
-                    ui.label("is complete.");
-                });
-                if ui.button(concatcp!(PRINTER, " Print")).clicked() {
-                    app.remote_print
-                        .print(&attributes.mainboard_id, &file_transfer.filename)
-                        .unwrap();
-                }
-            }
-
-            if i + 1 != printer_count {
-                ui.separator();
-            }
         }
         drop(printers);
 
-        ui.add_space(16.0);
+        ui.add_space(8.0);
         ui.heading("Add Printer");
         ui.label("Only Chitu mainboard printers are supported.");
 
