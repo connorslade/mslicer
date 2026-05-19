@@ -1,10 +1,17 @@
-use std::{fs, net::Ipv4Addr, str::FromStr, sync::Arc, time::Duration};
+use std::{
+    fs,
+    net::Ipv4Addr,
+    str::FromStr,
+    sync::{Arc, atomic::Ordering},
+    time::Duration,
+};
 
+use chrono::{DateTime, Utc};
 use common::{misc::human_duration, slice::format::RasterFormat, units::Miliseconds};
 use const_format::concatcp;
 use egui::{
-    Align, CollapsingHeader, ComboBox, Context, DragValue, Layout, OutputCommand, ProgressBar,
-    Separator, Spinner, TextEdit, Ui, vec2,
+    Align, CollapsingHeader, ComboBox, Context, DragValue, FontSelection, Layout, OutputCommand,
+    ProgressBar, RichText, Separator, Spinner, Style, TextEdit, Ui, text::LayoutJob, vec2,
 };
 use egui_phosphor::regular::{COPY, NETWORK, PLUGS, PRINTER, STOP, TRASH_SIMPLE, UPLOAD_SIMPLE};
 use notify_rust::Notification;
@@ -71,7 +78,34 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
                     };
                 }
 
-                CollapsingHeader::new(format!("{} ({})", attributes.name, attributes.mainboard_id))
+                let mut job = LayoutJob::default();
+                RichText::new(&attributes.name).strong().append_to(
+                    &mut job,
+                    &Style::default(),
+                    FontSelection::Default,
+                    Align::Min,
+                );
+                RichText::new(format!(" ({})", attributes.mainboard_id))
+                    .monospace()
+                    .append_to(
+                        &mut job,
+                        &Style::default(),
+                        FontSelection::Default,
+                        Align::Min,
+                    );
+
+                let last_update = client.last_update.load(Ordering::Relaxed);
+                let last_update = DateTime::from_timestamp(last_update, 0).unwrap();
+                if (Utc::now() - last_update).num_seconds() > 15 {
+                    RichText::new(concatcp!(" ", PLUGS)).strong().append_to(
+                        &mut job,
+                        &Style::default(),
+                        FontSelection::Default,
+                        Align::Min,
+                    );
+                }
+
+                CollapsingHeader::new(job)
                     .default_open(true)
                     .show(ui, |ui| {
                         let status = client.status.lock();
@@ -183,10 +217,6 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
                         }
                     });
             });
-
-            // TODO: Disconnected icon if last update was too long ago
-            // let last_update = client.last_update.load(Ordering::Relaxed);
-            // let last_update = DateTime::from_timestamp(last_update, 0).unwrap();
         }
         drop(printers);
 

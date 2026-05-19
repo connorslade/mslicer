@@ -5,6 +5,7 @@
 - Fix 'First Layers' setting disappearing
 - Don't send print completion alert on connection
 - Remote print UI refresh
+- Show when remote printer is disconnected
 
 ## v0.7.0 &mdash; May 7th, 2026
 
