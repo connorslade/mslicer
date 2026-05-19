@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.8.0 &mdash; Coming Soon™
+
+- Fix 'First Layers' setting disappearing
+
 ## v0.7.0 &mdash; May 7th, 2026
 
 - Optimize slicing complex layers

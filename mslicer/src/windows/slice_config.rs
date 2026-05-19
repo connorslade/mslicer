@@ -133,6 +133,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                 .range(1..=16)
                 .ui(ui);
         });
+        ui.end_row();
 
         ui.label("First Layers");
         DragValue::new(&mut slice_config.first_layers).ui(ui);
