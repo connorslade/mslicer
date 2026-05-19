@@ -16,7 +16,7 @@ use remote_print::{
     http_server::HttpServer,
     mqtt::MqttServer,
     mqtt_server::Mqtt,
-    status::FullStatusData,
+    status::{FullStatusData, PrintInfoStatus},
 };
 
 use crate::{
@@ -46,6 +46,7 @@ pub struct Services {
 
 pub struct Printer {
     pub mainboard_id: String,
+    pub sent_print_completion: bool,
 }
 
 impl RemotePrint {
@@ -289,6 +290,7 @@ fn connect_printer(
 
     printers.push(Printer {
         mainboard_id: response.data.attributes.mainboard_id.clone(),
+        sent_print_completion: response.data.status.print_info.status == PrintInfoStatus::Complete,
     });
 
     services.mqtt.add_future_client(response);

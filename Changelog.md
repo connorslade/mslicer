@@ -3,6 +3,7 @@
 ## v0.8.0 &mdash; Coming Soon™
 
 - Fix 'First Layers' setting disappearing
+- Don't send print completion alert on connection
 
 ## v0.7.0 &mdash; May 7th, 2026
 

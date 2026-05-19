@@ -23,7 +23,6 @@ pub struct UiState {
     // remote send ui
     pub working_address: String,
     pub working_filename: String,
-    pub send_print_completion: bool,
     pub remote_print_connecting: RemotePrintConnectStatus,
 
     // slice preview

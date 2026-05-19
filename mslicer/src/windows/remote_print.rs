@@ -1,17 +1,10 @@
-use std::{
-    fs,
-    net::Ipv4Addr,
-    str::FromStr,
-    sync::{Arc, atomic::Ordering},
-    time::Duration,
-};
+use std::{fs, net::Ipv4Addr, str::FromStr, sync::Arc, time::Duration};
 
-use chrono::DateTime;
 use common::{misc::human_duration, slice::format::RasterFormat, units::Miliseconds};
 use const_format::concatcp;
 use egui::{
-    Align, ComboBox, Context, DragValue, Grid, Layout, OutputCommand, ProgressBar, Separator,
-    Spinner, TextEdit, Ui, vec2,
+    Align, ComboBox, Context, DragValue, Layout, OutputCommand, ProgressBar, Separator, Spinner,
+    TextEdit, Ui, vec2,
 };
 use egui_phosphor::regular::{COPY, NETWORK, PLUGS, PRINTER, STOP, TRASH_SIMPLE, UPLOAD_SIMPLE};
 use notify_rust::Notification;
@@ -58,17 +51,19 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
         let mut action = Action::None;
 
         ui.heading("Printers");
-        let printers = app.remote_print.printers();
+        let mut printers = app.remote_print.printers();
         if printers.is_empty() {
             ui.label("No printers have been added yet.");
         }
 
-        for (i, printer) in printers.iter().enumerate() {
+        let printer_count = printers.len();
+        for (i, printer) in printers.iter_mut().enumerate() {
             let client = mqtt.get_client(&printer.mainboard_id);
             let attributes = &client.attributes;
 
-            let last_update = client.last_update.load(Ordering::Relaxed);
-            let last_update = DateTime::from_timestamp(last_update, 0).unwrap();
+            // TODO: Disconnected icon if last update was too long ago
+            // let last_update = client.last_update.load(Ordering::Relaxed);
+            // let last_update = DateTime::from_timestamp(last_update, 0).unwrap();
 
             ui.with_layout(
                 Layout::left_to_right(Align::Min).with_main_justify(true),
@@ -102,7 +97,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
                 PrintInfoStatus::None | PrintInfoStatus::Complete
             );
             if printing {
-                app.state.send_print_completion = false;
+                printer.sent_print_completion = false;
                 ui.add_space(8.0);
                 ui.horizontal(|ui| {
                     ui.label("Printing");
@@ -138,8 +133,9 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
                     ui.label(format!("in {print_time}"));
                 });
 
-                if !app.state.send_print_completion {
-                    app.state.send_print_completion = true;
+                // todo: move to mqtt thread?
+                if !printer.sent_print_completion {
+                    printer.sent_print_completion = true;
 
                     let config = &app.config.remote_print;
                     if config.alert_completion {
@@ -197,47 +193,9 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
                         .print(&attributes.mainboard_id, &file_transfer.filename)
                         .unwrap();
                 }
-                ui.add_space(8.0);
             }
 
-            ui.add_space(8.0);
-            Grid::new(format!("printer_{}", attributes.mainboard_id))
-                .num_columns(2)
-                .striped(true)
-                .with_row_color(|row, style| (row % 2 == 0).then_some(style.visuals.faint_bg_color))
-                .show(ui, |ui| {
-                    ui.label("Firmware Version");
-                    ui.with_layout(
-                        Layout::left_to_right(Align::Min)
-                            .with_main_justify(true)
-                            .with_main_align(Align::Min),
-                        |ui| {
-                            ui.monospace(&attributes.firmware_version);
-                        },
-                    );
-                    ui.end_row();
-
-                    ui.label("Resolution");
-                    let resolution = &attributes.resolution;
-                    ui.monospace(format!("{}x{}", resolution.x, resolution.y));
-                    ui.end_row();
-
-                    ui.label("Capabilities");
-                    ui.monospace(
-                        attributes
-                            .capabilities
-                            .iter()
-                            .map(|x| format!("{x:?}"))
-                            .collect::<Vec<_>>()
-                            .join(", "),
-                    );
-                    ui.end_row();
-
-                    ui.label("Last Status");
-                    ui.monospace(last_update.format("%Y-%m-%d %H:%M:%S").to_string());
-                });
-
-            if i + 1 != printers.len() {
+            if i + 1 != printer_count {
                 ui.separator();
             }
         }
