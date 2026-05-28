@@ -97,7 +97,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
                 let last_update = client.last_update.load(Ordering::Relaxed);
                 let last_update = DateTime::from_timestamp(last_update, 0).unwrap();
                 if (Utc::now() - last_update).num_seconds() > 15 {
-                    RichText::new(concatcp!(" ", PLUGS)).strong().append_to(
+                    RichText::new(concatcp!("  ", PLUGS)).strong().append_to(
                         &mut job,
                         &Style::default(),
                         FontSelection::Default,
@@ -117,7 +117,6 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
                         );
                         if printing {
                             printer.sent_print_completion = false;
-                            ui.add_space(8.0);
                             ui.horizontal(|ui| {
                                 ui.label("Printing");
                                 ui.monospace(&print_info.filename);
