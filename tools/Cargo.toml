@@ -1,0 +1,10 @@
+[package]
+name = "tools"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+common.workspace = true
+
+nalgebra.workspace = true
+gerber_parser.workspace = true

@@ -8,6 +8,7 @@ common.workspace = true
 mesh_format.workspace = true
 remote_print.workspace = true
 slicer.workspace = true
+tools.workspace = true
 
 anyhow.workspace = true
 bitflags.workspace = true

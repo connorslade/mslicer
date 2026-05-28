@@ -1,12 +1,15 @@
 use slicer::tools::{exposure_test::ExposureTest, internal_exposure_test::InternalExposureTest};
+use tools::printed_circuit_board::PrintedCircuitBoard;
 
 pub mod exposure_test;
 pub mod internal_exposure_test;
+pub mod printed_circuit_board;
 
 #[derive(Default)]
 pub struct Tools {
     exposure_test: ExposureTest,
     internal_exposure_test: InternalExposureTest,
+    printed_circuit_board: PrintedCircuitBoard,
 }
 
 // i couldn't get lifetimes working to do this with a function... so
