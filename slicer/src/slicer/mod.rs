@@ -2,8 +2,8 @@ use common::{progress::Progress, slice::SliceConfig};
 
 use crate::mesh::Mesh;
 
-mod slice_raster;
-pub mod slice_vector;
+pub mod raster;
+pub mod vector;
 
 const SEGMENT_LAYERS: usize = 100;
 

@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 common.workspace = true
+slicer.workspace = true
 
 gerber_parser.workspace = true
 itertools.workspace = true

@@ -5,7 +5,7 @@ use common::slice::{
     format::{RasterFormat, VectorFormat},
 };
 
-use crate::slicer::slice_vector::SvgFile;
+use crate::slicer::vector::SvgFile;
 
 pub fn export_raster<Layers, Layer>(
     config: &SliceConfig,

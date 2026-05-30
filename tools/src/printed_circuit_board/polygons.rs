@@ -7,7 +7,7 @@ use svgwriter::{
 };
 
 pub struct Polygons {
-    polygons: Vec<Vec<Vector2<f64>>>,
+    pub polygons: Vec<Vec<Vector2<f64>>>,
 }
 
 const PRECISION: usize = 16;
@@ -64,12 +64,19 @@ impl Polygons {
         self.polygons.push(out);
     }
 
-    pub fn write_svg(&self, path: PathBuf) {
-        let mut min = Vector2::repeat(f64::INFINITY);
-        let mut max = Vector2::repeat(f64::NEG_INFINITY);
+    pub fn nonuniform_scale_mut(&mut self, scale: Vector2<f64>) {
+        for polygon in self.polygons.iter_mut() {
+            for point in polygon.iter_mut() {
+                point.x *= scale.x;
+                point.y *= scale.y;
+            }
+        }
+    }
 
-        for poly in self.polygons.iter() {
-            for point in poly {
+    pub fn bounds(&self) -> [Vector2<f64>; 2] {
+        let [mut min, mut max] = [f64::INFINITY, f64::NEG_INFINITY].map(Vector2::repeat);
+        for polygon in self.polygons.iter() {
+            for point in polygon {
                 min.x = min.x.min(point.x);
                 min.y = min.y.min(point.y);
                 max.x = max.x.max(point.x);
@@ -77,13 +84,17 @@ impl Polygons {
             }
         }
 
-        let width = (max.x - min.x).max(1.0);
-        let height = (max.y - min.y).max(1.0);
+        [min, max]
+    }
+
+    pub fn write_svg(&self, path: PathBuf) {
+        let [min, max] = self.bounds();
+        let [width, height] = [max.x - min.x, max.y - min.y];
 
         let mut svg = Graphic::new();
         svg.set_width(width as i32);
         svg.set_height(height as i32);
-        svg.set_view_box(format!("{} {} {} {}", min.x, min.y, width, height));
+        svg.set_view_box(format!("{} {} {width} {height}", min.x, min.y));
 
         for poly in self.polygons.iter() {
             let mut data = Data::new();

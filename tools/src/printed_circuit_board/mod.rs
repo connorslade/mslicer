@@ -1,12 +1,11 @@
 use std::{
     fs::File,
     io::BufReader,
-    mem,
+    iter, mem,
     path::{Path, PathBuf},
 };
 
 use common::{
-    container::Image,
     progress::Progress,
     slice::{ExposureConfig, Layer, SliceConfig},
     units::{Milimeter, Minutes, Seconds},
@@ -14,10 +13,12 @@ use common::{
 use gerber_parser::gerber_types::{
     Aperture, Command, DCode, FunctionCode, GCode, MacroDecimal, Operation,
 };
+use itertools::Itertools;
 use nalgebra::Vector2;
 
 pub use misc::Alignment;
 use polygons::Polygons;
+use slicer::slicer::raster;
 
 mod misc;
 mod polygons;
@@ -63,7 +64,7 @@ impl PrintedCircuitBoard {
                             path.push(point);
                         }
                         DCode::SelectAperture(x) => {
-                            aperture = gerber.apertures.get(&x);
+                            aperture = gerber.apertures.get(x);
                             if let Some(Aperture::Circle(circle)) = aperture {
                                 thickness = circle.diameter;
                             }
@@ -127,13 +128,13 @@ impl PrintedCircuitBoard {
         if !path.is_empty() {
             polygons.trace(mem::take(&mut path), trace.then_some(thickness));
         }
-
+        progress.set_finished();
         polygons.write_svg(Path::new("debug.svg").to_path_buf());
 
-        progress.set_finished();
-        let mut image = Image::blank(config.platform_resolution.cast());
+        let platform = config.platform_resolution;
+        let segments = self.screen_segments(config, polygons);
         vec![Layer {
-            data: image.runs().collect::<Vec<_>>(),
+            data: raster::layer(config.supersample, platform, segments.into_iter()),
             exposure: ExposureConfig {
                 exposure_time: self.exposure_time,
                 exposure_delay: Seconds::new(0.0),
@@ -143,12 +144,34 @@ impl PrintedCircuitBoard {
         }]
     }
 
-    fn offset(&self, config: &SliceConfig, [min, max]: [Vector2<f64>; 2]) -> Vector2<f64> {
-        let platform = config
-            .platform_size
-            .map(|x| x.get::<Milimeter>())
-            .cast::<f64>();
+    fn screen_segments(
+        &self,
+        config: &SliceConfig,
+        mut polygons: Polygons,
+    ) -> Vec<(([Vector2<f32>; 2], bool), u8)> {
+        let platform_size = (config.platform_size.xy()).map(|x| x.get::<Milimeter>() as f64);
+        let scale = (config.platform_resolution.cast::<f64>()).component_div(&platform_size);
 
+        polygons.nonuniform_scale_mut(scale * config.supersample as f64);
+        let offset = self.offset(config, polygons.bounds());
+
+        let mut out = Vec::new();
+        for polygon in polygons.polygons.iter() {
+            let winding = winding_order(polygon);
+
+            let close = (polygon.last().unwrap(), polygon.first().unwrap());
+            for (&a, &b) in polygon.iter().tuple_windows().chain(iter::once(close)) {
+                let segment = [a, b].map(|x| (x + offset).map(|x| x as f32));
+                let normal = (b.y - a.y) * winding > 0.0;
+                out.push(((segment, normal), 255));
+            }
+        }
+
+        out
+    }
+
+    fn offset(&self, config: &SliceConfig, [min, max]: [Vector2<f64>; 2]) -> Vector2<f64> {
+        let platform = config.platform_resolution.cast() * config.supersample as f64;
         match self.alignment {
             Alignment::TopLeft => Vector2::new(-min.x, -min.y),
             Alignment::TopRight => Vector2::new(platform.x - max.x, -min.y),
@@ -162,6 +185,28 @@ impl PrintedCircuitBoard {
     }
 }
 
+// Reference: https://stackoverflow.com/a/1180256
+fn winding_order(polygon: &[Vector2<f64>]) -> f64 {
+    let min = (polygon.iter())
+        .position_min_by(|a, b| a.y.total_cmp(&b.y).then_with(|| a.x.total_cmp(&b.x)))
+        .unwrap();
+
+    let a = polygon[(min + polygon.len() - 1) % polygon.len()];
+    let b = polygon[min];
+    let c = polygon[(min + 1) % polygon.len()];
+
+    let ab = b - a;
+    let ac = c - a;
+    ab.perp(&ac).signum()
+}
+
+fn macro_value(value: &MacroDecimal) -> f64 {
+    match value {
+        MacroDecimal::Value(value) => *value,
+        _ => 0.0,
+    }
+}
+
 impl Default for PrintedCircuitBoard {
     fn default() -> Self {
         Self {
@@ -170,12 +215,5 @@ impl Default for PrintedCircuitBoard {
             exposure_time: Minutes::new(3.0).convert(),
             invert: Default::default(),
         }
-    }
-}
-
-fn macro_value(value: &MacroDecimal) -> f64 {
-    match value {
-        MacroDecimal::Value(value) => *value,
-        _ => 0.0,
     }
 }

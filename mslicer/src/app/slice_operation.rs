@@ -18,7 +18,7 @@ use common::{
 use egui::Color32;
 use image::RgbaImage;
 use parking_lot::{Condvar, Mutex, MutexGuard};
-use slicer::{slicer::slice_vector::SvgFile, util};
+use slicer::{slicer::vector::SvgFile, util};
 use tracing::info;
 
 #[derive(Clone)]
