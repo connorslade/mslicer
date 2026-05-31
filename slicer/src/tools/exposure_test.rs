@@ -23,6 +23,8 @@ pub struct Supports {
 }
 
 impl ExposureTest {
+    pub fn slice_config(&self, _config: &mut SliceConfig) {}
+
     pub fn generate(&self, config: &SliceConfig, progress: &Progress) -> Vec<Layer> {
         let slice_height = config.slice_height.get::<Milimeter>();
         let layers = (self.size.z / slice_height).round() as u64;

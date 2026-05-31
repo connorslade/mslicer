@@ -23,10 +23,11 @@ macro_rules! generator_tool {
         use common::progress::{CombinedProgress, Progress};
         use $crate::{app::slice_operation::SliceOperation, windows::Tab};
 
-        let config = $app.project.slice_config.clone();
+        let mut config = $app.project.slice_config.clone();
         let operation = SliceOperation::new(Progress::new(), CombinedProgress::new());
         operation.add_preview_image(RgbaImage::new(128, 128)); // blank preview image
         let tool = $tool.clone();
+        tool.slice_config(&mut config);
 
         std::thread::spawn(clone!([operation], move || {
             let layers = tool.generate(&config, &operation.progress);

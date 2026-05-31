@@ -8,7 +8,7 @@ use std::{
 use common::{
     progress::Progress,
     slice::{ExposureConfig, Layer, SliceConfig},
-    units::{Milimeter, Minutes, Seconds},
+    units::{Milimeter, Milimeters, Minutes, Seconds},
 };
 use gerber_parser::gerber_types::{
     Aperture, Command, DCode, FunctionCode, GCode, MacroDecimal, Operation,
@@ -27,11 +27,17 @@ mod polygons;
 pub struct PrintedCircuitBoard {
     pub gerber: Option<PathBuf>,
     pub alignment: Alignment,
+    pub offset: Vector2<Milimeters>,
     pub exposure_time: Seconds,
     pub invert: bool,
 }
 
 impl PrintedCircuitBoard {
+    pub fn slice_config(&self, config: &mut SliceConfig) {
+        config.first_exposure_config.exposure_time = self.exposure_time;
+        config.exposure_config.exposure_time = self.exposure_time;
+    }
+
     pub fn generate(&self, config: &SliceConfig, progress: &Progress) -> Vec<Layer> {
         let file = File::open(self.gerber.as_ref().unwrap()).unwrap();
         let reader = BufReader::new(file);
@@ -129,12 +135,17 @@ impl PrintedCircuitBoard {
             polygons.trace(mem::take(&mut path), trace.then_some(thickness));
         }
         progress.set_finished();
-        polygons.write_svg(Path::new("debug.svg").to_path_buf());
 
         let platform = config.platform_resolution;
         let segments = self.screen_segments(config, polygons);
+        let mut runs = raster::layer(config.supersample, platform, segments.into_iter());
+
+        if self.invert {
+            runs.iter_mut().for_each(|run| run.value = 255 - run.value);
+        }
+
         vec![Layer {
-            data: raster::layer(config.supersample, platform, segments.into_iter()),
+            data: runs,
             exposure: ExposureConfig {
                 exposure_time: self.exposure_time,
                 exposure_delay: Seconds::new(0.0),
@@ -153,7 +164,10 @@ impl PrintedCircuitBoard {
         let scale = (config.platform_resolution.cast::<f64>()).component_div(&platform_size);
 
         polygons.nonuniform_scale_mut(scale * config.supersample as f64);
-        let offset = self.offset(config, polygons.bounds());
+        let offset = self.offset(config, polygons.bounds())
+            + config
+                .mm_to_px(self.offset.map(|x| x.get::<Milimeter>()))
+                .cast();
 
         let mut out = Vec::new();
         for polygon in polygons.polygons.iter() {
@@ -212,6 +226,7 @@ impl Default for PrintedCircuitBoard {
         Self {
             gerber: Default::default(),
             alignment: Default::default(),
+            offset: Default::default(),
             exposure_time: Minutes::new(3.0).convert(),
             invert: Default::default(),
         }

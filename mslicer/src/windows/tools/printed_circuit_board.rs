@@ -56,12 +56,20 @@ fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
             });
         ui.end_row();
 
+        ui.label("Offset (mm)");
+        ui.horizontal(|ui| {
+            ui.add(DragValue::new(tool.offset.x.raw_mut()).speed(0.1));
+            ui.label("×");
+            ui.add(DragValue::new(tool.offset.y.raw_mut()).speed(0.1));
+        });
+        ui.end_row();
+
         ui.label("Photoresist");
         ComboBox::new("photoresist", "")
-            .selected_text(if tool.invert { "Negative" } else { "Positive" })
+            .selected_text(if tool.invert { "Positive" } else { "Negative" })
             .show_ui(ui, |ui| {
-                ui.selectable_value(&mut tool.invert, false, "Positive");
-                ui.selectable_value(&mut tool.invert, true, "Negative");
+                ui.selectable_value(&mut tool.invert, false, "Negative");
+                ui.selectable_value(&mut tool.invert, true, "Positive");
             });
         ui.end_row();
     });

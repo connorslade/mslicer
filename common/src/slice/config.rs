@@ -79,7 +79,9 @@ impl SliceConfig {
         let transition_layers = layers
             .saturating_sub(self.first_layers)
             .min(self.transition_layers);
-        let regular_layers = layers.saturating_sub(transition_layers);
+        let regular_layers = layers
+            .saturating_sub(first_layers)
+            .saturating_sub(transition_layers);
 
         let layer_time = exp.exposure_time
             + exp.lift_distance / exp.lift_speed

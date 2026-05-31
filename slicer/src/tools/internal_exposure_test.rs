@@ -16,6 +16,8 @@ pub struct InternalExposureTest {
 }
 
 impl InternalExposureTest {
+    pub fn slice_config(&self, _config: &mut SliceConfig) {}
+
     pub fn generate(&self, config: &SliceConfig, progress: &Progress) -> Vec<Layer> {
         let slice_height = config.slice_height.get::<Milimeter>();
         let layers = (self.size.y / slice_height).round() as usize;
