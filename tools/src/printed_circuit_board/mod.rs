@@ -1,9 +1,4 @@
-use std::{
-    fs::File,
-    io::BufReader,
-    iter, mem,
-    path::{Path, PathBuf},
-};
+use std::{fs::File, io::BufReader, iter, mem, path::PathBuf};
 
 use common::{
     progress::Progress,

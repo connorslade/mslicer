@@ -1,5 +1,7 @@
-use slicer::tools::{exposure_test::ExposureTest, internal_exposure_test::InternalExposureTest};
-use tools::printed_circuit_board::PrintedCircuitBoard;
+use tools::{
+    exposure_test::ExposureTest, internal_exposure_test::InternalExposureTest,
+    printed_circuit_board::PrintedCircuitBoard,
+};
 
 pub mod exposure_test;
 pub mod internal_exposure_test;
