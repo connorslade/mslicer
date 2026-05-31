@@ -1,12 +1,16 @@
-use std::{fs::File, io::BufReader, iter, mem, path::PathBuf};
+use std::{fs::File, io::BufReader, iter, mem, path::Path, sync::Arc};
 
 use common::{
     progress::Progress,
     slice::{ExposureConfig, Layer, SliceConfig},
     units::{Milimeter, Milimeters, Minutes, Seconds},
 };
-use gerber_parser::gerber_types::{
-    Aperture, Command, DCode, FunctionCode, GCode, MacroDecimal, Operation,
+use gerber_parser::{
+    GerberDoc,
+    gerber_types::{
+        Aperture, Command, DCode, ExtendedCode, FileAttribute, FileFunction, FunctionCode, GCode,
+        MacroDecimal, Operation,
+    },
 };
 use itertools::Itertools;
 use nalgebra::Vector2;
@@ -20,11 +24,17 @@ mod polygons;
 
 #[derive(Clone)]
 pub struct PrintedCircuitBoard {
-    pub gerber: Option<PathBuf>,
+    pub gerber: Option<Arc<Gerber>>,
     pub alignment: Alignment,
     pub offset: Vector2<Milimeters>,
     pub exposure_time: Seconds,
     pub invert: bool,
+}
+
+pub struct Gerber {
+    document: GerberDoc,
+    pub name: Option<String>,
+    pub layer: Option<String>,
 }
 
 impl PrintedCircuitBoard {
@@ -34,10 +44,7 @@ impl PrintedCircuitBoard {
     }
 
     pub fn generate(&self, config: &SliceConfig, progress: &Progress) -> Vec<Layer> {
-        let file = File::open(self.gerber.as_ref().unwrap()).unwrap();
-        let reader = BufReader::new(file);
-
-        let gerber = gerber_parser::parse(reader).unwrap();
+        let gerber = &self.gerber.as_ref().unwrap().document;
         let commands = gerber.commands();
         progress.set_total(commands.len() as u64);
 
@@ -148,6 +155,37 @@ impl PrintedCircuitBoard {
                 ..config.exposure_config(0).into_owned()
             },
         }]
+    }
+
+    pub fn load(&mut self, path: &Path) {
+        let reader = BufReader::new(File::open(path).unwrap());
+        let document = gerber_parser::parse(reader).unwrap();
+
+        let mut name = None;
+        let mut layer = None;
+        for command in document.commands.iter() {
+            if let Ok(Command::ExtendedCode(ExtendedCode::FileAttribute(attr))) = command {
+                match attr {
+                    FileAttribute::FileFunction(function) => {
+                        layer = Some(match function {
+                            FileFunction::Copper { pos, .. } => format!("{pos:?} Copper"),
+                            FileFunction::Legend { pos, .. } => format!("{pos:?} Silkscreen"),
+                            FileFunction::SolderMask { pos, .. } => format!("{pos:?} Solder Mask"),
+                            FileFunction::Paste(pos) => format!("{pos:?} Solder Paste"),
+                            x => format!("{x:?}"),
+                        })
+                    }
+                    FileAttribute::ProjectId { id, .. } => name = Some(id.to_owned()),
+                    _ => {}
+                }
+            }
+        }
+
+        self.gerber = Some(Arc::new(Gerber {
+            document,
+            name,
+            layer,
+        }));
     }
 
     fn screen_segments(

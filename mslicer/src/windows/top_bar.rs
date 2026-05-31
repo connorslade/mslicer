@@ -111,11 +111,13 @@ pub fn ui(app: &mut App, ctx: &Context) {
                 ui.menu_button(concatcp!(HAMMER, " Tools"), |ui| {
                     ui.set_width(150.0);
                     labeled_separator(ui, "Generators");
+                    (ui.button("Printed Circuit Board").clicked())
+                        .then(|| tools::printed_circuit_board::open(app));
+
+                    labeled_separator(ui, "Exposure");
                     (ui.button("Exposure Test").clicked()).then(|| tools::exposure_test::open(app));
                     (ui.button("Internal Exposure Test").clicked())
                         .then(|| tools::internal_exposure_test::open(app));
-                    (ui.button("Printed Circuit Board").clicked())
-                        .then(|| tools::printed_circuit_board::open(app));
                 });
 
                 ui.menu_button(concatcp!(CARDS, " View"), |ui| {

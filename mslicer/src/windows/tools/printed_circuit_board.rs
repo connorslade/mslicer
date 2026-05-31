@@ -24,16 +24,36 @@ fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
 
     let slicing = app.is_slicing();
 
-    if ui.button("Load Gerber").clicked() {
-        app.tasks.add(FileDialog::pick_file(
-            ("Gerber", &["gbr"]),
-            |app, path, _tasks| {
-                app.state.tools.printed_circuit_board.gerber = Some(path.to_path_buf());
-            },
-        ));
-    }
+    ui.horizontal(|ui| {
+        if ui.button("Load Gerber").clicked() {
+            app.tasks.add(FileDialog::pick_file(
+                ("Gerber", &["gbr"]),
+                |app, path, _tasks| app.state.tools.printed_circuit_board.load(path),
+            ));
+        }
+
+        ui.add_enabled_ui(false, |ui| {
+            let _ = ui.button("Export SVG");
+        });
+    });
 
     let tool = &mut app.state.tools.printed_circuit_board;
+    if let Some(gerber) = &tool.gerber {
+        ui.add_space(8.0);
+        ui.horizontal(|ui| {
+            if let Some(name) = &gerber.name {
+                ui.label(format!("Loaded {name}."));
+            } else {
+                ui.label("Loaded.");
+            }
+
+            if let Some(layer) = &gerber.layer {
+                ui.label(format!("({layer})"));
+            }
+        });
+    }
+
+    ui.add_space(8.0);
     grid("").show(ui, |ui| {
         ui.label("Exposure");
         ui.horizontal(|ui| {
