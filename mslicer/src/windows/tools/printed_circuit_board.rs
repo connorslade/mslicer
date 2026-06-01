@@ -1,3 +1,5 @@
+use std::{fs::File, io::Write};
+
 use egui::{Button, ComboBox, DragValue, Ui, Widget};
 use tools::printed_circuit_board::Alignment;
 
@@ -23,6 +25,7 @@ fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
     ui.add_space(8.0);
 
     let slicing = app.is_slicing();
+    let tool = &mut app.state.tools.printed_circuit_board;
 
     ui.horizontal(|ui| {
         if ui.button("Load Gerber").clicked() {
@@ -32,12 +35,22 @@ fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
             ));
         }
 
-        ui.add_enabled_ui(false, |ui| {
-            let _ = ui.button("Export SVG");
+        ui.add_enabled_ui(tool.gerber.is_some(), |ui| {
+            if ui.button("Export SVG").clicked() {
+                let svg = tool.svg();
+                app.tasks.add(FileDialog::save_file(
+                    ("SVG", &["svg"]),
+                    move |_app, path, _tasks| {
+                        File::create(path.with_extension("svg"))
+                            .unwrap()
+                            .write_all(svg.as_bytes())
+                            .unwrap();
+                    },
+                ));
+            }
         });
     });
 
-    let tool = &mut app.state.tools.printed_circuit_board;
     if let Some(gerber) = &tool.gerber {
         ui.add_space(8.0);
         ui.horizontal(|ui| {

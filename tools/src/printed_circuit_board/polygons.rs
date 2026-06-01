@@ -1,4 +1,4 @@
-use std::{f64::consts::TAU, fs::File, io::Write, path::PathBuf};
+use std::f64::consts::TAU;
 
 use nalgebra::Vector2;
 use svgwriter::{
@@ -87,7 +87,7 @@ impl Polygons {
         [min, max]
     }
 
-    pub fn write_svg(&self, path: PathBuf) {
+    pub fn svg(&self) -> String {
         let [min, max] = self.bounds();
         let [width, height] = [max.x - min.x, max.y - min.y];
 
@@ -113,10 +113,7 @@ impl Polygons {
             );
         }
 
-        File::create(path)
-            .unwrap()
-            .write_all(svg.to_string().as_bytes())
-            .unwrap();
+        svg.to_string()
     }
 }
 
