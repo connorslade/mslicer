@@ -53,17 +53,14 @@ impl PrintedCircuitBoard {
 
         let mut polygons = Polygons::new();
         let mut path = Vec::new();
-        let mut trace = true; // trace vs region fill
+        let mut region_mode = false;
 
         for command in commands {
             match command {
                 Command::FunctionCode(function_code) => match function_code {
                     FunctionCode::DCode(dcode) => match dcode {
                         DCode::Operation(Operation::Move(Some(mov))) => {
-                            if !path.is_empty() {
-                                polygons.trace(mem::take(&mut path), trace.then_some(thickness));
-                            }
-
+                            flush_path(&mut polygons, &mut path, region_mode, thickness);
                             let point = Vector2::new(mov.x, mov.y).map(|x| x.unwrap().into());
                             path.push(point);
                         }
@@ -72,12 +69,20 @@ impl PrintedCircuitBoard {
                             path.push(point);
                         }
                         DCode::SelectAperture(x) => {
+                            flush_path(&mut polygons, &mut path, region_mode, thickness);
                             aperture = gerber.apertures.get(x);
-                            if let Some(Aperture::Circle(circle)) = aperture {
-                                thickness = circle.diameter;
+                            if let Some(aperture) = aperture {
+                                thickness = match aperture {
+                                    Aperture::Circle(circle) => circle.diameter,
+                                    Aperture::Rectangle(rect) => rect.x.min(rect.y),
+                                    Aperture::Obround(obround) => obround.x.min(obround.y),
+                                    _ => thickness,
+                                };
                             }
                         }
                         DCode::Operation(Operation::Flash(Some(flash))) => {
+                            flush_path(&mut polygons, &mut path, region_mode, thickness);
+
                             let center = Vector2::new(flash.x, flash.y).map(|x| x.unwrap().into());
                             match aperture {
                                 Some(Aperture::Circle(circle)) => {
@@ -91,18 +96,19 @@ impl PrintedCircuitBoard {
                                     let rect = Vector2::new(rect.x, rect.y);
                                     let radius = rect.x.min(rect.y) / 2.0;
                                     let mut circle = |x: f64, y: f64| {
-                                        polygons
-                                            .circle(center + Vector2::new(x, y), thickness / 2.0)
+                                        polygons.circle(center + Vector2::new(x, y), radius)
                                     };
 
-                                    let size = if rect.y < rect.x {
-                                        circle(-rect.x / 2.0 + radius, 0.0);
-                                        circle(rect.x / 2.0 - radius, 0.0);
-                                        Vector2::new(rect.x - rect.y, rect.y)
+                                    let size = if rect.x >= rect.y {
+                                        let dx = rect.x / 2.0 - radius;
+                                        circle(-dx, 0.0);
+                                        circle(dx, 0.0);
+                                        Vector2::new(dx, radius)
                                     } else {
-                                        circle(0.0, -rect.x / 2.0 + radius);
-                                        circle(0.0, rect.x / 2.0 - radius);
-                                        Vector2::new(rect.x, rect.y - rect.x)
+                                        let dy = rect.y / 2.0 - radius;
+                                        circle(0.0, -dy);
+                                        circle(0.0, dy);
+                                        Vector2::new(radius, dy)
                                     };
 
                                     polygons.rect([center - size, center + size]);
@@ -124,7 +130,10 @@ impl PrintedCircuitBoard {
                         }
                         _ => {}
                     },
-                    FunctionCode::GCode(GCode::RegionMode(mode)) => trace = *mode,
+                    FunctionCode::GCode(GCode::RegionMode(mode)) => {
+                        flush_path(&mut polygons, &mut path, region_mode, thickness);
+                        region_mode = *mode;
+                    }
                     _ => {}
                 },
                 _ => {}
@@ -133,9 +142,7 @@ impl PrintedCircuitBoard {
             progress.add_complete(1);
         }
 
-        if !path.is_empty() {
-            polygons.trace(mem::take(&mut path), trace.then_some(thickness));
-        }
+        flush_path(&mut polygons, &mut path, region_mode, thickness);
         progress.set_finished();
 
         let platform = config.platform_resolution;
@@ -245,6 +252,23 @@ fn winding_order(polygon: &[Vector2<f64>]) -> f64 {
     let ab = b - a;
     let ac = c - a;
     ab.perp(&ac).signum()
+}
+
+fn flush_path(
+    polygons: &mut Polygons,
+    path: &mut Vec<Vector2<f64>>,
+    region_mode: bool,
+    thickness: f64,
+) {
+    if path.is_empty() {
+        return;
+    }
+
+    if region_mode {
+        polygons.trace(mem::take(path), None);
+    } else {
+        polygons.trace(mem::take(path), Some(thickness));
+    }
 }
 
 fn macro_value(value: &MacroDecimal) -> f64 {
