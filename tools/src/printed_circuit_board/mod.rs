@@ -40,6 +40,7 @@ pub struct Gerber {
 pub struct Flip {
     pub enabled: bool,
     pub angle: f32,
+    pub alignment: Alignment,
     pub offset: Milimeters,
 }
 
@@ -109,51 +110,43 @@ impl PrintedCircuitBoard {
         config: &SliceConfig,
         mut polygons: Polygons,
     ) -> Vec<(([Vector2<f32>; 2], bool), u8)> {
-        let platform_size = (config.platform_size.xy()).map(|x| x.get::<Milimeter>() as f64);
-        let scale = (config.platform_resolution.cast::<f64>()).component_div(&platform_size);
+        let platform = (config.platform_size.xy()).map(|x| x.get::<Milimeter>() as f64);
+        let scale = (config.platform_resolution.cast::<f64>()).component_div(&platform);
 
-        polygons.nonuniform_scale_mut(scale * config.supersample as f64);
-        let offset = self.offset(config, polygons.bounds())
-            + config
-                .mm_to_px(self.offset.map(|x| x.get::<Milimeter>()))
-                .cast();
+        let offset = self.alignment.offset(platform, polygons.bounds())
+            + self.offset.map(|x| x.get::<Milimeter>() as f64);
+        polygons.transform_mut(offset);
+
+        if self.flip.enabled {
+            let (sin, cos) = (self.flip.angle as f64).to_radians().sin_cos();
+            let anchor = self.flip.alignment.offset(platform, [Vector2::zeros(); 2]);
+
+            let normal = Vector2::new(sin, -cos);
+            let center = anchor + normal * (self.flip.offset.get::<Milimeter>() as f64);
+
+            for polygon in polygons.polygons.iter_mut() {
+                for point in polygon.iter_mut() {
+                    let distance = (*point - center).dot(&normal);
+                    *point -= 2.0 * distance * normal;
+                }
+            }
+        }
+
+        polygons.nonuniform_scale_mut(scale * config.supersample as f64); // screen space to pixel space
 
         let mut out = Vec::new();
-        for polygon in polygons.polygons.iter() {
+        for polygon in polygons.polygons.iter_mut() {
             let winding = winding_order(polygon);
 
             let close = (polygon.last().unwrap(), polygon.first().unwrap());
             for (&a, &b) in polygon.iter().tuple_windows().chain(iter::once(close)) {
-                let segment = [a, b].map(|x| {
-                    let point = (x + offset).map(|x| x as f32);
-
-                    if self.flip.enabled { point } else { point }
-                });
+                let segment = [a, b].map(|x| x.cast());
                 let normal = (b.y - a.y) * winding > 0.0;
                 out.push(((segment, normal), 255));
             }
         }
 
         out
-    }
-
-    fn offset(&self, config: &SliceConfig, [min, max]: [Vector2<f64>; 2]) -> Vector2<f64> {
-        let platform = config.platform_resolution.cast() * config.supersample as f64;
-        let center = (platform - min - max) / 2.0;
-
-        match self.alignment {
-            Alignment::TopLeft => Vector2::new(-min.x, -min.y),
-            Alignment::TopCenter => Vector2::new(center.x, -min.y),
-            Alignment::TopRight => Vector2::new(platform.x - max.x, -min.y),
-
-            Alignment::CenterLeft => Vector2::new(-min.x, center.y),
-            Alignment::Center => center,
-            Alignment::CenterRight => Vector2::new(platform.x - max.x, center.y),
-
-            Alignment::BottomLeft => Vector2::new(-min.x, platform.y - max.y),
-            Alignment::BottomCenter => Vector2::new(center.x, platform.y - max.y),
-            Alignment::BottomRight => Vector2::new(platform.x - max.x, platform.y - max.y),
-        }
     }
 }
 

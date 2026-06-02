@@ -1,7 +1,6 @@
 use std::{fs::File, io::Write};
 
-use egui::{Button, ComboBox, DragValue, Ui, Widget};
-use egui_phosphor::regular::{ANGLE, ARROWS_OUT_LINE_VERTICAL};
+use egui::{Align, Button, ComboBox, DragValue, Layout, Ui, Widget, vec2};
 use tools::printed_circuit_board::Alignment;
 
 use crate::{
@@ -81,30 +80,7 @@ fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
         ui.end_row();
 
         ui.label("Alignment");
-        ComboBox::new("alignment", "")
-            .selected_text(tool.alignment.name())
-            .show_ui(ui, |ui| {
-                for alignment in Alignment::ALL {
-                    ui.selectable_value(&mut tool.alignment, alignment, alignment.name());
-                }
-            });
-        ui.end_row();
-
-        ui.horizontal(|ui| {
-            ui.label("Flip");
-            ui.checkbox(&mut tool.flip.enabled, "");
-        });
-        ui.horizontal(|ui| {
-            ui.add_enabled_ui(tool.flip.enabled, |ui| {
-                ui.label(ANGLE);
-                DragValue::new(&mut tool.flip.angle).suffix("°").ui(ui);
-                ui.separator();
-                ui.label(ARROWS_OUT_LINE_VERTICAL);
-                DragValue::new(tool.flip.offset.raw_mut())
-                    .suffix(" mm")
-                    .ui(ui);
-            });
-        });
+        alignment(ui, &mut tool.alignment);
         ui.end_row();
 
         ui.label("Offset (mm)");
@@ -124,11 +100,37 @@ fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
             });
         ui.end_row();
     });
-    ui.add_space(8.0);
 
-    ui.centered_and_justified(|ui| {
+    ui.add_space(8.0);
+    ui.with_layout(Layout::right_to_left(Align::Min), |ui| {
+        ui.checkbox(&mut tool.flip.enabled, "");
+        ui.collapsing("Flip", |ui| {
+            grid("").show(ui, |ui| {
+                ui.label("Angle");
+                DragValue::new(&mut tool.flip.angle).suffix("°").ui(ui);
+                ui.end_row();
+
+                ui.label("Offset");
+                DragValue::new(tool.flip.offset.raw_mut())
+                    .suffix(" mm")
+                    .ui(ui);
+                ui.end_row();
+
+                ui.label("Alignment");
+                ui.horizontal(|ui| {
+                    alignment(ui, &mut tool.flip.alignment);
+                    ui.take_available_width();
+                });
+                ui.end_row();
+            });
+        });
+    });
+
+    ui.add_space(8.0);
+    ui.vertical_centered(|ui| {
+        let button = Button::new("Generate").min_size(vec2(ui.available_width(), 0.0));
         if ui
-            .add_enabled(!slicing && tool.gerber.is_some(), Button::new("Generate"))
+            .add_enabled(!slicing && tool.gerber.is_some(), button)
             .clicked()
         {
             generator_tool!(app, tool);
@@ -136,4 +138,14 @@ fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
     });
 
     false
+}
+
+fn alignment(ui: &mut Ui, value: &mut Alignment) {
+    ComboBox::new("alignment", "")
+        .selected_text(value.name())
+        .show_ui(ui, |ui| {
+            for alignment in Alignment::ALL {
+                ui.selectable_value(value, alignment, alignment.name());
+            }
+        });
 }

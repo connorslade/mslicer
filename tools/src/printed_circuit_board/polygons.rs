@@ -73,6 +73,15 @@ impl Polygons {
         }
     }
 
+    pub fn transform_mut(&mut self, transform: Vector2<f64>) {
+        for polygon in self.polygons.iter_mut() {
+            for point in polygon.iter_mut() {
+                point.x += transform.x;
+                point.y += transform.y;
+            }
+        }
+    }
+
     pub fn bounds(&self) -> [Vector2<f64>; 2] {
         let [mut min, mut max] = [f64::INFINITY, f64::NEG_INFINITY].map(Vector2::repeat);
         for polygon in self.polygons.iter() {

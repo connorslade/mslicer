@@ -1,3 +1,5 @@
+use nalgebra::Vector2;
+
 #[derive(Clone, Copy, Default, PartialEq, Eq)]
 pub enum Alignment {
     #[default]
@@ -38,6 +40,23 @@ impl Alignment {
             Self::BottomLeft => "Bottom Left",
             Self::BottomCenter => "Bottom Center",
             Self::BottomRight => "Bottom Right",
+        }
+    }
+
+    pub fn offset(&self, size: Vector2<f64>, [min, max]: [Vector2<f64>; 2]) -> Vector2<f64> {
+        let center = (size - min - max) / 2.0;
+        match self {
+            Alignment::TopLeft => Vector2::new(-min.x, -min.y),
+            Alignment::TopCenter => Vector2::new(center.x, -min.y),
+            Alignment::TopRight => Vector2::new(size.x - max.x, -min.y),
+
+            Alignment::CenterLeft => Vector2::new(-min.x, center.y),
+            Alignment::Center => center,
+            Alignment::CenterRight => Vector2::new(size.x - max.x, center.y),
+
+            Alignment::BottomLeft => Vector2::new(-min.x, size.y - max.y),
+            Alignment::BottomCenter => Vector2::new(center.x, size.y - max.y),
+            Alignment::BottomRight => Vector2::new(size.x - max.x, size.y - max.y),
         }
     }
 }
