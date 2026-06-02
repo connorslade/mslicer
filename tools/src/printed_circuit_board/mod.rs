@@ -24,6 +24,7 @@ mod polygons;
 pub struct PrintedCircuitBoard {
     pub gerber: Option<Arc<Gerber>>,
     pub alignment: Alignment,
+    pub flip: Flip,
     pub offset: Vector2<Milimeters>,
     pub exposure_time: Seconds,
     pub invert: bool,
@@ -33,6 +34,13 @@ pub struct Gerber {
     document: GerberDoc,
     pub name: Option<String>,
     pub layer: Option<String>,
+}
+
+#[derive(Clone, Default)]
+pub struct Flip {
+    pub enabled: bool,
+    pub angle: f32,
+    pub offset: Milimeters,
 }
 
 impl PrintedCircuitBoard {
@@ -116,7 +124,11 @@ impl PrintedCircuitBoard {
 
             let close = (polygon.last().unwrap(), polygon.first().unwrap());
             for (&a, &b) in polygon.iter().tuple_windows().chain(iter::once(close)) {
-                let segment = [a, b].map(|x| (x + offset).map(|x| x as f32));
+                let segment = [a, b].map(|x| {
+                    let point = (x + offset).map(|x| x as f32);
+
+                    if self.flip.enabled { point } else { point }
+                });
                 let normal = (b.y - a.y) * winding > 0.0;
                 out.push(((segment, normal), 255));
             }
@@ -127,15 +139,20 @@ impl PrintedCircuitBoard {
 
     fn offset(&self, config: &SliceConfig, [min, max]: [Vector2<f64>; 2]) -> Vector2<f64> {
         let platform = config.platform_resolution.cast() * config.supersample as f64;
+        let center = (platform - min - max) / 2.0;
+
         match self.alignment {
             Alignment::TopLeft => Vector2::new(-min.x, -min.y),
+            Alignment::TopCenter => Vector2::new(center.x, -min.y),
             Alignment::TopRight => Vector2::new(platform.x - max.x, -min.y),
+
+            Alignment::CenterLeft => Vector2::new(-min.x, center.y),
+            Alignment::Center => center,
+            Alignment::CenterRight => Vector2::new(platform.x - max.x, center.y),
+
             Alignment::BottomLeft => Vector2::new(-min.x, platform.y - max.y),
+            Alignment::BottomCenter => Vector2::new(center.x, platform.y - max.y),
             Alignment::BottomRight => Vector2::new(platform.x - max.x, platform.y - max.y),
-            Alignment::Center => Vector2::new(
-                (platform.x - (min.x + max.x)) / 2.0,
-                (platform.y - (min.y + max.y)) / 2.0,
-            ),
         }
     }
 }
@@ -159,8 +176,9 @@ impl Default for PrintedCircuitBoard {
         Self {
             gerber: Default::default(),
             alignment: Default::default(),
+            flip: Default::default(),
             offset: Default::default(),
-            exposure_time: Minutes::new(3.0).convert(),
+            exposure_time: Minutes::new(5.0).convert(),
             invert: Default::default(),
         }
     }

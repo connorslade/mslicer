@@ -1,6 +1,7 @@
 use std::{fs::File, io::Write};
 
 use egui::{Button, ComboBox, DragValue, Ui, Widget};
+use egui_phosphor::regular::{ANGLE, ARROWS_OUT_LINE_VERTICAL};
 use tools::printed_circuit_board::Alignment;
 
 use crate::{
@@ -87,6 +88,23 @@ fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
                     ui.selectable_value(&mut tool.alignment, alignment, alignment.name());
                 }
             });
+        ui.end_row();
+
+        ui.horizontal(|ui| {
+            ui.label("Flip");
+            ui.checkbox(&mut tool.flip.enabled, "");
+        });
+        ui.horizontal(|ui| {
+            ui.add_enabled_ui(tool.flip.enabled, |ui| {
+                ui.label(ANGLE);
+                DragValue::new(&mut tool.flip.angle).suffix("°").ui(ui);
+                ui.separator();
+                ui.label(ARROWS_OUT_LINE_VERTICAL);
+                DragValue::new(tool.flip.offset.raw_mut())
+                    .suffix(" mm")
+                    .ui(ui);
+            });
+        });
         ui.end_row();
 
         ui.label("Offset (mm)");
