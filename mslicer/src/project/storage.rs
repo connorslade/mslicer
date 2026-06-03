@@ -17,8 +17,10 @@ use slicer::{
 /// Project format version. Value should be incremented whenever the save format
 /// changes, even in development.
 ///
-/// ## v7
+/// ## v8
+/// Add exposure remapping curve to slice config.
 ///
+/// ## v7
 /// Added exposure delay option to exposure config.
 ///
 /// ## v6
@@ -38,7 +40,7 @@ use slicer::{
 /// ## v2
 /// A complete rewrite using a custom serilizer/deserilizer because of the
 /// bincode drama...
-const VERSION: u16 = 7;
+const VERSION: u16 = 8;
 
 struct ModelInfo {
     mesh: u32,

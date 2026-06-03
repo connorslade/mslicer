@@ -148,6 +148,97 @@ impl ExposureRemap {
         }
         out
     }
+
+    pub fn serialize<T: Serializer>(&self, ser: &mut T) {
+        ser.write_f32_be(self.start);
+        ser.write_f32_be(self.end);
+        self.control[0].serialize(ser);
+        self.control[1].serialize(ser);
+    }
+
+    pub fn deserialize<T: Deserializer>(des: &mut T) -> Result<Self> {
+        Ok(Self {
+            start: des.read_f32_be(),
+            end: des.read_f32_be(),
+            control: [Vector2::deserialize(des), Vector2::deserialize(des)],
+        })
+    }
+}
+
+impl SliceConfig {
+    pub fn serialize<T: Serializer>(&self, ser: &mut T) {
+        self.mode.serialize(ser);
+        ser.write_u8(self.supersample);
+        self.exposure_remap.serialize(ser);
+        self.platform_resolution.serialize(ser);
+        self.platform_size.map(|x| x.raw()).serialize(ser);
+        ser.write_f32_be(self.slice_height.raw());
+        self.exposure_config.serialize(ser);
+        self.first_exposure_config.serialize(ser);
+        ser.write_u32_be(self.first_layers);
+        ser.write_u32_be(self.transition_layers);
+    }
+
+    pub fn deserialize<T: Deserializer>(des: &mut T, version: u16) -> Result<Self> {
+        Ok(Self {
+            mode: if version < 6 {
+                [SliceMode::Raster, SliceMode::Vector][(des.read_u8() == 2) as usize]
+            } else {
+                SliceMode::deserialize(des)?
+            },
+            supersample: if version < 5 { 1 } else { des.read_u8() },
+            exposure_remap: if version < 8 {
+                Default::default()
+            } else {
+                ExposureRemap::deserialize(des)?
+            },
+            platform_resolution: Vector2::deserialize(des),
+            platform_size: Vector3::deserialize(des).map(Milimeters::new),
+            slice_height: Milimeters::new(des.read_f32_be()),
+            exposure_config: ExposureConfig::deserialize(des, version),
+            first_exposure_config: ExposureConfig::deserialize(des, version),
+            first_layers: des.read_u32_be(),
+            transition_layers: des.read_u32_be(),
+        })
+    }
+}
+
+impl ExposureConfig {
+    pub fn serialize<T: Serializer>(&self, ser: &mut T) {
+        ser.write_f32_be(self.exposure_time.raw());
+        ser.write_f32_be(self.exposure_delay.raw());
+        ser.write_u8(self.pwm);
+        ser.write_f32_be(self.lift_distance.raw());
+        ser.write_f32_be(self.lift_speed.raw());
+        ser.write_f32_be(self.retract_distance.raw());
+        ser.write_f32_be(self.retract_speed.raw());
+    }
+
+    pub fn deserialize<T: Deserializer>(des: &mut T, version: u16) -> Self {
+        Self {
+            exposure_time: Seconds::new(des.read_f32_be()),
+            exposure_delay: Seconds::new(if version < 7 { 0.0 } else { des.read_f32_be() }),
+            pwm: if version < 3 { 255 } else { des.read_u8() },
+
+            lift_distance: Milimeters::new(des.read_f32_be()),
+            lift_speed: CentimetersPerSecond::new(des.read_f32_be()),
+
+            retract_distance: Milimeters::new(des.read_f32_be()),
+            retract_speed: CentimetersPerSecond::new(des.read_f32_be()),
+        }
+    }
+
+    pub fn lerp(&self, other: &Self, t: f32) -> Self {
+        Self {
+            exposure_time: lerp(self.exposure_time, other.exposure_time, t),
+            exposure_delay: lerp(self.exposure_delay, other.exposure_delay, t),
+            pwm: lerp(self.pwm as f32, other.pwm as f32, t) as u8,
+            lift_distance: lerp(self.lift_distance, other.lift_distance, t),
+            lift_speed: lerp(self.lift_speed, other.lift_speed, t),
+            retract_distance: lerp(self.retract_distance, other.retract_distance, t),
+            retract_speed: lerp(self.retract_speed, other.retract_speed, t),
+        }
+    }
 }
 
 impl Default for SliceConfig {
@@ -196,77 +287,6 @@ impl Default for ExposureConfig {
 
             retract_distance: Milimeters::new(5.0),
             retract_speed: (Milimeters::new(330.0) / Minutes::new(1.0)).convert(),
-        }
-    }
-}
-
-impl SliceConfig {
-    pub fn serialize<T: Serializer>(&self, ser: &mut T) {
-        self.mode.serialize(ser);
-        ser.write_u8(self.supersample);
-        self.platform_resolution.serialize(ser);
-        self.platform_size.map(|x| x.raw()).serialize(ser);
-        ser.write_f32_be(self.slice_height.raw());
-        self.exposure_config.serialize(ser);
-        self.first_exposure_config.serialize(ser);
-        ser.write_u32_be(self.first_layers);
-        ser.write_u32_be(self.transition_layers);
-    }
-
-    pub fn deserialize<T: Deserializer>(des: &mut T, version: u16) -> Result<Self> {
-        Ok(Self {
-            mode: if version < 6 {
-                [SliceMode::Raster, SliceMode::Vector][(des.read_u8() == 2) as usize]
-            } else {
-                SliceMode::deserialize(des)?
-            },
-            supersample: if version < 5 { 1 } else { des.read_u8() },
-            exposure_remap: Default::default(), // todo: FIX THIS!!
-            platform_resolution: Vector2::deserialize(des),
-            platform_size: Vector3::deserialize(des).map(Milimeters::new),
-            slice_height: Milimeters::new(des.read_f32_be()),
-            exposure_config: ExposureConfig::deserialize(des, version),
-            first_exposure_config: ExposureConfig::deserialize(des, version),
-            first_layers: des.read_u32_be(),
-            transition_layers: des.read_u32_be(),
-        })
-    }
-}
-
-impl ExposureConfig {
-    pub fn serialize<T: Serializer>(&self, ser: &mut T) {
-        ser.write_f32_be(self.exposure_time.raw());
-        ser.write_f32_be(self.exposure_delay.raw());
-        ser.write_u8(self.pwm);
-        ser.write_f32_be(self.lift_distance.raw());
-        ser.write_f32_be(self.lift_speed.raw());
-        ser.write_f32_be(self.retract_distance.raw());
-        ser.write_f32_be(self.retract_speed.raw());
-    }
-
-    pub fn deserialize<T: Deserializer>(des: &mut T, version: u16) -> Self {
-        Self {
-            exposure_time: Seconds::new(des.read_f32_be()),
-            exposure_delay: Seconds::new(if version < 7 { 0.0 } else { des.read_f32_be() }),
-            pwm: if version < 3 { 255 } else { des.read_u8() },
-
-            lift_distance: Milimeters::new(des.read_f32_be()),
-            lift_speed: CentimetersPerSecond::new(des.read_f32_be()),
-
-            retract_distance: Milimeters::new(des.read_f32_be()),
-            retract_speed: CentimetersPerSecond::new(des.read_f32_be()),
-        }
-    }
-
-    pub fn lerp(&self, other: &Self, t: f32) -> Self {
-        Self {
-            exposure_time: lerp(self.exposure_time, other.exposure_time, t),
-            exposure_delay: lerp(self.exposure_delay, other.exposure_delay, t),
-            pwm: lerp(self.pwm as f32, other.pwm as f32, t) as u8,
-            lift_distance: lerp(self.lift_distance, other.lift_distance, t),
-            lift_speed: lerp(self.lift_speed, other.lift_speed, t),
-            retract_distance: lerp(self.retract_distance, other.retract_distance, t),
-            retract_speed: lerp(self.retract_speed, other.retract_speed, t),
         }
     }
 }
