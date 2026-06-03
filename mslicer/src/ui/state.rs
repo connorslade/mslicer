@@ -20,6 +20,8 @@ pub struct UiState {
     pub selected_printer: usize,
     pub support_preview: Option<Mesh>,
 
+    pub selected_remap_point: Option<u8>,
+
     // remote send ui
     pub working_address: String,
     pub working_filename: String,

@@ -10,6 +10,7 @@
   - Load and rasterize gerber files to expose photoresist
   - Flip over an arbitrary axis
 - Load multiple models at once through file dialog
+- Exposure remapping
 
 ## v0.7.0 &mdash; May 7th, 2026
 

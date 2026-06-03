@@ -1,9 +1,12 @@
 use const_format::concatcp;
-use egui::{ComboBox, Context, DragValue, Grid, Ui, Widget};
+use egui::{Color32, ComboBox, Context, DragValue, Grid, Ui, Widget, emath::OrderedFloat};
 use egui_extras::{Column, TableBuilder};
 use egui_phosphor::regular::{
     ARROW_COUNTER_CLOCKWISE, INFO, NOTE_PENCIL, PENCIL, PLUS, TIMER, TRASH, WARNING,
 };
+use egui_plot::{Line, MarkerShape, Plot, Points};
+use itertools::Itertools;
+use nalgebra::Vector2;
 use num_integer::cbrt;
 use slicer::post_process::elephant_foot_fixer::ElephantFootFixer;
 
@@ -15,7 +18,7 @@ use crate::{
     },
 };
 use common::{
-    slice::{ExposureConfig, SliceMode},
+    slice::{ExposureConfig, ExposureRemap, SliceMode},
     units::{Milimeter, Minute, Mircometer},
 };
 
@@ -159,10 +162,15 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     ui.add_space(16.0);
     ui.heading("Post Processing");
 
-    ui.label(
-        "These effects are currently not optimized and will significancy increase slicing time.",
-    );
     ui.add_space(8.0);
+    ui.collapsing("Exposure Remapping", |ui| {
+        exposure_remapping(
+            &mut slice_config.exposure_remap,
+            &mut app.state.selected_remap_point,
+            ui,
+        );
+        ui.add_space(8.0);
+    });
 
     let post_processing = &mut app.project.post_processing;
     ui.collapsing("Elephant Foot Fixer", |ui| {
@@ -327,6 +335,79 @@ fn edit_presets(app: &mut PopupApp, ui: &mut Ui) -> bool {
     });
 
     false
+}
+
+fn exposure_remapping(
+    remap: &mut ExposureRemap,
+    selected_remap_point: &mut Option<u8>,
+    ui: &mut Ui,
+) {
+    const EXPOSURE_REMAPPING_DESCRIPTION: &str = "Fractional exposure values don't necessarily correspond linearly to voxel growth, so you may need to adjust the mapping with the curve below to get ideal results with antialiasing.";
+    ui.label(EXPOSURE_REMAPPING_DESCRIPTION);
+
+    let [p1, p4] = [Vector2::new(0.0, remap.start), Vector2::new(1.0, remap.end)];
+    let [p2, p3] = remap.control;
+
+    let mut pointer = None;
+    let plot = Plot::new("exposure_remap")
+        .width(ui.available_width() / 2.0)
+        .allow_drag(false)
+        .allow_zoom(false)
+        .allow_scroll(false)
+        .allow_boxed_zoom(false)
+        .view_aspect(1.0)
+        .show_axes([false; 2])
+        .show_y(false)
+        .default_x_bounds(-0.1, 1.1)
+        .default_y_bounds(-0.1, 1.1)
+        .auto_bounds([false; 2])
+        .show(ui, |plot| {
+            let mut points = Vec::new();
+            for i in 0..100 {
+                let p = remap.bezier(i as f32 / 99.0).map(|x| x as f64);
+                points.push([p.x, p.y]);
+            }
+
+            pointer = (plot.pointer_coordinate())
+                .map(|x| Vector2::new(x.x, x.y).map(|x| x.clamp(0.0, 1.0)));
+            if let Some(selected_remap_point) = selected_remap_point
+                && let Some(pointer) = pointer
+            {
+                if *selected_remap_point == 0 {
+                    remap.start = pointer.y as f32;
+                } else if *selected_remap_point == 3 {
+                    remap.end = pointer.y as f32;
+                } else {
+                    remap.control[*selected_remap_point as usize - 1] =
+                        Vector2::new(pointer.x, pointer.y).map(|x| x as f32);
+                }
+            }
+
+            let [p1, p2, p3, p4] = [p1, p2, p3, p4].map(|x| [x.x, x.y].map(|x| x as f64));
+            plot.line(Line::new("", points));
+            plot.line(Line::new("", vec![p1, p2]).color(Color32::GRAY));
+            plot.line(Line::new("", vec![p3, p4]).color(Color32::GRAY));
+            plot.points(
+                Points::new("", vec![p1, p2, p3, p4])
+                    .shape(MarkerShape::Circle)
+                    .radius(5.0)
+                    .color(Color32::GRAY),
+            );
+        });
+
+    if let Some(pointer) = pointer
+        && ui.input(|x| x.pointer.button_pressed(egui::PointerButton::Primary))
+        && plot.response.contains_pointer()
+    {
+        let pointer = Vector2::new(pointer.x, pointer.y).cast::<f32>();
+        *selected_remap_point = ([p1, p2, p3, p4].iter())
+            .position_min_by_key(|x| OrderedFloat((*x - pointer).magnitude()))
+            .map(|x| x as u8);
+    }
+
+    if ui.input(|x| x.pointer.button_released(egui::PointerButton::Primary)) {
+        *selected_remap_point = None;
+    }
 }
 
 fn elephant_foot_fixer(this: &mut ElephantFootFixer, ui: &mut Ui) {

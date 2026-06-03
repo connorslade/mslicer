@@ -1616,6 +1616,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "egui_plot"
+version = "0.34.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "67fc9b427a837264e55381a5cade6e28fe83ac5b165a61b9c888548c732a9c95"
+dependencies = [
+ "ahash",
+ "egui",
+ "emath",
+]
+
+[[package]]
 name = "egui_tracing"
 version = "0.2.6"
 source = "git+https://github.com/Sigma-8214/egui_tracing#41e8728bd1f27a1e32823246659248cc11fc4dbf"
@@ -2960,9 +2971,9 @@ dependencies = [
 
 [[package]]
 name = "log"
-version = "0.4.28"
+version = "0.4.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "34080505efa8e45a4b816c349525ebe327ceaa8559756f0356cba97ef3bf7432"
+checksum = "113b30b4cd05f7c06868fdb2854f66a7b9fece9a48425351cd532e810d74024f"
 
 [[package]]
 name = "loop9"
@@ -3161,6 +3172,7 @@ dependencies = [
  "egui-wgpu",
  "egui_dock",
  "egui_extras",
+ "egui_plot",
  "egui_tracing",
  "encase",
  "image",

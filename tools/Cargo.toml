@@ -10,5 +10,4 @@ slicer.workspace = true
 gerber_parser.workspace = true
 itertools.workspace = true
 nalgebra.workspace = true
-
-svgwriter = "0.1.1"
+svgwriter.workspace = true

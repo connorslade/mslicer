@@ -6,7 +6,7 @@ use nalgebra::{Vector2, Vector3};
 mod config;
 pub mod format;
 mod layer_iter;
-pub use config::{ExposureConfig, SliceConfig};
+pub use config::{ExposureConfig, ExposureRemap, SliceConfig};
 pub use format::SliceMode;
 pub use layer_iter::SliceLayerIterator;
 

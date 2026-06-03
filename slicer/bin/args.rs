@@ -121,6 +121,7 @@ impl Args {
         Ok(SliceConfig {
             mode: SliceMode::Raster,
             supersample: cbrt(self.supersample) as u8,
+            exposure_remap: Default::default(), // todo: FIX THIS
             platform_resolution: self.platform_resolution,
             platform_size: self.platform_size.map(Milimeters::new),
             slice_height: Milimeters::new(self.layer_height),

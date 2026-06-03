@@ -15,9 +15,11 @@ use crate::{
 
 /// Configuration for slicing a model.
 #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(default)]
 pub struct SliceConfig {
     pub mode: SliceMode,
     pub supersample: u8,
+    pub exposure_remap: ExposureRemap,
 
     pub platform_resolution: Vector2<u32>,
     pub platform_size: Vector3<Milimeters>,
@@ -27,6 +29,13 @@ pub struct SliceConfig {
     pub first_exposure_config: ExposureConfig,
     pub first_layers: u32,
     pub transition_layers: u32,
+}
+
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+pub struct ExposureRemap {
+    pub start: f32,
+    pub end: f32,
+    pub control: [Vector2<f32>; 2],
 }
 
 /// Layer exposure settings.
@@ -98,11 +107,55 @@ impl SliceConfig {
     }
 }
 
+impl ExposureRemap {
+    pub fn points(&self) -> [Vector2<f32>; 4] {
+        [
+            Vector2::new(0.0, self.start),
+            self.control[0],
+            self.control[1],
+            Vector2::new(1.0, self.end),
+        ]
+    }
+
+    pub fn bezier(&self, t: f32) -> Vector2<f32> {
+        let [p1, p2, p3, p4] = self.points();
+        let a = lerp(p2, p3, t);
+        let b = lerp(lerp(p1, p2, t), a, t);
+        let c = lerp(a, lerp(p3, p4, t), t);
+        lerp(b, c, t)
+    }
+
+    pub fn remap(&self, x: f32) -> f32 {
+        let (mut low, mut high) = (0.0, 1.0);
+        for _ in 0..20 {
+            let mid = (low + high) / 2.0;
+            if self.bezier(mid).x < x {
+                low = mid;
+            } else {
+                high = mid;
+            }
+        }
+
+        self.bezier((low + high) * 0.5).y
+    }
+
+    pub fn table(&self) -> [u8; 256] {
+        let mut out = [0; 256];
+        for (i, x) in out.iter_mut().enumerate() {
+            *x = (self.remap(i as f32 / 255.0) * 255.0)
+                .round()
+                .clamp(0.0, 255.0) as u8;
+        }
+        out
+    }
+}
+
 impl Default for SliceConfig {
     fn default() -> Self {
         Self {
             mode: SliceMode::Raster,
             supersample: 0,
+            exposure_remap: Default::default(),
 
             platform_resolution: Vector2::new(11_520, 5_120),
             platform_size: Vector3::new(218.88, 122.904, 260.0).map(Milimeters::new),
@@ -117,6 +170,16 @@ impl Default for SliceConfig {
             },
             first_layers: 3,
             transition_layers: 10,
+        }
+    }
+}
+
+impl Default for ExposureRemap {
+    fn default() -> Self {
+        Self {
+            start: 0.0,
+            end: 1.0,
+            control: [Vector2::new(0.25, 0.25), Vector2::new(0.75, 0.75)],
         }
     }
 }
@@ -158,6 +221,7 @@ impl SliceConfig {
                 SliceMode::deserialize(des)?
             },
             supersample: if version < 5 { 1 } else { des.read_u8() },
+            exposure_remap: Default::default(), // todo: FIX THIS!!
             platform_resolution: Vector2::deserialize(des),
             platform_size: Vector3::deserialize(des).map(Milimeters::new),
             slice_height: Milimeters::new(des.read_f32_be()),

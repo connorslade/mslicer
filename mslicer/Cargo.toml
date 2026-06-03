@@ -24,6 +24,7 @@ egui-wgpu.workspace = true
 egui.workspace = true
 egui_dock.workspace = true
 egui_extras.workspace = true
+egui_plot.workspace = true
 egui_tracing.workspace = true
 encase.workspace = true
 image.workspace = true

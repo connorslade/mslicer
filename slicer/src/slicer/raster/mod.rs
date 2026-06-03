@@ -24,6 +24,8 @@ impl Slicer {
     /// Actually runs the slicing operation, it is multithreaded.
     pub fn slice_raster(&self) -> Vec<Layer> {
         let supersample = self.slice_config.supersample;
+        let remap = self.slice_config.exposure_remap.table();
+
         let real_platform = self.slice_config.platform_resolution;
         let platform = real_platform * supersample as u32;
         let pixels = platform.x as u64 * platform.y as u64;
@@ -58,11 +60,15 @@ impl Slicer {
             .chunks(supersample as usize)
             .enumerate()
             .map(|(i, mut chunk)| {
-                let data = if supersample > 1 {
+                let mut data = if supersample > 1 {
                     downsample_to_vec(&chunk, pixels)
                 } else {
                     chunk.pop().unwrap()
                 };
+
+                data.iter_mut()
+                    .filter(|x| x.value > 0)
+                    .for_each(|x| x.value = remap[x.value as usize]);
 
                 let exposure = self.slice_config.exposure_config(i as u32).into_owned();
                 Layer { data, exposure }
