@@ -12,7 +12,7 @@ use crate::{
     app::App,
     include_asset,
     project::Project,
-    task::{FileDialog, MeshLoad, ProjectLoad},
+    task::{MeshLoad, MultiFileDialog, ProjectLoad},
     ui::{components::labeled_separator, popup::Popup},
     windows::{Tab, tools},
 };
@@ -227,15 +227,17 @@ fn menu_button(
 }
 
 fn import_model(app: &mut App) {
-    app.tasks.add(FileDialog::pick_file(
+    app.tasks.add(MultiFileDialog::pick_files(
         ("Mesh", &["stl", "obj"]),
-        |_app, path, tasks| {
-            let name = path.file_name().unwrap().to_str().unwrap().to_string();
-            let ext = path.extension();
-            let format = ext.unwrap_or_default().to_string_lossy();
+        |_app, paths, tasks| {
+            for path in paths {
+                let name = path.file_name().unwrap().to_str().unwrap().to_string();
+                let ext = path.extension();
+                let format = ext.unwrap_or_default().to_string_lossy();
 
-            let file = File::open(path).unwrap();
-            tasks.push(Box::new(MeshLoad::file(file, name, format.into())));
+                let file = File::open(path).unwrap();
+                tasks.push(Box::new(MeshLoad::file(file, name, format.into())));
+            }
         },
     ));
 }

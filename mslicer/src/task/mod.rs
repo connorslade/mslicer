@@ -19,7 +19,7 @@ mod thread;
 mod webhook;
 pub use self::{
     acceleration_structures::BuildAccelerationStructures,
-    file_dialog::FileDialog,
+    file_dialog::{FileDialog, MultiFileDialog},
     island_detection::IslandDetection,
     mesh_load::MeshLoad,
     mesh_manifold::MeshManifold,

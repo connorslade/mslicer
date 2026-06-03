@@ -8,6 +8,8 @@
 - Show when remote printer is disconnected
 - PCB tool
   - Load and rasterize gerber files to expose photoresist
+  - Flip over an arbitrary axis
+- Load multiple models at once through file dialog
 
 ## v0.7.0 &mdash; May 7th, 2026
 
