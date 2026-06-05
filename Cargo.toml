@@ -10,8 +10,9 @@ members = [
     "format/nanodlp_format",
     "mslicer",
     "remote_print",
-    "slicer"
-, "tools"]
+    "slicer",
+    "tools"
+]
 
 [workspace.dependencies]
 common = { path = "common" }

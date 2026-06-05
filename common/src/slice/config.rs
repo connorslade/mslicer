@@ -109,12 +109,8 @@ impl SliceConfig {
 
 impl ExposureRemap {
     pub fn points(&self) -> [Vector2<f32>; 4] {
-        [
-            Vector2::new(0.0, self.start),
-            self.control[0],
-            self.control[1],
-            Vector2::new(1.0, self.end),
-        ]
+        let (start, end) = (Vector2::new(0.0, self.start), Vector2::new(1.0, self.end));
+        [start, start + self.control[0], end + self.control[1], end]
     }
 
     pub fn bezier(&self, t: f32) -> Vector2<f32> {
@@ -270,7 +266,7 @@ impl Default for ExposureRemap {
         Self {
             start: 0.0,
             end: 1.0,
-            control: [Vector2::new(0.25, 0.25), Vector2::new(0.75, 0.75)],
+            control: [Vector2::new(0.25, 0.25), Vector2::new(-0.25, -0.25)],
         }
     }
 }

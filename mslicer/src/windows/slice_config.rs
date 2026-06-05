@@ -344,9 +344,7 @@ fn exposure_remapping(
 ) {
     const EXPOSURE_REMAPPING_DESCRIPTION: &str = "Fractional exposure values don't necessarily correspond linearly to voxel growth, so you may need to adjust the mapping with the curve below to get ideal results with antialiasing.";
     ui.label(EXPOSURE_REMAPPING_DESCRIPTION);
-
-    let [p1, p4] = [Vector2::new(0.0, remap.start), Vector2::new(1.0, remap.end)];
-    let [p2, p3] = remap.control;
+    let [p1, p2, p3, p4] = remap.points();
 
     let mut pointer = None;
     let plot = Plot::new("exposure_remap")
@@ -357,7 +355,6 @@ fn exposure_remapping(
         .allow_boxed_zoom(false)
         .view_aspect(1.0)
         .show_axes([false; 2])
-        .show_y(false)
         .default_x_bounds(-0.1, 1.1)
         .default_y_bounds(-0.1, 1.1)
         .auto_bounds([false; 2])
@@ -373,13 +370,13 @@ fn exposure_remapping(
             if let Some(selected_remap_point) = selected_remap_point
                 && let Some(pointer) = pointer
             {
-                if *selected_remap_point == 0 {
-                    remap.start = pointer.y as f32;
-                } else if *selected_remap_point == 3 {
-                    remap.end = pointer.y as f32;
-                } else {
-                    remap.control[*selected_remap_point as usize - 1] =
-                        Vector2::new(pointer.x, pointer.y).map(|x| x as f32);
+                let pointer = Vector2::new(pointer.x, pointer.y).map(|x| x as f32);
+                match *selected_remap_point {
+                    0 => remap.start = pointer.y,
+                    1 => remap.control[0] = pointer - Vector2::new(0.0, remap.start),
+                    2 => remap.control[1] = pointer - Vector2::new(1.0, remap.end),
+                    3 => remap.end = pointer.y,
+                    _ => unreachable!(),
                 }
             }
 
