@@ -198,7 +198,7 @@ impl<'a> RemotePrintRef<'a> {
             }
 
             let mut completion = completion.lock();
-            if !completion.sent.contains(&client.machine_id) {
+            if completion.sent.contains(&client.machine_id) {
                 return;
             }
             completion.sent.insert(client.machine_id.to_owned());

@@ -128,7 +128,7 @@ impl ContentType {
     pub fn name(&self) -> &str {
         match self {
             ContentType::Text => "Text",
-            ContentType::Json => "Json",
+            ContentType::Json => "JSON",
         }
     }
 
