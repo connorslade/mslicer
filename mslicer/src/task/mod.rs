@@ -72,6 +72,12 @@ impl TaskManager {
         self.add_boxed(Box::new(task));
     }
 
+    pub fn add_all<T: Task + 'static>(&mut self, tasks: impl IntoIterator<Item = T>) {
+        for task in tasks.into_iter() {
+            self.add(task);
+        }
+    }
+
     pub fn add_boxed(&mut self, task: Box<dyn Task>) {
         self.tasks.push(task);
     }

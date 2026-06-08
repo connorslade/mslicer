@@ -11,6 +11,9 @@
   - Flip over an arbitrary axis
 - Load multiple models at once through file dialog
 - Exposure remapping
+- Send print completion notifs from async thread
+  - This fixes them not being sent when the ui isn't getting continuously
+    rendered like when the window is not visible on some linux systems
 
 ## v0.7.0 &mdash; May 7th, 2026
 

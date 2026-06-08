@@ -107,3 +107,9 @@ pub enum FileTransferStatus {
     Done = 2,
     Error = 3,
 }
+
+impl PrintInfoStatus {
+    pub fn is_printing(&self) -> bool {
+        !matches!(self, Self::None | Self::Complete)
+    }
+}

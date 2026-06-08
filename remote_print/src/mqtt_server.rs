@@ -36,6 +36,7 @@ pub struct MqttInner {
     pub(crate) clients: RwLock<HashMap<String, MqttClient>>,
     /// client_id -> mainboard_id
     client_ids: RwLock<HashMap<u64, String>>,
+    callback: Option<Box<dyn Fn(&MqttClient) + Send + Sync>>,
 }
 
 #[derive(Clone)]
@@ -118,6 +119,10 @@ impl MqttHandler for Mqtt {
             let client = clients.get(board_id).unwrap();
             *client.status.lock() = status.data.status;
             client.last_update.store(epoch(), Ordering::Relaxed);
+
+            if let Some(callback) = &self.callback {
+                callback(&client);
+            }
         } else if let Some(board_id) = packet.topic.strip_prefix("/sdcp/response/") {
             let json = serde_json::from_slice::<Value>(&packet.data)?;
             trace!("Got command response from `{board_id}`: {json}");
@@ -151,6 +156,18 @@ impl Mqtt {
                 server: Soon::empty(),
                 clients: RwLock::new(HashMap::new()),
                 client_ids: RwLock::new(HashMap::new()),
+                callback: None,
+            }),
+        }
+    }
+
+    pub fn new_callback(callback: impl Fn(&MqttClient) + Send + Sync + 'static) -> Self {
+        Self {
+            inner: Arc::new(MqttInner {
+                server: Soon::empty(),
+                clients: RwLock::new(HashMap::new()),
+                client_ids: RwLock::new(HashMap::new()),
+                callback: Some(Box::new(callback)),
             }),
         }
     }

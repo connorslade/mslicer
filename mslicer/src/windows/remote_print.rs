@@ -14,14 +14,13 @@ use egui::{
     ProgressBar, RichText, Separator, Spinner, Style, TextEdit, Ui, text::LayoutJob, vec2,
 };
 use egui_phosphor::regular::{COPY, NETWORK, PLUGS, PRINTER, STOP, TRASH_SIMPLE, UPLOAD_SIMPLE};
-use notify_rust::Notification;
 use remote_print::status::{FileTransferStatus, PrintInfoStatus};
 use rfd::FileDialog;
 use tracing::info;
 
 use crate::{
     app::{App, config::ContentType},
-    task::{PrinterConnect, PrinterScan, Webhook},
+    task::{PrinterConnect, PrinterScan},
     ui::{
         components::grid,
         popup::{Popup, PopupIcon},
@@ -111,12 +110,8 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
                         let status = client.status.lock();
 
                         let print_info = &status.print_info;
-                        let printing = !matches!(
-                            print_info.status,
-                            PrintInfoStatus::None | PrintInfoStatus::Complete
-                        );
+                        let printing = print_info.status.is_printing();
                         if printing {
-                            printer.sent_print_completion = false;
                             ui.horizontal(|ui| {
                                 ui.label("Printing");
                                 ui.monospace(&print_info.filename);
@@ -151,34 +146,6 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
                                 ui.monospace(&print_info.filename);
                                 ui.label(format!("in {print_time}"));
                             });
-
-                            // todo: move to mqtt thread?
-                            if !printer.sent_print_completion {
-                                printer.sent_print_completion = true;
-
-                                let config = &app.config.remote_print;
-                                if config.alert_completion {
-                                    Notification::new()
-                                        .summary("Print Complete")
-                                        .body(&format!(
-                                            "Printer `{}` has finished printing `{}`.",
-                                            attributes.name, print_info.filename
-                                        ))
-                                        .show()
-                                        .unwrap();
-                                }
-
-                                if config.webhook.enabled {
-                                    let body = (config.webhook.body)
-                                        .replace("%file%", &print_info.filename)
-                                        .replace("%printer%", &attributes.name);
-                                    app.tasks.add(Webhook::new(
-                                        &config.webhook.url,
-                                        body,
-                                        config.webhook.content_type,
-                                    ));
-                                }
-                            }
                         }
 
                         let file_transfer = &status.file_transfer_info;

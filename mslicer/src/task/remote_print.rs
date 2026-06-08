@@ -20,10 +20,13 @@ pub struct PrinterScan {
 impl PrinterConnect {
     pub fn new(remote_print: &RemotePrint, address: Ipv4Addr) -> Self {
         let services = remote_print.services.as_ref().unwrap().clone();
-        let handle =
-            TaskThread::spawn(clone!([{ remote_print.printers } as printers], move || {
-                add_printer(services, printers, address).unwrap()
-            }));
+        let handle = TaskThread::spawn(clone!(
+            [
+                { remote_print.printers } as printers,
+                { remote_print.completion } as completion
+            ],
+            move || { add_printer(services, printers, completion, address).unwrap() }
+        ));
 
         Self { handle }
     }
@@ -32,10 +35,13 @@ impl PrinterConnect {
 impl PrinterScan {
     pub fn new(remote_print: &RemotePrint, broadcast: Ipv4Addr) -> Self {
         let services = remote_print.services.as_ref().unwrap().clone();
-        let handle =
-            TaskThread::spawn(clone!([{ remote_print.printers } as printers], move || {
-                scan_for_printers(services, printers, broadcast).unwrap()
-            }));
+        let handle = TaskThread::spawn(clone!(
+            [
+                { remote_print.printers } as printers,
+                { remote_print.completion } as completion
+            ],
+            move || { scan_for_printers(services, printers, completion, broadcast).unwrap() }
+        ));
 
         Self { handle }
     }

@@ -55,7 +55,7 @@ pub struct RemotePrintConfig {
     pub webhook: Webhook,
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Default, PartialEq, Eq, Clone, Serialize, Deserialize)]
 pub struct Webhook {
     pub enabled: bool,
     pub url: String,
@@ -63,8 +63,9 @@ pub struct Webhook {
     pub content_type: ContentType,
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Default, Copy, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ContentType {
+    #[default]
     Text,
     Json,
 }

@@ -1,12 +1,16 @@
 use std::{
+    collections::HashSet,
     io::ErrorKind,
+    mem,
     net::{Ipv4Addr, SocketAddr, SocketAddrV4, TcpListener, UdpSocket},
     sync::Arc,
     time::Duration,
 };
 
 use anyhow::{Context, Result};
+use clone_macro::clone;
 use common::slice::format::RasterFormat;
+use notify_rust::Notification;
 use parking_lot::{Mutex, MutexGuard};
 use tracing::{info, warn};
 
@@ -20,8 +24,9 @@ use remote_print::{
 };
 
 use crate::{
-    app::App,
+    app::{App, config::Webhook},
     app_ref_type,
+    task::Webhook as WebhookTask,
     ui::popup::{Popup, PopupIcon},
     util::random_string,
 };
@@ -30,6 +35,16 @@ pub struct RemotePrint {
     been_started: bool,
     pub services: Option<Arc<Services>>,
     pub printers: Arc<Mutex<Vec<Printer>>>,
+    pub completion: Arc<Mutex<PrintCompletionState>>,
+}
+
+#[derive(Default)]
+pub struct PrintCompletionState {
+    sent: HashSet<String>,
+    alert: bool,
+    webhook: Webhook,
+
+    pending_tasks: Vec<WebhookTask>,
 }
 
 app_ref_type!(RemotePrint, remote_print);
@@ -46,7 +61,6 @@ pub struct Services {
 
 pub struct Printer {
     pub mainboard_id: String,
-    pub sent_print_completion: bool,
 }
 
 impl RemotePrint {
@@ -54,7 +68,8 @@ impl RemotePrint {
         Self {
             been_started: false,
             services: None,
-            printers: Arc::new(Mutex::new(Vec::new())),
+            printers: Default::default(),
+            completion: Default::default(),
         }
     }
 
@@ -167,7 +182,47 @@ impl<'a> RemotePrintRef<'a> {
         let mqtt_listener =
             TcpListener::bind(addr(config.mqtt_port)).context("Failed to bind MQTT")?;
         let mqtt_port = mqtt_listener.local_addr()?.port();
-        let mqtt = Mqtt::new();
+        let mqtt = Mqtt::new_callback(clone!([{ self.completion } as completion], move |client| {
+            // These checks must be done on the mqtt thread instead of the ui
+            // thread bc unlink on windows some window managers on linux won't
+            // keep updating the application when the window is not visible.
+
+            let print_info = &client.status.lock().print_info;
+            if print_info.status.is_printing() {
+                completion.lock().sent.remove(&client.machine_id);
+                return;
+            }
+
+            if print_info.status != PrintInfoStatus::Complete {
+                return;
+            }
+
+            let mut completion = completion.lock();
+            if !completion.sent.contains(&client.machine_id) {
+                return;
+            }
+            completion.sent.insert(client.machine_id.to_owned());
+
+            if completion.alert {
+                Notification::new()
+                    .summary("Print Complete")
+                    .body(&format!(
+                        "Printer `{}` has finished printing `{}`.",
+                        client.attributes.name, print_info.filename
+                    ))
+                    .show()
+                    .unwrap();
+            }
+
+            let webhook = &completion.webhook;
+            if webhook.enabled {
+                let body = (webhook.body)
+                    .replace("%file%", &print_info.filename)
+                    .replace("%printer%", &client.attributes.name);
+                let task = WebhookTask::new(&webhook.url, body, webhook.content_type);
+                completion.pending_tasks.push(task);
+            }
+        }));
         MqttServer::new(mqtt.clone()).start_async(mqtt_listener)?;
 
         let http_listener =
@@ -209,12 +264,25 @@ impl<'a> RemotePrintRef<'a> {
             self.set_network_timeout(Duration::from_secs_f32(config.timeout));
             services.http.set_proxy_enabled(config.status_proxy);
         }
+
+        let mut completion = self.completion.lock();
+        let config = &self.app.config.remote_print;
+        completion.alert = config.alert_completion;
+        if completion.webhook != config.webhook {
+            completion.webhook = config.webhook.clone();
+        }
+
+        let tasks = mem::take(&mut completion.pending_tasks);
+        drop(completion);
+        self.app.tasks.add_all(tasks);
     }
 }
 
 pub fn add_printer(
     services: Arc<Services>,
     printers: Arc<Mutex<Vec<Printer>>>,
+    print_completion: Arc<Mutex<PrintCompletionState>>,
+
     address: Ipv4Addr,
 ) -> Result<()> {
     info!("Attempting to connect to printer at {address}");
@@ -232,13 +300,14 @@ pub fn add_printer(
     let response = serde_json::from_str::<Response<FullStatusData>>(&received)
         .context("Invalid response from printer.")?;
 
-    connect_printer(services, printers, response, address)?;
+    connect_printer(services, printers, print_completion, response, address)?;
     Ok(())
 }
 
 pub fn scan_for_printers(
     services: Arc<Services>,
     printers: Arc<Mutex<Vec<Printer>>>,
+    print_completion: Arc<Mutex<PrintCompletionState>>,
     broadcast: Ipv4Addr,
 ) -> Result<()> {
     info!("Scanning for printers on {broadcast}");
@@ -257,7 +326,13 @@ pub fn scan_for_printers(
             continue;
         };
 
-        if let Err(err) = connect_printer(services.clone(), printers.clone(), response, addr) {
+        if let Err(err) = connect_printer(
+            services.clone(),
+            printers.clone(),
+            print_completion.clone(),
+            response,
+            addr,
+        ) {
             warn!("Failed to connect to printer while scanning: {}", err);
         };
     }
@@ -268,6 +343,7 @@ pub fn scan_for_printers(
 fn connect_printer(
     services: Arc<Services>,
     printers: Arc<Mutex<Vec<Printer>>>,
+    print_completion: Arc<Mutex<PrintCompletionState>>,
     response: Response<FullStatusData>,
     address: SocketAddr,
 ) -> Result<()> {
@@ -290,8 +366,13 @@ fn connect_printer(
 
     printers.push(Printer {
         mainboard_id: response.data.attributes.mainboard_id.clone(),
-        sent_print_completion: response.data.status.print_info.status == PrintInfoStatus::Complete,
     });
+
+    if response.data.status.print_info.status == PrintInfoStatus::Complete {
+        (print_completion.lock())
+            .sent
+            .insert(response.data.attributes.mainboard_id.to_owned());
+    }
 
     services.mqtt.add_future_client(response);
 
