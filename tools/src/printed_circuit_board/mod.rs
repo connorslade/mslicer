@@ -18,7 +18,7 @@ use slicer::slicer::raster;
 
 mod gerber;
 mod misc;
-mod polygons;
+pub mod polygons;
 
 #[derive(Clone)]
 pub struct PrintedCircuitBoard {

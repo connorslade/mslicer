@@ -1088,6 +1088,7 @@ dependencies = [
  "image",
  "itertools 0.14.0",
  "nalgebra 0.34.1",
+ "ordered-float",
  "serde",
 ]
 
@@ -5346,6 +5347,7 @@ dependencies = [
  "gerber_parser",
  "itertools 0.14.0",
  "nalgebra 0.34.1",
+ "ordered-float",
  "slicer",
  "svgwriter",
 ]

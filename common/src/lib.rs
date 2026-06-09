@@ -5,3 +5,4 @@ pub mod progress;
 pub mod serde;
 pub mod slice;
 pub mod units;
+pub mod geometry;

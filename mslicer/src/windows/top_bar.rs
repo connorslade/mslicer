@@ -1,5 +1,7 @@
 use std::{f32::consts::TAU, fs::File};
 
+use ::tools::auto_layout;
+use common::{geometry::convex_hull, progress::Progress, units::Milimeter};
 use const_format::concatcp;
 use egui::{
     Align, Align2, Button, Context, FontId, Frame, Grid, Id, Key, KeyboardShortcut, Layout,
@@ -110,6 +112,48 @@ pub fn ui(app: &mut App, ctx: &Context) {
 
                 ui.menu_button(concatcp!(HAMMER, " Tools"), |ui| {
                     ui.set_width(150.0);
+                    labeled_separator(ui, "Auto Layout");
+                    if ui.button("Quick Layout").clicked() {
+                        let models = app
+                            .project
+                            .models
+                            .iter()
+                            .map(|x| {
+                                let points = x
+                                    .mesh
+                                    .vertices()
+                                    .iter()
+                                    .map(|y| x.mesh.transform(&y).xy())
+                                    .collect::<Vec<_>>();
+                                auto_layout::Model::new(
+                                    x.id,
+                                    convex_hull(&points).into_iter().copied().collect(),
+                                )
+                            })
+                            .collect();
+                        let result = auto_layout::AutoLayout::new(
+                            app.project
+                                .slice_config
+                                .platform_size
+                                .xy()
+                                .map(|x| x.get::<Milimeter>()),
+                            models,
+                        )
+                        .layout(Progress::new());
+
+                        for (model, offset) in result {
+                            let model = app
+                                .project
+                                .models
+                                .iter_mut()
+                                .find(|x| x.id == model)
+                                .unwrap();
+                            model
+                                .mesh
+                                .set_position(model.mesh.position() + offset.push(0.0));
+                        }
+                    }
+
                     labeled_separator(ui, "Generators");
                     (ui.button("Printed Circuit Board").clicked())
                         .then(|| tools::printed_circuit_board::open(app));

@@ -13,6 +13,7 @@ crc32fast.workspace = true
 image.workspace = true
 itertools.workspace = true
 nalgebra.workspace = true
+ordered-float.workspace = true
 serde.workspace = true
 
 [dev-dependencies]
