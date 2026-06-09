@@ -7,6 +7,11 @@ use ordered_float::OrderedFloat;
 
 use crate::printed_circuit_board::polygons::Polygons;
 
+const MAX_BOUNDS: (Vector2<f32>, Vector2<f32>) = (
+    Vector2::new(f32::MAX, f32::MAX),
+    Vector2::new(f32::MIN, f32::MIN),
+);
+
 pub struct AutoLayout {
     padding: f32,
     segment_steps: f32,
@@ -53,10 +58,7 @@ impl AutoLayout {
         for i in 1..self.models.len() {
             progress.add_complete(1);
             let this = &self.models[i];
-            let nfps = self
-                .models
-                .iter()
-                .take(i)
+            let nfps = (self.models.iter().take(i))
                 .map(|x| non_fitting_polygon(x.hull.iter(), this.hull.iter()))
                 .collect::<Vec<_>>();
 
@@ -70,40 +72,30 @@ impl AutoLayout {
                     let n = (vector.magnitude() * self.segment_steps) as usize;
                     for k in 0..=n {
                         let p = pa + norm * (k as f32 / n as f32);
-                        let valid = nfps
-                            .iter()
-                            .take(i)
-                            .enumerate()
+                        let valid = (nfps.iter().take(i).enumerate())
                             .all(|(i, x)| i == j || intersect_lines(p, x) & 1 == 0);
                         if valid {
                             let new_bounds = (this.bounds.0 + p, this.bounds.1 + p);
-                            let total_bounds = self
-                                .models
-                                .iter()
-                                .take(i)
+                            let total_bounds = (self.models.iter().take(i))
                                 .map(|x| (x.bounds.0 + x.offset, x.bounds.1 + x.offset))
                                 .chain(iter::once(new_bounds))
-                                .fold(
-                                    (Vector2::repeat(f32::MAX), Vector2::repeat(f32::MIN)),
-                                    |(min, max), v| {
-                                        (min.zip_map(&v.0, f32::min), max.zip_map(&v.1, f32::max))
-                                    },
-                                );
+                                .fold(MAX_BOUNDS, |(min, max), v| {
+                                    (min.zip_map(&v.0, f32::min), max.zip_map(&v.1, f32::max))
+                                });
 
                             let size = total_bounds.1 - total_bounds.0;
-                            if size <= self.platform_size
-                                && p.magnitude_squared() < best.magnitude_squared()
-                            {
-                                best = p;
-                            }
+                            (size <= self.platform_size
+                                && p.magnitude_squared() < best.magnitude_squared())
+                            .then(|| best = p);
                         }
                     }
                 }
             }
 
             if best != Vector2::repeat(f32::MAX) {
-                self.models[i].hull.iter_mut().for_each(|x| *x = *x + best);
-                self.models[i].offset = best;
+                let model = &mut self.models[i];
+                model.hull.iter_mut().for_each(|x| *x = *x + best);
+                model.offset = best;
             } else {
                 println!("No placements found");
             }
@@ -120,14 +112,11 @@ impl AutoLayout {
         debug.circle(Vector2::zeros(), 0.5);
         fs::write("debug.svg", debug.svg()).unwrap();
 
-        let bounds = self
-            .models
-            .iter()
+        let bounds = (self.models.iter())
             .map(|x| (x.bounds.0 + x.offset, x.bounds.1 + x.offset))
-            .fold(
-                (Vector2::repeat(f32::MAX), Vector2::repeat(f32::MIN)),
-                |(min, max), v| (min.zip_map(&v.0, f32::min), max.zip_map(&v.1, f32::max)),
-            );
+            .fold(MAX_BOUNDS, |(min, max), v| {
+                (min.zip_map(&v.0, f32::min), max.zip_map(&v.1, f32::max))
+            });
         let size = bounds.1 - bounds.0;
         let global_offset = -(bounds.0 + size / 2.0);
 
@@ -155,11 +144,8 @@ fn non_fitting_polygon<'a>(
     b: impl Iterator<Item = &'a Vector2<f32>> + Clone,
 ) -> Vec<Vector2<f32>> {
     let mut points = Vec::new();
-
-    for i in a {
-        for j in b.clone() {
-            points.push(*i - *j);
-        }
+    for (i, j) in a.cartesian_product(b) {
+        points.push(*i - *j);
     }
 
     convex_hull(&points).into_iter().copied().collect()
@@ -189,8 +175,7 @@ fn intersect_lines(start: Vector2<f32>, lines: &[Vector2<f32>]) -> usize {
 }
 
 fn bounds(vertices: &[Vector2<f32>]) -> (Vector2<f32>, Vector2<f32>) {
-    vertices.iter().fold(
-        (Vector2::repeat(f32::MAX), Vector2::repeat(f32::MIN)),
-        |(min, max), v| (min.zip_map(&v, f32::min), max.zip_map(&v, f32::max)),
-    )
+    vertices.iter().fold(MAX_BOUNDS, |(min, max), v| {
+        (min.zip_map(&v, f32::min), max.zip_map(&v, f32::max))
+    })
 }
