@@ -65,7 +65,7 @@ impl AutoLayout {
                                 .models
                                 .iter()
                                 .take(i)
-                                .map(|x| x.bounds)
+                                .map(|x| (x.bounds.0 + x.offset, x.bounds.1 + x.offset))
                                 .chain(iter::once(new_bounds))
                                 .fold(
                                     (Vector2::repeat(f32::MAX), Vector2::repeat(f32::MIN)),
@@ -75,7 +75,6 @@ impl AutoLayout {
                                 );
 
                             let size = total_bounds.1 - total_bounds.0;
-
                             if size <= self.platform_size
                                 && p.magnitude_squared() < best.magnitude_squared()
                             {
@@ -105,8 +104,22 @@ impl AutoLayout {
         debug.circle(Vector2::zeros(), 0.5);
         fs::write("debug.svg", debug.svg()).unwrap();
 
+        let bounds = self
+            .models
+            .iter()
+            .map(|x| (x.bounds.0 + x.offset, x.bounds.1 + x.offset))
+            .fold(
+                (Vector2::repeat(f32::MAX), Vector2::repeat(f32::MIN)),
+                |(min, max), v| (min.zip_map(&v.0, f32::min), max.zip_map(&v.1, f32::max)),
+            );
+        let size = bounds.1 - bounds.0;
+        let global_offset = -(bounds.0 + size / 2.0);
+
         progress.set_finished();
-        self.models.into_iter().map(|x| (x.id, x.offset)).collect()
+        self.models
+            .into_iter()
+            .map(|x| (x.id, x.offset + global_offset))
+            .collect()
     }
 }
 
