@@ -17,7 +17,7 @@ use nalgebra::Vector2;
 use crate::{
     app::{
         App,
-        config::SlicePreviewMode,
+        config::SlicePreviewCoordinateSpace,
         slice_operation::{GenericSliceData, GenericSliceResult, ISLAND_COLOR, RasterSliceResult},
     },
     render::slice_preview::SlicePreviewRenderCallback,
@@ -180,7 +180,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                                     app.config.slice_preview_mode.name()
                                 ))
                                 .show_ui(ui, |ui| {
-                                    for mode in SlicePreviewMode::ALL {
+                                    for mode in SlicePreviewCoordinateSpace::ALL {
                                         ui.selectable_value(
                                             &mut app.config.slice_preview_mode,
                                             *mode,
@@ -206,8 +206,8 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                         // square or as the actual shape on the printer.
                         let platform = result.config.platform_resolution;
                         let pixel_aspect = match app.config.slice_preview_mode {
-                            SlicePreviewMode::ScreenSpace => 1.0,
-                            SlicePreviewMode::WorldSpace => {
+                            SlicePreviewCoordinateSpace::ScreenSpace => 1.0,
+                            SlicePreviewCoordinateSpace::WorldSpace => {
                                 let platform_size = (result.config.platform_size.xy())
                                     .map(|x| x.get::<Milimeter>());
                                 let aspect = platform.cast::<f32>().component_div(&platform_size);
