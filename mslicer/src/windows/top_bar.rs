@@ -138,6 +138,7 @@ pub fn ui(app: &mut App, ctx: &Context) {
                                 .xy()
                                 .map(|x| x.get::<Milimeter>()),
                             models,
+                            5.0,
                         )
                         .layout(Progress::new());
 

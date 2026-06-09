@@ -8,6 +8,7 @@ use ordered_float::OrderedFloat;
 use crate::printed_circuit_board::polygons::Polygons;
 
 pub struct AutoLayout {
+    padding: f32,
     platform_size: Vector2<f32>,
     models: Vec<Model>,
 }
@@ -20,9 +21,10 @@ pub struct Model {
 }
 
 impl AutoLayout {
-    pub fn new(platform_size: Vector2<f32>, mut models: Vec<Model>) -> Self {
+    pub fn new(platform_size: Vector2<f32>, mut models: Vec<Model>, padding: f32) -> Self {
         models.sort_by_cached_key(|x| Reverse(OrderedFloat(area(&x.hull))));
         Self {
+            padding,
             platform_size,
             models,
         }
@@ -149,11 +151,11 @@ fn non_fitting_polygon<'a>(
     convex_hull(&points).into_iter().copied().collect()
 }
 
-fn area(a: &[Vector2<f32>]) -> f32 {
-    let mut j = a.len() - 1;
+fn area(polygon: &[Vector2<f32>]) -> f32 {
+    let mut j = polygon.len() - 1;
     let mut area = 0.0;
-    for i in 0..a.len() {
-        area += (a[j].x + a[i].x) + (a[j].y - a[i].y);
+    for i in 0..polygon.len() {
+        area += (polygon[j].x + polygon[i].x) + (polygon[j].y - polygon[i].y);
         j = i;
     }
 
