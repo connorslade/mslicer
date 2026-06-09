@@ -9,6 +9,8 @@ use crate::printed_circuit_board::polygons::Polygons;
 
 pub struct AutoLayout {
     padding: f32,
+    segment_steps: f32,
+
     platform_size: Vector2<f32>,
     models: Vec<Model>,
 }
@@ -21,12 +23,24 @@ pub struct Model {
 }
 
 impl AutoLayout {
-    pub fn new(platform_size: Vector2<f32>, mut models: Vec<Model>, padding: f32) -> Self {
+    pub fn new(platform_size: Vector2<f32>, mut models: Vec<Model>) -> Self {
         models.sort_by_cached_key(|x| Reverse(OrderedFloat(area(&x.hull))));
         Self {
-            padding,
+            padding: 0.0,
+            segment_steps: 0.0,
             platform_size,
             models,
+        }
+    }
+
+    pub fn padding(self, padding: f32) -> Self {
+        Self { padding, ..self }
+    }
+
+    pub fn segment_steps(self, segment_steps: f32) -> Self {
+        Self {
+            segment_steps,
+            ..self
         }
     }
 
@@ -53,7 +67,7 @@ impl AutoLayout {
                 for (pa, pb) in nfp.iter().tuple_windows() {
                     let vector = pb - pa;
                     let norm = vector.normalize();
-                    let n = (vector.magnitude() * 100.0) as usize;
+                    let n = (vector.magnitude() * self.segment_steps) as usize;
                     for k in 0..=n {
                         let p = pa + norm * (k as f32 / n as f32);
                         let valid = nfps

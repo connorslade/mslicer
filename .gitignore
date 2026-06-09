@@ -3,5 +3,6 @@
 *.goo
 *.stl
 *.ctb
+*.svg
 codebook.toml
 .DS_Store

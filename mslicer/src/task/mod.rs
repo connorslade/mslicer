@@ -8,6 +8,7 @@ use crate::{
 };
 
 mod acceleration_structures;
+mod auto_layout;
 mod file_dialog;
 mod island_detection;
 mod mesh_load;
@@ -19,6 +20,7 @@ mod thread;
 mod webhook;
 pub use self::{
     acceleration_structures::BuildAccelerationStructures,
+    auto_layout::AutoLayout,
     file_dialog::{FileDialog, MultiFileDialog},
     island_detection::IslandDetection,
     mesh_load::MeshLoad,
