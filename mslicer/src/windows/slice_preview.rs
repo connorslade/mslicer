@@ -2,12 +2,13 @@ use std::{f32, fs::File, io::Write, mem, sync::Arc};
 
 use const_format::concatcp;
 use egui::{
-    Align, Button, Color32, Context, DragValue, FontSelection, Grid, Id, Layout, ProgressBar, Rect,
-    RichText, Sense, Slider, StrokeKind, Style, Ui, Vec2, Widget, style::HandleShape,
-    text::LayoutJob,
+    Align, Button, Color32, ComboBox, Context, DragValue, FontSelection, Grid, Id, Layout,
+    ProgressBar, Rect, RichText, Sense, Slider, StrokeKind, Style, Ui, Vec2, Widget,
+    style::HandleShape, text::LayoutJob,
 };
 use egui_phosphor::regular::{
     CARET_DOWN, CARET_UP, CLOCK, CORNERS_IN, CROSSHAIR, DROP, FLOPPY_DISK_BACK, PAPER_PLANE_TILT,
+    VECTOR_TWO,
 };
 use egui_wgpu::Callback;
 use image::RgbaImage;
@@ -16,6 +17,7 @@ use nalgebra::Vector2;
 use crate::{
     app::{
         App,
+        config::SlicePreviewMode,
         slice_operation::{GenericSliceData, GenericSliceResult, ISLAND_COLOR, RasterSliceResult},
     },
     render::slice_preview::SlicePreviewRenderCallback,
@@ -31,7 +33,7 @@ use common::{
         SliceConfig, SliceMode,
         format::{Format, RasterFormat},
     },
-    units::Centimeter,
+    units::{Centimeter, Milimeter},
 };
 
 const FILENAME_POPUP_TEXT: &str =
@@ -171,6 +173,22 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                                 state.preview_scale = 1.0;
                             }
 
+                            ui.separator();
+                            ComboBox::new("coordinate_space", "")
+                                .selected_text(format!(
+                                    "{VECTOR_TWO} {}",
+                                    app.config.slice_preview_mode.name()
+                                ))
+                                .show_ui(ui, |ui| {
+                                    for mode in SlicePreviewMode::ALL {
+                                        ui.selectable_value(
+                                            &mut app.config.slice_preview_mode,
+                                            *mode,
+                                            mode.name(),
+                                        );
+                                    }
+                                });
+
                             ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                                 let duration = human_duration(raster.print_time.convert());
                                 ui.label(format!("{CLOCK} {duration}"));
@@ -183,7 +201,21 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                             })
                         });
 
-                        slice_preview(state, ui, raster, result.config.platform_resolution);
+                        // Some printers have non square pixels, this option
+                        // allows you to select between seeing each pixel as a
+                        // square or as the actual shape on the printer.
+                        let platform = result.config.platform_resolution;
+                        let pixel_aspect = match app.config.slice_preview_mode {
+                            SlicePreviewMode::ScreenSpace => 1.0,
+                            SlicePreviewMode::WorldSpace => {
+                                let platform_size = (result.config.platform_size.xy())
+                                    .map(|x| x.get::<Milimeter>());
+                                let aspect = platform.cast::<f32>().component_div(&platform_size);
+                                (aspect.y / aspect.x).recip()
+                            }
+                        };
+
+                        slice_preview(state, ui, raster, platform, pixel_aspect);
                     });
                 }
                 GenericSliceResult::Vector(_) => {
@@ -228,6 +260,7 @@ fn slice_preview(
     ui: &mut egui::Ui,
     result: &mut RasterSliceResult,
     platform: Vector2<u32>,
+    pixel_aspect: f32,
 ) {
     ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
         layer_slider(state, ui, result);
@@ -294,6 +327,7 @@ fn slice_preview(
                         dimensions: platform,
                         offset: state.preview_offset,
                         aspect: rect.width() / rect.height(),
+                        pixel_aspect,
                         scale: state.preview_scale.powi(2),
                         new_preview,
                     },

@@ -22,6 +22,7 @@ struct Context {
     dimensions: vec2u,
     offset: vec2f,
     aspect: f32, // width / height
+    pixel_aspect: f32,
     scale: f32,
 }
 
@@ -38,9 +39,10 @@ fn vert(@builtin(vertex_index) index: u32) -> VertexOutput {
 
 @fragment
 fn frag(in: VertexOutput) -> @location(0) vec4f {
-    let aspect = context.aspect * f32(context.dimensions.y) / f32(context.dimensions.x);
+    let dimensions = vec2f(context.dimensions);
+    let aspect = context.aspect * (dimensions.y / dimensions.x) * context.pixel_aspect;
     let uv = vec2(in.position.x * aspect, in.position.y) / context.scale / 2.0 + 0.5;
-    let pos = vec2i(uv * vec2f(context.dimensions) + context.offset);
+    let pos = vec2i(uv * dimensions + context.offset);
 
     let upos = vec2u(pos);
     if pos.x < 0 || pos.y < 0

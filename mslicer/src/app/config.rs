@@ -29,6 +29,7 @@ pub struct Config {
     pub about: bool,
     pub tasks: bool,
     pub default_slice_config: SliceConfig,
+    pub slice_preview_mode: SlicePreviewMode,
 
     pub remote_print: RemotePrintConfig,
 
@@ -68,6 +69,13 @@ pub enum ContentType {
     #[default]
     Text,
     Json,
+}
+
+#[derive(Default, PartialEq, Eq, Copy, Clone, Serialize, Deserialize)]
+pub enum SlicePreviewMode {
+    ScreenSpace,
+    #[default]
+    WorldSpace,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -140,6 +148,17 @@ impl ContentType {
     }
 }
 
+impl SlicePreviewMode {
+    pub const ALL: &[Self] = &[Self::ScreenSpace, Self::WorldSpace];
+
+    pub fn name(&self) -> &str {
+        match self {
+            SlicePreviewMode::ScreenSpace => "Screen Space",
+            SlicePreviewMode::WorldSpace => "World Space",
+        }
+    }
+}
+
 impl Default for Config {
     fn default() -> Self {
         Self {
@@ -147,6 +166,7 @@ impl Default for Config {
             theme: Theme::Dark,
             overhang_visualization: (false, 30.0),
             default_slice_config: SliceConfig::default(),
+            slice_preview_mode: SlicePreviewMode::WorldSpace,
 
             recent_projects: Vec::new(),
             panels: None,
