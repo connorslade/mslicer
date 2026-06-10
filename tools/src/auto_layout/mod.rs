@@ -5,12 +5,9 @@ use itertools::Itertools;
 use nalgebra::Vector2;
 use ordered_float::OrderedFloat;
 
-use crate::printed_circuit_board::polygons::Polygons;
+use crate::{auto_layout::bounds::Bounds2D, printed_circuit_board::polygons::Polygons};
 
-const MAX_BOUNDS: (Vector2<f32>, Vector2<f32>) = (
-    Vector2::new(f32::MAX, f32::MAX),
-    Vector2::new(f32::MIN, f32::MIN),
-);
+mod bounds;
 
 pub struct AutoLayout {
     padding: f32,
@@ -22,7 +19,7 @@ pub struct AutoLayout {
 
 pub struct Model {
     id: u32,
-    bounds: (Vector2<f32>, Vector2<f32>),
+    bounds: Bounds2D,
     hull: Vec<Vector2<f32>>,
     offset: Vector2<f32>,
 }
@@ -53,6 +50,7 @@ impl AutoLayout {
         progress.set_total(self.models.len() as _);
         let mut debug = Polygons::new();
 
+        let mut bounds = Bounds2D::EMPTY;
         for i in 1..self.models.len() {
             progress.add_complete(1);
             let this = &self.models[i];
@@ -74,18 +72,15 @@ impl AutoLayout {
                         let valid = (nfps.iter().take(i).enumerate())
                             .all(|(i, x)| i == j || intersect_lines(p, x) & 1 == 0);
                         if valid {
-                            let new_bounds = (this.bounds.0 + p, this.bounds.1 + p);
-                            let total_bounds = (self.models.iter().take(i))
-                                .map(|x| (x.bounds.0 + x.offset, x.bounds.1 + x.offset))
-                                .chain(iter::once(new_bounds))
-                                .fold(MAX_BOUNDS, |(min, max), v| {
-                                    (min.zip_map(&v.0, f32::min), max.zip_map(&v.1, f32::max))
-                                });
+                            let new_bounds = this.bounds + p;
+                            let total_bounds = bounds + new_bounds;
 
-                            let size = total_bounds.1 - total_bounds.0;
+                            let size = total_bounds.size();
                             let objective = size.x.max(size.y);
-                            (size <= self.platform_size && objective < best.1)
-                                .then(|| best = (p, objective));
+                            if size <= self.platform_size && objective < best.1 {
+                                best = (p, objective);
+                                bounds = total_bounds;
+                            }
                         }
                     }
                 }
@@ -108,12 +103,9 @@ impl AutoLayout {
         fs::write("debug.svg", debug.svg()).unwrap();
 
         let bounds = (self.models.iter())
-            .map(|x| (x.bounds.0 + x.offset, x.bounds.1 + x.offset))
-            .fold(MAX_BOUNDS, |(min, max), v| {
-                (min.zip_map(&v.0, f32::min), max.zip_map(&v.1, f32::max))
-            });
-        let size = bounds.1 - bounds.0;
-        let global_offset = -(bounds.0 + size / 2.0);
+            .map(|x| x.bounds + x.offset)
+            .sum::<Bounds2D>();
+        let global_offset = -(bounds.min + bounds.size() / 2.0);
 
         progress.set_finished();
         self.models
@@ -127,7 +119,7 @@ impl Model {
     pub fn new(id: u32, hull: Vec<Vector2<f32>>) -> Self {
         Self {
             id,
-            bounds: bounds(&hull),
+            bounds: Bounds2D::new_containing(&hull),
             hull,
             offset: Vector2::zeros(),
         }
@@ -174,12 +166,6 @@ fn intersect_lines(start: Vector2<f32>, lines: &[Vector2<f32>]) -> usize {
     }
 
     count
-}
-
-fn bounds(vertices: &[Vector2<f32>]) -> (Vector2<f32>, Vector2<f32>) {
-    vertices.iter().fold(MAX_BOUNDS, |(min, max), v| {
-        (min.zip_map(&v, f32::min), max.zip_map(&v, f32::max))
-    })
 }
 
 fn disk(n: usize, r: f32) -> Vec<Vector2<f32>> {
