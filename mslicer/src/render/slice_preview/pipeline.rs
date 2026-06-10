@@ -40,9 +40,9 @@ struct SliceBuffers {
 struct SlicePreviewUniforms {
     dimensions: Vector2<u32>,
     offset: Vector2<f32>,
+    scale: Vector2<f32>,
     aspect: f32,
     pixel_aspect: f32,
-    scale: f32,
 }
 
 impl SlicePreviewPipeline {
@@ -174,9 +174,9 @@ impl SlicePreviewPipeline {
             .write(&SlicePreviewUniforms {
                 dimensions: resources.dimensions,
                 pixel_aspect: resources.pixel_aspect,
+                scale: resources.scale,
                 offset: resources.offset,
                 aspect: resources.aspect,
-                scale: resources.scale,
             })
             .unwrap();
         queue.write_buffer(&self.uniform_buffer, 0, &buffer.into_inner());

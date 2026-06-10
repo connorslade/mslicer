@@ -92,7 +92,7 @@ fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
         ui.end_row();
 
         ui.label("Photoresist");
-        ComboBox::new("photoresist", "")
+        ComboBox::from_id_salt("photoresist")
             .selected_text(if tool.invert { "Positive" } else { "Negative" })
             .show_ui(ui, |ui| {
                 ui.selectable_value(&mut tool.invert, false, "Negative");
@@ -141,7 +141,7 @@ fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
 }
 
 fn alignment(ui: &mut Ui, value: &mut Alignment) {
-    ComboBox::new("alignment", "")
+    ComboBox::from_id_salt("alignment")
         .selected_text(value.name())
         .show_ui(ui, |ui| {
             for alignment in Alignment::ALL {

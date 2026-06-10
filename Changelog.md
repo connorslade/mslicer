@@ -16,6 +16,7 @@
     rendered like when the window is not visible on some linux systems
 - Allow picking slice preview coordinate space (screen space or world space)
 - Automatic model layout
+- Slice preview view direction selector (lcd screen vs build plate)
 
 ## v0.7.0 &mdash; May 7th, 2026
 

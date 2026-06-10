@@ -306,7 +306,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
         let webhook = &mut app.config.remote_print.webhook;
         grid("webhook").show(ui, |ui| {
             ui.label("Event");
-            ComboBox::new("event", "")
+            ComboBox::from_id_salt("event")
                 .selected_text(["Never", "Print Completion"][webhook.enabled as usize])
                 .show_ui(ui, |ui| {
                     ui.selectable_value(&mut webhook.enabled, false, "Never");
@@ -315,7 +315,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
             ui.end_row();
 
             ui.label("Content Type");
-            ComboBox::new("content_type", "")
+            ComboBox::from_id_salt("content_type")
                 .selected_text(webhook.content_type.name())
                 .show_ui(ui, |ui| {
                     for content_type in ContentType::ALL {

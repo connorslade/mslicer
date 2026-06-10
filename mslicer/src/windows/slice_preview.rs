@@ -7,8 +7,8 @@ use egui::{
     style::HandleShape, text::LayoutJob,
 };
 use egui_phosphor::regular::{
-    CARET_DOWN, CARET_UP, CLOCK, CORNERS_IN, CROSSHAIR, DROP, FLOPPY_DISK_BACK, PAPER_PLANE_TILT,
-    VECTOR_TWO,
+    ARROW_U_UP_RIGHT, CARET_DOWN, CARET_UP, CLOCK, CORNERS_IN, CROSSHAIR, DROP, FLOPPY_DISK_BACK,
+    PAPER_PLANE_TILT, VECTOR_TWO,
 };
 use egui_wgpu::Callback;
 use image::RgbaImage;
@@ -17,7 +17,7 @@ use nalgebra::Vector2;
 use crate::{
     app::{
         App,
-        config::SlicePreviewCoordinateSpace,
+        config::{SlicePreviewCoordinateSpace, SlicePreviewView},
         slice_operation::{GenericSliceData, GenericSliceResult, ISLAND_COLOR, RasterSliceResult},
     },
     render::slice_preview::SlicePreviewRenderCallback,
@@ -174,7 +174,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                             }
 
                             ui.separator();
-                            ComboBox::new("coordinate_space", "")
+                            ComboBox::from_id_salt("coordinate_space")
                                 .selected_text(format!(
                                     "{VECTOR_TWO} {}",
                                     app.config.slice_preview_mode.name()
@@ -185,6 +185,21 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                                             &mut app.config.slice_preview_mode,
                                             *mode,
                                             mode.name(),
+                                        );
+                                    }
+                                });
+
+                            ComboBox::from_id_salt("view")
+                                .selected_text(format!(
+                                    "{ARROW_U_UP_RIGHT} {}",
+                                    app.config.slice_preview_view.name()
+                                ))
+                                .show_ui(ui, |ui| {
+                                    for view in SlicePreviewView::ALL {
+                                        ui.selectable_value(
+                                            &mut app.config.slice_preview_view,
+                                            *view,
+                                            view.name(),
                                         );
                                     }
                                 });
@@ -215,7 +230,9 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                             }
                         };
 
-                        slice_preview(state, ui, raster, platform, pixel_aspect);
+                        let flip =
+                            matches!(app.config.slice_preview_view, SlicePreviewView::Screen);
+                        slice_preview(state, ui, raster, platform, pixel_aspect, flip);
                     });
                 }
                 GenericSliceResult::Vector(_) => {
@@ -261,6 +278,7 @@ fn slice_preview(
     result: &mut RasterSliceResult,
     platform: Vector2<u32>,
     pixel_aspect: f32,
+    flip: bool,
 ) {
     ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
         layer_slider(state, ui, result);
@@ -321,6 +339,9 @@ fn slice_preview(
                     }
                 }
 
+                let mut scale = Vector2::repeat(state.preview_scale.powi(2));
+                flip.then(|| scale.y *= -1.0);
+
                 let callback = Callback::new_paint_callback(
                     rect,
                     SlicePreviewRenderCallback {
@@ -328,7 +349,7 @@ fn slice_preview(
                         offset: state.preview_offset,
                         aspect: rect.width() / rect.height(),
                         pixel_aspect,
-                        scale: state.preview_scale.powi(2),
+                        scale,
                         new_preview,
                     },
                 );

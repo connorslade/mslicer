@@ -30,6 +30,7 @@ pub struct Config {
     pub tasks: bool,
     pub default_slice_config: SliceConfig,
     pub slice_preview_mode: SlicePreviewCoordinateSpace,
+    pub slice_preview_view: SlicePreviewView,
 
     pub remote_print: RemotePrintConfig,
 
@@ -76,6 +77,13 @@ pub enum SlicePreviewCoordinateSpace {
     ScreenSpace,
     #[default]
     WorldSpace,
+}
+
+#[derive(Default, PartialEq, Eq, Copy, Clone, Serialize, Deserialize)]
+pub enum SlicePreviewView {
+    Screen,
+    #[default]
+    BuildPlate,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -159,6 +167,17 @@ impl SlicePreviewCoordinateSpace {
     }
 }
 
+impl SlicePreviewView {
+    pub const ALL: &[Self] = &[Self::Screen, Self::BuildPlate];
+
+    pub fn name(&self) -> &str {
+        match self {
+            SlicePreviewView::Screen => "Screen",
+            SlicePreviewView::BuildPlate => "Build Plate",
+        }
+    }
+}
+
 impl Default for Config {
     fn default() -> Self {
         Self {
@@ -167,6 +186,7 @@ impl Default for Config {
             overhang_visualization: (false, 30.0),
             default_slice_config: SliceConfig::default(),
             slice_preview_mode: SlicePreviewCoordinateSpace::WorldSpace,
+            slice_preview_view: SlicePreviewView::BuildPlate,
 
             recent_projects: Vec::new(),
             panels: None,

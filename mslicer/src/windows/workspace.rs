@@ -36,7 +36,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
         .num_columns(2)
         .show(ui, |ui| {
             ui.label("Theme");
-            ComboBox::new("theme", "")
+            ComboBox::from_id_salt("theme")
                 .selected_text(match app.config.theme {
                     Theme::Dark => "Dark",
                     Theme::Light => "Light",
@@ -52,7 +52,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                 ui.label(INFO)
                     .on_hover_text("This setting is really only intended for debugging.");
             });
-            ComboBox::new("render_style", "")
+            ComboBox::from_id_salt("render_style")
                 .selected_text(app.config.render_style.name())
                 .show_ui(ui, |ui| {
                     for style in RenderStyle::ALL {
@@ -62,7 +62,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
             ui.end_row();
 
             ui.label("Projection");
-            ComboBox::new("projection", "")
+            ComboBox::from_id_salt("projection")
                 .selected_text(app.config.projection.name())
                 .show_ui(ui, |ui| {
                     for camera in Projection::ALL {

@@ -21,9 +21,9 @@ const ANNOTATION_COLORS = array(
 struct Context {
     dimensions: vec2u,
     offset: vec2f,
+    scale: vec2f,
     aspect: f32, // width / height
     pixel_aspect: f32,
-    scale: f32,
 }
 
 struct VertexOutput {

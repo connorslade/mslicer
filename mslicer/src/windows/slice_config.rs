@@ -46,7 +46,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     grid("slice_config").show(ui, |ui| {
         ui.label("Slice Mode");
         let format = slice_config.mode;
-        ComboBox::new("slice_mode", "")
+        ComboBox::from_id_salt("slice_mode")
             .selected_text(format.name())
             .show_ui(ui, |ui| {
                 for format in SliceMode::ALL {
@@ -58,7 +58,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
         ui.label("Printer");
         ui.horizontal(|ui| {
             ui.style_mut().spacing.item_spacing.x = 4.0;
-            ComboBox::new("printer", "")
+            ComboBox::from_id_salt("printer")
                 .selected_text(match app.state.selected_printer {
                     0 => "Custom",
                     i => &app.config.printers[i - 1].name,
