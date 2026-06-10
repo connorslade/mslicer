@@ -35,7 +35,7 @@ impl AutoLayout {
 
         let progress = Progress::new();
         let handle = TaskThread::spawn(clone!([progress], move || {
-            auto_layout::AutoLayout::new(platform, models)
+            auto_layout::AutoLayoutNFP::new(platform, models)
                 .padding(padding)
                 .segment_steps(segment_steps)
                 .layout(progress)

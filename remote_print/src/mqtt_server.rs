@@ -121,7 +121,7 @@ impl MqttHandler for Mqtt {
             client.last_update.store(epoch(), Ordering::Relaxed);
 
             if let Some(callback) = &self.callback {
-                callback(&client);
+                callback(client);
             }
         } else if let Some(board_id) = packet.topic.strip_prefix("/sdcp/response/") {
             let json = serde_json::from_slice::<Value>(&packet.data)?;
