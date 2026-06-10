@@ -115,7 +115,7 @@ pub fn ui(app: &mut App, ctx: &Context) {
                         app.tasks.add(AutoLayout::new(
                             &app.project.slice_config,
                             &app.project.models,
-                            (10.0, 10.0),
+                            (2.0, 10.0),
                         ));
                     }
 

@@ -1,4 +1,4 @@
-use std::{cmp::Reverse, fs, iter};
+use std::{cmp::Reverse, f32::consts::TAU, fs, iter};
 
 use common::{geometry::convex_hull, progress::Progress};
 use itertools::Itertools;
@@ -51,25 +51,24 @@ impl AutoLayout {
 
     pub fn layout(mut self, progress: Progress) -> Vec<(u32, Vector2<f32>)> {
         progress.set_total(self.models.len() as _);
-
         let mut debug = Polygons::new();
-        let mut points = Vec::new();
 
         for i in 1..self.models.len() {
             progress.add_complete(1);
             let this = &self.models[i];
             let nfps = (self.models.iter().take(i))
                 .map(|x| non_fitting_polygon(x.hull.iter(), this.hull.iter()))
+                .map(|x| offset(&x, self.padding, 6))
                 .collect::<Vec<_>>();
 
             // pick one of the points that is outside all nfps.
-            let mut best = Vector2::repeat(f32::MAX);
+            let mut best = (Vector2::repeat(f32::MAX), f32::MAX);
             for j in 0..i {
                 let nfp = &nfps[j];
                 for (pa, pb) in nfp.iter().tuple_windows() {
                     let vector = pb - pa;
                     let norm = vector.normalize();
-                    let n = (vector.magnitude() * self.segment_steps) as usize;
+                    let n = (vector.magnitude() * self.segment_steps).ceil() as usize;
                     for k in 0..=n {
                         let p = pa + norm * (k as f32 / n as f32);
                         let valid = (nfps.iter().take(i).enumerate())
@@ -84,29 +83,25 @@ impl AutoLayout {
                                 });
 
                             let size = total_bounds.1 - total_bounds.0;
-                            (size <= self.platform_size
-                                && p.magnitude_squared() < best.magnitude_squared())
-                            .then(|| best = p);
+                            let objective = size.x.max(size.y);
+                            (size <= self.platform_size && objective < best.1)
+                                .then(|| best = (p, objective));
                         }
                     }
                 }
             }
 
-            if best != Vector2::repeat(f32::MAX) {
+            if best.1 != f32::MAX {
                 let model = &mut self.models[i];
-                model.hull.iter_mut().for_each(|x| *x = *x + best);
-                model.offset = best;
+                model.hull.iter_mut().for_each(|x| *x += best.0);
+                model.offset = best.0;
             } else {
                 println!("No placements found");
             }
         }
 
         for m in self.models.iter() {
-            for p in m.hull.iter() {
-                points.push(*p);
-            }
-            debug.trace(points.iter().map(|x| x.cast::<f64>()).collect(), None);
-            points.clear();
+            debug.trace(m.hull.iter().map(|x| x.cast::<f64>()).collect(), Some(1.0));
         }
 
         debug.circle(Vector2::zeros(), 0.5);
@@ -143,11 +138,18 @@ fn non_fitting_polygon<'a>(
     a: impl Iterator<Item = &'a Vector2<f32>>,
     b: impl Iterator<Item = &'a Vector2<f32>> + Clone,
 ) -> Vec<Vector2<f32>> {
-    let mut points = Vec::new();
-    for (i, j) in a.cartesian_product(b) {
-        points.push(*i - *j);
-    }
+    let points = a
+        .cartesian_product(b)
+        .map(|(i, j)| *i - *j)
+        .collect::<Vec<_>>();
+    convex_hull(&points).into_iter().copied().collect()
+}
 
+fn offset(points: &[Vector2<f32>], d: f32, n: usize) -> Vec<Vector2<f32>> {
+    let points = (points.iter())
+        .cartesian_product(disk(n, d).iter())
+        .map(|(i, j)| *i + *j)
+        .collect::<Vec<_>>();
     convex_hull(&points).into_iter().copied().collect()
 }
 
@@ -178,4 +180,13 @@ fn bounds(vertices: &[Vector2<f32>]) -> (Vector2<f32>, Vector2<f32>) {
     vertices.iter().fold(MAX_BOUNDS, |(min, max), v| {
         (min.zip_map(&v, f32::min), max.zip_map(&v, f32::max))
     })
+}
+
+fn disk(n: usize, r: f32) -> Vec<Vector2<f32>> {
+    (0..n)
+        .map(|i| {
+            let (y, x) = (i as f32 / n as f32 * TAU).sin_cos();
+            Vector2::new(x, y) * r
+        })
+        .collect()
 }

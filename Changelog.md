@@ -15,6 +15,7 @@
   - This fixes them not being sent when the ui isn't getting continuously
     rendered like when the window is not visible on some linux systems
 - Allow picking slice preview coordinate space (screen space or world space)
+- Automatic model layout
 
 ## v0.7.0 &mdash; May 7th, 2026
 
