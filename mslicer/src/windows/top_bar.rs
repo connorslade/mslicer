@@ -29,6 +29,7 @@ const QUIT_SHORTCUT: KeyboardShortcut = KeyboardShortcut::new(Modifiers::COMMAND
 const SLICE_SHORTCUT: KeyboardShortcut = KeyboardShortcut::new(Modifiers::COMMAND, Key::R);
 const UNDO_SHORTCUT: KeyboardShortcut = KeyboardShortcut::new(Modifiers::COMMAND, Key::Z);
 const REDO_SHORTCUT: KeyboardShortcut = KeyboardShortcut::new(Modifiers::COMMAND, Key::Y);
+const LAYOUT_SHORTCUT: KeyboardShortcut = KeyboardShortcut::new(Modifiers::COMMAND, Key::L);
 
 type ShortcutCallback = fn(&mut App, &Context);
 const SHORTCUTS: &[(KeyboardShortcut, ShortcutCallback)] = &[
@@ -42,6 +43,7 @@ const SHORTCUTS: &[(KeyboardShortcut, ShortcutCallback)] = &[
     (UNDO_SHORTCUT, |app, _| app.history().undo()),
     (REDO_SHORTCUT, |app, _| app.history().redo()),
     (SLICE_SHORTCUT, |app, _ctx| app.slice()),
+    (LAYOUT_SHORTCUT, |app, _ctx| quick_layout(app)),
 ];
 
 pub fn ui(app: &mut App, ctx: &Context) {
@@ -111,13 +113,7 @@ pub fn ui(app: &mut App, ctx: &Context) {
                 ui.menu_button(concatcp!(HAMMER, " Tools"), |ui| {
                     ui.set_width(150.0);
                     labeled_separator(ui, "Auto Layout");
-                    if ui.button("Quick Layout").clicked() {
-                        app.tasks.add(AutoLayout::new(
-                            &app.project.slice_config,
-                            &app.project.models,
-                            (2.0, 10.0),
-                        ));
-                    }
+                    menu_button((ui, app, ctx), SHORTCUTS[10], "Quick Layout");
 
                     labeled_separator(ui, "Generators");
                     (ui.button("Printed Circuit Board").clicked())
@@ -306,4 +302,12 @@ fn load(app: &mut App) {
 
 fn quit(ctx: &Context) {
     ctx.send_viewport_cmd(ViewportCommand::Close)
+}
+
+fn quick_layout(app: &mut App) {
+    app.tasks.add(AutoLayout::new(
+        &app.project.slice_config,
+        &app.project.models,
+        (2.0, 10.0),
+    ));
 }
