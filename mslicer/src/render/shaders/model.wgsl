@@ -43,14 +43,16 @@ fn frag(
    in: VertexOutput
 ) -> @location(0) vec4f {
     let normal = screen_normal(in.world_position);
+    let view_dir = normalize(context.camera_position - in.world_position);
 
+    let intensity = blinn_phong(normal, normalize(context.camera_position));
     switch context.render_style {
         case STYLE_NORMAL: {
-            return vec4f(normal, 1.0);
+            return vec4f((normal * 0.5 + 0.5) * intensity, 1.0);
         }
         case STYLE_RANDOM: {
             seed = in.vertex_index;
-            return vec4f(rand(), rand(), rand(), 1.0);
+            return vec4f(vec3f(rand(), rand(), rand()) * intensity, 1.0);
         }
         case STYLE_RENDERED: {
             var color = context.model_color;
@@ -61,7 +63,6 @@ fn frag(
             color = select(vec3f(.5), color, is_front);
             color = select(color, OOB_COLOR, outside_build_volume(in.world_position));
 
-            let intensity = blinn_phong(normal, normalize(context.camera_position));
             return vec4f(intensity * color, 1.0);
         }
         default: {
@@ -74,7 +75,7 @@ fn outside_build_volume(pos: vec3f) -> bool {
     let build = context.build_volume / 2.0;
     return pos.x < -build.x || pos.x > build.x
         || pos.y < -build.y || pos.y > build.y
-        || pos.z < -0.01 || pos.x > context.build_volume.z;
+        || pos.z < -0.01    || pos.z > context.build_volume.z;
 }
 
 var<private> seed: u32 = 0u;
