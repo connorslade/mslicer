@@ -73,7 +73,6 @@ impl AutoLayoutNFP {
                             let objective = size.x.max(size.y);
                             if size <= self.platform_size && objective < best.1 {
                                 best = (p, objective);
-                                bounds = total_bounds;
                             }
                         }
                     }
@@ -81,6 +80,7 @@ impl AutoLayoutNFP {
             }
 
             if best.1 != f32::MAX {
+                bounds = bounds + (this.bounds + best.0);
                 let model = &mut self.models[i];
                 model.hull.iter_mut().for_each(|x| *x += best.0);
                 model.offset = best.0;
@@ -117,7 +117,7 @@ fn non_fitting_polygon<'a>(
         .cartesian_product(b)
         .map(|(i, j)| *i - *j)
         .collect::<Vec<_>>();
-    convex_hull(&points).into_iter().copied().collect()
+    convex_hull(&points)
 }
 
 fn offset(points: &[Vector2<f32>], d: f32, n: usize) -> Vec<Vector2<f32>> {
@@ -125,14 +125,14 @@ fn offset(points: &[Vector2<f32>], d: f32, n: usize) -> Vec<Vector2<f32>> {
         .cartesian_product(disk(n, d).iter())
         .map(|(i, j)| *i + *j)
         .collect::<Vec<_>>();
-    convex_hull(&points).into_iter().copied().collect()
+    convex_hull(&points)
 }
 
 fn area(polygon: &[Vector2<f32>]) -> f32 {
     let mut j = polygon.len() - 1;
     let mut area = 0.0;
     for i in 0..polygon.len() {
-        area += (polygon[j].x + polygon[i].x) + (polygon[j].y - polygon[i].y);
+        area += (polygon[j].x + polygon[i].x) * (polygon[j].y - polygon[i].y);
         j = i;
     }
 

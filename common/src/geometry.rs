@@ -1,36 +1,36 @@
 use nalgebra::Vector2;
-use ordered_float::OrderedFloat;
 
-pub fn convex_hull(points: &[Vector2<f32>]) -> Vec<&Vector2<f32>> {
-    let first = points.iter().min_by_key(|p| OrderedFloat(p.x)).unwrap();
+// Andrew's monotone chain convex hull algorithm
+// Reference: https://en.wikibooks.org/wiki/Algorithm_Implementation/Geometry/Convex_hull/Monotone_chain
+pub fn convex_hull(points: &[Vector2<f32>]) -> Vec<Vector2<f32>> {
+    let mut points = points.to_vec();
+    points.sort_by(|a, b| a.x.total_cmp(&b.x).then_with(|| a.y.total_cmp(&b.y)));
 
-    let mut hull = vec![first];
-    let mut current = first;
+    let mut out = Vec::new();
 
-    loop {
-        let mut next = current;
-        for point in points {
-            if *point == *current {
-                continue;
-            }
-
-            if *next == *current || is_left_turn(current, next, point) {
-                next = point;
-            }
+    for i in 0..points.len() {
+        while out.len() > 2 && cross(out[out.len() - 2], out[out.len() - 1], points[i]) <= 0.0 {
+            out.pop();
         }
-
-        if *next == *first {
-            break;
-        }
-
-        hull.push(next);
-        current = next;
+        out.push(points[i]);
     }
 
-    hull
+    out.pop();
+    let lower = out.len();
+
+    for i in (0..points.len()).rev() {
+        while out.len() - lower >= 2
+            && cross(out[out.len() - 2], out[out.len() - 1], points[i]) <= 0.0
+        {
+            out.pop();
+        }
+        out.push(points[i]);
+    }
+
+    out.pop();
+    out
 }
 
-fn is_left_turn(a: &Vector2<f32>, b: &Vector2<f32>, c: &Vector2<f32>) -> bool {
-    let cross = (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
-    cross > 0.0 || (cross == 0.0 && (a - c).magnitude_squared() > (a - b).magnitude_squared())
+fn cross(a: Vector2<f32>, b: Vector2<f32>, o: Vector2<f32>) -> f32 {
+    (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x)
 }

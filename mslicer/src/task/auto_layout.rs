@@ -20,16 +20,11 @@ impl AutoLayout {
         models: &[Model],
         (padding, segment_steps): (f32, f32),
     ) -> Self {
-        let platform = slice_config
-            .platform_size
-            .xy()
-            .map(|x| x.get::<Milimeter>());
-        let models = models
-            .iter()
+        let platform = (slice_config.platform_size.xy()).map(|x| x.get::<Milimeter>());
+        let models = (models.iter().filter(|x| !x.hidden))
             .map(|x| {
                 let points = project_down(&x.mesh);
-                let hull = convex_hull(&points).into_iter().copied().collect();
-                auto_layout::Model::new(x.id, hull)
+                auto_layout::Model::new(x.id, convex_hull(&points))
             })
             .collect::<Vec<_>>();
 

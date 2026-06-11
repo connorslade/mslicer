@@ -10,12 +10,19 @@ pub struct Bounds2D {
 
 impl Bounds2D {
     pub const EMPTY: Self = Self {
-        min: Vector2::new(0.0, 0.0),
-        max: Vector2::new(0.0, 0.0),
+        min: Vector2::new(f32::MAX, f32::MAX),
+        max: Vector2::new(f32::MIN, f32::MIN),
     };
 
+    pub fn new_point(point: Vector2<f32>) -> Self {
+        Bounds2D {
+            min: point,
+            max: point,
+        }
+    }
+
     pub fn new_containing(points: &[Vector2<f32>]) -> Self {
-        points.iter().fold(Self::EMPTY, |a, v| a + *v)
+        (points.iter()).fold(Self::EMPTY, |a, v| a + Self::new_point(*v))
     }
 
     pub fn size(&self) -> Vector2<f32> {
