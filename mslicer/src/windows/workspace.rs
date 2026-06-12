@@ -1,6 +1,6 @@
 use const_format::concatcp;
-use egui::{ComboBox, Context, DragValue, Grid, Theme, Ui};
-use egui_phosphor::regular::{ARROW_COUNTER_CLOCKWISE, FOLDER, INFO};
+use egui::{CollapsingHeader, ComboBox, Context, DragValue, Grid, Theme, Ui, Widget};
+use egui_phosphor::regular::{ARROW_COUNTER_CLOCKWISE, ARROWS_CLOCKWISE, FOLDER, INFO};
 use tracing::error;
 
 use crate::{
@@ -8,6 +8,10 @@ use crate::{
     render::{camera::Projection, workspace::model::RenderStyle},
     ui::components::{dragger, vec2_dragger, vec3_dragger},
 };
+
+const SPACENAV_CONNECTED: &str = "Connected to Spacenav.";
+const SPACENAV_UNCONNECTED: &str =
+    "Failed to connect to Spacenav. Make sure the daemon is running and reconnect.";
 
 pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     ui.heading("Workspace");
@@ -107,6 +111,51 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                 ui.end_row();
             });
     });
+
+    CollapsingHeader::new("Spacenav")
+        .enabled(cfg!(target_os = "linux"))
+        .show(ui, |ui| {
+            if app.spacenav.is_connected() {
+                ui.label(SPACENAV_CONNECTED);
+            } else {
+                ui.label(SPACENAV_UNCONNECTED);
+                ui.add_space(8.0);
+                ui.button(concatcp!(ARROWS_CLOCKWISE, " Reconnect"))
+                    .clicked()
+                    .then(|| app.spacenav.try_connect());
+            }
+
+            ui.add_space(8.0);
+            Grid::new("spacenav")
+                .striped(true)
+                .num_columns(2)
+                .show(ui, |ui| {
+                    let dragger = |val: &mut f32, ui: &mut Ui| {
+                        DragValue::new(val)
+                            .custom_formatter(|v, _| format!("{:.0}%", v * 100.0))
+                            .ui(ui)
+                    };
+
+                    let config = &mut app.config.spacenav;
+
+                    ui.label("Overall Sensitivity");
+                    dragger(&mut config.gain, ui);
+                    ui.end_row();
+
+                    ui.label("Rotation Sensitivity");
+                    dragger(&mut config.rotation_gain, ui);
+                    ui.end_row();
+
+                    ui.label("Position Sensitivity");
+                    ui.horizontal(|ui| {
+                        dragger(&mut config.position_gain, ui);
+                        ui.take_available_width();
+                    });
+                    ui.end_row();
+                });
+        })
+        .header_response
+        .on_hover_text("Only supported on Linux systems at the moment.");
 
     ui.collapsing("Stats", |ui| {
         ui.label(format!(

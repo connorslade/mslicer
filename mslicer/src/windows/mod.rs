@@ -117,6 +117,7 @@ pub fn ui(app: &mut App, ctx: &Context) {
 fn viewport(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     let (rect, response) = ui.allocate_exact_size(ui.available_size(), Sense::click_and_drag());
     app.camera.handle_movement(&response, ui);
+    app.spacenav().handle_movement();
 
     let is_moving = response.dragged();
     let aspect = rect.width() / rect.height();

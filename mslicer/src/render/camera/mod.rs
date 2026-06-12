@@ -4,6 +4,8 @@ use egui::{PointerButton, Response, Ui};
 use nalgebra::{Matrix4, Vector2, Vector3};
 use serde::{Deserialize, Serialize};
 
+pub mod spacenav;
+
 const EPSILON: f32 = 1e-5;
 const NEAR: f32 = 0.1;
 const FAR: f32 = 10_000.0;

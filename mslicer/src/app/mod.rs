@@ -15,7 +15,11 @@ use crate::{
         slice_operation::SliceOperation,
     },
     project::Project,
-    render::{Gcx, camera::Camera, preview},
+    render::{
+        Gcx,
+        camera::{Camera, spacenav::SpaceNav},
+        preview,
+    },
     task::TaskManager,
     ui::{
         drag_and_drop,
@@ -45,6 +49,7 @@ pub struct App {
     pub slice_operation: Option<SliceOperation>,
 
     pub camera: Camera,
+    pub spacenav: SpaceNav,
     pub state: UiState,
     pub history: History,
 
@@ -73,6 +78,9 @@ impl App {
             .map(|x| x + 1)
             .unwrap_or_default();
 
+        let mut spacenav = SpaceNav::unconnected();
+        spacenav.try_connect();
+
         Self {
             render_state,
             panels: Panels::new(&mut config),
@@ -83,6 +91,7 @@ impl App {
             remote_print: RemotePrint::uninitialized(),
             slice_operation: None,
             camera: Camera::default(),
+            spacenav,
             state: UiState {
                 event_collector,
                 selected_printer,

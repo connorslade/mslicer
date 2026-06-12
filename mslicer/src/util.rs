@@ -21,10 +21,10 @@ macro_rules! app_ref_type {
     ($type:ident, $field:ident) => {
         concat_idents::concat_idents!(type_ref = $type, Ref {
             pub struct type_ref<'a> {
-                app: &'a mut App,
+                app: &'a mut $crate::app::App,
             }
 
-            impl App {
+            impl $crate::app::App {
                 #[inline(always)]
                 pub fn $field(&mut self) -> type_ref<'_> {
                     type_ref::new(self)
@@ -32,7 +32,7 @@ macro_rules! app_ref_type {
             }
 
             impl<'a> type_ref<'a> {
-                pub fn new(app: &'a mut App) -> Self {
+                pub fn new(app: &'a mut $crate::app::App) -> Self {
                     Self { app }
                 }
             }

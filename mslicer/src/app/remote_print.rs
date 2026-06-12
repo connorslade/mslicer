@@ -24,7 +24,7 @@ use remote_print::{
 };
 
 use crate::{
-    app::{App, config::Webhook},
+    app::config::Webhook,
     app_ref_type,
     task::Webhook as WebhookTask,
     ui::popup::{Popup, PopupIcon},

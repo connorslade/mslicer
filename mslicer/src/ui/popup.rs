@@ -7,9 +7,7 @@ use egui::{
 use egui_phosphor::regular::X;
 
 use crate::{
-    app::{
-        App, config::Config, is_slicing, remote_print::RemotePrint, slice_operation::SliceOperation,
-    },
+    app::{config::Config, is_slicing, remote_print::RemotePrint, slice_operation::SliceOperation},
     app_ref_type,
     project::Project,
     task::TaskManager,

@@ -36,9 +36,18 @@ pub struct Config {
 
     pub render_style: RenderStyle,
     pub projection: Projection,
+    pub spacenav: SpacenavConfig,
     pub show_normals: bool,
     pub max_buffer_size: u64,
     pub printers: Vec<PrinterDefaults>,
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+#[serde(default)]
+pub struct SpacenavConfig {
+    pub gain: f32,
+    pub rotation_gain: f32,
+    pub position_gain: f32,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -197,6 +206,7 @@ impl Default for Config {
 
             render_style: RenderStyle::Rendered,
             projection: Projection::Perspective,
+            spacenav: Default::default(),
             max_buffer_size: 512 << 20,
             show_normals: false,
             printers: vec![PrinterDefaults {
@@ -204,6 +214,16 @@ impl Default for Config {
                 resolution: Vector2::new(11_520, 5_120),
                 size: Vector3::new(218.88, 122.904, 260.0).map(Milimeters::new),
             }],
+        }
+    }
+}
+
+impl Default for SpacenavConfig {
+    fn default() -> Self {
+        Self {
+            gain: 1.0,
+            rotation_gain: 1.0,
+            position_gain: 1.0,
         }
     }
 }

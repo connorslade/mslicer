@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 
 use crate::{
-    app::{App, config::Config},
+    app::config::Config,
     app_ref_type,
     project::Project,
     ui::{popup::PopupManager, state::UiState},

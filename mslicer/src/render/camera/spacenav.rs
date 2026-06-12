@@ -1,0 +1,114 @@
+use std::{io::Read, os::unix::net::UnixStream};
+
+use common::serde::{Deserializer, SliceDeserializer};
+use nalgebra::Vector3;
+
+use crate::app_ref_type;
+
+const BASE_GAIN: f32 = 0.0005;
+
+pub struct SpaceNav {
+    stream: Option<UnixStream>,
+}
+
+app_ref_type!(SpaceNav, spacenav);
+
+#[derive(Debug)]
+pub enum Event {
+    Button {
+        id: i32,
+        press: bool,
+    },
+    Motion {
+        translation: Vector3<i32>,
+        rotation: Vector3<i32>,
+    },
+}
+
+impl SpaceNav {
+    pub fn unconnected() -> Self {
+        Self { stream: None }
+    }
+
+    pub fn try_connect(&mut self) {
+        self.stream = UnixStream::connect("/run/spnav.sock")
+            .and_then(|s| {
+                s.set_nonblocking(true)?;
+                Ok(s)
+            })
+            .ok();
+    }
+
+    pub fn is_connected(&self) -> bool {
+        self.stream.is_some()
+    }
+
+    pub fn poll(&mut self) -> Option<Event> {
+        let Some(stream) = &mut self.stream else {
+            return None;
+        };
+
+        let mut buffer = [0; 8 * 4];
+        match stream.read_exact(&mut buffer) {
+            Ok(()) => {}
+            Err(_) => return None,
+        }
+
+        let mut des = SliceDeserializer::new(&buffer);
+        let event = des.read_i32_le();
+        match event {
+            // motion
+            0 => {
+                let translation =
+                    Vector3::new(des.read_i32_le(), des.read_i32_le(), des.read_i32_le());
+                let rotation =
+                    Vector3::new(des.read_i32_le(), des.read_i32_le(), des.read_i32_le());
+                Some(Event::Motion {
+                    translation,
+                    rotation,
+                })
+            }
+            // button press
+            1 => Some(Event::Button {
+                id: des.read_i32_le(),
+                press: true,
+            }),
+            // button release
+            2 => Some(Event::Button {
+                id: des.read_i32_le(),
+                press: false,
+            }),
+            _ => None,
+        }
+    }
+}
+
+impl SpaceNavRef<'_> {
+    pub fn handle_movement(&mut self) {
+        let Some(event) = self.poll() else { return };
+
+        match event {
+            Event::Button { .. } => {}
+            Event::Motion {
+                translation,
+                rotation,
+            } => {
+                let config = &self.app.config.spacenav;
+                let p_gain = BASE_GAIN * 10.0 * config.gain * config.position_gain;
+                let r_gain = BASE_GAIN * 0.5 * config.gain * config.rotation_gain;
+
+                let camera = &mut self.app.camera;
+                camera.angle.x += rotation.y as f32 * r_gain;
+                camera.angle.y += rotation.x as f32 * r_gain;
+                camera.distance += translation.y as f32 * p_gain;
+
+                let camera_pos = camera.position(camera.distance) + camera.target;
+                let forward = (camera.target - camera_pos).normalize();
+                let right = forward.cross(&camera.up()).normalize();
+
+                camera.target += right * translation.x as f32 * p_gain;
+                camera.target += forward * translation.z as f32 * p_gain
+            }
+        }
+    }
+}

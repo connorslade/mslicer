@@ -25,10 +25,16 @@ pub trait Deserializer {
     fn read_u8(&mut self) -> u8 { self.read_array::<1>()[0] }
     fn read_u16_be(&mut self) -> u16 { u16::from_be_bytes(self.read_array()) }
     fn read_u16_le(&mut self) -> u16 { u16::from_le_bytes(self.read_array()) }
+    fn read_i16_be(&mut self) -> i16 { i16::from_be_bytes(self.read_array()) }
+    fn read_i16_le(&mut self) -> i16 { i16::from_le_bytes(self.read_array()) }
     fn read_u32_be(&mut self) -> u32 { u32::from_be_bytes(self.read_array()) }
     fn read_u32_le(&mut self) -> u32 { u32::from_le_bytes(self.read_array()) }
+    fn read_i32_be(&mut self) -> i32 { i32::from_be_bytes(self.read_array()) }
+    fn read_i32_le(&mut self) -> i32 { i32::from_le_bytes(self.read_array()) }
     fn read_u64_be(&mut self) -> u64 { u64::from_be_bytes(self.read_array()) }
     fn read_u64_le(&mut self) -> u64 { u64::from_le_bytes(self.read_array()) }
+    fn read_i64_be(&mut self) -> i64 { i64::from_be_bytes(self.read_array()) }
+    fn read_i64_le(&mut self) -> i64 { i64::from_le_bytes(self.read_array()) }
     fn read_f32_be(&mut self) -> f32 { f32::from_be_bytes(self.read_array()) }
     fn read_f32_le(&mut self) -> f32 { f32::from_le_bytes(self.read_array()) }
     fn read_f64_be(&mut self) -> f64 { f64::from_be_bytes(self.read_array()) }
