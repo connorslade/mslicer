@@ -1,4 +1,6 @@
-use std::{io::Read, os::unix::net::UnixStream};
+use std::io::Read;
+#[cfg(unix)]
+use std::os::unix::net::UnixStream;
 
 use common::serde::{Deserializer, SliceDeserializer};
 use nalgebra::Vector3;
@@ -8,7 +10,10 @@ use crate::app_ref_type;
 const BASE_GAIN: f32 = 0.0005;
 
 pub struct SpaceNav {
+    #[cfg(unix)]
     stream: Option<UnixStream>,
+    #[cfg(not(unix))]
+    stream: Option<()>,
 }
 
 app_ref_type!(SpaceNav, spacenav);
@@ -31,18 +36,22 @@ impl SpaceNav {
     }
 
     pub fn try_connect(&mut self) {
-        self.stream = UnixStream::connect("/run/spnav.sock")
-            .and_then(|s| {
-                s.set_nonblocking(true)?;
-                Ok(s)
-            })
-            .ok();
+        #[cfg(unix)]
+        {
+            self.stream = UnixStream::connect("/run/spnav.sock")
+                .and_then(|s| {
+                    s.set_nonblocking(true)?;
+                    Ok(s)
+                })
+                .ok();
+        }
     }
 
     pub fn is_connected(&self) -> bool {
         self.stream.is_some()
     }
 
+    #[cfg(unix)]
     pub fn poll(&mut self) -> Option<Event> {
         let Some(stream) = &mut self.stream else {
             return None;
@@ -81,6 +90,11 @@ impl SpaceNav {
             _ => None,
         }
     }
+
+    #[cfg(not(unix))]
+    fn poll(&mut self) -> Option<Event> {
+        None
+    }
 }
 
 impl SpaceNavRef<'_> {
@@ -88,7 +102,9 @@ impl SpaceNavRef<'_> {
         let Some(event) = self.poll() else { return };
 
         match event {
-            Event::Button { .. } => {}
+            Event::Button { id: 0, press: true } => {
+                self.app.slice();
+            }
             Event::Motion {
                 translation,
                 rotation,
@@ -98,8 +114,8 @@ impl SpaceNavRef<'_> {
                 let r_gain = BASE_GAIN * 0.5 * config.gain * config.rotation_gain;
 
                 let camera = &mut self.app.camera;
-                camera.angle.x += rotation.y as f32 * r_gain;
-                camera.angle.y += rotation.x as f32 * r_gain;
+                camera.angle.x -= rotation.y as f32 * r_gain;
+                camera.angle.y -= rotation.x as f32 * r_gain;
                 camera.distance += translation.y as f32 * p_gain;
 
                 let camera_pos = camera.position(camera.distance) + camera.target;
@@ -109,6 +125,7 @@ impl SpaceNavRef<'_> {
                 camera.target += right * translation.x as f32 * p_gain;
                 camera.target += forward * translation.z as f32 * p_gain
             }
+            _ => {}
         }
     }
 }

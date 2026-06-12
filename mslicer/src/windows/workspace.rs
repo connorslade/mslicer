@@ -113,7 +113,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     });
 
     CollapsingHeader::new("Spacenav")
-        .enabled(cfg!(target_os = "linux"))
+        .enabled(cfg!(unix))
         .show(ui, |ui| {
             if app.spacenav.is_connected() {
                 ui.label(SPACENAV_CONNECTED);
