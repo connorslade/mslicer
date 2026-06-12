@@ -98,8 +98,10 @@ impl SpaceNav {
 }
 
 impl SpaceNavRef<'_> {
-    pub fn handle_movement(&mut self) {
-        let Some(event) = self.poll() else { return };
+    pub fn handle_movement(&mut self) -> bool {
+        let Some(event) = self.poll() else {
+            return false;
+        };
 
         match event {
             Event::Button { id: 0, press: true } => {
@@ -123,9 +125,13 @@ impl SpaceNavRef<'_> {
                 let right = forward.cross(&camera.up()).normalize();
 
                 camera.target += right * translation.x as f32 * p_gain;
-                camera.target += forward * translation.z as f32 * p_gain
+                camera.target += forward * translation.z as f32 * p_gain;
+
+                return translation != Vector3::zeros() || rotation != Vector3::zeros();
             }
             _ => {}
-        }
+        };
+
+        false
     }
 }

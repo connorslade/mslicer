@@ -36,6 +36,8 @@ pub struct UiState {
 
     // tools
     pub tools: Tools,
+
+    pub move_timeout: u32,
 }
 
 #[derive(Default)]

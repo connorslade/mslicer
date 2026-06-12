@@ -117,9 +117,16 @@ pub fn ui(app: &mut App, ctx: &Context) {
 fn viewport(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     let (rect, response) = ui.allocate_exact_size(ui.available_size(), Sense::click_and_drag());
     app.camera.handle_movement(&response, ui);
-    app.spacenav().handle_movement();
 
-    let is_moving = response.dragged();
+    let mut is_moving = app.spacenav().handle_movement();
+    if is_moving {
+        app.state.move_timeout = ((0.025 / app.fps.frame_time()).round() as u32).min(60);
+    } else if app.state.move_timeout > 0 {
+        app.state.move_timeout -= 1;
+        is_moving = true;
+    }
+    is_moving |= response.dragged();
+
     let aspect = rect.width() / rect.height();
     let uv = (response.hover_pos().unwrap_or_default() - rect.min) / rect.size();
     app.state.workspace = WorkspaceHover::new(is_moving, aspect, uv);
