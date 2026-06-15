@@ -12,12 +12,10 @@ use common::{
     units::{CubicMilimeters, Milimeters},
 };
 use nalgebra::Vector3;
+use tools::supports::overhangs::detect_point_overhangs;
 use wgpu::{Buffer, Device};
 
-use slicer::{
-    geometry::bvh::Bvh, half_edge::HalfEdgeMesh, mesh::Mesh,
-    supports::overhangs::detect_point_overhangs,
-};
+use slicer::{geometry::bvh::Bvh, half_edge::HalfEdgeMesh, mesh::Mesh};
 
 use crate::render::util::gpu_mesh_buffers;
 

@@ -12,3 +12,4 @@ itertools.workspace = true
 nalgebra.workspace = true
 ordered-float.workspace = true
 svgwriter.workspace = true
+tracing.workspace = true

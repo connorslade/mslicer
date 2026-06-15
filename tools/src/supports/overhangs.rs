@@ -1,8 +1,7 @@
 use std::collections::HashSet;
 
 use nalgebra::Vector3;
-
-use crate::{
+use slicer::{
     half_edge::{HalfEdge, HalfEdgeMesh},
     mesh::Mesh,
 };

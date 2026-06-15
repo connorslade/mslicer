@@ -137,14 +137,14 @@
 - [x] Fix scanning for printers never going away on linux
 - [x] Fix crash when slicing without ever seeing workspace
 - [x] Fix model scale being applied after rotation
-- [ ] Fix slicing with geometry extending past y=0
+- [x] Fix slicing with geometry extending past y=0
 - [x] Add saved projects to recent
 - [ ] 'Do you want to save this project' popup when loading a project into a non-empty workspace
 - [ ] Optimize elephant foot post processing
-- [ ] Add exposure remapping post processing
+- [x] Add exposure remapping post processing
 - [x] Move the .file call into the async task
 - [x] Replace slice format with a picker in the save dialog, use .ctb for remote send
 - [x] Refactor/cleanup slicing stuff
 - [x] Optimize tools with new slicer/encoder separation
-- [ ] Move remote print print completion check to its own thread / event based
+- [x] Move remote print print completion check to its own thread / event based
 - [ ] Don't crash when interacting with remote print after the printer has disconnected

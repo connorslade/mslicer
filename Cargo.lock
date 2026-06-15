@@ -5350,6 +5350,7 @@ dependencies = [
  "ordered-float",
  "slicer",
  "svgwriter",
+ "tracing",
 ]
 
 [[package]]

@@ -1,8 +1,6 @@
 use egui::{CollapsingHeader, Context, Ui};
-use slicer::{
-    builder::MeshBuilder,
-    supports::{SupportGenerator, route_support},
-};
+use slicer::builder::MeshBuilder;
+use tools::supports::{SupportGenerator, route_support};
 
 use crate::{
     app::App,

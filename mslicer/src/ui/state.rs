@@ -1,7 +1,8 @@
 use egui::Vec2;
 use egui_tracing::EventCollector;
 use nalgebra::{Vector2, Vector3};
-use slicer::{mesh::Mesh, supports::SupportConfig};
+use slicer::mesh::Mesh;
+use tools::supports::SupportConfig;
 
 use crate::windows::tools::Tools;
 

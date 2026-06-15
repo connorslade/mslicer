@@ -2,20 +2,20 @@ use std::f32::consts::PI;
 
 use nalgebra::Vector3;
 
-use crate::{
-    builder::MeshBuilder,
-    geometry::{Ray, bvh::Bvh, primitive, triangle::triangle_intersection},
-    half_edge::HalfEdgeMesh,
-    mesh::Mesh,
-    supports::overhangs::detect_point_overhangs,
-};
-
 pub mod overhangs;
 
 use common::{geometry::convex_hull, units::Milimeters};
 use nalgebra::Vector2;
 use ordered_float::OrderedFloat;
+use slicer::{
+    builder::MeshBuilder,
+    geometry::{Ray, bvh::Bvh, primitive, triangle::triangle_intersection},
+    half_edge::HalfEdgeMesh,
+    mesh::Mesh,
+};
 use tracing::info;
+
+use crate::supports::overhangs::detect_point_overhangs;
 
 pub struct SupportGenerator<'a> {
     config: &'a SupportConfig,
