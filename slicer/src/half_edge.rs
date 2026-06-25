@@ -8,6 +8,7 @@ use crate::mesh::MeshInner;
 #[derive(Clone)]
 pub struct HalfEdgeMesh {
     half_edges: Vec<HalfEdge>,
+    edge_map: HashMap<(u32, u32), u32>,
 }
 
 #[derive(Debug, Clone)]
@@ -52,7 +53,10 @@ impl HalfEdgeMesh {
             edge.twin = edge_map.get(&(edge.vertex, edge.origin_vertex)).copied();
         }
 
-        Self { half_edges }
+        Self {
+            half_edges,
+            edge_map,
+        }
     }
 
     pub fn half_edges(&self) -> &[HalfEdge] {
@@ -93,5 +97,11 @@ impl HalfEdgeMesh {
 
     pub fn get_edge(&self, idx: u32) -> &HalfEdge {
         &self.half_edges[idx as usize]
+    }
+
+    pub fn edge_for(&self, edge: (u32, u32)) -> Option<&HalfEdge> {
+        self.edge_map
+            .get(&edge)
+            .map(|x| &self.half_edges[*x as usize])
     }
 }

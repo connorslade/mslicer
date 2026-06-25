@@ -1,21 +1,12 @@
 use std::f32::consts::PI;
 
-use nalgebra::Vector3;
-
-pub mod overhangs;
-
+use common::misc::lerp;
 use common::{geometry::convex_hull, units::Milimeters};
 use nalgebra::Vector2;
-use ordered_float::OrderedFloat;
-use slicer::{
-    builder::MeshBuilder,
-    geometry::{Ray, bvh::Bvh, primitive, triangle::triangle_intersection},
-    half_edge::HalfEdgeMesh,
-    mesh::Mesh,
-};
-use tracing::info;
+use nalgebra::Vector3;
+use slicer::{builder::MeshBuilder, geometry::bvh::Bvh, half_edge::HalfEdgeMesh, mesh::Mesh};
 
-use crate::supports::overhangs::detect_point_overhangs;
+pub mod detect;
 
 pub struct SupportGenerator<'a> {
     config: &'a SupportConfig,
@@ -56,18 +47,30 @@ impl<'a> SupportGenerator<'a> {
     ) -> Option<Mesh> {
         let mut overhangs = Vec::new();
 
-        let point_overhangs = detect_point_overhangs(mesh, half_edge, |_, pos, _| pos);
-        overhangs.extend_from_slice(&point_overhangs);
+        let verts = mesh.vertices();
+        for (a, b) in self.overhanging_edges(mesh, half_edge) {
+            let a = mesh.transform(&verts[a as usize]);
+            let b = mesh.transform(&verts[b as usize]);
 
-        let face_overhangs = self.detect_face_overhangs(mesh);
-        overhangs.extend_from_slice(&face_overhangs);
+            let n = ((a - b).magnitude() * 0.1) as usize;
+            for i in 0..=n {
+                let t = i as f32 / n as f32;
+                overhangs.push(lerp(a, b, t));
+            }
+        }
 
-        info!(
-            "Found {} overhangs {{ face: {}, point: {} }}",
-            overhangs.len(),
-            face_overhangs.len(),
-            point_overhangs.len()
-        );
+        // let point_overhangs = detect_point_overhangs(mesh, half_edge, |_, pos, _| pos);
+        // overhangs.extend_from_slice(&point_overhangs);
+
+        // let face_overhangs = self.detect_face_overhangs(mesh);
+        // overhangs.extend_from_slice(&face_overhangs);
+
+        // info!(
+        //     "Found {} overhangs {{ face: {}, point: {} }}",
+        //     overhangs.len(),
+        //     face_overhangs.len(),
+        //     point_overhangs.len()
+        // );
 
         let mut builder = MeshBuilder::new();
 
@@ -75,56 +78,6 @@ impl<'a> SupportGenerator<'a> {
         self.build_raft_mesh(&raft_points, &mut builder);
 
         (!builder.is_empty()).then(|| builder.build())
-    }
-
-    fn detect_face_overhangs(&self, mesh: &Mesh) -> Vec<Vector3<f32>> {
-        let mut overhangs = Vec::new();
-        let mut out = Vec::new();
-
-        for face in 0..mesh.face_count() {
-            let normal = mesh.transform_normal(&mesh.normal(face));
-
-            let angle = normal.angle(&-Vector3::z());
-            if angle > self.config.max_angle {
-                continue;
-            }
-
-            overhangs.push(face);
-        }
-
-        let bed_size = self.bed_size.map(|x| x.raw());
-        let x_count = (bed_size.x / self.config.face_support_spacing) as i32;
-        let y_count = (bed_size.y / self.config.face_support_spacing) as i32;
-
-        for x in 0..x_count {
-            for y in 0..y_count {
-                let pos = Vector2::new(
-                    x as f32 * self.config.face_support_spacing - bed_size.x / 2.0,
-                    y as f32 * self.config.face_support_spacing - bed_size.y / 2.0,
-                );
-
-                let mut intersections = Vec::new();
-                for &idx in overhangs.iter() {
-                    let ray = Ray {
-                        origin: mesh.inv_transform(&pos.to_homogeneous()),
-                        direction: mesh.inv_transform_normal(&Vector3::z()),
-                    };
-                    let face = (mesh.face_verts_raw(idx), mesh.normal(idx));
-                    if let Some(mut intersection) =
-                        triangle_intersection::<primitive::Ray>(face, ray)
-                    {
-                        intersection.1 = mesh.transform(&intersection.1);
-                        intersections.push(intersection.1);
-                    }
-                }
-
-                intersections.sort_by_key(|x| OrderedFloat(x.z));
-                intersections.dedup_by(|a, b| (a.z - b.z).abs() < 0.1);
-                out.extend(intersections);
-            }
-        }
-
-        out
     }
 
     fn build_support_mesh(
@@ -200,20 +153,6 @@ impl<'a> SupportGenerator<'a> {
     }
 }
 
-impl Default for SupportConfig {
-    fn default() -> Self {
-        Self {
-            support_radius: 1.0,
-            tip_radius: 0.2,
-            raft_height: 1.0,
-            raft_offset: 1.0,
-            precision: 10,
-            max_angle: 30.0,
-            face_support_spacing: 5.0,
-        }
-    }
-}
-
 pub fn route_support(mesh: &Mesh, bvh: &Bvh, position: Vector3<f32>) -> Option<[Vector3<f32>; 3]> {
     let mut point = position;
     let mut momentum = Vector3::zeros();
@@ -232,4 +171,18 @@ pub fn route_support(mesh: &Mesh, bvh: &Bvh, position: Vector3<f32>) -> Option<[
     }
 
     None
+}
+
+impl Default for SupportConfig {
+    fn default() -> Self {
+        Self {
+            support_radius: 1.0,
+            tip_radius: 0.2,
+            raft_height: 1.0,
+            raft_offset: 1.0,
+            precision: 10,
+            max_angle: 30.0,
+            face_support_spacing: 5.0,
+        }
+    }
 }
