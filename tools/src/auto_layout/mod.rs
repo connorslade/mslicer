@@ -19,6 +19,12 @@ pub struct Model {
     offset: Vector2<f32>,
 }
 
+#[derive(Copy, Clone, PartialEq, Eq)]
+pub enum Objective {
+    Area,
+    Perimeter,
+}
+
 impl Model {
     pub fn new(id: u32, origin: Vector3<f32>, hull: Vec<Vector2<f32>>) -> Self {
         Self {
@@ -27,6 +33,25 @@ impl Model {
             bounds: Bounds2D::new_containing(&hull),
             hull,
             offset: Vector2::zeros(),
+        }
+    }
+}
+
+impl Objective {
+    pub const ALL: [Self; 2] = [Self::Area, Self::Perimeter];
+
+    pub fn name(&self) -> &str {
+        match self {
+            Objective::Area => "Area",
+            Objective::Perimeter => "Perimeter",
+        }
+    }
+
+    pub fn eval(&self, bounds: Bounds2D) -> f32 {
+        let size = bounds.size();
+        match self {
+            Objective::Area => size.x * size.y,
+            Objective::Perimeter => size.x + size.y,
         }
     }
 }

@@ -1,9 +1,9 @@
 use common::{geometry::convex_hull, units::Milimeter};
-use egui::{Button, CollapsingHeader, Color32, DragValue, Ui, Widget, vec2};
+use egui::{Button, CollapsingHeader, Color32, ComboBox, DragValue, Ui, Widget, vec2};
 use egui_plot::{Line, Plot};
 use nalgebra::Vector2;
 use slicer::mesh::Mesh;
-use tools::auto_layout;
+use tools::auto_layout::{self, Objective};
 
 use crate::{
     app::App,
@@ -28,6 +28,20 @@ fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
 
     ui.add_enabled_ui(tool.running.is_none(), |ui| {
         grid("").show(ui, |ui| {
+            ui.label("Objective");
+            ComboBox::from_id_salt("objective")
+                .selected_text(tool.config.objective.name())
+                .show_ui(ui, |ui| {
+                    for objective in Objective::ALL {
+                        ui.selectable_value(
+                            &mut tool.config.objective,
+                            objective,
+                            objective.name(),
+                        );
+                    }
+                });
+            ui.end_row();
+
             ui.label("Padding");
             DragValue::new(&mut tool.config.padding)
                 .suffix(" mm")

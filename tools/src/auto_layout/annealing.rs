@@ -12,7 +12,7 @@ use nalgebra::{Vector2, Vector3};
 use parking_lot::Mutex;
 use rand::{Rng, rng};
 
-use crate::auto_layout::{AutoLayoutNFP, Model};
+use crate::auto_layout::{AutoLayoutNFP, Model, Objective};
 
 pub struct AutoLayoutAnnealing {
     pub config: Config,
@@ -22,6 +22,7 @@ pub struct AutoLayoutAnnealing {
 
 #[derive(Clone)]
 pub struct Config {
+    pub objective: Objective,
     pub padding: f32,
     pub segment_steps: f32,
     pub platform_size: Vector2<f32>,
@@ -55,6 +56,7 @@ impl AutoLayoutAnnealing {
 
         let score = move |models| {
             AutoLayoutNFP::new_unsorted(config.platform_size, models)
+                .objective(config.objective)
                 .padding(config.padding)
                 .segment_steps(config.segment_steps)
                 .layout(true, Progress::new())
@@ -127,6 +129,7 @@ impl Default for AutoLayoutAnnealing {
     fn default() -> Self {
         Self {
             config: Config {
+                objective: Objective::Area,
                 padding: 2.0,
                 segment_steps: 10.0,
                 platform_size: Default::default(),

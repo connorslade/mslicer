@@ -5,9 +5,10 @@ use itertools::Itertools;
 use nalgebra::{Vector2, Vector3};
 use ordered_float::OrderedFloat;
 
-use crate::auto_layout::{Model, area, bounds::Bounds2D, intersect_lines};
+use crate::auto_layout::{Model, Objective, area, bounds::Bounds2D, intersect_lines};
 
 pub struct AutoLayoutNFP {
+    objective: Objective,
     padding: f32,
     segment_steps: f32,
 
@@ -18,18 +19,14 @@ pub struct AutoLayoutNFP {
 impl AutoLayoutNFP {
     pub fn new(platform_size: Vector2<f32>, mut models: Vec<Model>) -> Self {
         models.sort_by_cached_key(|x| Reverse(OrderedFloat(area(&x.hull))));
-        Self {
-            padding: 0.0,
-            segment_steps: 0.0,
-            platform_size,
-            models,
-        }
+        Self::new_unsorted(platform_size, models)
     }
 
     pub fn new_unsorted(platform_size: Vector2<f32>, models: Vec<Model>) -> Self {
         Self {
-            padding: 0.0,
-            segment_steps: 0.0,
+            objective: Objective::Area,
+            padding: 2.0,
+            segment_steps: 10.0,
             platform_size,
             models,
         }
@@ -44,6 +41,10 @@ impl AutoLayoutNFP {
             segment_steps,
             ..self
         }
+    }
+
+    pub fn objective(self, objective: Objective) -> Self {
+        Self { objective, ..self }
     }
 
     // Strict mode will abort if not all models can be fit, which is needed when
@@ -80,7 +81,7 @@ impl AutoLayoutNFP {
                             let total_bounds = bounds.include_bound(this.bounds.offset(p));
 
                             let size = total_bounds.size();
-                            let objective = size.x * size.y;
+                            let objective = self.objective.eval(total_bounds);
                             if (size.x <= self.platform_size.x && size.y <= self.platform_size.y)
                                 && objective < best.1
                             {
@@ -116,7 +117,7 @@ impl AutoLayoutNFP {
             .map(|x| (x.id, x.origin + (x.offset + global_offset).to_homogeneous()))
             .collect();
 
-        Some((size.x * size.y, models))
+        Some((self.objective.eval(bounds), models))
     }
 }
 
