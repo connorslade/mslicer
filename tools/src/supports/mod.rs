@@ -47,17 +47,19 @@ impl<'a> SupportGenerator<'a> {
     ) -> Option<Mesh> {
         let mut overhangs = Vec::new();
 
-        let verts = mesh.vertices();
-        for (a, b) in self.overhanging_edges(mesh, half_edge) {
-            let a = mesh.transform(&verts[a as usize]);
-            let b = mesh.transform(&verts[b as usize]);
+        self.overhanging_edges(mesh, half_edge);
 
-            let n = ((a - b).magnitude() * 0.1) as usize;
-            for i in 0..=n {
-                let t = i as f32 / n as f32;
-                overhangs.push(lerp(a, b, t));
-            }
-        }
+        // let verts = mesh.vertices();
+        // for (a, b) in self.overhanging_edges(mesh, half_edge) {
+        //     let a = mesh.transform(&verts[a as usize]);
+        //     let b = mesh.transform(&verts[b as usize]);
+
+        //     let n = ((a - b).magnitude() * 0.1) as usize;
+        //     for i in 0..=n {
+        //         let t = i as f32 / n as f32;
+        //         overhangs.push(lerp(a, b, t));
+        //     }
+        // }
 
         // let point_overhangs = detect_point_overhangs(mesh, half_edge, |_, pos, _| pos);
         // overhangs.extend_from_slice(&point_overhangs);

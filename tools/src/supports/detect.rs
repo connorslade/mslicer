@@ -1,5 +1,6 @@
 use std::collections::HashSet;
 
+use common::container::Clusters;
 use nalgebra::{Vector2, Vector3};
 use ordered_float::OrderedFloat;
 use slicer::{
@@ -64,12 +65,18 @@ impl<'a> SupportGenerator<'a> {
 
     // Find edges that border two faces with different angles, at least one of
     // the faces must be overhanging.
-    pub fn overhanging_edges(&self, mesh: &Mesh, half_edge: &HalfEdgeMesh) -> Vec<(u32, u32)> {
-        let mut out = Vec::new();
+    pub fn overhanging_edges(&self, mesh: &Mesh, half_edge: &HalfEdgeMesh) -> Vec<Vec<u32>> {
+        let mut cluster = Clusters::default();
         let mut seen = HashSet::new();
         let overhangs = self.overhanging_faces(mesh); // todo: don't call twice
 
+        println!("overhanging faces: {}", overhangs.len());
+
+        let mut i = 0;
         for (face, normal) in overhangs.iter() {
+            println!("{:.1}%", 100.0 * i as f32 / overhangs.len() as f32);
+            i += 1;
+
             let verts = mesh.face(*face);
             for i in 0..3 {
                 let Some(edge) = half_edge.edge_for((verts[i], verts[(i + 1) % 3])) else {
@@ -88,13 +95,16 @@ impl<'a> SupportGenerator<'a> {
                         edge.origin_vertex.max(edge.vertex),
                     ))
                 {
-                    out.push((edge.origin_vertex, edge.vertex));
+                    cluster.mark_adjacency(edge.origin_vertex, edge.vertex);
                 }
             }
         }
 
-        println!("found {} edges", out.len());
-        out
+        println!("found {} edge runs", cluster.cluster_count());
+        cluster
+            .clusters()
+            .map(|x| x.1.iter().copied().collect::<Vec<_>>())
+            .collect()
     }
 
     pub fn detect_face_overhangs(&self, mesh: &Mesh) -> Vec<Vector3<f32>> {
