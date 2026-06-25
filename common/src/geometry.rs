@@ -9,7 +9,7 @@ pub fn convex_hull(points: &[Vector2<f32>]) -> Vec<Vector2<f32>> {
     let mut out = Vec::new();
 
     for i in 0..points.len() {
-        while out.len() > 2 && cross(out[out.len() - 2], out[out.len() - 1], points[i]) <= 0.0 {
+        while out.len() >= 2 && cross(out[out.len() - 2], out[out.len() - 1], points[i]) <= 0.0 {
             out.pop();
         }
         out.push(points[i]);
@@ -31,6 +31,6 @@ pub fn convex_hull(points: &[Vector2<f32>]) -> Vec<Vector2<f32>> {
     out
 }
 
-fn cross(a: Vector2<f32>, b: Vector2<f32>, o: Vector2<f32>) -> f32 {
+fn cross(o: Vector2<f32>, a: Vector2<f32>, b: Vector2<f32>) -> f32 {
     (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x)
 }
