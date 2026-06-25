@@ -114,6 +114,9 @@ pub fn ui(app: &mut App, ctx: &Context) {
                     ui.set_width(150.0);
                     labeled_separator(ui, "Auto Layout");
                     menu_button((ui, app, ctx), SHORTCUTS[10], "Quick Layout");
+                    ui.button("Advanced Layout")
+                        .clicked()
+                        .then(|| tools::auto_layout::open(app));
 
                     labeled_separator(ui, "Generators");
                     (ui.button("Printed Circuit Board").clicked())

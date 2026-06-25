@@ -16,6 +16,8 @@
     rendered like when the window is not visible on some linux systems
 - Allow picking slice preview coordinate space (screen space or world space)
 - Automatic model layout
+  - Quick layout &mdash; Single pass when models don't have to be packed densely
+  - Advanced layout &mdash; Uses simulated annealing to find better layouts
 - Slice preview view direction selector (lcd screen vs build plate)
 - Support for Spacenav input (3Dconnexion 3D input device)
 

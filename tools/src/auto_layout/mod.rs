@@ -5,10 +5,12 @@ use nalgebra::{Vector2, Vector3};
 
 use crate::auto_layout::bounds::Bounds2D;
 
+mod annealing;
 mod bounds;
 mod nfp;
-pub use self::nfp::AutoLayoutNFP;
+pub use self::{annealing::AutoLayoutAnnealing, nfp::AutoLayoutNFP};
 
+#[derive(Clone)]
 pub struct Model {
     id: u32,
     origin: Vector3<f32>,
@@ -39,4 +41,15 @@ fn intersect_lines(start: Vector2<f32>, lines: &[Vector2<f32>]) -> usize {
     }
 
     count
+}
+
+fn area(polygon: &[Vector2<f32>]) -> f32 {
+    let mut j = polygon.len() - 1;
+    let mut area = 0.0;
+    for i in 0..polygon.len() {
+        area += (polygon[j].x + polygon[i].x) * (polygon[j].y - polygon[i].y);
+        j = i;
+    }
+
+    area.abs() / 2.0
 }

@@ -1,4 +1,4 @@
-use std::{iter::Sum, ops::Add};
+use std::iter::Sum;
 
 use nalgebra::Vector2;
 
@@ -22,7 +22,26 @@ impl Bounds2D {
     }
 
     pub fn new_containing(points: &[Vector2<f32>]) -> Self {
-        (points.iter()).fold(Self::EMPTY, |a, v| a + Self::new_point(*v))
+        (points.iter()).fold(Self::EMPTY, |a, v| a.include_bound(Self::new_point(*v)))
+    }
+
+    pub fn include_bound(self, other: Self) -> Self {
+        Self {
+            min: self.min.zip_map(&other.min, f32::min),
+            max: self.max.zip_map(&other.max, f32::max),
+        }
+    }
+
+    pub fn include_bound_mut(&mut self, other: Self) {
+        self.min = self.min.zip_map(&other.min, f32::min);
+        self.max = self.max.zip_map(&other.max, f32::max);
+    }
+
+    pub fn offset(self, offset: Vector2<f32>) -> Self {
+        Self {
+            min: self.min + offset,
+            max: self.max + offset,
+        }
     }
 
     pub fn size(&self) -> Vector2<f32> {
@@ -30,35 +49,10 @@ impl Bounds2D {
     }
 }
 
-impl Add<Bounds2D> for Bounds2D {
-    type Output = Bounds2D;
-
-    fn add(self, rhs: Bounds2D) -> Self::Output {
-        Self {
-            min: self.min.zip_map(&rhs.min, f32::min),
-            max: self.max.zip_map(&rhs.max, f32::max),
-        }
-    }
-}
-
-impl Add<Vector2<f32>> for Bounds2D {
-    type Output = Bounds2D;
-
-    fn add(self, rhs: Vector2<f32>) -> Self::Output {
-        Self {
-            min: self.min + rhs,
-            max: self.max + rhs,
-        }
-    }
-}
-
 impl Sum for Bounds2D {
     fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
         let mut acc = Self::EMPTY;
-        for bound in iter {
-            acc = acc + bound;
-        }
-
+        iter.for_each(|bound| acc.include_bound_mut(bound));
         acc
     }
 }

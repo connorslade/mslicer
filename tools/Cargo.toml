@@ -11,5 +11,7 @@ gerber_parser.workspace = true
 itertools.workspace = true
 nalgebra.workspace = true
 ordered-float.workspace = true
+parking_lot.workspace = true
+rand.workspace = true
 svgwriter.workspace = true
 tracing.workspace = true

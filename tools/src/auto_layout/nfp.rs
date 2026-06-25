@@ -1,14 +1,11 @@
-use std::{cmp::Reverse, f32::consts::TAU, fs};
+use std::{cmp::Reverse, f32::consts::TAU};
 
 use common::{geometry::convex_hull, progress::Progress};
 use itertools::Itertools;
 use nalgebra::{Vector2, Vector3};
 use ordered_float::OrderedFloat;
 
-use crate::{
-    auto_layout::{Model, bounds::Bounds2D, intersect_lines},
-    printed_circuit_board::polygons::Polygons,
-};
+use crate::auto_layout::{Model, area, bounds::Bounds2D, intersect_lines};
 
 pub struct AutoLayoutNFP {
     padding: f32,
@@ -29,6 +26,15 @@ impl AutoLayoutNFP {
         }
     }
 
+    pub fn new_unsorted(platform_size: Vector2<f32>, models: Vec<Model>) -> Self {
+        Self {
+            padding: 0.0,
+            segment_steps: 0.0,
+            platform_size,
+            models,
+        }
+    }
+
     pub fn padding(self, padding: f32) -> Self {
         Self { padding, ..self }
     }
@@ -40,9 +46,14 @@ impl AutoLayoutNFP {
         }
     }
 
-    pub fn layout(mut self, progress: Progress) -> Vec<(u32, Vector3<f32>)> {
+    // Strict mode will abort if not all models can be fit, which is needed when
+    // using simulated annealing on top of this.
+    pub fn layout(
+        mut self,
+        strict: bool,
+        progress: Progress,
+    ) -> Option<(f32, Vec<(u32, Vector3<f32>)>)> {
         progress.set_total(self.models.len() as _);
-        let mut debug = Polygons::new();
 
         let mut bounds = Bounds2D::EMPTY;
         for i in 1..self.models.len() {
@@ -66,12 +77,13 @@ impl AutoLayoutNFP {
                         let valid = (nfps.iter().take(i).enumerate())
                             .all(|(i, x)| i == j || intersect_lines(p, x) & 1 == 0);
                         if valid {
-                            let new_bounds = this.bounds + p;
-                            let total_bounds = bounds + new_bounds;
+                            let total_bounds = bounds.include_bound(this.bounds.offset(p));
 
                             let size = total_bounds.size();
-                            let objective = size.x.max(size.y);
-                            if size <= self.platform_size && objective < best.1 {
+                            let objective = size.x * size.y;
+                            if (size.x <= self.platform_size.x && size.y <= self.platform_size.y)
+                                && objective < best.1
+                            {
                                 best = (p, objective);
                             }
                         }
@@ -80,32 +92,31 @@ impl AutoLayoutNFP {
             }
 
             if best.1 != f32::MAX {
-                bounds = bounds + (this.bounds + best.0);
+                bounds = bounds.include_bound(this.bounds.offset(best.0));
                 let model = &mut self.models[i];
                 model.hull.iter_mut().for_each(|x| *x += best.0);
                 model.offset = best.0;
-            } else {
-                println!("No placements found");
+            } else if strict {
+                return None;
             }
         }
 
-        for m in self.models.iter() {
-            debug.trace(m.hull.iter().map(|x| x.cast::<f64>()).collect(), Some(1.0));
+        let bounds = (self.models.iter())
+            .map(|x| x.bounds.offset(x.offset))
+            .sum::<Bounds2D>();
+        let size = bounds.size();
+        if strict && (size.x > self.platform_size.x || size.y > self.platform_size.y) {
+            return None;
         }
 
-        debug.circle(Vector2::zeros(), 0.5);
-        fs::write("debug.svg", debug.svg()).unwrap();
-
-        let bounds = (self.models.iter())
-            .map(|x| x.bounds + x.offset)
-            .sum::<Bounds2D>();
         let global_offset = -(bounds.min + bounds.size() / 2.0);
 
         progress.set_finished();
-        self.models
-            .into_iter()
+        let models = (self.models.into_iter())
             .map(|x| (x.id, x.origin + (x.offset + global_offset).to_homogeneous()))
-            .collect()
+            .collect();
+
+        Some((size.x * size.y, models))
     }
 }
 
@@ -126,17 +137,6 @@ fn offset(points: &[Vector2<f32>], d: f32, n: usize) -> Vec<Vector2<f32>> {
         .map(|(i, j)| *i + *j)
         .collect::<Vec<_>>();
     convex_hull(&points)
-}
-
-fn area(polygon: &[Vector2<f32>]) -> f32 {
-    let mut j = polygon.len() - 1;
-    let mut area = 0.0;
-    for i in 0..polygon.len() {
-        area += (polygon[j].x + polygon[i].x) * (polygon[j].y - polygon[i].y);
-        j = i;
-    }
-
-    area.abs() / 2.0
 }
 
 fn disk(n: usize, r: f32) -> Vec<Vector2<f32>> {

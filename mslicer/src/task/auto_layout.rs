@@ -33,7 +33,9 @@ impl AutoLayout {
             auto_layout::AutoLayoutNFP::new(platform, models)
                 .padding(padding)
                 .segment_steps(segment_steps)
-                .layout(progress)
+                .layout(false, progress)
+                .unwrap()
+                .1
         }));
 
         Self { handle, progress }

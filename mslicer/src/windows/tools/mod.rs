@@ -1,8 +1,9 @@
 use tools::{
-    exposure_test::ExposureTest, internal_exposure_test::InternalExposureTest,
-    printed_circuit_board::PrintedCircuitBoard,
+    auto_layout::AutoLayoutAnnealing, exposure_test::ExposureTest,
+    internal_exposure_test::InternalExposureTest, printed_circuit_board::PrintedCircuitBoard,
 };
 
+pub mod auto_layout;
 pub mod exposure_test;
 pub mod internal_exposure_test;
 pub mod printed_circuit_board;
@@ -12,6 +13,7 @@ pub struct Tools {
     exposure_test: ExposureTest,
     internal_exposure_test: InternalExposureTest,
     printed_circuit_board: PrintedCircuitBoard,
+    advanced_layout: AutoLayoutAnnealing,
 }
 
 // i couldn't get lifetimes working to do this with a function... so
