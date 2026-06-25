@@ -1,7 +1,7 @@
 use std::iter;
 
 use itertools::Itertools;
-use nalgebra::Vector2;
+use nalgebra::{Vector2, Vector3};
 
 use crate::auto_layout::bounds::Bounds2D;
 
@@ -11,15 +11,17 @@ pub use self::nfp::AutoLayoutNFP;
 
 pub struct Model {
     id: u32,
+    origin: Vector3<f32>,
     bounds: Bounds2D,
     hull: Vec<Vector2<f32>>,
     offset: Vector2<f32>,
 }
 
 impl Model {
-    pub fn new(id: u32, hull: Vec<Vector2<f32>>) -> Self {
+    pub fn new(id: u32, origin: Vector3<f32>, hull: Vec<Vector2<f32>>) -> Self {
         Self {
             id,
+            origin,
             bounds: Bounds2D::new_containing(&hull),
             hull,
             offset: Vector2::zeros(),

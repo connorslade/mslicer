@@ -2,7 +2,7 @@ use std::{cmp::Reverse, f32::consts::TAU, fs};
 
 use common::{geometry::convex_hull, progress::Progress};
 use itertools::Itertools;
-use nalgebra::Vector2;
+use nalgebra::{Vector2, Vector3};
 use ordered_float::OrderedFloat;
 
 use crate::{
@@ -40,7 +40,7 @@ impl AutoLayoutNFP {
         }
     }
 
-    pub fn layout(mut self, progress: Progress) -> Vec<(u32, Vector2<f32>)> {
+    pub fn layout(mut self, progress: Progress) -> Vec<(u32, Vector3<f32>)> {
         progress.set_total(self.models.len() as _);
         let mut debug = Polygons::new();
 
@@ -104,7 +104,7 @@ impl AutoLayoutNFP {
         progress.set_finished();
         self.models
             .into_iter()
-            .map(|x| (x.id, x.offset + global_offset))
+            .map(|x| (x.id, x.origin + (x.offset + global_offset).to_homogeneous()))
             .collect()
     }
 }

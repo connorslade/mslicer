@@ -1,6 +1,6 @@
 use clone_macro::clone;
 use common::{geometry::convex_hull, progress::Progress, slice::SliceConfig, units::Milimeter};
-use nalgebra::Vector2;
+use nalgebra::{Vector2, Vector3};
 use slicer::mesh::Mesh;
 use tools::auto_layout;
 
@@ -10,7 +10,7 @@ use crate::{
 };
 
 pub struct AutoLayout {
-    handle: TaskThread<Vec<(u32, Vector2<f32>)>>,
+    handle: TaskThread<Vec<(u32, Vector3<f32>)>>,
     progress: Progress,
 }
 
@@ -24,7 +24,7 @@ impl AutoLayout {
         let models = (models.iter().filter(|x| !x.hidden))
             .map(|x| {
                 let points = project_down(&x.mesh);
-                auto_layout::Model::new(x.id, convex_hull(&points))
+                auto_layout::Model::new(x.id, x.mesh.position(), convex_hull(&points))
             })
             .collect::<Vec<_>>();
 
@@ -45,10 +45,9 @@ impl Task for AutoLayout {
         self.handle
             .poll(app, "Failed to Layout Models")
             .into_poll_result(|x| {
-                for (model, offset) in x.iter() {
+                for (model, new_pos) in x.iter() {
                     if let Some(model) = app.project.models.iter_mut().find(|x| x.id == *model) {
-                        let new_pos = model.mesh.position() + offset.to_homogeneous();
-                        model.mesh.set_position(new_pos);
+                        model.mesh.set_position(*new_pos);
                     }
                 }
 
