@@ -1,9 +1,11 @@
+use std::{iter, sync::atomic::Ordering};
+
 use common::{geometry::convex_hull, units::Milimeter};
 use egui::{Button, CollapsingHeader, Color32, ComboBox, DragValue, Ui, Widget, vec2};
 use egui_plot::{Line, Plot};
 use nalgebra::Vector2;
 use slicer::mesh::Mesh;
-use tools::auto_layout::{self, Objective};
+use tools::auto_layout::{self, Objective, Rotation};
 
 use crate::{
     app::App,
@@ -25,10 +27,11 @@ fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
     ui.add_space(8.0);
 
     let tool = &mut app.state.tools.advanced_layout;
+    let edit = tool.running.is_none();
 
-    ui.add_enabled_ui(tool.running.is_none(), |ui| {
-        grid("").show(ui, |ui| {
-            ui.label("Objective");
+    grid("").show(ui, |ui| {
+        ui.label("Objective");
+        ui.add_enabled_ui(edit, |ui| {
             ComboBox::from_id_salt("objective")
                 .selected_text(tool.config.objective.name())
                 .show_ui(ui, |ui| {
@@ -40,56 +43,56 @@ fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
                         );
                     }
                 });
-            ui.end_row();
-
-            ui.label("Padding");
-            DragValue::new(&mut tool.config.padding)
-                .suffix(" mm")
-                .ui(ui);
-            ui.end_row();
-
-            ui.label("Segment Steps");
-            DragValue::new(&mut tool.config.segment_steps).ui(ui);
-            ui.end_row();
-
-            ui.label("Rotation Step");
-            ui.horizontal(|ui| {
-                DragValue::new(&mut 0.0)
-                    .suffix("°")
-                    .speed(5.0)
-                    .range(5.0..=180.0)
-                    .ui(ui);
-                ui.take_available_width();
-            });
-            ui.end_row();
         });
+        ui.end_row();
+
+        ui.label("Rotation");
+        ui.add_enabled_ui(edit, |ui| {
+            ComboBox::from_id_salt("rotation")
+                .selected_text(tool.config.rotation.name())
+                .show_ui(ui, |ui| {
+                    for rotation in Rotation::ALL {
+                        ui.selectable_value(&mut tool.config.rotation, rotation, rotation.name());
+                    }
+                });
+        });
+        ui.end_row();
+
+        ui.label("Padding");
+        ui.add_enabled(edit, DragValue::new(&mut tool.config.padding).suffix(" mm"));
+        ui.end_row();
+
+        ui.label("Segment Steps");
+        ui.horizontal(|ui| {
+            ui.add_enabled(edit, DragValue::new(&mut tool.config.segment_steps));
+            ui.take_available_width();
+        });
+        ui.end_row();
     });
 
     ui.add_space(8.0);
     CollapsingHeader::new("Annealing")
         .default_open(true)
         .show(ui, |ui| {
-            ui.add_enabled_ui(tool.running.is_none(), |ui| {
-                grid("annealing").show(ui, |ui| {
-                    ui.label("Start Temperature");
-                    DragValue::new(&mut tool.config.start_temp).ui(ui);
-                    ui.end_row();
+            grid("annealing").show(ui, |ui| {
+                ui.label("Start Temperature");
+                ui.add_enabled(edit, DragValue::new(&mut tool.config.start_temp));
+                ui.end_row();
 
-                    ui.label("End Temperature");
-                    DragValue::new(&mut tool.config.end_temp).ui(ui);
-                    ui.end_row();
+                ui.label("End Temperature");
+                ui.add_enabled(edit, DragValue::new(&mut tool.config.end_temp));
+                ui.end_row();
 
-                    ui.label("Iterations");
-                    DragValue::new(&mut tool.config.iters).ui(ui);
-                    ui.end_row();
+                ui.label("Iterations");
+                ui.add_enabled(edit, DragValue::new(&mut tool.config.iters));
+                ui.end_row();
 
-                    ui.label("Cooling");
-                    ui.horizontal(|ui| {
-                        DragValue::new(&mut tool.config.cooling).ui(ui);
-                        ui.take_available_width();
-                    });
-                    ui.end_row();
+                ui.label("Cooling");
+                ui.horizontal(|ui| {
+                    ui.add_enabled(edit, DragValue::new(&mut tool.config.cooling));
+                    ui.take_available_width();
                 });
+                ui.end_row();
             });
         });
 
@@ -99,33 +102,36 @@ fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
             .default_open(true)
             .show(ui, |ui| {
                 Plot::new("score_history")
+                    .allow_drag(false)
+                    .allow_zoom(false)
+                    .allow_scroll(false)
+                    .allow_boxed_zoom(false)
+                    .show_axes([true, false])
                     .width(ui.available_width())
                     .view_aspect(2.0)
                     .show(ui, |plot| {
                         let history = running.history.lock();
-                        let points = (history.iter().enumerate())
-                            .map(|(i, x)| [i as f64, *x as f64])
+                        let last = (
+                            running.iteration.load(Ordering::Relaxed),
+                            history.last().map(|x| x.1).unwrap_or_default(),
+                        );
+
+                        let points = (history.iter())
+                            .chain(iter::once(&last))
+                            .map(|(x, y)| [*x as f64, y.log2() as f64])
                             .collect::<Vec<_>>();
-
-                        let mut best = Vec::new();
-                        let mut best_val = f32::MAX;
-                        for (i, &point) in history.iter().enumerate() {
-                            if point < best_val {
-                                best_val = point;
-                                best.push([i as f64, point as f64]);
-                            }
-                        }
-                        best.push([history.len().saturating_sub(1) as f64, best_val as f64]);
-
                         plot.add(Line::new("", points).color(Color32::WHITE));
-                        plot.add(Line::new("", best).color(Color32::RED));
                     });
             });
 
         while let Ok(result) = running.rx.try_recv() {
-            for (model, new_pos) in result.iter() {
-                if let Some(model) = app.project.models.iter_mut().find(|x| x.id == *model) {
-                    model.mesh.set_position(*new_pos);
+            for placement in result.iter() {
+                if let Some(model) =
+                    (app.project.models.iter_mut()).find(|x| x.id == placement.model)
+                {
+                    let new_rotation = model.mesh.rotation().xy().push(placement.rotation);
+                    model.mesh.set_position(placement.position);
+                    model.mesh.set_rotation(new_rotation);
                 }
             }
         }
@@ -148,7 +154,12 @@ fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
                 let models = (app.project.models.iter().filter(|x| !x.hidden))
                     .map(|x| {
                         let points = project_down(&x.mesh);
-                        auto_layout::Model::new(x.id, x.mesh.position(), convex_hull(&points))
+                        auto_layout::Model::new(
+                            x.id,
+                            x.mesh.position(),
+                            x.mesh.rotation().z,
+                            convex_hull(&points),
+                        )
                     })
                     .collect::<Vec<_>>();
 

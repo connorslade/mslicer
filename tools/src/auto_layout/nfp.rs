@@ -2,10 +2,11 @@ use std::{cmp::Reverse, f32::consts::TAU};
 
 use common::{geometry::convex_hull, progress::Progress};
 use itertools::Itertools;
-use nalgebra::{Vector2, Vector3};
+use nalgebra::Vector2;
 use ordered_float::OrderedFloat;
+use tracing::warn;
 
-use crate::auto_layout::{Model, Objective, area, bounds::Bounds2D, intersect_lines};
+use crate::auto_layout::{Model, Objective, Placement, area, bounds::Bounds2D, intersect_lines};
 
 pub struct AutoLayoutNFP {
     objective: Objective,
@@ -49,11 +50,7 @@ impl AutoLayoutNFP {
 
     // Strict mode will abort if not all models can be fit, which is needed when
     // using simulated annealing on top of this.
-    pub fn layout(
-        mut self,
-        strict: bool,
-        progress: Progress,
-    ) -> Option<(f32, Vec<(u32, Vector3<f32>)>)> {
+    pub fn layout(mut self, progress: Progress) -> Option<(f32, Vec<Placement>)> {
         progress.set_total(self.models.len() as _);
 
         let mut bounds = Bounds2D::EMPTY;
@@ -80,13 +77,8 @@ impl AutoLayoutNFP {
                         if valid {
                             let total_bounds = bounds.include_bound(this.bounds.offset(p));
 
-                            let size = total_bounds.size();
-                            let objective = self.objective.eval(total_bounds);
-                            if (size.x <= self.platform_size.x && size.y <= self.platform_size.y)
-                                && objective < best.1
-                            {
-                                best = (p, objective);
-                            }
+                            let objective = self.objective.eval(self.platform_size, total_bounds);
+                            (objective < best.1).then(|| best = (p, objective));
                         }
                     }
                 }
@@ -97,27 +89,26 @@ impl AutoLayoutNFP {
                 let model = &mut self.models[i];
                 model.hull.iter_mut().for_each(|x| *x += best.0);
                 model.offset = best.0;
-            } else if strict {
-                return None;
+            } else {
+                warn!("No placement found");
             }
         }
 
         let bounds = (self.models.iter())
             .map(|x| x.bounds.offset(x.offset))
             .sum::<Bounds2D>();
-        let size = bounds.size();
-        if strict && (size.x > self.platform_size.x || size.y > self.platform_size.y) {
-            return None;
-        }
-
         let global_offset = -(bounds.min + bounds.size() / 2.0);
 
         progress.set_finished();
         let models = (self.models.into_iter())
-            .map(|x| (x.id, x.origin + (x.offset + global_offset).to_homogeneous()))
+            .map(|x| Placement {
+                model: x.id,
+                position: x.origin + (x.offset + global_offset).to_homogeneous(),
+                rotation: x.base_rotation + x.rotation,
+            })
             .collect();
 
-        Some((self.objective.eval(bounds), models))
+        Some((self.objective.eval(self.platform_size, bounds), models))
     }
 }
 

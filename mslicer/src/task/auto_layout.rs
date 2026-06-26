@@ -1,8 +1,8 @@
 use clone_macro::clone;
 use common::{geometry::convex_hull, progress::Progress, slice::SliceConfig, units::Milimeter};
-use nalgebra::{Vector2, Vector3};
+use nalgebra::Vector2;
 use slicer::mesh::Mesh;
-use tools::auto_layout;
+use tools::auto_layout::{self, Placement};
 
 use crate::{
     project::model::Model,
@@ -10,7 +10,7 @@ use crate::{
 };
 
 pub struct AutoLayout {
-    handle: TaskThread<Vec<(u32, Vector3<f32>)>>,
+    handle: TaskThread<Vec<Placement>>,
     progress: Progress,
 }
 
@@ -24,7 +24,12 @@ impl AutoLayout {
         let models = (models.iter().filter(|x| !x.hidden))
             .map(|x| {
                 let points = project_down(&x.mesh);
-                auto_layout::Model::new(x.id, x.mesh.position(), convex_hull(&points))
+                auto_layout::Model::new(
+                    x.id,
+                    x.mesh.position(),
+                    x.mesh.rotation().z,
+                    convex_hull(&points),
+                )
             })
             .collect::<Vec<_>>();
 
@@ -33,7 +38,7 @@ impl AutoLayout {
             auto_layout::AutoLayoutNFP::new(platform, models)
                 .padding(padding)
                 .segment_steps(segment_steps)
-                .layout(false, progress)
+                .layout(progress)
                 .unwrap()
                 .1
         }));
@@ -47,9 +52,11 @@ impl Task for AutoLayout {
         self.handle
             .poll(app, "Failed to Layout Models")
             .into_poll_result(|x| {
-                for (model, new_pos) in x.iter() {
-                    if let Some(model) = app.project.models.iter_mut().find(|x| x.id == *model) {
-                        model.mesh.set_position(*new_pos);
+                for placement in x.iter() {
+                    if let Some(model) =
+                        (app.project.models.iter_mut()).find(|x| x.id == placement.model)
+                    {
+                        model.mesh.set_position(*&placement.position);
                     }
                 }
 

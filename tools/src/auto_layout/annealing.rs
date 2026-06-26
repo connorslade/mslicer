@@ -1,18 +1,20 @@
 use std::{
+    f32::consts::{PI, TAU},
     mem,
     sync::{
         Arc,
+        atomic::{AtomicU64, Ordering},
         mpsc::{self, Receiver},
     },
     thread,
 };
 
 use common::progress::Progress;
-use nalgebra::{Vector2, Vector3};
+use nalgebra::Vector2;
 use parking_lot::Mutex;
-use rand::{Rng, rng};
+use rand::{Rng, rng, rngs::ThreadRng};
 
-use crate::auto_layout::{AutoLayoutNFP, Model, Objective};
+use crate::auto_layout::{AutoLayoutNFP, Model, Objective, Placement};
 
 pub struct AutoLayoutAnnealing {
     pub config: Config,
@@ -23,6 +25,7 @@ pub struct AutoLayoutAnnealing {
 #[derive(Clone)]
 pub struct Config {
     pub objective: Objective,
+    pub rotation: Rotation,
     pub padding: f32,
     pub segment_steps: f32,
     pub platform_size: Vector2<f32>,
@@ -33,9 +36,18 @@ pub struct Config {
     pub iters: u32,
 }
 
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub enum Rotation {
+    Disabled,
+    Cardinal,
+    Intercardinal,
+    Continuous,
+}
+
 pub struct Running {
-    pub rx: Receiver<Vec<(u32, Vector3<f32>)>>,
-    pub history: Arc<Mutex<Vec<f32>>>,
+    pub rx: Receiver<Vec<Placement>>,
+    pub history: Arc<Mutex<Vec<(u64, f32)>>>,
+    pub iteration: Arc<AtomicU64>,
     stop: mpsc::SyncSender<()>,
 }
 
@@ -45,9 +57,11 @@ impl AutoLayoutAnnealing {
         let (stop_tx, stop_rx) = mpsc::sync_channel(1);
 
         let history = Arc::new(Mutex::new(Vec::new()));
+        let iteration = Arc::new(AtomicU64::new(0));
         self.running = Some(Running {
             rx,
             history: history.clone(),
+            iteration: iteration.clone(),
             stop: stop_tx,
         });
 
@@ -59,7 +73,7 @@ impl AutoLayoutAnnealing {
                 .objective(config.objective)
                 .padding(config.padding)
                 .segment_steps(config.segment_steps)
-                .layout(true, Progress::new())
+                .layout(Progress::new())
         };
 
         thread::spawn(move || {
@@ -68,9 +82,10 @@ impl AutoLayoutAnnealing {
                 score(models.to_vec()).unwrap_or_else(|| (f32::MAX, Vec::new()));
             let mut global_best = f32::MAX;
 
+            let mut i = 0;
             while temp > config.end_temp && stop_rx.try_recv().is_err() {
                 for _ in 0..config.iters {
-                    let iter_models = perturb(&models);
+                    let iter_models = perturb(config.rotation, &models);
 
                     let Some((iter_score, result)) = score(iter_models.clone()) else {
                         continue;
@@ -79,8 +94,8 @@ impl AutoLayoutAnnealing {
                     let delta = iter_score - best_score;
 
                     if delta < 0.0 || rng().random::<f32>() < (-delta / temp).exp() {
-                        history.lock().push(iter_score);
                         if iter_score < global_best {
+                            history.lock().push((i, iter_score));
                             global_best = best_score;
                             let _ = tx.send(result.clone());
                         }
@@ -89,6 +104,9 @@ impl AutoLayoutAnnealing {
                         best_score = iter_score;
                         best = result;
                     }
+
+                    i += 1;
+                    iteration.store(i, Ordering::Relaxed);
                 }
                 temp *= config.cooling;
             }
@@ -104,20 +122,48 @@ impl AutoLayoutAnnealing {
     }
 }
 
-fn perturb(models: &[Model]) -> Vec<Model> {
+impl Rotation {
+    pub const ALL: [Self; 4] = [
+        Self::Disabled,
+        Self::Cardinal,
+        Self::Intercardinal,
+        Self::Continuous,
+    ];
+
+    pub fn name(&self) -> &str {
+        match self {
+            Rotation::Disabled => "Disabled",
+            Rotation::Cardinal => "Cardinal (90°)",
+            Rotation::Intercardinal => "Intercardinal (45°)",
+            Rotation::Continuous => "Continuous",
+        }
+    }
+
+    pub fn random(&self, rng: &mut ThreadRng) -> f32 {
+        match self {
+            Rotation::Disabled => 0.0,
+            Rotation::Cardinal => PI / 2.0 * rng.random_range(0..=4) as f32,
+            Rotation::Intercardinal => PI / 4.0 * rng.random_range(0..=8) as f32,
+            Rotation::Continuous => rng.random::<f32>() * TAU,
+        }
+    }
+}
+
+fn perturb(rotation: Rotation, models: &[Model]) -> Vec<Model> {
     let mut out = models.to_vec();
 
     let mut rng = rng();
     let range = 0..models.len();
 
-    match rng.random_range(0..2) {
+    match rng.random_range(0..=(1 + (!matches!(rotation, Rotation::Disabled)) as u8)) {
         0 => out.swap(rng.random_range(range.clone()), rng.random_range(range)),
         1 => {
             let i = rng.random_range(range);
             (i + 1 < models.len()).then(|| out.swap(i, i + 1));
         }
         2 => {
-            // todo: rotation
+            let i = rng.random_range(range);
+            out[i].rotate(rotation.random(&mut rng));
         }
         _ => unreachable!(),
     }
@@ -130,6 +176,7 @@ impl Default for AutoLayoutAnnealing {
         Self {
             config: Config {
                 objective: Objective::Area,
+                rotation: Rotation::Disabled,
                 padding: 2.0,
                 segment_steps: 10.0,
                 platform_size: Default::default(),
