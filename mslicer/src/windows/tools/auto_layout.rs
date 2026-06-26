@@ -1,9 +1,11 @@
-use std::{iter, sync::atomic::Ordering};
+use std::{cmp::Reverse, iter, sync::atomic::Ordering};
 
 use common::{geometry::convex_hull, units::Milimeter};
-use egui::{Button, CollapsingHeader, Color32, ComboBox, DragValue, Ui, Widget, vec2};
+use egui::{
+    Button, CollapsingHeader, Color32, ComboBox, DragValue, Ui, Widget, emath::OrderedFloat, vec2,
+};
 use egui_plot::{Line, Plot};
-use nalgebra::Rotation3;
+use nalgebra::{Rotation3, Vector2};
 use tools::auto_layout::{self, CacheEntry, Hull, LayoutCache, Objective, Placement, Rotation};
 
 use crate::{
@@ -177,6 +179,7 @@ pub fn layout_cache(padding: f32, models: &[Model]) -> (LayoutCache, Vec<auto_la
         });
     }
 
+    out.sort_by_cached_key(|x| Reverse(OrderedFloat(area(&cache.hull(&x.entry()).hull))));
     (cache, out)
 }
 
@@ -187,4 +190,15 @@ pub fn apply_placement(models: &mut Vec<Model>, placement: &Placement) {
         model.mesh.set_position(new_position);
         model.mesh.set_rotation(new_rotation);
     }
+}
+
+fn area(polygon: &[Vector2<f32>]) -> f32 {
+    let mut j = polygon.len() - 1;
+    let mut area = 0.0;
+    for i in 0..polygon.len() {
+        area += (polygon[j].x + polygon[i].x) * (polygon[j].y - polygon[i].y);
+        j = i;
+    }
+
+    area.abs() / 2.0
 }
