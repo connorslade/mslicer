@@ -3,11 +3,12 @@ use std::{iter, sync::atomic::Ordering};
 use common::{geometry::convex_hull, units::Milimeter};
 use egui::{Button, CollapsingHeader, Color32, ComboBox, DragValue, Ui, Widget, vec2};
 use egui_plot::{Line, Plot};
-use nalgebra::{Matrix3, Matrix4, Rotation3};
-use tools::auto_layout::{self, CacheEntry, Hull, LayoutCache, Objective, Rotation};
+use nalgebra::Rotation3;
+use tools::auto_layout::{self, CacheEntry, Hull, LayoutCache, Objective, Placement, Rotation};
 
 use crate::{
     app::App,
+    project::model::Model,
     ui::{
         components::grid,
         popup::{Popup, PopupApp},
@@ -128,16 +129,7 @@ fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
             });
 
         while let Ok(result) = running.rx.try_recv() {
-            for placement in result.iter() {
-                if let Some(model) =
-                    (app.project.models.iter_mut()).find(|x| x.id == placement.model)
-                {
-                    let new_position = placement.position.xy().push(model.mesh.position().z);
-                    let new_rotation = model.mesh.rotation().xy().push(placement.rotation);
-                    model.mesh.set_position(new_position);
-                    model.mesh.set_rotation(new_rotation);
-                }
-            }
+            (result.iter()).for_each(|x| apply_placement(&mut app.project.models, x));
         }
 
         ui.vertical_centered(|ui| {
@@ -155,24 +147,7 @@ fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
             if button.clicked() {
                 let platform =
                     (app.project.slice_config.platform_size.xy()).map(|x| x.get::<Milimeter>());
-
-                let mut models = Vec::new();
-                let mut cache = LayoutCache::new(tool.config.padding);
-
-                for model in app.project.models.iter().filter(|x| !x.hidden) {
-                    models.push(auto_layout::Model::new(model.id, model.mesh.mesh_id()));
-
-                    let entry = CacheEntry::new(model.mesh.mesh_id(), 0.0);
-                    cache.populate_hull(entry, || {
-                        let rotation = model.mesh.rotation();
-                        let transform =
-                            Rotation3::from_euler_angles(rotation.x, rotation.y, rotation.z);
-                        let points = (model.mesh.vertices().iter())
-                            .map(|x| (transform * x).xy())
-                            .collect::<Vec<_>>();
-                        Hull::new(convex_hull(&points))
-                    });
-                }
+                let (cache, models) = layout_cache(tool.config.padding, &app.project.models);
 
                 tool.config.platform_size = platform;
                 tool.models = models;
@@ -182,4 +157,34 @@ fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
     }
 
     false
+}
+
+pub fn layout_cache(padding: f32, models: &[Model]) -> (LayoutCache, Vec<auto_layout::Model>) {
+    let mut out = Vec::new();
+    let mut cache = LayoutCache::new(padding);
+
+    for model in models.iter().filter(|x| !x.hidden) {
+        out.push(auto_layout::Model::new(model.id, model.mesh.mesh_id()));
+
+        let entry = CacheEntry::new(model.mesh.mesh_id(), 0.0);
+        cache.populate_hull(entry, || {
+            let rotation = model.mesh.rotation();
+            let transform = Rotation3::from_euler_angles(rotation.x, rotation.y, rotation.z);
+            let points = (model.mesh.vertices().iter())
+                .map(|x| (transform * x).xy())
+                .collect::<Vec<_>>();
+            Hull::new(convex_hull(&points))
+        });
+    }
+
+    (cache, out)
+}
+
+pub fn apply_placement(models: &mut Vec<Model>, placement: &Placement) {
+    if let Some(model) = models.iter_mut().find(|x| x.id == placement.model) {
+        let new_position = placement.position.xy().push(model.mesh.position().z);
+        let new_rotation = model.mesh.rotation().xy().push(placement.rotation);
+        model.mesh.set_position(new_position);
+        model.mesh.set_rotation(new_rotation);
+    }
 }

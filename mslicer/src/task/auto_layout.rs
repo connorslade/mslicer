@@ -1,12 +1,11 @@
 use clone_macro::clone;
-use common::{geometry::convex_hull, progress::Progress, slice::SliceConfig, units::Milimeter};
-use nalgebra::Vector2;
-use slicer::mesh::Mesh;
+use common::{progress::Progress, slice::SliceConfig, units::Milimeter};
 use tools::auto_layout::{self, Placement};
 
 use crate::{
     project::model::Model,
     task::{PollResult, Task, TaskApp, TaskStatus, thread::TaskThread},
+    windows::tools::auto_layout::{apply_placement, layout_cache},
 };
 
 pub struct AutoLayout {
@@ -21,27 +20,15 @@ impl AutoLayout {
         (padding, segment_steps): (f32, f32),
     ) -> Self {
         let platform = (slice_config.platform_size.xy()).map(|x| x.get::<Milimeter>());
-        // let models = (models.iter().filter(|x| !x.hidden))
-        //     .map(|x| {
-        //         let points = project_down(&x.mesh);
-        //         auto_layout::Model::new(
-        //             x.id,
-        //             x.mesh.position(),
-        //             x.mesh.rotation().z,
-        //             convex_hull(&points),
-        //         )
-        //     })
-        //     .collect::<Vec<_>>();
+        let (mut cache, models) = layout_cache(padding, models);
 
         let progress = Progress::new();
         let handle = TaskThread::spawn(clone!([progress], move || {
-            // auto_layout::AutoLayoutNFP::new(platform, models)
-            //     .padding(padding)
-            //     .segment_steps(segment_steps)
-            //     .layout(progress)
-            //     .unwrap()
-            //     .1
-            todo!()
+            auto_layout::AutoLayoutNfp::new(platform, models, &mut cache)
+                .segment_steps(segment_steps)
+                .layout(progress)
+                .unwrap()
+                .1
         }));
 
         Self { handle, progress }
@@ -53,14 +40,8 @@ impl Task for AutoLayout {
         self.handle
             .poll(app, "Failed to Layout Models")
             .into_poll_result(|x| {
-                for placement in x.iter() {
-                    if let Some(model) =
-                        (app.project.models.iter_mut()).find(|x| x.id == placement.model)
-                    {
-                        model.mesh.set_position(*&placement.position);
-                    }
-                }
-
+                x.iter()
+                    .for_each(|x| apply_placement(&mut app.project.models, x));
                 PollResult::complete()
             })
     }
@@ -72,11 +53,4 @@ impl Task for AutoLayout {
             progress: self.progress.progress(),
         })
     }
-}
-
-fn project_down(mesh: &Mesh) -> Vec<Vector2<f32>> {
-    mesh.vertices()
-        .iter()
-        .map(|x| mesh.transform(&x).xy())
-        .collect::<Vec<_>>()
 }

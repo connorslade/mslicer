@@ -1,6 +1,3 @@
-use std::iter;
-
-use itertools::Itertools;
 use nalgebra::{Vector2, Vector3};
 
 use crate::auto_layout::bounds::Bounds2D;
@@ -81,15 +78,4 @@ impl Objective {
 
         score
     }
-}
-
-fn area(polygon: &[Vector2<f32>]) -> f32 {
-    let mut j = polygon.len() - 1;
-    let mut area = 0.0;
-    for i in 0..polygon.len() {
-        area += (polygon[j].x + polygon[i].x) * (polygon[j].y - polygon[i].y);
-        j = i;
-    }
-
-    area.abs() / 2.0
 }
