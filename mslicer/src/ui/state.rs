@@ -130,7 +130,7 @@ impl Selected {
 
     pub fn has_models(&self) -> bool {
         match self {
-            Selected::Models(set) => set.len() > 0,
+            Selected::Models(set) => !set.is_empty(),
             _ => false,
         }
     }

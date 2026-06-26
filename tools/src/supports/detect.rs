@@ -72,10 +72,8 @@ impl<'a> SupportGenerator<'a> {
 
         println!("overhanging faces: {}", overhangs.len());
 
-        let mut i = 0;
-        for (face, normal) in overhangs.iter() {
+        for (i, (face, normal)) in overhangs.iter().enumerate() {
             println!("{:.1}%", 100.0 * i as f32 / overhangs.len() as f32);
-            i += 1;
 
             let verts = mesh.face(*face);
             for i in 0..3 {

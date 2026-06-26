@@ -183,7 +183,7 @@ pub fn layout_cache(padding: f32, models: &[Model]) -> (LayoutCache, Vec<auto_la
     (cache, out)
 }
 
-pub fn apply_placement(models: &mut Vec<Model>, placement: &Placement) {
+pub fn apply_placement(models: &mut [Model], placement: &Placement) {
     if let Some(model) = models.iter_mut().find(|x| x.id == placement.model) {
         let new_position = placement.position.xy().push(model.mesh.position().z);
         let new_rotation = model.mesh.rotation().xy().push(placement.rotation);

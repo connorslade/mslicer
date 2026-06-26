@@ -185,7 +185,7 @@ impl Clone for Model {
         Self {
             name: self.name.clone(),
             id: next_id(),
-            collection: self.collection.clone(),
+            collection: self.collection,
 
             mesh: self.mesh.clone(),
             bvh: self.bvh.clone(),

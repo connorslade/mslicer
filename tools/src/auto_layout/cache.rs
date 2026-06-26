@@ -46,9 +46,7 @@ impl LayoutCache {
     }
 
     pub fn populate_hull(&mut self, entry: CacheEntry, hull: impl FnOnce() -> Hull) {
-        if !self.hulls.contains_key(&entry) {
-            self.hulls.insert(entry, Arc::new(hull()));
-        }
+        self.hulls.entry(entry).or_insert_with(|| Arc::new(hull()));
     }
 
     pub fn hull(&mut self, entry: &CacheEntry) -> Arc<Hull> {

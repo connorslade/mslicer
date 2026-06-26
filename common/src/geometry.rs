@@ -7,12 +7,11 @@ pub fn convex_hull(points: &[Vector2<f32>]) -> Vec<Vector2<f32>> {
     points.sort_by(|a, b| a.x.total_cmp(&b.x).then_with(|| a.y.total_cmp(&b.y)));
 
     let mut out = Vec::new();
-
-    for i in 0..points.len() {
-        while out.len() >= 2 && cross(out[out.len() - 2], out[out.len() - 1], points[i]) <= 0.0 {
+    for point in points.iter().copied() {
+        while out.len() >= 2 && cross(out[out.len() - 2], out[out.len() - 1], point) <= 0.0 {
             out.pop();
         }
-        out.push(points[i]);
+        out.push(point);
     }
 
     out.pop();

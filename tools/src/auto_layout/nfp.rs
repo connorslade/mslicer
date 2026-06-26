@@ -87,7 +87,7 @@ impl<'a> AutoLayoutNfp<'a> {
                     for k in 0..=n {
                         let p = pa + vector * (k as f32 / n as f32) + position;
                         let valid = (self.models.iter().take(i).enumerate()).all(|(i, x)| {
-                            i == j || intersect_nfp(&mut self.cache, p, x, this_entry) & 1 == 0
+                            i == j || intersect_nfp(self.cache, p, x, this_entry) & 1 == 0
                         });
                         if valid {
                             let total_bounds = bounds.include_bound(this_hull.bounds.offset(p));

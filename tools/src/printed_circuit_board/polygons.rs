@@ -126,6 +126,12 @@ impl Polygons {
     }
 }
 
+impl Default for Polygons {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 fn close_path(path: Vec<Vector2<f64>>, path_thickness: f64) -> Vec<Vector2<f64>> {
     let half_thickness = path_thickness / 2.0;
     let mut out = vec![Vector2::zeros(); path.len() * 2];

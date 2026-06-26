@@ -1,6 +1,5 @@
 use std::f32::consts::PI;
 
-use common::misc::lerp;
 use common::{geometry::convex_hull, units::Milimeters};
 use nalgebra::Vector2;
 use nalgebra::Vector3;
@@ -45,7 +44,7 @@ impl<'a> SupportGenerator<'a> {
         half_edge: &HalfEdgeMesh,
         bvh: &Bvh,
     ) -> Option<Mesh> {
-        let mut overhangs = Vec::new();
+        let overhangs = Vec::new();
 
         self.overhanging_edges(mesh, half_edge);
 

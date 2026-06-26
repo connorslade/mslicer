@@ -134,7 +134,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
                     let target_collection = if insert_slot < rects.len() {
                         rects[insert_slot].1
                     } else {
-                        rects.last().map(|&(_, c, _)| c).flatten()
+                        rects.last().and_then(|&(_, c, _)| c)
                     };
 
                     let to = if insert_slot < rects.len() {

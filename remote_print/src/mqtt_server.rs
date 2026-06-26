@@ -30,13 +30,15 @@ use crate::{
     status::{Attributes, FullStatusData, Status, StatusData},
 };
 
+pub type Callback = Box<dyn Fn(&MqttClient) + Send + Sync>;
+
 pub struct MqttInner {
     server: Soon<Weak<MqttServer<Mqtt>>>,
     /// mainboard_id -> MqttClient
     pub(crate) clients: RwLock<HashMap<String, MqttClient>>,
     /// client_id -> mainboard_id
     client_ids: RwLock<HashMap<u64, String>>,
-    callback: Option<Box<dyn Fn(&MqttClient) + Send + Sync>>,
+    callback: Option<Callback>,
 }
 
 #[derive(Clone)]

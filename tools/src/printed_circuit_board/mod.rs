@@ -20,6 +20,9 @@ mod gerber;
 mod misc;
 pub mod polygons;
 
+/// Segment, normal, exposure
+type SliceSegment = (([Vector2<f32>; 2], bool), u8);
+
 #[derive(Clone)]
 pub struct PrintedCircuitBoard {
     pub gerber: Option<Arc<Gerber>>,
@@ -105,11 +108,7 @@ impl PrintedCircuitBoard {
         self.polygons(&Progress::new()).svg()
     }
 
-    fn screen_segments(
-        &self,
-        config: &SliceConfig,
-        mut polygons: Polygons,
-    ) -> Vec<(([Vector2<f32>; 2], bool), u8)> {
+    fn screen_segments(&self, config: &SliceConfig, mut polygons: Polygons) -> Vec<SliceSegment> {
         let platform = (config.platform_size.xy()).map(|x| x.get::<Milimeter>() as f64);
         let scale = (config.platform_resolution.cast::<f64>()).component_div(&platform);
 

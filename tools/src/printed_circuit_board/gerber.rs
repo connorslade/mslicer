@@ -22,8 +22,8 @@ impl PrintedCircuitBoard {
         let mut region_mode = false;
 
         for command in commands {
-            match command {
-                Command::FunctionCode(function_code) => match function_code {
+            if let Command::FunctionCode(function_code) = command {
+                match function_code {
                     FunctionCode::DCode(dcode) => match dcode {
                         DCode::Operation(Operation::Move(Some(mov))) => {
                             flush_path(&mut polygons, &mut path, region_mode, thickness);
@@ -79,17 +79,17 @@ impl PrintedCircuitBoard {
 
                                     polygons.rect([center - size, center + size]);
                                 }
-                                Some(Aperture::Macro(name, Some(params))) => {
+                                Some(Aperture::Macro(name, Some(params)))
+                                    if name == "RoundRect" =>
+                                {
                                     // [radius, x1, y1, x2, y2, x3, y3, x4, y4]
-                                    if name == "RoundRect" {
-                                        let radius = macro_value(&params[0]);
-                                        let corners = [0, 1, 2, 3].map(|i| {
-                                            Vector2::new(i * 2 + 1, i * 2 + 2)
-                                                .map(|x| macro_value(&params[x]))
-                                                + center
-                                        });
-                                        polygons.rounded_rect(corners, radius);
-                                    }
+                                    let radius = macro_value(&params[0]);
+                                    let corners = [0, 1, 2, 3].map(|i| {
+                                        Vector2::new(i * 2 + 1, i * 2 + 2)
+                                            .map(|x| macro_value(&params[x]))
+                                            + center
+                                    });
+                                    polygons.rounded_rect(corners, radius);
                                 }
                                 _ => {}
                             }
@@ -101,8 +101,7 @@ impl PrintedCircuitBoard {
                         region_mode = *mode;
                     }
                     _ => {}
-                },
-                _ => {}
+                }
             }
 
             progress.add_complete(1);
