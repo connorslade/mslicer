@@ -94,6 +94,19 @@ impl Selected {
         }
     }
 
+    pub fn select_model(&mut self, id: u32) {
+        match self {
+            Selected::None | Selected::Collection(_) => {
+                let mut set = HashSet::new();
+                set.insert(id);
+                *self = Selected::Models(set);
+            }
+            Selected::Models(set) => {
+                set.insert(id);
+            }
+        }
+    }
+
     pub fn selected_models(&self) -> impl Iterator<Item = u32> {
         match self {
             Selected::None | Selected::Collection(_) => Either::Left(iter::empty()),
@@ -135,6 +148,13 @@ impl Selected {
             Selected::Collection(group) if id == *group => self.clear(),
             Selected::Collection(_) | Selected::None => *self = Self::Collection(id),
             _ => {}
+        }
+    }
+
+    pub fn single_collection(&self) -> Option<u32> {
+        match self {
+            Selected::Collection(id) => Some(*id),
+            _ => None,
         }
     }
 }

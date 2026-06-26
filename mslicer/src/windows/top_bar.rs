@@ -1,4 +1,4 @@
-use std::{f32::consts::TAU, fs::File};
+use std::{collections::HashMap, f32::consts::TAU, fs::File};
 
 use const_format::concatcp;
 use egui::{
@@ -11,7 +11,7 @@ use egui_phosphor::regular::{CARDS, FILE_TEXT, GIT_DIFF, HAMMER, HOURGLASS, STAC
 use crate::{
     app::App,
     include_asset,
-    project::Project,
+    project::{Collection, Project},
     task::{AutoLayout, MeshLoad, MultiFileDialog, ProjectLoad},
     ui::{components::labeled_separator, popup::Popup},
     windows::{Tab, tools},
@@ -126,6 +126,11 @@ pub fn ui(app: &mut App, ctx: &Context) {
                     (ui.button("Exposure Test").clicked()).then(|| tools::exposure_test::open(app));
                     (ui.button("Internal Exposure Test").clicked())
                         .then(|| tools::internal_exposure_test::open(app));
+
+                    labeled_separator(ui, "Miscellaneous");
+                    ui.button("Collect Instances")
+                        .clicked()
+                        .then(|| collect_instances(app));
                 });
 
                 ui.menu_button(concatcp!(CARDS, " View"), |ui| {
@@ -313,4 +318,24 @@ fn quick_layout(app: &mut App) {
         &app.project.models,
         (2.0, 10.0),
     ));
+}
+
+fn collect_instances(app: &mut App) {
+    let mut instances = HashMap::<_, Vec<_>>::new();
+    for model in app.project.models.iter().filter(|x| x.collection.is_none()) {
+        instances
+            .entry(model.mesh.mesh_id())
+            .or_default()
+            .push(model.id);
+    }
+
+    for (_, v) in instances.iter().filter(|(_, v)| v.len() > 1) {
+        let collection = Collection::new_unnamed();
+        for model in v {
+            if let Some(model) = app.project.model(*model) {
+                model.collection = Some(collection.id);
+            }
+        }
+        app.project.collections.push(collection);
+    }
 }

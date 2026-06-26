@@ -17,10 +17,7 @@ use nalgebra::Vector3;
 
 use crate::{
     app::{App, history::ModelAction},
-    project::{
-        Collection,
-        model::{MeshWarnings, RenameState},
-    },
+    project::{Collection, RenameState, model::MeshWarnings},
     ui::components::{
         being_edited, grid, history_tracked_model, vec3_dragger, vec3_dragger_proportional,
     },
@@ -94,7 +91,9 @@ pub fn model_entry(
                 }
             }
 
-            if !matches!(model.ui.rename, RenameState::None) {
+            if matches!(model.ui.rename, RenameState::None) {
+                Label::new(&model.name).selectable(false).ui(ui);
+            } else {
                 let text_edit = ui.text_edit_singleline(&mut model.name);
                 if matches!(model.ui.rename, RenameState::Starting) {
                     text_edit.request_focus();
@@ -108,8 +107,6 @@ pub fn model_entry(
                     (editing, ui, &mut app.history),
                     (id, || ModelAction::Name(model.name.clone())),
                 )
-            } else {
-                Label::new(&model.name).selectable(false).ui(ui);
             }
 
             ui.take_available_width();
@@ -134,7 +131,7 @@ pub fn model_properties(app: &mut App, ui: &mut Ui, ctx: &Context, action: &mut 
         ui.button(concatcp!(FOLDER_DASHED, " Collect"))
             .clicked()
             .then(|| {
-                let collection = Collection::new("Collection".into());
+                let collection = Collection::new_unnamed();
                 model.collection = Some(collection.id);
                 app.project.collections.push(collection);
             });

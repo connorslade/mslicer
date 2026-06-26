@@ -30,11 +30,21 @@ pub struct Collection {
     pub id: u32,
     pub name: String,
     pub collapsed: bool,
+
+    pub rename: RenameState,
 }
 
 #[derive(Default, Clone)]
 pub struct PostProcessing {
     pub elephant_foot_fixer: ElephantFootFixer,
+}
+
+#[derive(Default, Clone)]
+pub enum RenameState {
+    #[default]
+    None,
+    Starting,
+    Editing,
 }
 
 impl Project {
@@ -50,6 +60,14 @@ impl Project {
         self.slice_config = default_config.clone();
         self.post_processing = Default::default();
         self.models.clear();
+    }
+
+    pub fn model(&mut self, id: u32) -> Option<&mut Model> {
+        self.models.iter_mut().find(|x| x.id == id)
+    }
+
+    pub fn collection(&mut self, id: u32) -> Option<&mut Collection> {
+        self.collections.iter_mut().find(|x| x.id == id)
     }
 }
 
@@ -86,7 +104,12 @@ impl Collection {
             id: next_id(),
             name,
             collapsed: false,
+            rename: RenameState::None,
         }
+    }
+
+    pub fn new_unnamed() -> Self {
+        Self::new("Collection".into())
     }
 }
 

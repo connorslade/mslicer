@@ -1,11 +1,13 @@
 use egui::{
-    Color32, Context, DragAndDrop, Id, Label, LayerId, Order, Sense, Ui, UiBuilder, Widget,
+    Color32, Context, DragAndDrop, Id, Label, LayerId, Order, Rect, Sense, Ui, UiBuilder, Widget,
     emath::TSTransform, vec2,
 };
 use egui_phosphor::regular::{FOLDER, FOLDER_OPEN};
 
 use crate::{
     app::App,
+    project::RenameState,
+    ui::components::being_edited,
     windows::models::{DraggedModel, model::model_entry},
 };
 
@@ -15,6 +17,7 @@ pub fn collection(
     ui: &mut Ui,
     collection: Option<u32>,
     n: &mut usize,
+    rects: &mut Vec<(usize, Option<u32>, Rect)>,
 ) {
     for j in 0..app.project.models.len() {
         let model = &app.project.models[j];
@@ -39,6 +42,7 @@ pub fn collection(
             }
         } else {
             let response = model_entry(app, ui, j, *n, false);
+            rects.push((j, collection, response.rect));
             *n += 1;
 
             if response.drag_started() {
@@ -54,7 +58,13 @@ pub fn collection(
     }
 }
 
-pub fn collection_entry(app: &mut App, ui: &mut Ui, group: usize, n: &mut usize, dragged: bool) {
+pub fn collection_entry(
+    app: &mut App,
+    ui: &mut Ui,
+    group: usize,
+    n: &mut usize,
+    dragged: bool,
+) -> Rect {
     let group = &mut app.project.collections[group];
 
     let (rect, response) =
@@ -93,9 +103,22 @@ pub fn collection_entry(app: &mut App, ui: &mut Ui, group: usize, n: &mut usize,
                 group.collapsed ^= true;
             }
 
-            Label::new(&group.name).selectable(false).ui(ui);
+            if matches!(group.rename, RenameState::None) {
+                Label::new(&group.name).selectable(false).ui(ui);
+            } else {
+                let text_edit = ui.text_edit_singleline(&mut group.name);
+                if matches!(group.rename, RenameState::Starting) {
+                    text_edit.request_focus();
+                    group.rename = RenameState::Editing;
+                }
+
+                let editing = being_edited(&text_edit);
+                (!editing).then(|| group.rename = RenameState::None);
+            }
 
             ui.take_available_width();
         });
     });
+
+    rect
 }

@@ -17,7 +17,7 @@ use wgpu::{Buffer, Device};
 
 use slicer::{geometry::bvh::Bvh, half_edge::HalfEdgeMesh, mesh::Mesh};
 
-use crate::render::util::gpu_mesh_buffers;
+use crate::{project::RenameState, render::util::gpu_mesh_buffers};
 
 pub struct Model {
     pub name: String,
@@ -44,13 +44,6 @@ pub struct Model {
 pub struct ModelUi {
     pub rename: RenameState,
     pub locked_scale: bool,
-}
-
-#[derive(Clone)]
-pub enum RenameState {
-    None,
-    Starting,
-    Editing,
 }
 
 bitflags! {
