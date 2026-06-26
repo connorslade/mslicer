@@ -125,7 +125,6 @@ impl<'a> AutoLayoutNfp<'a> {
     }
 }
 
-// todo: intersect bounding boxes first?
 fn intersect_nfp(
     cache: &mut LayoutCache,
     start: Vector2<f32>,

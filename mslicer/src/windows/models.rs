@@ -7,7 +7,7 @@ use common::{
 use const_format::concatcp;
 use egui::{
     CollapsingHeader, Color32, Context, DragAndDrop, DragValue, Frame, Id, Label, LayerId, Order,
-    Popup, Response, Sense, Stroke, TopBottomPanel, Ui, UiBuilder, Vec2, Widget,
+    Popup, Response, ScrollArea, Sense, Stroke, TopBottomPanel, Ui, UiBuilder, Vec2, Widget,
     emath::TSTransform, vec2,
 };
 use egui_phosphor::regular::{
@@ -46,57 +46,6 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
         return;
     }
 
-    for i in 0..app.project.models.len() {
-        let id = app.project.models[i].id;
-        let eid = Id::new("model").with(id);
-
-        if ctx.is_being_dragged(eid) {
-            let layer_id = LayerId::new(Order::Tooltip, eid);
-            let response = ui.scope_builder(UiBuilder::new().layer_id(layer_id), |ui| {
-                model_entry(app, ui, i, true)
-            });
-
-            if let Some(pointer_pos) = ctx.pointer_interact_pos()
-                && let Some(dragged) = DragAndDrop::payload::<DraggedModel>(ctx)
-            {
-                let delta = pointer_pos - response.response.rect.center() - dragged.offset;
-                ctx.transform_layer_shapes(layer_id, TSTransform::from_translation(delta));
-            }
-        } else {
-            let response = model_entry(app, ui, i, false);
-            if response.drag_started() {
-                ctx.set_dragged_id(eid);
-                let offset = (ctx.pointer_interact_pos())
-                    .map(|p| p - response.rect.center())
-                    .unwrap_or_default();
-                let payload = DraggedModel { index: i, offset };
-
-                DragAndDrop::set_payload(ctx, payload);
-            }
-        }
-    }
-
-    if let Some(pointer) = ctx.pointer_interact_pos()
-        && let Some(dragged) = DragAndDrop::payload::<DraggedModel>(ctx)
-    {
-        let rect = ui.max_rect();
-
-        let stroke = Stroke::new(1.0, Color32::WHITE);
-        let line = |y| ui.painter().hline(rect.x_range(), y, stroke);
-
-        let entry_height = 18.0 + ui.style().spacing.item_spacing.y;
-        let t = (pointer.y - rect.min.y) / entry_height + 0.5;
-        let new_index = (t as usize).min(app.project.models.len());
-
-        line(rect.min.y + new_index as f32 * entry_height);
-
-        if ctx.input(|i| i.pointer.any_released()) {
-            let insert_index = new_index - (dragged.index < new_index) as usize;
-            let model = app.project.models.remove(dragged.index);
-            app.project.models.insert(insert_index, model);
-        }
-    }
-
     if let Some(id) = app.state.selected_model
         && let Some(model) = app.project.models.iter_mut().position(|x| x.id == id)
     {
@@ -119,6 +68,59 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
                 app.project.models.push(model);
             }
             Action::None => {}
+        }
+    }
+
+    ScrollArea::vertical().show(ui, |ui| {
+        for i in 0..app.project.models.len() {
+            let id = app.project.models[i].id;
+            let eid = Id::new("model").with(id);
+
+            if ctx.is_being_dragged(eid) {
+                let layer_id = LayerId::new(Order::Tooltip, eid);
+                let response = ui.scope_builder(UiBuilder::new().layer_id(layer_id), |ui| {
+                    model_entry(app, ui, i, true)
+                });
+
+                if let Some(pointer_pos) = ctx.pointer_interact_pos()
+                    && let Some(dragged) = DragAndDrop::payload::<DraggedModel>(ctx)
+                {
+                    let delta = pointer_pos - response.response.rect.center() - dragged.offset;
+                    ctx.transform_layer_shapes(layer_id, TSTransform::from_translation(delta));
+                }
+            } else {
+                let response = model_entry(app, ui, i, false);
+                if response.drag_started() {
+                    ctx.set_dragged_id(eid);
+                    let offset = (ctx.pointer_interact_pos())
+                        .map(|p| p - response.rect.center())
+                        .unwrap_or_default();
+                    let payload = DraggedModel { index: i, offset };
+
+                    DragAndDrop::set_payload(ctx, payload);
+                }
+            }
+        }
+    });
+
+    if let Some(pointer) = ctx.pointer_interact_pos()
+        && let Some(dragged) = DragAndDrop::payload::<DraggedModel>(ctx)
+    {
+        let rect = ui.max_rect();
+
+        let stroke = Stroke::new(1.0, Color32::WHITE);
+        let line = |y| ui.painter().hline(rect.x_range(), y, stroke);
+
+        let entry_height = 18.0 + ui.style().spacing.item_spacing.y;
+        let t = (pointer.y - rect.min.y) / entry_height + 0.5;
+        let new_index = (t as usize).min(app.project.models.len());
+
+        line(rect.min.y + new_index as f32 * entry_height);
+
+        if ctx.input(|i| i.pointer.any_released()) {
+            let insert_index = new_index - (dragged.index < new_index) as usize;
+            let model = app.project.models.remove(dragged.index);
+            app.project.models.insert(insert_index, model);
         }
     }
 

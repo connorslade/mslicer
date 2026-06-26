@@ -21,6 +21,7 @@
 - Slice preview view direction selector (lcd screen vs build plate)
 - Support for Spacenav input (3Dconnexion 3D input device)
 - Initial camera distance increased
+- Fix model properties getting pushed off screen by lots of model entries
 
 ## v0.7.0 &mdash; May 7th, 2026
 
