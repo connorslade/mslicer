@@ -3,9 +3,8 @@ use std::{iter, sync::atomic::Ordering};
 use common::{geometry::convex_hull, units::Milimeter};
 use egui::{Button, CollapsingHeader, Color32, ComboBox, DragValue, Ui, Widget, vec2};
 use egui_plot::{Line, Plot};
-use nalgebra::Vector2;
-use slicer::mesh::Mesh;
-use tools::auto_layout::{self, Objective, Rotation};
+use nalgebra::{Matrix3, Matrix4, Rotation3};
+use tools::auto_layout::{self, CacheEntry, Hull, LayoutCache, Objective, Rotation};
 
 use crate::{
     app::App,
@@ -133,8 +132,9 @@ fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
                 if let Some(model) =
                     (app.project.models.iter_mut()).find(|x| x.id == placement.model)
                 {
+                    let new_position = placement.position.xy().push(model.mesh.position().z);
                     let new_rotation = model.mesh.rotation().xy().push(placement.rotation);
-                    model.mesh.set_position(placement.position);
+                    model.mesh.set_position(new_position);
                     model.mesh.set_rotation(new_rotation);
                 }
             }
@@ -155,31 +155,31 @@ fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
             if button.clicked() {
                 let platform =
                     (app.project.slice_config.platform_size.xy()).map(|x| x.get::<Milimeter>());
-                let models = (app.project.models.iter().filter(|x| !x.hidden))
-                    .map(|x| {
-                        let points = project_down(&x.mesh);
-                        auto_layout::Model::new(
-                            x.id,
-                            x.mesh.position(),
-                            x.mesh.rotation().z,
-                            convex_hull(&points),
-                        )
-                    })
-                    .collect::<Vec<_>>();
+
+                let mut models = Vec::new();
+                let mut cache = LayoutCache::new(tool.config.padding);
+
+                for model in app.project.models.iter().filter(|x| !x.hidden) {
+                    models.push(auto_layout::Model::new(model.id, model.mesh.mesh_id()));
+
+                    let entry = CacheEntry::new(model.mesh.mesh_id(), 0.0);
+                    cache.populate_hull(entry, || {
+                        let rotation = model.mesh.rotation();
+                        let transform =
+                            Rotation3::from_euler_angles(rotation.x, rotation.y, rotation.z);
+                        let points = (model.mesh.vertices().iter())
+                            .map(|x| (transform * x).xy())
+                            .collect::<Vec<_>>();
+                        Hull::new(convex_hull(&points))
+                    });
+                }
 
                 tool.config.platform_size = platform;
                 tool.models = models;
-                tool.run();
+                tool.run(cache);
             }
         });
     }
 
     false
-}
-
-fn project_down(mesh: &Mesh) -> Vec<Vector2<f32>> {
-    mesh.vertices()
-        .iter()
-        .map(|x| mesh.transform(&x).xy())
-        .collect::<Vec<_>>()
 }

@@ -17,7 +17,7 @@ use nalgebra::Vector2;
 use parking_lot::Mutex;
 use rand::{Rng, rng, rngs::ThreadRng};
 
-use crate::auto_layout::{AutoLayoutNFP, Model, Objective, Placement};
+use crate::auto_layout::{AutoLayoutNfp, Model, Objective, Placement, cache::LayoutCache};
 
 pub struct AutoLayoutAnnealing {
     pub config: Config,
@@ -56,7 +56,7 @@ pub struct Running {
 }
 
 impl AutoLayoutAnnealing {
-    pub fn run(&mut self) {
+    pub fn run(&mut self, mut cache: LayoutCache) {
         let (tx, rx) = mpsc::sync_channel(16);
         let (stop_tx, stop_rx) = mpsc::sync_channel(1);
 
@@ -72,10 +72,9 @@ impl AutoLayoutAnnealing {
         let mut models = self.models.clone();
         let config = self.config.clone();
 
-        let score = move |models| {
-            AutoLayoutNFP::new_unsorted(config.platform_size, models)
+        let mut score = move |models| {
+            AutoLayoutNfp::new(config.platform_size, models, &mut cache)
                 .objective(config.objective)
-                .padding(config.padding)
                 .segment_steps(config.segment_steps)
                 .bounds_penalty(config.bounds_penalty)
                 .layout(Progress::new())
@@ -184,7 +183,7 @@ fn perturb(rotation: Rotation, models: &[Model]) -> Vec<Model> {
         // Rotate a model (if rotation mode is non Disabled)
         4 => {
             let i = rng.random_range(range);
-            out[i].rotate(rotation.random(&mut rng));
+            out[i].rotation = rotation.random(&mut rng);
         }
         _ => unreachable!(),
     }

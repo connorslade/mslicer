@@ -1,28 +1,26 @@
 use std::iter;
 
 use itertools::Itertools;
-use nalgebra::{Rotation2, Vector2, Vector3};
+use nalgebra::{Vector2, Vector3};
 
 use crate::auto_layout::bounds::Bounds2D;
 
 mod annealing;
 mod bounds;
+mod cache;
 mod nfp;
 pub use self::{
     annealing::{AutoLayoutAnnealing, Rotation},
-    nfp::AutoLayoutNFP,
+    cache::{CacheEntry, Hull, LayoutCache},
+    nfp::AutoLayoutNfp,
 };
 
 #[derive(Clone)]
 pub struct Model {
-    id: u32,
-    origin: Vector3<f32>,
-    base_rotation: f32,
+    model: u32,
+    mesh: usize,
 
-    hull: Vec<Vector2<f32>>,
-    bounds: Bounds2D,
-
-    offset: Vector2<f32>,
+    position: Vector2<f32>,
     rotation: f32,
 }
 
@@ -40,31 +38,18 @@ pub enum Objective {
 }
 
 impl Model {
-    pub fn new(id: u32, origin: Vector3<f32>, rotation: f32, hull: Vec<Vector2<f32>>) -> Self {
+    pub fn new(model: u32, mesh: usize) -> Self {
         Self {
-            id,
-            origin,
-            base_rotation: rotation,
+            model,
+            mesh,
 
-            bounds: Bounds2D::new_containing(&hull),
-            hull,
-
-            offset: Vector2::zeros(),
+            position: Vector2::zeros(),
             rotation: 0.0,
         }
     }
 
-    // rotate hull around origin
-    pub fn rotate(&mut self, angle: f32) {
-        let origin = self.origin.xy();
-        let rotation = Rotation2::new(angle - self.rotation);
-        for point in self.hull.iter_mut() {
-            let model_space = *point - origin;
-            *point = (rotation * model_space) + origin;
-        }
-
-        self.rotation = angle;
-        self.bounds = Bounds2D::new_containing(&self.hull);
+    pub fn entry(&self) -> CacheEntry {
+        CacheEntry::new(self.mesh, self.rotation)
     }
 }
 
@@ -96,18 +81,6 @@ impl Objective {
 
         score
     }
-}
-
-fn intersect_lines(start: Vector2<f32>, lines: &[Vector2<f32>]) -> usize {
-    let mut count = 0;
-    for (a, b) in lines.iter().chain(iter::once(&lines[0])).tuple_windows() {
-        if (a.y > start.y) ^ (b.y > start.y) {
-            let intersect_x = (b.x - a.x) * (start.y - a.y) / (b.y - a.y) + a.x;
-            count += (start.x < intersect_x) as usize;
-        }
-    }
-
-    count
 }
 
 fn area(polygon: &[Vector2<f32>]) -> f32 {

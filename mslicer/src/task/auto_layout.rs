@@ -21,26 +21,27 @@ impl AutoLayout {
         (padding, segment_steps): (f32, f32),
     ) -> Self {
         let platform = (slice_config.platform_size.xy()).map(|x| x.get::<Milimeter>());
-        let models = (models.iter().filter(|x| !x.hidden))
-            .map(|x| {
-                let points = project_down(&x.mesh);
-                auto_layout::Model::new(
-                    x.id,
-                    x.mesh.position(),
-                    x.mesh.rotation().z,
-                    convex_hull(&points),
-                )
-            })
-            .collect::<Vec<_>>();
+        // let models = (models.iter().filter(|x| !x.hidden))
+        //     .map(|x| {
+        //         let points = project_down(&x.mesh);
+        //         auto_layout::Model::new(
+        //             x.id,
+        //             x.mesh.position(),
+        //             x.mesh.rotation().z,
+        //             convex_hull(&points),
+        //         )
+        //     })
+        //     .collect::<Vec<_>>();
 
         let progress = Progress::new();
         let handle = TaskThread::spawn(clone!([progress], move || {
-            auto_layout::AutoLayoutNFP::new(platform, models)
-                .padding(padding)
-                .segment_steps(segment_steps)
-                .layout(progress)
-                .unwrap()
-                .1
+            // auto_layout::AutoLayoutNFP::new(platform, models)
+            //     .padding(padding)
+            //     .segment_steps(segment_steps)
+            //     .layout(progress)
+            //     .unwrap()
+            //     .1
+            todo!()
         }));
 
         Self { handle, progress }
