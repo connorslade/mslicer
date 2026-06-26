@@ -90,6 +90,13 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     ui.add_space(8.0);
 
     ui.collapsing("Camera", |ui| {
+        if ui
+            .button(concatcp!(ARROW_COUNTER_CLOCKWISE, " Reset"))
+            .clicked()
+        {
+            app.camera = Default::default();
+        }
+
         Grid::new("workspace_camera")
             .striped(true)
             .num_columns(2)
@@ -107,7 +114,10 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                 ui.end_row();
 
                 ui.label("Fov");
-                ui.add(DragValue::new(&mut app.camera.fov).speed(0.01));
+                ui.horizontal(|ui| {
+                    ui.add(DragValue::new(&mut app.camera.fov).speed(0.01));
+                    ui.take_available_width();
+                });
                 ui.end_row();
             });
     });

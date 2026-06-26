@@ -104,9 +104,8 @@ impl SpaceNavRef<'_> {
         };
 
         match event {
-            Event::Button { id: 0, press: true } => {
-                self.app.slice();
-            }
+            Event::Button { id: 0, press: true } => self.app.camera = Default::default(),
+            Event::Button { id: 1, press: true } => self.app.slice(),
             Event::Motion {
                 translation,
                 rotation,
