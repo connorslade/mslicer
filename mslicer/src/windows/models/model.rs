@@ -30,8 +30,14 @@ use crate::{
 const WARN_NON_MANIFOLD: &str = "This mesh is non-manifold, it may produce unexpected results when sliced.\nConsider running it through a mesh repair tool.";
 const WARN_OUT_OF_BOUNDS: &str = "This mesh extends beyond the printer volume and will be cut off.";
 
-pub fn model_entry(app: &mut App, ui: &mut Ui, idx: usize, dragged: bool) -> Response {
-    let model = &mut app.project.models[idx];
+pub fn model_entry(
+    app: &mut App,
+    ui: &mut Ui,
+    model: usize,
+    idx: usize,
+    dragged: bool,
+) -> Response {
+    let model = &mut app.project.models[model];
     let id = model.id;
 
     let (rect, response) =

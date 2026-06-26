@@ -69,14 +69,17 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
     }
 
     ScrollArea::vertical().show(ui, |ui| {
+        let mut n = 0;
         for i in 0..app.project.collections.len() {
-            collection_entry(app, ui, i);
+            collection_entry(app, ui, i, &mut n, false);
+            n += 1;
+
             let group = &app.project.collections[i];
             if !group.collapsed {
-                collection(app, ctx, ui, Some(group.id));
+                collection(app, ctx, ui, Some(group.id), &mut n);
             }
         }
-        collection(app, ctx, ui, None);
+        collection(app, ctx, ui, None, &mut n);
     });
 
     if let Some(pointer) = ctx.pointer_interact_pos()

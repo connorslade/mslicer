@@ -121,6 +121,22 @@ impl Selected {
             _ => false,
         }
     }
+
+    pub fn contains_collection(&self, id: u32) -> bool {
+        match self {
+            Selected::Collection(collection) => *collection == id,
+            _ => false,
+        }
+    }
+
+    pub fn collection_clicked(&mut self, id: u32, shift: bool) {
+        match self {
+            Selected::Models(set) if !shift || set.is_empty() => *self = Self::Collection(id),
+            Selected::Collection(group) if id == *group => self.clear(),
+            Selected::Collection(_) | Selected::None => *self = Self::Collection(id),
+            _ => {}
+        }
+    }
 }
 
 impl WorkspaceHover {
