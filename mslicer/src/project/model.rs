@@ -22,6 +22,7 @@ use crate::render::util::gpu_mesh_buffers;
 pub struct Model {
     pub name: String,
     pub id: u32,
+    pub collection: Option<u32>,
 
     pub mesh: Mesh,
     pub bvh: Option<Arc<Bvh>>,
@@ -70,6 +71,7 @@ impl Model {
         Self {
             name: String::new(),
             id: next_id(),
+            collection: None,
 
             base_volume: mesh_volume(&mesh),
             bvh: None,
@@ -190,6 +192,7 @@ impl Clone for Model {
         Self {
             name: self.name.clone(),
             id: next_id(),
+            collection: self.collection.clone(),
 
             mesh: self.mesh.clone(),
             bvh: self.bvh.clone(),

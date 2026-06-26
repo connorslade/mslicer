@@ -1,4 +1,7 @@
-use std::path::PathBuf;
+use std::{
+    path::PathBuf,
+    sync::atomic::{AtomicU32, Ordering},
+};
 
 use crate::{
     project::model::Model,
@@ -19,6 +22,14 @@ pub struct Project {
     pub slice_config: SliceConfig,
     pub post_processing: PostProcessing,
     pub models: Vec<Model>,
+    pub collections: Vec<Collection>,
+}
+
+#[derive(Default, Clone)]
+pub struct Collection {
+    pub id: u32,
+    pub name: String,
+    pub collapsed: bool,
 }
 
 #[derive(Default, Clone)]
@@ -69,6 +80,16 @@ impl Project {
     }
 }
 
+impl Collection {
+    pub fn new(name: String) -> Self {
+        Self {
+            id: next_id(),
+            name,
+            collapsed: false,
+        }
+    }
+}
+
 impl PostProcessing {
     pub fn process(
         &self,
@@ -79,4 +100,9 @@ impl PostProcessing {
         self.elephant_foot_fixer
             .post_slice(config, layers, progress[0].clone());
     }
+}
+
+fn next_id() -> u32 {
+    static NEXT_ID: AtomicU32 = AtomicU32::new(0);
+    NEXT_ID.fetch_add(1, Ordering::Relaxed)
 }

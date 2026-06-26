@@ -186,6 +186,7 @@ impl Project {
             slice_config,
             post_processing,
             models,
+            collections: Vec::new(), // TODO!
         })
     }
 }

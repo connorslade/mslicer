@@ -1,5 +1,8 @@
+use std::{collections::HashSet, iter};
+
 use egui::Vec2;
 use egui_tracing::EventCollector;
+use itertools::Either;
 use nalgebra::{Vector2, Vector3};
 use slicer::mesh::Mesh;
 use tools::supports::SupportConfig;
@@ -17,7 +20,7 @@ pub struct UiState {
     pub workspace: WorkspaceHover,
     pub support_placement: bool,
 
-    pub selected_model: Option<u32>,
+    pub selected: Selected,
     pub selected_printer: usize,
     pub support_preview: Option<Mesh>,
 
@@ -42,6 +45,14 @@ pub struct UiState {
 }
 
 #[derive(Default)]
+pub enum Selected {
+    #[default]
+    None,
+    Models(HashSet<u32>),
+    Collection(u32),
+}
+
+#[derive(Default)]
 pub struct WorkspaceHover {
     pub is_moving: bool,
     pub aspect: f32,
@@ -54,6 +65,62 @@ pub enum RemotePrintConnectStatus {
     None,
     Connecting,
     Scanning,
+}
+
+impl Selected {
+    pub fn clear(&mut self) {
+        *self = Selected::None;
+    }
+
+    pub fn model_clicked(&mut self, id: u32, shift: bool) {
+        match self {
+            Selected::None | Selected::Collection(_) => {
+                let mut set = HashSet::new();
+                set.insert(id);
+                *self = Selected::Models(set);
+            }
+            Selected::Models(set) => {
+                if shift {
+                    if set.contains(&id) {
+                        set.remove(&id);
+                    } else {
+                        set.insert(id);
+                    }
+                } else {
+                    set.clear();
+                    set.insert(id);
+                }
+            }
+        }
+    }
+
+    pub fn selected_models(&self) -> impl Iterator<Item = u32> {
+        match self {
+            Selected::None | Selected::Collection(_) => Either::Left(iter::empty()),
+            Selected::Models(set) => Either::Right(set.iter().copied()),
+        }
+    }
+
+    pub fn contains_model(&self, id: u32) -> bool {
+        match self {
+            Selected::Models(set) => set.contains(&id),
+            _ => false,
+        }
+    }
+
+    pub fn single_model(&self) -> Option<u32> {
+        match self {
+            Selected::Models(set) if set.len() == 1 => set.iter().next().copied(),
+            _ => None,
+        }
+    }
+
+    pub fn has_models(&self) -> bool {
+        match self {
+            Selected::Models(set) => set.len() > 0,
+            _ => false,
+        }
+    }
 }
 
 impl WorkspaceHover {

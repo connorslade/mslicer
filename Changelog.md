@@ -22,6 +22,7 @@
 - Support for Spacenav input (3Dconnexion 3D input device)
 - Initial camera distance increased
 - Fix model properties getting pushed off screen by lots of model entries
+- Create model collections for organization
 
 ## v0.7.0 &mdash; May 7th, 2026
 

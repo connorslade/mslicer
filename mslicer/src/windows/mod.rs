@@ -131,8 +131,13 @@ fn viewport(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     let uv = (response.hover_pos().unwrap_or_default() - rect.min) / rect.size();
     app.state.workspace = WorkspaceHover::new(is_moving, aspect, uv);
 
-    if response.clicked() && !is_moving {
-        app.state.selected_model = app.hovered_model();
+    if response.clicked()
+        && !is_moving
+        && let Some(id) = app.hovered_model()
+    {
+        app.state
+            .selected
+            .model_clicked(id, ui.input(|x| x.modifiers.shift));
     }
 
     let painter = ui.painter();
