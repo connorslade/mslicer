@@ -78,7 +78,7 @@ impl Objective {
         }
     }
 
-    pub fn eval(&self, platform: Vector2<f32>, bounds: Bounds2D) -> f32 {
+    pub fn eval(&self, platform: Vector2<f32>, bounds_penalty: f32, bounds: Bounds2D) -> f32 {
         let size = bounds.size();
         let mut score = match self {
             Objective::Area => size.x * size.y,
@@ -87,11 +87,11 @@ impl Objective {
 
         let (x, y) = (size.x > platform.x, size.y > platform.y);
         if x && y {
-            score += 10_000.0 * (size.x * size.y - platform.x * platform.y);
+            score += bounds_penalty * (size.x * size.y - platform.x * platform.y);
         } else if x {
-            score += 10_000.0 * (size.x * size.y - platform.x * size.y);
+            score += bounds_penalty * (size.x * size.y - platform.x * size.y);
         } else if y {
-            score += 10_000.0 * (size.x * size.y - size.x * platform.y);
+            score += bounds_penalty * (size.x * size.y - size.x * platform.y);
         }
 
         score

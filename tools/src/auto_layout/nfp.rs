@@ -12,6 +12,7 @@ pub struct AutoLayoutNFP {
     objective: Objective,
     padding: f32,
     segment_steps: f32,
+    bounds_penalty: f32,
 
     platform_size: Vector2<f32>,
     models: Vec<Model>,
@@ -28,6 +29,7 @@ impl AutoLayoutNFP {
             objective: Objective::Area,
             padding: 2.0,
             segment_steps: 10.0,
+            bounds_penalty: 10_000.0,
             platform_size,
             models,
         }
@@ -44,8 +46,20 @@ impl AutoLayoutNFP {
         }
     }
 
+    pub fn bounds_penalty(self, bounds_penalty: f32) -> Self {
+        Self {
+            bounds_penalty,
+            ..self
+        }
+    }
+
     pub fn objective(self, objective: Objective) -> Self {
         Self { objective, ..self }
+    }
+
+    fn eval(&self, bounds: Bounds2D) -> f32 {
+        self.objective
+            .eval(self.platform_size, self.bounds_penalty, bounds)
     }
 
     // Strict mode will abort if not all models can be fit, which is needed when
@@ -77,7 +91,7 @@ impl AutoLayoutNFP {
                         if valid {
                             let total_bounds = bounds.include_bound(this.bounds.offset(p));
 
-                            let objective = self.objective.eval(self.platform_size, total_bounds);
+                            let objective = self.eval(total_bounds);
                             (objective < best.1).then(|| best = (p, objective));
                         }
                     }
@@ -100,7 +114,7 @@ impl AutoLayoutNFP {
         let global_offset = -(bounds.min + bounds.size() / 2.0);
 
         progress.set_finished();
-        let models = (self.models.into_iter())
+        let models = (self.models.iter())
             .map(|x| Placement {
                 model: x.id,
                 position: x.origin + (x.offset + global_offset).to_homogeneous(),
@@ -108,7 +122,7 @@ impl AutoLayoutNFP {
             })
             .collect();
 
-        Some((self.objective.eval(self.platform_size, bounds), models))
+        Some((self.eval(bounds), models))
     }
 }
 

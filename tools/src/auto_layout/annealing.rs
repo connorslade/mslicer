@@ -1,3 +1,6 @@
+//! References:
+//! - [Applying Simulated Annealing and the No Fit Polygon to the Nesting Problem](https://www.graham-kendall.com/papers/bk1999c.pdf)
+
 use std::{
     f32::consts::{PI, TAU},
     mem,
@@ -34,6 +37,7 @@ pub struct Config {
     pub end_temp: f32,
     pub cooling: f32,
     pub iters: u32,
+    pub bounds_penalty: f32,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -73,6 +77,7 @@ impl AutoLayoutAnnealing {
                 .objective(config.objective)
                 .padding(config.padding)
                 .segment_steps(config.segment_steps)
+                .bounds_penalty(config.bounds_penalty)
                 .layout(Progress::new())
         };
 
@@ -86,7 +91,6 @@ impl AutoLayoutAnnealing {
             while temp > config.end_temp && stop_rx.try_recv().is_err() {
                 for _ in 0..config.iters {
                     let iter_models = perturb(config.rotation, &models);
-
                     let Some((iter_score, result)) = score(iter_models.clone()) else {
                         continue;
                     };
@@ -96,7 +100,7 @@ impl AutoLayoutAnnealing {
                     if delta < 0.0 || rng().random::<f32>() < (-delta / temp).exp() {
                         if iter_score < global_best {
                             history.lock().push((i, iter_score));
-                            global_best = best_score;
+                            global_best = iter_score;
                             let _ = tx.send(result.clone());
                         }
 
@@ -155,13 +159,30 @@ fn perturb(rotation: Rotation, models: &[Model]) -> Vec<Model> {
     let mut rng = rng();
     let range = 0..models.len();
 
-    match rng.random_range(0..=(1 + (!matches!(rotation, Rotation::Disabled)) as u8)) {
+    match rng.random_range(0..=(3 + (!matches!(rotation, Rotation::Disabled)) as u8)) {
+        // Swap two random model's insertion order
         0 => out.swap(rng.random_range(range.clone()), rng.random_range(range)),
+        // Swap two model's with an adjacent insertion order
         1 => {
             let i = rng.random_range(range);
-            (i + 1 < models.len()).then(|| out.swap(i, i + 1));
+            out.swap(i, (i + 1) % models.len())
         }
+        // Re-insert a model at a new point in the insertion order, shifting all
+        // the models between
         2 => {
+            let (i, j) = (rng.random_range(range.clone()), rng.random_range(range));
+            if i != j {
+                let item = out.remove(i);
+                out.insert(j, item);
+            }
+        }
+        // Reverse a run of insertions orders
+        3 => {
+            let (i, j) = (rng.random_range(range.clone()), rng.random_range(range));
+            out[i.min(j)..=i.max(j)].reverse();
+        }
+        // Rotate a model (if rotation mode is non Disabled)
+        4 => {
             let i = rng.random_range(range);
             out[i].rotate(rotation.random(&mut rng));
         }
@@ -185,6 +206,7 @@ impl Default for AutoLayoutAnnealing {
                 end_temp: 0.01,
                 cooling: 0.99,
                 iters: 50,
+                bounds_penalty: 10_000.0,
             },
             models: Default::default(),
             running: Default::default(),

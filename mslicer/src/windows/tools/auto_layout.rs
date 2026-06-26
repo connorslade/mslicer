@@ -93,6 +93,10 @@ fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
                     ui.take_available_width();
                 });
                 ui.end_row();
+
+                ui.label("Bounds Penalty");
+                ui.add_enabled(edit, DragValue::new(&mut tool.config.bounds_penalty));
+                ui.end_row();
             });
         });
 
