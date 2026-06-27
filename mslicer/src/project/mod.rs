@@ -31,7 +31,7 @@ pub struct Collection {
     pub name: String,
     pub collapsed: bool,
 
-    pub rename: RenameState,
+    pub rename: RenameState, // not persistent
 }
 
 #[derive(Default, Clone)]

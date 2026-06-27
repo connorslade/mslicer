@@ -108,6 +108,11 @@ impl Model {
         self
     }
 
+    pub fn with_collection(mut self, collection: Option<u32>) -> Self {
+        self.collection = collection;
+        self
+    }
+
     pub fn with_random_color(mut self) -> Self {
         self.randomize_color();
         self

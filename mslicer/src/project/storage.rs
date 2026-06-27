@@ -3,7 +3,7 @@ use std::{collections::HashMap, sync::Arc};
 use anyhow::{Result, ensure};
 use nalgebra::Vector3;
 
-use crate::project::{PostProcessing, Project, model::Model};
+use crate::project::{Collection, PostProcessing, Project, RenameState, model::Model};
 use common::{
     progress::Progress,
     serde::{Deserializer, SerdeExt, Serializer},
@@ -17,8 +17,11 @@ use slicer::{
 /// Project format version. Value should be incremented whenever the save format
 /// changes, even in development.
 ///
+/// ## v9
+/// Added collections.
+///
 /// ## v8
-/// Add exposure remapping curve to slice config.
+/// Added exposure remapping curve to slice config.
 ///
 /// ## v7
 /// Added exposure delay option to exposure config.
@@ -40,10 +43,11 @@ use slicer::{
 /// ## v2
 /// A complete rewrite using a custom serilizer/deserilizer because of the
 /// bincode drama...
-const VERSION: u16 = 8;
+const VERSION: u16 = 9;
 
 struct ModelInfo {
     mesh: u32,
+    collection: Option<u32>,
 
     name: String,
     color: Vector3<f32>,
@@ -59,6 +63,7 @@ impl ModelInfo {
     pub fn new(mesh: u32, model: &Model) -> Self {
         Self {
             mesh,
+            collection: model.collection,
             name: model.name.to_owned(),
             color: model.color.into(),
             exposure: model.exposure,
@@ -81,6 +86,7 @@ impl ModelInfo {
             .with_color(self.color.into())
             .with_exposure(self.exposure)
             .with_hidden(self.hidden)
+            .with_collection(self.collection)
     }
 
     pub fn serialize<T: Serializer>(&self, ser: &mut T) {
@@ -88,6 +94,13 @@ impl ModelInfo {
         ser.write_u32_be(self.mesh);
 
         // Model properties
+        if let Some(collection) = self.collection {
+            ser.write_bool(true);
+            ser.write_u32_be(collection);
+        } else {
+            ser.write_bool(false);
+        }
+
         ser.write_u32_be(self.name.len() as u32);
         ser.write_bytes(self.name.as_bytes());
         Vector3::from(self.color).serialize(ser);
@@ -103,6 +116,11 @@ impl ModelInfo {
     pub fn deserialize<T: Deserializer>(des: &mut T, version: u16) -> Self {
         Self {
             mesh: des.read_u32_be(),
+            collection: if version < 9 {
+                None
+            } else {
+                des.read_bool().then(|| des.read_u32_be())
+            },
             name: {
                 let name_len = des.read_u32_be();
                 let data = des.read_bytes(name_len as usize);
@@ -149,6 +167,9 @@ impl Project {
         progress.set_total(total as u64);
         ser.write_u32_be(meshes.len() as u32);
         (meshes.iter()).for_each(|mesh| serialize_mesh_inner(ser, mesh, &progress));
+
+        ser.write_u32_be(self.collections.len() as u32);
+        self.collections.iter().for_each(|c| c.serialize(ser));
         progress.set_finished();
     }
 
@@ -180,14 +201,40 @@ impl Project {
             })
             .collect();
 
+        let collections = (0..des.read_u32_be())
+            .map(|_| Collection::deserialize(des))
+            .collect();
+
         progress.set_finished();
         Ok(Self {
             path: None,
             slice_config,
             post_processing,
             models,
-            collections: Vec::new(), // TODO!
+            collections,
         })
+    }
+}
+
+impl Collection {
+    pub fn serialize<T: Serializer>(&self, ser: &mut T) {
+        ser.write_u32_be(self.id);
+        ser.write_u32_be(self.name.len() as u32);
+        ser.write_bytes(self.name.as_bytes());
+        ser.write_bool(self.collapsed);
+    }
+
+    pub fn deserialize<T: Deserializer>(des: &mut T) -> Self {
+        Self {
+            id: des.read_u32_be(),
+            name: {
+                let len = des.read_u32_be();
+                let data = des.read_bytes(len as usize);
+                String::from_utf8_lossy(&data).into_owned()
+            },
+            collapsed: des.read_bool(),
+            rename: RenameState::None,
+        }
     }
 }
 
