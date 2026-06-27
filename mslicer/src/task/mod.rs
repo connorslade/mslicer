@@ -16,6 +16,7 @@ mod mesh_manifold;
 mod project;
 mod remote_print;
 mod save_result;
+mod split_bodies;
 mod thread;
 mod webhook;
 pub use self::{
@@ -28,6 +29,7 @@ pub use self::{
     project::{ProjectLoad, ProjectSave},
     remote_print::{PrinterConnect, PrinterScan},
     save_result::SaveResult,
+    split_bodies::SplitBodies,
     webhook::Webhook,
 };
 

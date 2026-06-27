@@ -102,7 +102,7 @@ impl ArrayCluster {
         }
 
         *self.parent_mut(start) = id;
-        return id;
+        id
     }
 
     pub fn union(&mut self, a: u32, b: u32) {
