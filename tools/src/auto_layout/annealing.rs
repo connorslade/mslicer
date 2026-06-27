@@ -198,7 +198,7 @@ impl Default for AutoLayoutAnnealing {
                 objective: Objective::Area,
                 rotation: Rotation::Disabled,
                 padding: 2.0,
-                segment_steps: 10.0,
+                segment_steps: 1.0,
                 platform_size: Default::default(),
 
                 start_temp: 100.0,

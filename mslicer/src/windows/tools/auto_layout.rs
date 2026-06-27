@@ -174,7 +174,7 @@ pub fn layout_cache(padding: f32, models: &[Model]) -> (LayoutCache, Vec<auto_la
         let entry = CacheEntry::new(model.mesh.mesh_id(), 0.0);
         cache.populate_hull(entry, || {
             let rotation = model.mesh.rotation();
-            let transform = Rotation3::from_euler_angles(rotation.x, rotation.y, rotation.z);
+            let transform = Rotation3::from_euler_angles(rotation.x, rotation.y, 0.0);
             let points = (model.mesh.vertices().iter())
                 .map(|x| (transform * x).xy())
                 .collect::<Vec<_>>();
