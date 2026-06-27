@@ -62,7 +62,7 @@ impl<'a> AutoLayoutNfp<'a> {
             .eval(self.platform_size, self.bounds_penalty, bounds)
     }
 
-    pub fn layout(mut self, progress: Progress) -> Option<(f32, Vec<Placement>)> {
+    pub fn layout(mut self, progress: Progress) -> (f32, Vec<Placement>) {
         progress.set_total(self.models.len() as _);
 
         let first = &self.models[0];
@@ -121,7 +121,7 @@ impl<'a> AutoLayoutNfp<'a> {
             })
             .collect();
 
-        Some((self.eval(bounds), models))
+        (self.eval(bounds), models)
     }
 }
 

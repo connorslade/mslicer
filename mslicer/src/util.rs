@@ -1,4 +1,4 @@
-use rand::{Rng, distr::Alphanumeric};
+use rand::{RngExt, distr::Alphanumeric};
 
 #[macro_export]
 macro_rules! include_asset {

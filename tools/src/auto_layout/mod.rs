@@ -32,6 +32,7 @@ pub struct Placement {
 pub enum Objective {
     Area,
     Perimeter,
+    LongestAxis,
 }
 
 impl Model {
@@ -51,20 +52,22 @@ impl Model {
 }
 
 impl Objective {
-    pub const ALL: [Self; 2] = [Self::Area, Self::Perimeter];
+    pub const ALL: [Self; 3] = [Self::Area, Self::Perimeter, Self::LongestAxis];
 
     pub fn name(&self) -> &str {
         match self {
-            Objective::Area => "Area",
-            Objective::Perimeter => "Perimeter",
+            Self::Area => "Area",
+            Self::Perimeter => "Perimeter",
+            Self::LongestAxis => "Longest Axis",
         }
     }
 
     pub fn eval(&self, platform: Vector2<f32>, bounds_penalty: f32, bounds: Bounds2D) -> f32 {
         let size = bounds.size();
         let mut score = match self {
-            Objective::Area => size.x * size.y,
-            Objective::Perimeter => size.x + size.y,
+            Self::Area => size.x * size.y,
+            Self::Perimeter => size.x + size.y,
+            Self::LongestAxis => size.x.max(size.y),
         };
 
         let (x, y) = (size.x > platform.x, size.y > platform.y);

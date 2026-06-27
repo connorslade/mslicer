@@ -27,7 +27,6 @@ impl AutoLayout {
             auto_layout::AutoLayoutNfp::new(platform, models, &mut cache)
                 .segment_steps(segment_steps)
                 .layout(progress)
-                .unwrap()
                 .1
         }));
 

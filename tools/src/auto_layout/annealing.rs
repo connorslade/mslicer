@@ -15,7 +15,7 @@ use std::{
 use common::progress::Progress;
 use nalgebra::Vector2;
 use parking_lot::Mutex;
-use rand::{Rng, rng, rngs::ThreadRng};
+use rand::{RngExt, rng, rngs::ThreadRng};
 
 use crate::auto_layout::{AutoLayoutNfp, Model, Objective, Placement, cache::LayoutCache};
 
@@ -81,22 +81,19 @@ impl AutoLayoutAnnealing {
         };
 
         thread::spawn(move || {
-            let mut temp = config.start_temp;
-            let (mut best_score, mut best) =
-                score(models.to_vec()).unwrap_or_else(|| (f32::MAX, Vec::new()));
+            let mut temperature = config.start_temp;
+            let (mut best_score, mut best) = score(models.to_vec());
             let mut global_best = f32::MAX;
 
             let mut i = 0;
-            while temp > config.end_temp && stop_rx.try_recv().is_err() {
+            while temperature > config.end_temp && stop_rx.try_recv().is_err() {
                 for _ in 0..config.iters {
                     let iter_models = perturb(config.rotation, &models);
-                    let Some((iter_score, result)) = score(iter_models.clone()) else {
-                        continue;
-                    };
+                    let (iter_score, result) = score(iter_models.clone());
 
                     let delta = iter_score - best_score;
 
-                    if delta < 0.0 || rng().random::<f32>() < (-delta / temp).exp() {
+                    if delta < 0.0 || rng().random::<f32>() < (-delta / temperature).exp() {
                         if iter_score < global_best {
                             history.lock().push((i, iter_score));
                             global_best = iter_score;
@@ -111,7 +108,7 @@ impl AutoLayoutAnnealing {
                     i += 1;
                     iteration.store(i, Ordering::Relaxed);
                 }
-                temp *= config.cooling;
+                temperature *= config.cooling;
             }
 
             (best_score, best)
