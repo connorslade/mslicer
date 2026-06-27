@@ -1,4 +1,4 @@
-use std::{path::PathBuf, sync::atomic::Ordering};
+use std::path::PathBuf;
 
 use crate::{
     project::model::{Model, ModelId},

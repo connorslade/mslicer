@@ -1,7 +1,4 @@
-use std::{
-    f32::consts::TAU,
-    sync::{Arc, atomic::Ordering},
-};
+use std::{f32::consts::TAU, sync::Arc};
 
 use bitflags::bitflags;
 use common::{

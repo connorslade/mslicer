@@ -1,4 +1,4 @@
-use std::{borrow::Cow, sync::atomic::Ordering};
+use std::borrow::Cow;
 
 use common::{
     id_type,

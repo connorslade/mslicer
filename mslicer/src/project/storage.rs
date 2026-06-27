@@ -206,7 +206,12 @@ impl Project {
 
         let collections = (0..des.read_u32_be())
             .map(|_| Collection::deserialize(des))
-            .collect();
+            .collect::<Vec<_>>();
+
+        // kinda jank but it's whatever
+        if let Some(max_id) = collections.iter().map(|x| x.id.raw()).max() {
+            CollectionId::bump_past(max_id + 1);
+        }
 
         progress.set_finished();
         Ok(Self {

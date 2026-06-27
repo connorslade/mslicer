@@ -70,20 +70,30 @@ macro_rules! id_type {
             id: $inner,
         }
 
-        impl $name {
-            pub fn new() -> Self {
-                static NEXT_ID: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
-                Self {
-                    id: NEXT_ID.fetch_add(1, Ordering::Relaxed) as _,
+        mod id_type_impl {
+            use super::$name;
+
+            static NEXT_ID: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+            const MEMORY_ORDER: std::sync::atomic::Ordering = std::sync::atomic::Ordering::Relaxed;
+
+            impl $name {
+                pub fn new() -> Self {
+                    Self {
+                        id: NEXT_ID.fetch_add(1, MEMORY_ORDER) as _,
+                    }
                 }
-            }
 
-            pub fn from_raw(raw: $inner) -> Self {
-                Self { id: raw }
-            }
+                pub fn bump_past(raw: $inner) {
+                    NEXT_ID.fetch_max(raw as _, MEMORY_ORDER);
+                }
 
-            pub fn raw(&self) -> $inner {
-                self.id
+                pub fn from_raw(raw: $inner) -> Self {
+                    Self { id: raw }
+                }
+
+                pub fn raw(&self) -> $inner {
+                    self.id
+                }
             }
         }
     };
