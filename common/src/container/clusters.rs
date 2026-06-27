@@ -73,3 +73,49 @@ impl<T: Hash + PartialEq + Eq + Copy> Clusters<T> {
         self.clusters.get_mut(&a).unwrap().extend(old);
     }
 }
+
+pub struct ArrayCluster {
+    arr: Vec<u32>,
+}
+
+impl ArrayCluster {
+    pub fn new(size: usize) -> Self {
+        Self {
+            arr: (0..size as u32).collect::<Vec<_>>(),
+        }
+    }
+
+    fn parent(&self, id: u32) -> u32 {
+        self.arr[id as usize]
+    }
+
+    fn parent_mut(&mut self, id: u32) -> &mut u32 {
+        &mut self.arr[id as usize]
+    }
+
+    pub fn find(&mut self, mut id: u32) -> u32 {
+        let start = id;
+        let mut parent = self.parent(id);
+        while id != parent {
+            id = parent;
+            parent = self.parent(id);
+        }
+
+        *self.parent_mut(start) = id;
+        return id;
+    }
+
+    pub fn union(&mut self, a: u32, b: u32) {
+        let (a, b) = (self.find(a), self.find(b));
+        *self.parent_mut(a) = b;
+    }
+
+    pub fn clusters(mut self) -> impl Iterator<Item = HashSet<u32>> {
+        let mut out = HashMap::<_, HashSet<_>>::new();
+        for i in 0..self.arr.len() as u32 {
+            out.entry(self.find(i)).or_default().insert(i);
+        }
+
+        out.into_values()
+    }
+}

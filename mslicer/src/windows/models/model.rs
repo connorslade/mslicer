@@ -1,6 +1,7 @@
-use std::f32;
+use std::{collections::HashMap, f32};
 
 use common::{
+    container::ArrayCluster,
     misc::{separate_thousands, subscript_number},
     units::Centimeter,
 };
@@ -11,13 +12,18 @@ use egui::{
 };
 use egui_phosphor::regular::{
     ARROW_LINE_DOWN, COPY, CURSOR_TEXT, DICE_THREE, EYE, EYE_SLASH, FOLDER_DASHED, LINK_BREAK,
-    LINK_SIMPLE, TRASH, WARNING,
+    LINK_SIMPLE, SUBTRACT_SQUARE, TRASH, WARNING,
 };
 use nalgebra::Vector3;
+use slicer::mesh::Mesh;
 
 use crate::{
     app::{App, history::ModelAction},
-    project::{Collection, RenameState, model::MeshWarnings},
+    project::{
+        Collection, RenameState,
+        model::{MeshWarnings, Model},
+    },
+    task::{BuildAccelerationStructures, MeshManifold},
     ui::components::{
         being_edited, grid, history_tracked_model, vec3_dragger, vec3_dragger_proportional,
     },
@@ -118,6 +124,7 @@ pub fn model_entry(
 
 pub fn model_properties(app: &mut App, ui: &mut Ui, ctx: &Context, action: &mut Action, i: usize) {
     let model = &mut app.project.models[i];
+    let mut new_models = Vec::new();
 
     let platform = &app.project.slice_config.platform_size;
     let id = model.id;
@@ -144,6 +151,54 @@ pub fn model_properties(app: &mut App, ui: &mut Ui, ctx: &Context, action: &mut 
                 model.align_to_bed();
                 model.update_oob(platform);
             });
+
+        if ui
+            .button(concatcp!(SUBTRACT_SQUARE, " Split Bodies"))
+            .clicked()
+        {
+            let mut clusters = ArrayCluster::new(model.mesh.vertex_count());
+            for [a, b, c] in model.mesh.faces() {
+                for (&a, &b) in [(a, b), (b, c), (c, a)] {
+                    clusters.union(a, b);
+                }
+            }
+
+            let collection = Collection::new(model.name.to_owned());
+            model.collection = Some(collection.id);
+            model.hidden = true;
+
+            for (i, body) in clusters.clusters().enumerate() {
+                let mut verts = Vec::new();
+                let mut vert_cache = HashMap::<u32, u32>::new();
+                let mut faces = Vec::new();
+
+                let mut vert = |old: u32| {
+                    if let Some(new) = vert_cache.get(&old) {
+                        *new
+                    } else {
+                        let new = verts.len() as u32;
+                        verts.push(model.mesh.vertices()[old as usize]);
+                        vert_cache.insert(old, new);
+                        new
+                    }
+                };
+
+                // if {a, b, c} ∈ body
+                for f @ [a, ..] in model.mesh.faces() {
+                    body.contains(&a).then(|| faces.push(f.map(|x| vert(x))));
+                }
+
+                let mesh = Mesh::new(verts, faces);
+                let mut model = Model::from_mesh(mesh)
+                    .with_name(format!("Body {i}"))
+                    .with_collection(Some(collection.id))
+                    .with_random_color();
+                model.update_oob(&app.project.slice_config.platform_size);
+                new_models.push(model);
+            }
+
+            app.project.collections.push(collection);
+        }
     });
 
     CollapsingHeader::new("Transform")
@@ -251,6 +306,12 @@ pub fn model_properties(app: &mut App, ui: &mut Ui, ctx: &Context, action: &mut 
             ui.end_row();
         });
     });
+
+    for model in new_models {
+        app.tasks.add(MeshManifold::new(&model));
+        app.tasks.add(BuildAccelerationStructures::new(&model));
+        app.project.models.push(model);
+    }
 }
 
 fn rad_to_deg(pos: Vector3<f32>) -> Vector3<f32> {

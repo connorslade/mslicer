@@ -58,6 +58,7 @@ impl Project {
         self.slice_config = default_config.clone();
         self.post_processing = Default::default();
         self.models.clear();
+        self.collections.clear();
     }
 
     pub fn model(&mut self, id: ModelId) -> Option<&mut Model> {

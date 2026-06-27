@@ -6,7 +6,7 @@ mod image;
 pub mod rle;
 pub use self::{
     bitvec::BitVec,
-    clusters::Clusters,
+    clusters::{ArrayCluster, Clusters},
     image::{Image, ImageRuns},
     rle::Run,
 };
