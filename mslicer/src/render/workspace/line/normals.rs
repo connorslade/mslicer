@@ -2,12 +2,12 @@ use nalgebra::{Matrix4, Vector3};
 
 use crate::{
     app::App,
-    project::model::Model,
+    project::model::{Model, ModelId},
     render::workspace::line::{Line, LineGenerator},
 };
 
 pub struct NormalsDispatch {
-    last_models: Vec<u32>,
+    last_models: Vec<ModelId>,
     last_transforms: Vec<Matrix4<f32>>,
     last_normals: bool,
 

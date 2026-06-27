@@ -2,12 +2,12 @@ use clone_macro::clone;
 use common::progress::Progress;
 
 use crate::{
-    project::model::{MeshWarnings, Model},
+    project::model::{MeshWarnings, Model, ModelId},
     task::{PollResult, Task, TaskApp, TaskStatus, thread::TaskThread},
 };
 
 pub struct MeshManifold {
-    mesh: u32,
+    mesh: ModelId,
     progress: Progress,
     handle: TaskThread<bool>,
 }

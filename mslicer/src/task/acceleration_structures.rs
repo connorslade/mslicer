@@ -5,12 +5,12 @@ use common::progress::Progress;
 use slicer::{geometry::bvh::Bvh, half_edge::HalfEdgeMesh};
 
 use crate::{
-    project::model::Model,
+    project::model::{Model, ModelId},
     task::{PollResult, Task, TaskApp, TaskStatus, thread::TaskThread},
 };
 
 pub struct BuildAccelerationStructures {
-    mesh: u32,
+    mesh: ModelId,
     name: String,
 
     progress: Progress,

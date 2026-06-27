@@ -6,7 +6,7 @@ use egui_phosphor::regular::{FOLDER, FOLDER_OPEN};
 
 use crate::{
     app::App,
-    project::RenameState,
+    project::{CollectionId, RenameState},
     ui::components::being_edited,
     windows::models::{DraggedModel, model::model_entry},
 };
@@ -15,9 +15,9 @@ pub fn collection(
     app: &mut App,
     ctx: &Context,
     ui: &mut Ui,
-    collection: Option<u32>,
+    collection: Option<CollectionId>,
     n: &mut usize,
-    rects: &mut Vec<(usize, Option<u32>, Rect)>,
+    rects: &mut Vec<(usize, Option<CollectionId>, Rect)>,
 ) {
     for j in 0..app.project.models.len() {
         let model = &app.project.models[j];

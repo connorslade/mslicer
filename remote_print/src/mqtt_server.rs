@@ -17,7 +17,7 @@ use crate::{
     Response,
     commands::{Command, CommandTrait, DisconnectCommand},
     mqtt::{
-        MqttHandler, MqttServer,
+        ClientId, MqttHandler, MqttServer,
         packets::{
             connect::ConnectPacket,
             connect_ack::{ConnectAckFlags, ConnectAckPacket, ConnectReturnCode},
@@ -37,7 +37,7 @@ pub struct MqttInner {
     /// mainboard_id -> MqttClient
     pub(crate) clients: RwLock<HashMap<String, MqttClient>>,
     /// client_id -> mainboard_id
-    client_ids: RwLock<HashMap<u64, String>>,
+    client_ids: RwLock<HashMap<ClientId, String>>,
     callback: Option<Callback>,
 }
 
@@ -51,7 +51,7 @@ pub struct MqttClient {
     pub status: Mutex<Status>,
     pub machine_id: String,
     pub last_update: AtomicI64,
-    client_id: Option<u64>,
+    client_id: Option<ClientId>,
     next_packet_id: AtomicU16,
 }
 
@@ -60,8 +60,8 @@ impl MqttHandler for Mqtt {
         self.server.replace(Arc::downgrade(server));
     }
 
-    fn on_connect(&self, client_id: u64, _packet: ConnectPacket) -> Result<ConnectAckPacket> {
-        info!("Client `{client_id}` connected");
+    fn on_connect(&self, client_id: ClientId, _packet: ConnectPacket) -> Result<ConnectAckPacket> {
+        info!("Client `{client_id:?}` connected");
 
         Ok(ConnectAckPacket {
             flags: ConnectAckFlags::empty(),
@@ -69,9 +69,13 @@ impl MqttHandler for Mqtt {
         })
     }
 
-    fn on_subscribe(&self, client_id: u64, packet: SubscribePacket) -> Result<SubscribeAckPacket> {
+    fn on_subscribe(
+        &self,
+        client_id: ClientId,
+        packet: SubscribePacket,
+    ) -> Result<SubscribeAckPacket> {
         trace!(
-            "Client `{client_id}` subscribed to topics: {:?}",
+            "Client `{client_id:?}` subscribed to topics: {:?}",
             packet.filters
         );
 
@@ -110,8 +114,11 @@ impl MqttHandler for Mqtt {
         })
     }
 
-    fn on_publish(&self, client_id: u64, packet: PublishPacket) -> Result<()> {
-        trace!("Client `{client_id}` published to topic `{}`", packet.topic);
+    fn on_publish(&self, client_id: ClientId, packet: PublishPacket) -> Result<()> {
+        trace!(
+            "Client `{client_id:?}` published to topic `{}`",
+            packet.topic
+        );
 
         if let Some(board_id) = packet.topic.strip_prefix("/sdcp/status/") {
             let status = serde_json::from_slice::<Response<StatusData>>(&packet.data)?;
@@ -133,15 +140,15 @@ impl MqttHandler for Mqtt {
         Ok(())
     }
 
-    fn on_publish_ack(&self, client_id: u64, packet: PublishAckPacket) -> Result<()> {
+    fn on_publish_ack(&self, client_id: ClientId, packet: PublishAckPacket) -> Result<()> {
         trace!(
-            "Client `{client_id}` acknowledged packet `{}`",
+            "Client `{client_id:?}` acknowledged packet `{}`",
             packet.packet_id
         );
         Ok(())
     }
 
-    fn on_disconnect(&self, client_id: u64) -> Result<()> {
+    fn on_disconnect(&self, client_id: ClientId) -> Result<()> {
         let machine_id = self.client_ids.write().remove(&client_id);
         if let Some(machine_id) = machine_id {
             self.clients.write().remove(&machine_id);

@@ -1,9 +1,9 @@
-use std::{
-    borrow::Cow,
-    sync::atomic::{AtomicU64, Ordering},
-};
+use std::{borrow::Cow, sync::atomic::Ordering};
 
-use common::serde::{Deserializer, Serializer, SliceDeserializer};
+use common::{
+    id_type,
+    serde::{Deserializer, Serializer, SliceDeserializer},
+};
 
 pub trait MqttDeserialize<'a> {
     fn read_string(&mut self) -> Cow<'a, str>;
@@ -33,7 +33,4 @@ where
     }
 }
 
-pub fn next_id() -> u64 {
-    static NEXT_ID: AtomicU64 = AtomicU64::new(0);
-    NEXT_ID.fetch_add(1, Ordering::Relaxed)
-}
+id_type!(ClientId, u64);

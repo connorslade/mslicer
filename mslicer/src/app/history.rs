@@ -3,7 +3,7 @@ use std::{collections::VecDeque, mem};
 use common::color::LinearRgb;
 use nalgebra::Vector3;
 
-use crate::{app::App, app_ref_type};
+use crate::{app::App, app_ref_type, project::model::ModelId};
 
 const MAX_HISTORY: usize = 0x80; // random number i picked
 
@@ -17,7 +17,7 @@ app_ref_type!(History, history);
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Action {
-    Model { id: u32, action: ModelAction },
+    Model { id: ModelId, action: ModelAction },
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -58,7 +58,7 @@ impl History {
         self.future.clear();
     }
 
-    pub fn track_model(&mut self, id: u32, action: ModelAction) {
+    pub fn track_model(&mut self, id: ModelId, action: ModelAction) {
         self.track(Action::Model { id, action });
     }
 }
@@ -92,7 +92,7 @@ impl Action {
 impl ModelAction {
     /// Undoes the model action on the specified model, returning an action to
     /// revert the undo (redo) if the model was found.
-    pub fn undo(self, app: &mut App, model: u32) -> Option<ModelAction> {
+    pub fn undo(self, app: &mut App, model: ModelId) -> Option<ModelAction> {
         let model = app.project.models.iter_mut().find(|x| x.id == model)?;
         let platform_size = &app.project.slice_config.platform_size;
 

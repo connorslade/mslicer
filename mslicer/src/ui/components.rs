@@ -2,7 +2,10 @@ use std::{hash::Hash, mem};
 
 use egui::{Color32, DragValue, FontId, Grid, Response, Separator, Ui, emath::Numeric};
 
-use crate::app::history::{Action, History, ModelAction};
+use crate::{
+    app::history::{Action, History, ModelAction},
+    project::model::ModelId,
+};
 
 pub fn labeled_separator(ui: &mut Ui, text: &str) {
     ui.horizontal(|ui| {
@@ -131,7 +134,7 @@ pub fn history_tracked_value(
 
 pub fn history_tracked_model(
     (edited, ui, history): (bool, &mut Ui, &mut History),
-    (model, value): (u32, impl Fn() -> ModelAction),
+    (model, value): (ModelId, impl Fn() -> ModelAction),
 ) {
     history_tracked_value(
         (edited, ui, history),

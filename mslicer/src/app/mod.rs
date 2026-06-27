@@ -14,7 +14,7 @@ use crate::{
         config::Config, history::History, remote_print::RemotePrint,
         slice_operation::SliceOperation,
     },
-    project::Project,
+    project::{Project, model::ModelId},
     render::{
         Gcx,
         camera::{Camera, spacenav::SpaceNav},
@@ -135,9 +135,9 @@ impl App {
             .then(|| self.camera.hovered_ray(projection, *aspect, *uv))
     }
 
-    pub fn hovered_model(&self) -> Option<u32> {
+    pub fn hovered_model(&self) -> Option<ModelId> {
         let (pos, dir) = self.hovered_ray()?;
-        let mut min = (f32::MAX, 0);
+        let mut min = (f32::MAX, ModelId::default());
 
         for model in self.project.models.iter() {
             if !model.hidden

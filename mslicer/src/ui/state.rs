@@ -7,7 +7,10 @@ use nalgebra::{Vector2, Vector3};
 use slicer::mesh::Mesh;
 use tools::supports::SupportConfig;
 
-use crate::windows::tools::Tools;
+use crate::{
+    project::{CollectionId, model::ModelId},
+    windows::tools::Tools,
+};
 
 #[derive(Default)]
 pub struct UiState {
@@ -48,8 +51,8 @@ pub struct UiState {
 pub enum Selected {
     #[default]
     None,
-    Models(HashSet<u32>),
-    Collection(u32),
+    Models(HashSet<ModelId>),
+    Collection(CollectionId),
 }
 
 #[derive(Default)]
@@ -72,7 +75,7 @@ impl Selected {
         *self = Selected::None;
     }
 
-    pub fn model_clicked(&mut self, id: u32, shift: bool) {
+    pub fn model_clicked(&mut self, id: ModelId, shift: bool) {
         match self {
             Selected::None | Selected::Collection(_) => {
                 let mut set = HashSet::new();
@@ -94,7 +97,7 @@ impl Selected {
         }
     }
 
-    pub fn select_model(&mut self, id: u32) {
+    pub fn select_model(&mut self, id: ModelId) {
         match self {
             Selected::None | Selected::Collection(_) => {
                 let mut set = HashSet::new();
@@ -107,21 +110,21 @@ impl Selected {
         }
     }
 
-    pub fn selected_models(&self) -> impl Iterator<Item = u32> {
+    pub fn selected_models(&self) -> impl Iterator<Item = ModelId> {
         match self {
             Selected::None | Selected::Collection(_) => Either::Left(iter::empty()),
             Selected::Models(set) => Either::Right(set.iter().copied()),
         }
     }
 
-    pub fn contains_model(&self, id: u32) -> bool {
+    pub fn contains_model(&self, id: ModelId) -> bool {
         match self {
             Selected::Models(set) => set.contains(&id),
             _ => false,
         }
     }
 
-    pub fn single_model(&self) -> Option<u32> {
+    pub fn single_model(&self) -> Option<ModelId> {
         match self {
             Selected::Models(set) if set.len() == 1 => set.iter().next().copied(),
             _ => None,
@@ -135,14 +138,14 @@ impl Selected {
         }
     }
 
-    pub fn contains_collection(&self, id: u32) -> bool {
+    pub fn contains_collection(&self, id: CollectionId) -> bool {
         match self {
             Selected::Collection(collection) => *collection == id,
             _ => false,
         }
     }
 
-    pub fn collection_clicked(&mut self, id: u32, shift: bool) {
+    pub fn collection_clicked(&mut self, id: CollectionId, shift: bool) {
         match self {
             Selected::Models(set) if !shift || set.is_empty() => *self = Self::Collection(id),
             Selected::Collection(group) if id == *group => self.clear(),
@@ -151,7 +154,7 @@ impl Selected {
         }
     }
 
-    pub fn single_collection(&self) -> Option<u32> {
+    pub fn single_collection(&self) -> Option<CollectionId> {
         match self {
             Selected::Collection(id) => Some(*id),
             _ => None,

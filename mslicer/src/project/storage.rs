@@ -3,7 +3,9 @@ use std::{collections::HashMap, sync::Arc};
 use anyhow::{Result, ensure};
 use nalgebra::Vector3;
 
-use crate::project::{Collection, PostProcessing, Project, RenameState, model::Model};
+use crate::project::{
+    Collection, CollectionId, PostProcessing, Project, RenameState, model::Model,
+};
 use common::{
     progress::Progress,
     serde::{Deserializer, SerdeExt, Serializer},
@@ -47,7 +49,7 @@ const VERSION: u16 = 9;
 
 struct ModelInfo {
     mesh: u32,
-    collection: Option<u32>,
+    collection: Option<CollectionId>,
 
     name: String,
     color: Vector3<f32>,
@@ -96,7 +98,7 @@ impl ModelInfo {
         // Model properties
         if let Some(collection) = self.collection {
             ser.write_bool(true);
-            ser.write_u32_be(collection);
+            ser.write_u32_be(collection.raw());
         } else {
             ser.write_bool(false);
         }
@@ -119,7 +121,8 @@ impl ModelInfo {
             collection: if version < 9 {
                 None
             } else {
-                des.read_bool().then(|| des.read_u32_be())
+                des.read_bool()
+                    .then(|| CollectionId::from_raw(des.read_u32_be()))
             },
             name: {
                 let name_len = des.read_u32_be();
@@ -218,7 +221,7 @@ impl Project {
 
 impl Collection {
     pub fn serialize<T: Serializer>(&self, ser: &mut T) {
-        ser.write_u32_be(self.id);
+        ser.write_u32_be(self.id.raw());
         ser.write_u32_be(self.name.len() as u32);
         ser.write_bytes(self.name.as_bytes());
         ser.write_bool(self.collapsed);
@@ -226,7 +229,7 @@ impl Collection {
 
     pub fn deserialize<T: Deserializer>(des: &mut T) -> Self {
         Self {
-            id: des.read_u32_be(),
+            id: CollectionId::from_raw(des.read_u32_be()),
             name: {
                 let len = des.read_u32_be();
                 let data = des.read_bytes(len as usize);

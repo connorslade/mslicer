@@ -10,7 +10,6 @@ use std::{
 };
 
 use anyhow::Result;
-use misc::next_id;
 use packets::{
     Packet,
     connect::ConnectPacket,
@@ -26,11 +25,12 @@ use tracing::{info, trace, warn};
 
 mod misc;
 pub mod packets;
+pub use misc::ClientId;
 
 pub struct MqttServer<H: MqttHandler> {
     shutdown: AtomicBool,
     listener: Mutex<Option<TcpListener>>,
-    clients: Mutex<HashMap<u64, TcpStream>>,
+    clients: Mutex<HashMap<ClientId, TcpStream>>,
     handler: Soon<H>,
 }
 
@@ -39,11 +39,15 @@ where
     Self: Sized,
 {
     fn init(&self, server: &Arc<MqttServer<Self>>);
-    fn on_connect(&self, client_id: u64, packet: ConnectPacket) -> Result<ConnectAckPacket>;
-    fn on_subscribe(&self, client_id: u64, packet: SubscribePacket) -> Result<SubscribeAckPacket>;
-    fn on_publish(&self, client_id: u64, packet: PublishPacket) -> Result<()>;
-    fn on_publish_ack(&self, client_id: u64, packet: PublishAckPacket) -> Result<()>;
-    fn on_disconnect(&self, client_id: u64) -> Result<()>;
+    fn on_connect(&self, client_id: ClientId, packet: ConnectPacket) -> Result<ConnectAckPacket>;
+    fn on_subscribe(
+        &self,
+        client_id: ClientId,
+        packet: SubscribePacket,
+    ) -> Result<SubscribeAckPacket>;
+    fn on_publish(&self, client_id: ClientId, packet: PublishPacket) -> Result<()>;
+    fn on_publish_ack(&self, client_id: ClientId, packet: PublishAckPacket) -> Result<()>;
+    fn on_disconnect(&self, client_id: ClientId) -> Result<()>;
 }
 
 impl<H: MqttHandler + Send + Sync + 'static> MqttServer<H> {
@@ -79,7 +83,7 @@ impl<H: MqttHandler + Send + Sync + 'static> MqttServer<H> {
                     }
                 };
 
-                let client_id = next_id();
+                let client_id = ClientId::new();
                 self.clients
                     .lock()
                     .insert(client_id, stream.try_clone().unwrap());
@@ -109,22 +113,26 @@ impl<H: MqttHandler + Send + Sync + 'static> MqttServer<H> {
         }
     }
 
-    pub fn send_packet(&self, client_id: u64, packet: Packet) -> Result<()> {
+    pub fn send_packet(&self, client_id: ClientId, packet: Packet) -> Result<()> {
         let mut stream = self.get_client_mut(client_id);
         packet.write(&mut *stream)?;
         Ok(())
     }
 
-    fn get_client_mut(&self, client_id: u64) -> MappedMutexGuard<'_, TcpStream> {
+    fn get_client_mut(&self, client_id: ClientId) -> MappedMutexGuard<'_, TcpStream> {
         MutexGuard::map(self.clients.lock(), |x| x.get_mut(&client_id).unwrap())
     }
 
-    fn remove_client(&self, client_id: u64) {
+    fn remove_client(&self, client_id: ClientId) {
         self.clients.lock().remove(&client_id);
     }
 }
 
-fn handle_client<H>(server: Arc<MqttServer<H>>, client_id: u64, mut stream: TcpStream) -> Result<()>
+fn handle_client<H>(
+    server: Arc<MqttServer<H>>,
+    client_id: ClientId,
+    mut stream: TcpStream,
+) -> Result<()>
 where
     H: MqttHandler + Send + Sync + 'static,
 {

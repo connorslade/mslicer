@@ -1,13 +1,11 @@
-use std::{
-    path::PathBuf,
-    sync::atomic::{AtomicU32, Ordering},
-};
+use std::{path::PathBuf, sync::atomic::Ordering};
 
 use crate::{
-    project::model::Model,
+    project::model::{Model, ModelId},
     task::{FileDialog, ProjectLoad, ProjectSave, Task},
 };
 use common::{
+    id_type,
     progress::CombinedProgress,
     slice::{Layer, SliceConfig},
 };
@@ -27,7 +25,7 @@ pub struct Project {
 
 #[derive(Default, Clone)]
 pub struct Collection {
-    pub id: u32,
+    pub id: CollectionId,
     pub name: String,
     pub collapsed: bool,
 
@@ -62,11 +60,11 @@ impl Project {
         self.models.clear();
     }
 
-    pub fn model(&mut self, id: u32) -> Option<&mut Model> {
+    pub fn model(&mut self, id: ModelId) -> Option<&mut Model> {
         self.models.iter_mut().find(|x| x.id == id)
     }
 
-    pub fn collection(&mut self, id: u32) -> Option<&mut Collection> {
+    pub fn collection(&mut self, id: CollectionId) -> Option<&mut Collection> {
         self.collections.iter_mut().find(|x| x.id == id)
     }
 }
@@ -101,7 +99,7 @@ impl Project {
 impl Collection {
     pub fn new(name: String) -> Self {
         Self {
-            id: next_id(),
+            id: CollectionId::new(),
             name,
             collapsed: false,
             rename: RenameState::None,
@@ -125,7 +123,4 @@ impl PostProcessing {
     }
 }
 
-fn next_id() -> u32 {
-    static NEXT_ID: AtomicU32 = AtomicU32::new(0);
-    NEXT_ID.fetch_add(1, Ordering::Relaxed)
-}
+id_type!(CollectionId, u32);

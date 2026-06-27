@@ -9,7 +9,7 @@ use egui_phosphor::regular::{COPY, CURSOR_TEXT, EYE, EYE_SLASH, FOLDER_DASHED, S
 
 use crate::{
     app::App,
-    project::Collection,
+    project::{Collection, CollectionId},
     windows::models::{
         collection::{collection, collection_entry},
         model::model_properties,
@@ -179,7 +179,7 @@ fn selection_properties(app: &mut App, ui: &mut Ui) {
     });
 }
 
-fn collection_properties(app: &mut App, ui: &mut Ui, id: u32) {
+fn collection_properties(app: &mut App, ui: &mut Ui, id: CollectionId) {
     ui.horizontal_wrapped(|ui| {
         if ui.button(concatcp!(CURSOR_TEXT, " Rename")).clicked()
             && let Some(collection) = app.project.collection(id)
@@ -195,7 +195,10 @@ fn collection_properties(app: &mut App, ui: &mut Ui, id: u32) {
             });
         }
 
-        let hidden = app.project.model(id).map(|x| x.hidden).unwrap_or_default();
+        let hidden = (app.project.models.iter())
+            .find(|x| x.collection == Some(id))
+            .map(|x| x.hidden)
+            .unwrap_or_default();
         let text = [
             concatcp!(EYE_SLASH, " Hide All"),
             concatcp!(EYE, " Show All"),

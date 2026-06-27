@@ -1,14 +1,12 @@
 use std::{
     f32::consts::TAU,
-    sync::{
-        Arc,
-        atomic::{AtomicU32, Ordering},
-    },
+    sync::{Arc, atomic::Ordering},
 };
 
 use bitflags::bitflags;
 use common::{
     color::{LinearRgb, START_COLOR},
+    id_type,
     units::{CubicMilimeters, Milimeters},
 };
 use nalgebra::Vector3;
@@ -17,12 +15,15 @@ use wgpu::{Buffer, Device};
 
 use slicer::{geometry::bvh::Bvh, half_edge::HalfEdgeMesh, mesh::Mesh};
 
-use crate::{project::RenameState, render::util::gpu_mesh_buffers};
+use crate::{
+    project::{CollectionId, RenameState},
+    render::util::gpu_mesh_buffers,
+};
 
 pub struct Model {
     pub name: String,
-    pub id: u32,
-    pub collection: Option<u32>,
+    pub id: ModelId,
+    pub collection: Option<CollectionId>,
 
     pub mesh: Mesh,
     pub bvh: Option<Arc<Bvh>>,
@@ -63,7 +64,7 @@ impl Model {
     pub fn from_mesh(mesh: Mesh) -> Self {
         Self {
             name: String::new(),
-            id: next_id(),
+            id: ModelId::new(),
             collection: None,
 
             base_volume: mesh_volume(&mesh),
@@ -108,7 +109,7 @@ impl Model {
         self
     }
 
-    pub fn with_collection(mut self, collection: Option<u32>) -> Self {
+    pub fn with_collection(mut self, collection: Option<CollectionId>) -> Self {
         self.collection = collection;
         self
     }
@@ -189,7 +190,7 @@ impl Clone for Model {
     fn clone(&self) -> Self {
         Self {
             name: self.name.clone(),
-            id: next_id(),
+            id: ModelId::new(),
             collection: self.collection,
 
             mesh: self.mesh.clone(),
@@ -220,10 +221,7 @@ impl Default for ModelUi {
     }
 }
 
-fn next_id() -> u32 {
-    static NEXT_ID: AtomicU32 = AtomicU32::new(0);
-    NEXT_ID.fetch_add(1, Ordering::Relaxed)
-}
+id_type!(ModelId, u32);
 
 // Reference: https://stackoverflow.com/a/13927691
 fn mesh_volume(mesh: &Mesh) -> CubicMilimeters {

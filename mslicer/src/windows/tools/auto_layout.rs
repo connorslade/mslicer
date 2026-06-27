@@ -166,7 +166,10 @@ pub fn layout_cache(padding: f32, models: &[Model]) -> (LayoutCache, Vec<auto_la
     let mut cache = LayoutCache::new(padding);
 
     for model in models.iter().filter(|x| !x.hidden) {
-        out.push(auto_layout::Model::new(model.id, model.mesh.mesh_id()));
+        out.push(auto_layout::Model::new(
+            model.id.raw(),
+            model.mesh.mesh_id(),
+        ));
 
         let entry = CacheEntry::new(model.mesh.mesh_id(), 0.0);
         cache.populate_hull(entry, || {
@@ -184,7 +187,7 @@ pub fn layout_cache(padding: f32, models: &[Model]) -> (LayoutCache, Vec<auto_la
 }
 
 pub fn apply_placement(models: &mut [Model], placement: &Placement) {
-    if let Some(model) = models.iter_mut().find(|x| x.id == placement.model) {
+    if let Some(model) = models.iter_mut().find(|x| x.id.raw() == placement.model) {
         let new_position = placement.position.xy().push(model.mesh.position().z);
         let new_rotation = model.mesh.rotation().xy().push(placement.rotation);
         model.mesh.set_position(new_position);

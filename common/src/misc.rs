@@ -61,3 +61,30 @@ where
 {
     a * (1.0 - t) + b * t
 }
+
+#[macro_export]
+macro_rules! id_type {
+    ($name:ident, $inner:ty) => {
+        #[derive(Default, Debug, Copy, Clone, Eq, PartialEq, Hash)]
+        pub struct $name {
+            id: $inner,
+        }
+
+        impl $name {
+            pub fn new() -> Self {
+                static NEXT_ID: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+                Self {
+                    id: NEXT_ID.fetch_add(1, Ordering::Relaxed) as _,
+                }
+            }
+
+            pub fn from_raw(raw: $inner) -> Self {
+                Self { id: raw }
+            }
+
+            pub fn raw(&self) -> $inner {
+                self.id
+            }
+        }
+    };
+}
