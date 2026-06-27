@@ -5,7 +5,10 @@ use common::{container::ArrayCluster, progress::Progress};
 use slicer::mesh::Mesh;
 
 use crate::{
-    project::{Collection, model::Model},
+    project::{
+        Collection,
+        model::{Model, ModelId},
+    },
     task::{
         BuildAccelerationStructures, MeshManifold, PollResult, Task, TaskApp, TaskStatus,
         thread::TaskThread,
@@ -13,21 +16,21 @@ use crate::{
 };
 
 pub struct SplitBodies {
+    parent: ModelId,
     collection: Collection,
+
     progress: Progress,
     handle: TaskThread<Vec<Mesh>>,
 }
 
 impl SplitBodies {
     pub fn new(model: &mut Model) -> Self {
-        let mesh = model.mesh.clone();
-
         let collection = Collection::new(model.name.to_owned());
-        model.collection = Some(collection.id);
-        model.hidden = true;
+        let mesh = model.mesh.clone();
 
         let progress = Progress::new();
         Self {
+            parent: model.id,
             handle: TaskThread::spawn(clone!([progress], move || {
                 let mut clusters = ArrayCluster::new(mesh.vertex_count());
                 progress.set_total(mesh.face_count() as u64 * 3);
@@ -92,6 +95,12 @@ impl Task for SplitBodies {
                     app.project.models.push(model);
                 }
 
+                if let Some(model) = app.project.model(self.parent) {
+                    model.collection = Some(collection.id);
+                    model.hidden = true;
+                }
+
+                app.project.collections.push(collection);
                 result
             })
     }

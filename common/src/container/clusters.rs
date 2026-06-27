@@ -74,6 +74,7 @@ impl<T: Hash + PartialEq + Eq + Copy> Clusters<T> {
     }
 }
 
+/// Reference: <https://people.engr.tamu.edu/djimenez/ut/utsa/cs3343/lecture18.html>
 pub struct ArrayCluster {
     arr: Vec<u32>,
 }

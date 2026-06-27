@@ -23,6 +23,7 @@
 - Initial camera distance increased
 - Fix model properties getting pushed off screen by lots of model entries
 - Create model collections for organization
+- Split mesh with multiple shells into separate models
 
 ## v0.7.0 &mdash; May 7th, 2026
 
