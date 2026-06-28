@@ -25,7 +25,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
         for idx in 0..app.project.models.len() {
             let model = &mut app.project.models[idx];
             if ui.button(&model.name).clicked() {
-                model.find_overhangs();
+                // model.find_overhangs();
             }
         }
     });

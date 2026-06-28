@@ -9,6 +9,7 @@ use crate::mesh::MeshInner;
 pub struct HalfEdgeMesh {
     half_edges: Vec<HalfEdge>,
     edge_map: HashMap<(u32, u32), u32>,
+    incident_edge: HashMap<u32, u32>,
 }
 
 #[derive(Debug, Clone)]
@@ -26,6 +27,7 @@ impl HalfEdgeMesh {
     pub fn build(mesh: &Arc<MeshInner>) -> Self {
         let mut half_edges = Vec::new();
         let mut edge_map = HashMap::new();
+        let mut incident_edge = HashMap::new();
 
         for (face_idx, face) in mesh.faces.iter().enumerate() {
             let first_edge = half_edges.len() as u32;
@@ -44,8 +46,11 @@ impl HalfEdgeMesh {
                 };
 
                 let edge_key = (face[i], face[(i + 1) % 3]);
+                let idx = first_edge + i as u32;
+
+                incident_edge.insert(half_edge.origin_vertex, idx);
+                edge_map.insert(edge_key, idx);
                 half_edges.push(half_edge);
-                edge_map.insert(edge_key, first_edge + i as u32);
             }
         }
 
@@ -56,6 +61,7 @@ impl HalfEdgeMesh {
         Self {
             half_edges,
             edge_map,
+            incident_edge,
         }
     }
 
@@ -104,4 +110,18 @@ impl HalfEdgeMesh {
             .get(&edge)
             .map(|x| &self.half_edges[*x as usize])
     }
+
+    pub fn incident_edge(&self, vertex: u32) -> Option<&HalfEdge> {
+        self.incident_edge
+            .get(&vertex)
+            .map(|x| &self.half_edges[*x as usize])
+    }
 }
+
+impl PartialEq for HalfEdge {
+    fn eq(&self, other: &Self) -> bool {
+        self.origin_vertex == other.origin_vertex && self.vertex == other.vertex
+    }
+}
+
+impl Eq for HalfEdge {}

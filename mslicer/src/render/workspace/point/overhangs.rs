@@ -22,19 +22,19 @@ impl PointGenerator for OverhangPointDispatch {
         self.cached_points.clear();
 
         for model in app.project.models.iter() {
-            let Some(overhangs) = &model.overhangs else {
-                continue;
-            };
+            // let Some(overhangs) = &model.overhangs else {
+            //     continue;
+            // };
 
-            let verts = model.mesh.vertices();
-            for overhang in overhangs {
-                let position = model.mesh.transform(&verts[*overhang as usize]);
-                self.cached_points.push(Point {
-                    position,
-                    radius: 0.5,
-                    color: Vector4::new(1.0, 1.0, 0.0, 0.25),
-                });
-            }
+            // let verts = model.mesh.vertices();
+            // for overhang in overhangs {
+            //     let position = model.mesh.transform(&verts[*overhang as usize]);
+            //     self.cached_points.push(Point {
+            //         position,
+            //         radius: 0.5,
+            //         color: Vector4::new(1.0, 1.0, 0.0, 0.25),
+            //     });
+            // }
         }
     }
 

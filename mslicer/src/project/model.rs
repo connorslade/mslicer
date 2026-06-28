@@ -7,7 +7,6 @@ use common::{
     units::{CubicMilimeters, Milimeters},
 };
 use nalgebra::Vector3;
-use tools::supports::detect::detect_point_overhangs;
 use wgpu::{Buffer, Device};
 
 use slicer::{geometry::bvh::Bvh, half_edge::HalfEdgeMesh, mesh::Mesh};
@@ -27,14 +26,12 @@ pub struct Model {
     pub half_edge: Option<Arc<HalfEdgeMesh>>,
     base_volume: CubicMilimeters,
 
-    pub warnings: MeshWarnings,
-    pub overhangs: Option<Vec<u32>>,
-
     pub color: LinearRgb<f32>,
     pub exposure: u8,
     pub hidden: bool,
     pub ui: ModelUi,
 
+    pub warnings: MeshWarnings,
     buffers: Option<RenderedMeshBuffers>,
 }
 
@@ -69,14 +66,12 @@ impl Model {
             half_edge: None,
             mesh,
 
-            warnings: MeshWarnings::empty(),
-            overhangs: None,
-
             color: LinearRgb::repeat(1.0),
             hidden: false,
             exposure: 255,
             ui: ModelUi::default(),
 
+            warnings: MeshWarnings::empty(),
             buffers: None,
         }
     }
@@ -122,15 +117,6 @@ impl Model {
         self
     }
 
-    // Returns a list of vertices that are lower than all their neighbors.
-    pub fn find_overhangs(&mut self) {
-        self.overhangs = Some(detect_point_overhangs(
-            &self.mesh,
-            self.half_edge.as_ref().unwrap(),
-            |origin, _, _| origin.origin_vertex,
-        ));
-    }
-
     pub fn try_get_buffers(&self) -> Option<&RenderedMeshBuffers> {
         self.buffers.as_ref()
     }
@@ -173,13 +159,11 @@ impl Model {
     pub fn set_scale(&mut self, platform: &Vector3<Milimeters>, scale: Vector3<f32>) {
         self.mesh.set_scale(scale);
         self.update_oob(platform);
-        self.overhangs = None;
     }
 
     pub fn set_rotation(&mut self, platform: &Vector3<Milimeters>, rotation: Vector3<f32>) {
         self.mesh.set_rotation(rotation);
         self.update_oob(platform);
-        self.overhangs = None;
     }
 }
 
@@ -195,15 +179,13 @@ impl Clone for Model {
             half_edge: self.half_edge.clone(),
             base_volume: self.base_volume,
 
-            warnings: self.warnings,
-            overhangs: self.overhangs.clone(),
-
             color: self.color,
             hidden: self.hidden,
             ui: self.ui.clone(),
 
             exposure: self.exposure,
 
+            warnings: self.warnings,
             buffers: None,
         }
     }

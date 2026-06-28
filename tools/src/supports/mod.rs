@@ -6,6 +6,7 @@ use nalgebra::Vector3;
 use slicer::{builder::MeshBuilder, geometry::bvh::Bvh, half_edge::HalfEdgeMesh, mesh::Mesh};
 
 pub mod detect;
+pub mod quazirandom;
 
 pub struct SupportGenerator<'a> {
     config: &'a SupportConfig,
@@ -44,37 +45,14 @@ impl<'a> SupportGenerator<'a> {
         half_edge: &HalfEdgeMesh,
         bvh: &Bvh,
     ) -> Option<Mesh> {
-        let overhangs = Vec::new();
+        let mut overhangs = Vec::new();
 
-        self.overhanging_edges(mesh, half_edge);
-
-        // let verts = mesh.vertices();
-        // for (a, b) in self.overhanging_edges(mesh, half_edge) {
-        //     let a = mesh.transform(&verts[a as usize]);
-        //     let b = mesh.transform(&verts[b as usize]);
-
-        //     let n = ((a - b).magnitude() * 0.1) as usize;
-        //     for i in 0..=n {
-        //         let t = i as f32 / n as f32;
-        //         overhangs.push(lerp(a, b, t));
-        //     }
-        // }
-
-        // let point_overhangs = detect_point_overhangs(mesh, half_edge, |_, pos, _| pos);
-        // overhangs.extend_from_slice(&point_overhangs);
-
-        // let face_overhangs = self.detect_face_overhangs(mesh);
-        // overhangs.extend_from_slice(&face_overhangs);
-
-        // info!(
-        //     "Found {} overhangs {{ face: {}, point: {} }}",
-        //     overhangs.len(),
-        //     face_overhangs.len(),
-        //     point_overhangs.len()
-        // );
+        let faces = self.overhanging_faces(mesh);
+        // overhangs.extend(self.place_point_supports(mesh, half_edge).iter());
+        // overhangs.extend(self.place_face_supports(mesh, &faces).iter());
+        overhangs.extend(self.place_edge_supports(mesh, half_edge, &faces).iter());
 
         let mut builder = MeshBuilder::new();
-
         let raft_points = self.build_support_mesh(mesh, bvh, &overhangs, &mut builder);
         self.build_raft_mesh(&raft_points, &mut builder);
 
@@ -133,18 +111,18 @@ impl<'a> SupportGenerator<'a> {
 
             builder.add_vertex(point.push(0.0));
             builder.add_vertex(
-                (point - offset * self.config.raft_offset).push(self.config.raft_height),
+                (point + offset * self.config.raft_offset).push(self.config.raft_height),
             );
         }
 
         let verts = builder.next_idx() - idx;
         for i in (0..verts).step_by(2) {
             if i != 0 && i + 3 < verts {
-                builder.add_face([idx, idx + i, idx + i + 2]);
-                builder.add_face([idx + i + 3, idx + i + 1, idx + 1]);
+                builder.add_face([idx, idx + i + 2, idx + i]);
+                builder.add_face([idx + 1, idx + i + 1, idx + i + 3]);
             }
 
-            builder.add_quad_flipped([
+            builder.add_quad([
                 idx + i % verts,
                 idx + (i + 1) % verts,
                 idx + (i + 2) % verts,
