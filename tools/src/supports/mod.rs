@@ -23,15 +23,21 @@ pub struct SupportConfig {
     /// Support generation
     pub support_radius: f32,
     pub tip_radius: f32,
+    pub tip_length: f32,
+    pub precision: u32,
 
     pub raft_height: f32,
     pub raft_offset: f32,
 
-    pub precision: u32,
-
-    /// Overhang detection
     pub max_angle: f32,
     pub face_support_spacing: f32,
+    pub edge_support_spacing: f32,
+    pub edge_angle_delta: f32,
+}
+
+pub struct SupportPlacement {
+    pub point: Vector3<f32>,
+    pub normal: Vector3<f32>,
 }
 
 impl<'a> SupportGenerator<'a> {
@@ -44,14 +50,16 @@ impl<'a> SupportGenerator<'a> {
         mesh: &Mesh,
         half_edge: &HalfEdgeMesh,
         bvh: &Bvh,
-        debug: &mut Vec<[Vector3<f32>; 2]>,
     ) -> Option<Mesh> {
         let mut overhangs = Vec::new();
 
         let faces = self.overhanging_faces(mesh);
-        overhangs.extend(self.place_point_supports(mesh, half_edge).iter());
-        overhangs.extend(self.place_face_supports(mesh, &faces).iter());
-        overhangs.extend(self.place_edge_supports(mesh, half_edge, &faces).iter());
+        overhangs.extend(self.place_point_supports(mesh, half_edge).into_iter());
+        overhangs.extend(self.place_face_supports(mesh, &faces).into_iter());
+        overhangs.extend(
+            self.place_edge_supports(mesh, half_edge, &faces)
+                .into_iter(),
+        );
 
         let mut builder = MeshBuilder::new();
         let raft_points = self.build_support_mesh(mesh, bvh, &overhangs, &mut builder);
@@ -64,20 +72,16 @@ impl<'a> SupportGenerator<'a> {
         &self,
         mesh: &Mesh,
         bvh: &Bvh,
-        overhangs: &[Vector3<f32>],
+        overhangs: &[SupportPlacement],
         builder: &mut MeshBuilder,
     ) -> Vec<Vector2<f32>> {
-        let (r, tr, p) = (
-            self.config.support_radius,
-            self.config.tip_radius,
-            self.config.precision,
-        );
+        let (r, p) = (self.config.support_radius, self.config.precision);
 
         let mut raft_points = Vec::new();
-        for &point in overhangs {
-            let start = point - Vector3::z();
+        for SupportPlacement { point, normal } in overhangs.iter() {
+            let start = point + normal * self.config.tip_length;
             if let Some(lines) = route_support(mesh, bvh, start) {
-                builder.add_cylinder((point, start), (tr, r), p);
+                builder.add_cylinder((*point, start), (self.config.tip_radius, r), p);
                 builder.add_cylinder((lines[0], lines[1]), (r, r), p);
                 builder.add_cylinder((lines[1], lines[2]), (r, r), p);
 
@@ -87,7 +91,7 @@ impl<'a> SupportGenerator<'a> {
                     raft_points.push(lines[2].xy() + normal * r);
                 }
 
-                builder.add_sphere(point, 0.2, p);
+                builder.add_sphere(*point, 0.2, p);
                 builder.add_sphere(lines[0], r, p);
                 builder.add_sphere(lines[1], r, p);
             }
@@ -158,11 +162,14 @@ impl Default for SupportConfig {
         Self {
             support_radius: 1.0,
             tip_radius: 0.2,
+            tip_length: 3.0,
             raft_height: 1.0,
             raft_offset: 1.0,
             precision: 10,
             max_angle: 30.0,
-            face_support_spacing: 5.0,
+            face_support_spacing: 50.0,
+            edge_angle_delta: 0.1,
+            edge_support_spacing: 20.0,
         }
     }
 }

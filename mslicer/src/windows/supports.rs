@@ -61,7 +61,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     ui.add_space(8.0);
     let support = &mut app.state.support_config;
 
-    CollapsingHeader::new("Overhang Detection").show(ui, |ui| {
+    CollapsingHeader::new("Support Placement").show(ui, |ui| {
         dragger(ui, "Max Angle", &mut support.max_angle, |x| x.speed(0.01));
         dragger(
             ui,
@@ -69,11 +69,19 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
             &mut support.face_support_spacing,
             |x| x,
         );
+        dragger(ui, "Edge Angle Delta", &mut support.edge_angle_delta, |x| x);
+        dragger(
+            ui,
+            "Edge Support Spacing",
+            &mut support.edge_support_spacing,
+            |x| x,
+        );
     });
 
     CollapsingHeader::new("Support Generation").show(ui, |ui| {
         for (name, value) in [
             ("Support Radius", &mut support.support_radius),
+            ("Tip Length", &mut support.tip_length),
             ("Tip Radius", &mut support.tip_radius),
             ("Raft Height", &mut support.raft_height),
             ("Raft Offset", &mut support.raft_offset),
@@ -97,13 +105,7 @@ fn generate_support(app: &mut App, model: usize) {
         app.project.slice_config.platform_size.map(|x| x.convert()),
     );
 
-    app.state.line_support_debug.clear();
-    let Some(supports) = generator.generate_supports(
-        &model.mesh,
-        half_edge,
-        bvh,
-        &mut app.state.line_support_debug,
-    ) else {
+    let Some(supports) = generator.generate_supports(&model.mesh, half_edge, bvh) else {
         return;
     };
 

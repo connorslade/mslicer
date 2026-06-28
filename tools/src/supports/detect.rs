@@ -2,14 +2,13 @@ use std::collections::HashSet;
 
 use common::container::ArrayCluster;
 use nalgebra::Vector3;
-use ordered_float::OrderedFloat;
 use slicer::{
     geometry::{Ray, primitive, triangle::triangle_intersection},
     half_edge::HalfEdgeMesh,
     mesh::Mesh,
 };
 
-use crate::supports::{SupportGenerator, quazirandom::quazirandom_rect_2d};
+use crate::supports::{SupportGenerator, SupportPlacement, quazirandom::quazirandom_rect_2d};
 
 impl<'a> SupportGenerator<'a> {
     pub fn overhanging_faces(&self, mesh: &Mesh) -> Vec<(usize, Vector3<f32>)> {
@@ -50,7 +49,7 @@ impl<'a> SupportGenerator<'a> {
                 let angle_diff = normal.angle(&neighbor_normal);
 
                 // 0.1 rad ≈ 5°
-                if angle_diff > 0.1 {
+                if angle_diff > self.config.edge_angle_delta {
                     cluster.union(edge.origin_vertex, edge.vertex);
                 }
             }
@@ -66,13 +65,11 @@ impl<'a> SupportGenerator<'a> {
         &self,
         mesh: &Mesh,
         overhangs: &[(usize, Vector3<f32>)],
-    ) -> Vec<Vector3<f32>> {
-        let spacing = 50.0;
-
+    ) -> Vec<SupportPlacement> {
         let mut out = Vec::new();
         let bed_size = self.bed_size.xy().map(|x| x.raw());
 
-        for pos in quazirandom_rect_2d(bed_size, spacing) {
+        for pos in quazirandom_rect_2d(bed_size, self.config.face_support_spacing) {
             let pos = pos - bed_size / 2.0;
             let mut intersections = Vec::new();
             for (idx, _angle) in overhangs.iter() {
@@ -83,12 +80,13 @@ impl<'a> SupportGenerator<'a> {
                 let face = (mesh.face_verts_raw(*idx), mesh.normal(*idx));
                 if let Some(mut intersection) = triangle_intersection::<primitive::Ray>(face, ray) {
                     intersection.1 = mesh.transform(&intersection.1);
-                    intersections.push(intersection.1);
+                    intersections.push(SupportPlacement {
+                        point: intersection.1,
+                        normal: face.1,
+                    });
                 }
             }
 
-            intersections.sort_by_key(|x| OrderedFloat(x.z));
-            intersections.dedup_by(|a, b| (a.z - b.z).abs() < 0.1);
             out.extend(intersections);
         }
 
@@ -100,12 +98,11 @@ impl<'a> SupportGenerator<'a> {
         mesh: &Mesh,
         half_edge: &HalfEdgeMesh,
         overhangs: &[(usize, Vector3<f32>)],
-    ) -> Vec<Vector3<f32>> {
+    ) -> Vec<SupportPlacement> {
         let edge_runs = self.overhanging_edges(mesh, half_edge, overhangs);
-        let spacing = 20.0;
         let mut out = Vec::new();
 
-        for (i, run) in edge_runs.iter().enumerate() {
+        for run in edge_runs.iter() {
             let mut seen = HashSet::new();
             let start = *run.iter().next().unwrap();
             let mut stack = vec![(start, 0.0)];
@@ -129,10 +126,18 @@ impl<'a> SupportGenerator<'a> {
                             let len = vector.magnitude();
                             let unit = vector / len;
 
+                            let normal =
+                                (mesh.transform_normal(&mesh.normal(edge.face as usize))
+                                    + mesh.transform_normal(&mesh.normal(
+                                        half_edge.get_edge(edge.twin.unwrap()).face as usize,
+                                    )))
+                                .normalize();
+
                             let mut t = t;
                             while t < len {
-                                out.push(a + unit * t);
-                                t += spacing;
+                                let point = a + unit * t;
+                                out.push(SupportPlacement { point, normal });
+                                t += self.config.edge_support_spacing;
                             }
 
                             stack.push((edge.vertex, t - len));
@@ -149,7 +154,11 @@ impl<'a> SupportGenerator<'a> {
     }
 
     /// Find all points that are both lower than their surrounding points and have down facing normals
-    pub fn place_point_supports(&self, mesh: &Mesh, half_edge: &HalfEdgeMesh) -> Vec<Vector3<f32>> {
+    pub fn place_point_supports(
+        &self,
+        mesh: &Mesh,
+        half_edge: &HalfEdgeMesh,
+    ) -> Vec<SupportPlacement> {
         let mut overhangs = Vec::new();
         let mut seen = HashSet::new();
 
@@ -169,10 +178,16 @@ impl<'a> SupportGenerator<'a> {
             // Only add to overhangs if the original point is lower than all connected points by one layer
             let origin_pos = mesh.transform(&vertices[origin.origin_vertex as usize]);
             let neighbors = half_edge.connected_vertices(edge as u32);
-            if (neighbors.iter())
-                .all(|connected| origin_pos.z < mesh.transform(&vertices[*connected as usize]).z)
-            {
-                overhangs.push(mesh.transform(&mesh.vertices()[origin.vertex as usize]));
+            if (neighbors.iter()).all(|connected| {
+                origin_pos.z < mesh.transform(&vertices[connected.vertex as usize]).z
+            }) {
+                let point = mesh.transform(&mesh.vertices()[origin.vertex as usize]);
+                let normal = (neighbors.iter())
+                    .map(|x| mesh.normal(x.face as usize))
+                    .sum::<Vector3<_>>()
+                    .normalize();
+
+                overhangs.push(SupportPlacement { point, normal });
             }
         }
 

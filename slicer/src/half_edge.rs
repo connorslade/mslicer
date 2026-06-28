@@ -74,7 +74,7 @@ impl HalfEdgeMesh {
     }
 
     /// Returns a set of all edges connected to the given vertex.
-    pub fn connected_vertices(&self, start_edge: u32) -> Vec<u32> {
+    pub fn connected_vertices(&self, start_edge: u32) -> Vec<&HalfEdge> {
         let mut seen = HashSet::new();
         let mut out = Vec::new();
         let mut edge = start_edge;
@@ -83,7 +83,7 @@ impl HalfEdgeMesh {
             if !seen.insert(edge) {
                 return out;
             }
-            out.push(self.half_edges[edge as usize].vertex);
+            out.push(&self.half_edges[edge as usize]);
 
             let Some(this_edge) = self.half_edges[edge as usize].twin else {
                 break;
