@@ -13,16 +13,14 @@ use crate::supports::{SupportGenerator, quazirandom::quazirandom_rect_2d};
 
 impl<'a> SupportGenerator<'a> {
     pub fn overhanging_faces(&self, mesh: &Mesh) -> Vec<(usize, Vector3<f32>)> {
+        let max_angle = self.config.max_angle.to_radians();
         let mut overhangs = Vec::new();
+
         for face in 0..mesh.face_count() {
             let normal = mesh.transform_normal(&mesh.normal(face));
 
-            let angle = normal.angle(&-Vector3::z());
-            if angle > self.config.max_angle {
-                continue;
-            }
-
-            overhangs.push((face, normal));
+            let angle = (-normal.z).acos();
+            (angle <= max_angle).then(|| overhangs.push((face, normal)));
         }
 
         overhangs
@@ -52,7 +50,7 @@ impl<'a> SupportGenerator<'a> {
                 let angle_diff = normal.angle(&neighbor_normal);
 
                 // 0.1 rad ≈ 5°
-                if angle_diff.abs() > 0.1 {
+                if angle_diff > 0.1 {
                     cluster.union(edge.origin_vertex, edge.vertex);
                 }
             }
@@ -108,39 +106,40 @@ impl<'a> SupportGenerator<'a> {
         let mut out = Vec::new();
 
         for (i, run) in edge_runs.iter().enumerate() {
-            println!("RUN {i}/{}", edge_runs.len());
-
-            let mut stack = Vec::new();
             let mut seen = HashSet::new();
             let start = *run.iter().next().unwrap();
-            stack.push((start, start, 0.0));
+            let mut stack = vec![(start, 0.0)];
 
-            while let Some((incident, prev, mut t)) = stack.pop() {
-                if !seen.insert(incident) {
-                    continue;
-                }
-
-                if incident != prev {
-                    let [a, b] =
-                        [prev, incident].map(|x| mesh.transform(&mesh.vertices()[x as usize]));
-
-                    let vector = b - a;
-                    let unit = vector.normalize();
-                    let length = vector.magnitude();
-
-                    while t < length {
-                        out.push(a + unit * t);
-                        t += spacing;
-                    }
-                    t -= length;
-                }
-
-                let start_edge = half_edge.incident_edge(incident).unwrap();
+            while let Some((vertex, t)) = stack.pop() {
+                let start_edge = half_edge.incident_edge(vertex).unwrap();
                 let mut edge = start_edge;
+
                 while {
+                    if run.contains(&edge.vertex) {
+                        let canonical = (
+                            edge.origin_vertex.min(edge.vertex),
+                            edge.origin_vertex.max(edge.vertex),
+                        );
+
+                        if seen.insert(canonical) {
+                            let [a, b] = [edge.origin_vertex, edge.vertex]
+                                .map(|x| mesh.transform(&mesh.vertices()[x as usize]));
+
+                            let vector = b - a;
+                            let len = vector.magnitude();
+                            let unit = vector / len;
+
+                            let mut t = t;
+                            while t < len {
+                                out.push(a + unit * t);
+                                t += spacing;
+                            }
+
+                            stack.push((edge.vertex, t - len));
+                        }
+                    }
+
                     edge = half_edge.get_edge(half_edge.get_edge(edge.twin.unwrap()).next);
-                    run.contains(&edge.vertex)
-                        .then(|| stack.push((edge.vertex, edge.origin_vertex, t)));
                     edge != start_edge
                 } {}
             }

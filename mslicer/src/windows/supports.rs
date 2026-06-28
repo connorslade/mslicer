@@ -96,7 +96,14 @@ fn generate_support(app: &mut App, model: usize) {
         &app.state.support_config,
         app.project.slice_config.platform_size.map(|x| x.convert()),
     );
-    let Some(supports) = generator.generate_supports(&model.mesh, half_edge, bvh) else {
+
+    app.state.line_support_debug.clear();
+    let Some(supports) = generator.generate_supports(
+        &model.mesh,
+        half_edge,
+        bvh,
+        &mut app.state.line_support_debug,
+    ) else {
         return;
     };
 

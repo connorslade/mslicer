@@ -117,6 +117,6 @@ impl ArrayCluster {
             out.entry(self.find(i)).or_default().insert(i);
         }
 
-        out.into_values()
+        out.into_values().filter(|x| x.len() > 1)
     }
 }

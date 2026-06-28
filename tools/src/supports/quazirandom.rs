@@ -4,7 +4,7 @@
 
 use nalgebra::Vector2;
 
-const PLASTIC_RATIO: f32 = 1.32471795724474602596;
+const PLASTIC_RATIO: f32 = 1.324_718;
 const A1: f32 = PLASTIC_RATIO.recip();
 const A2: f32 = (PLASTIC_RATIO * PLASTIC_RATIO).recip();
 

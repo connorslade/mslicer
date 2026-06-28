@@ -44,12 +44,13 @@ impl<'a> SupportGenerator<'a> {
         mesh: &Mesh,
         half_edge: &HalfEdgeMesh,
         bvh: &Bvh,
+        debug: &mut Vec<[Vector3<f32>; 2]>,
     ) -> Option<Mesh> {
         let mut overhangs = Vec::new();
 
         let faces = self.overhanging_faces(mesh);
-        // overhangs.extend(self.place_point_supports(mesh, half_edge).iter());
-        // overhangs.extend(self.place_face_supports(mesh, &faces).iter());
+        overhangs.extend(self.place_point_supports(mesh, half_edge).iter());
+        overhangs.extend(self.place_face_supports(mesh, &faces).iter());
         overhangs.extend(self.place_edge_supports(mesh, half_edge, &faces).iter());
 
         let mut builder = MeshBuilder::new();
