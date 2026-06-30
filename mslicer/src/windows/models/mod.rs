@@ -6,6 +6,7 @@ use egui::{
     Ui, Vec2,
 };
 use egui_phosphor::regular::{COPY, CURSOR_TEXT, EYE, EYE_SLASH, FOLDER_DASHED, SELECTION, TRASH};
+use itertools::Itertools;
 
 use crate::{
     app::App,
@@ -31,7 +32,7 @@ struct DraggedModel {
 }
 
 pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
-    if app.project.models.is_empty() {
+    if app.project.models.is_empty() && app.project.collections.is_empty() {
         ui.vertical_centered(|ui| {
             ui.label("No models loaded yet.");
         });
@@ -159,6 +160,13 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
 
 fn selection_properties(app: &mut App, ui: &mut Ui) {
     ui.horizontal_wrapped(|ui| {
+        if ui.button(concatcp!(TRASH, " Delete")).clicked() {
+            app.project
+                .models
+                .retain(|x| !app.state.selected.selected_models().contains(&x.id));
+            app.state.selected.clear();
+        }
+
         if ui.button(concatcp!(FOLDER_DASHED, " Collect")).clicked() {
             let collection = Collection::new_unnamed();
             for id in app.state.selected.selected_models() {

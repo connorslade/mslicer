@@ -30,6 +30,8 @@ const SLICE_SHORTCUT: KeyboardShortcut = KeyboardShortcut::new(Modifiers::COMMAN
 const UNDO_SHORTCUT: KeyboardShortcut = KeyboardShortcut::new(Modifiers::COMMAND, Key::Z);
 const REDO_SHORTCUT: KeyboardShortcut = KeyboardShortcut::new(Modifiers::COMMAND, Key::Y);
 const LAYOUT_SHORTCUT: KeyboardShortcut = KeyboardShortcut::new(Modifiers::COMMAND, Key::L);
+const SELECT_ALL_SHORTCUT: KeyboardShortcut = KeyboardShortcut::new(Modifiers::COMMAND, Key::A);
+const SELECT_NONE_SHORTCUT: KeyboardShortcut = KeyboardShortcut::new(COMMAND_SHIFT, Key::D);
 
 type ShortcutCallback = fn(&mut App, &Context);
 const SHORTCUTS: &[(KeyboardShortcut, ShortcutCallback)] = &[
@@ -44,6 +46,8 @@ const SHORTCUTS: &[(KeyboardShortcut, ShortcutCallback)] = &[
     (REDO_SHORTCUT, |app, _| app.history().redo()),
     (SLICE_SHORTCUT, |app, _ctx| app.slice()),
     (LAYOUT_SHORTCUT, |app, _ctx| quick_layout(app)),
+    (SELECT_ALL_SHORTCUT, |app, _ctx| select_all(app)),
+    (SELECT_NONE_SHORTCUT, |app, _ctx| app.state.selected.clear()),
 ];
 
 pub fn ui(app: &mut App, ctx: &Context) {
@@ -107,6 +111,12 @@ pub fn ui(app: &mut App, ctx: &Context) {
                     });
                     ui.add_enabled_ui(app.history.can_redo(), |ui| {
                         menu_button((ui, app, ctx), SHORTCUTS[8], "Redo");
+                    });
+
+                    labeled_separator(ui, "Selections");
+                    menu_button((ui, app, ctx), SHORTCUTS[11], "Select Models");
+                    ui.add_enabled_ui(app.state.selected.has_any(), |ui| {
+                        menu_button((ui, app, ctx), SHORTCUTS[12], "Deselect");
                     });
                 });
 
@@ -337,5 +347,12 @@ fn collect_instances(app: &mut App) {
             }
         }
         app.project.collections.push(collection);
+    }
+}
+
+fn select_all(app: &mut App) {
+    app.state.selected.clear();
+    for model in app.project.models.iter() {
+        app.state.selected.select_model(model.id);
     }
 }

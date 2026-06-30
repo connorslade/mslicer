@@ -282,7 +282,6 @@ pub fn add_printer(
     services: Arc<Services>,
     printers: Arc<Mutex<Vec<Printer>>>,
     print_completion: Arc<Mutex<PrintCompletionState>>,
-
     address: Ipv4Addr,
 ) -> Result<()> {
     info!("Attempting to connect to printer at {address}");
@@ -369,9 +368,7 @@ fn connect_printer(
     });
 
     if response.data.status.print_info.status == PrintInfoStatus::Complete {
-        (print_completion.lock())
-            .sent
-            .insert(response.data.attributes.mainboard_id.to_owned());
+        (print_completion.lock().sent).insert(response.data.attributes.mainboard_id.to_owned());
     }
 
     services.mqtt.add_future_client(response);

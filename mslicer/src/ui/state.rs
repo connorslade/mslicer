@@ -75,6 +75,14 @@ impl Selected {
         *self = Selected::None;
     }
 
+    pub fn has_any(&self) -> bool {
+        match self {
+            Selected::None => false,
+            Selected::Models(set) => !set.is_empty(),
+            Selected::Collection(..) => true,
+        }
+    }
+
     pub fn model_clicked(&mut self, id: ModelId, shift: bool) {
         match self {
             Selected::None | Selected::Collection(_) => {
