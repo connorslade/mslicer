@@ -16,6 +16,8 @@ pub use misc::Alignment;
 use polygons::Polygons;
 use slicer::slicer::raster;
 
+use crate::{misc::bounds::Bounds2D, printed_circuit_board::polygons::Mode};
+
 mod gerber;
 mod misc;
 pub mod polygons;
@@ -25,7 +27,8 @@ type SliceSegment = (([Vector2<f32>; 2], bool), u8);
 
 #[derive(Clone)]
 pub struct PrintedCircuitBoard {
-    pub gerber: Option<Arc<Gerber>>,
+    pub layers: Vec<GerberLayer>,
+
     pub alignment: Alignment,
     pub flip: Flip,
     pub offset: Vector2<Milimeters>,
@@ -37,6 +40,12 @@ pub struct Gerber {
     document: GerberDoc,
     pub name: Option<String>,
     pub layer: Option<String>,
+}
+
+#[derive(Clone)]
+pub struct GerberLayer {
+    pub gerber: Arc<Gerber>,
+    pub mode: Mode,
 }
 
 #[derive(Clone, Default)]
@@ -54,8 +63,21 @@ impl PrintedCircuitBoard {
     }
 
     pub fn generate(&self, config: &SliceConfig, progress: &Progress) -> Vec<Layer> {
+        let command_count = (self.layers.iter())
+            .map(|x| x.gerber.document.commands.len())
+            .sum::<usize>() as u64;
+        progress.set_total(command_count);
+
+        let mut polygons = Polygons::new();
+        for gerber in self.layers.iter() {
+            polygons.set_mode(gerber.mode);
+            gerber::tessellate(&gerber.gerber, &mut polygons, progress);
+        }
+        progress.set_finished();
+
+        let segments = self.screen_segments(config, polygons);
+
         let platform = config.platform_resolution;
-        let segments = self.screen_segments(config, self.polygons(progress));
         let mut runs = raster::layer(config.supersample, platform, segments.into_iter());
 
         if self.invert {
@@ -88,6 +110,7 @@ impl PrintedCircuitBoard {
                             FileFunction::Legend { pos, .. } => format!("{pos:?} Silkscreen"),
                             FileFunction::SolderMask { pos, .. } => format!("{pos:?} Solder Mask"),
                             FileFunction::Paste(pos) => format!("{pos:?} Solder Paste"),
+                            FileFunction::Profile(_) => "Edge Cuts".into(),
                             x => format!("{x:?}"),
                         })
                     }
@@ -97,28 +120,38 @@ impl PrintedCircuitBoard {
             }
         }
 
-        self.gerber = Some(Arc::new(Gerber {
-            document,
-            name,
-            layer,
-        }));
+        self.layers.push(GerberLayer {
+            gerber: Arc::new(Gerber {
+                document,
+                name,
+                layer,
+            }),
+            mode: Mode {
+                polygon: true,
+                bounds: true,
+            },
+        });
     }
 
     pub fn svg(&self) -> String {
-        self.polygons(&Progress::new()).svg()
+        let mut polygons = Polygons::new();
+        (self.layers.iter())
+            .for_each(|g| gerber::tessellate(&g.gerber, &mut polygons, &Progress::new()));
+        polygons.svg()
     }
 
     fn screen_segments(&self, config: &SliceConfig, mut polygons: Polygons) -> Vec<SliceSegment> {
         let platform = (config.platform_size.xy()).map(|x| x.get::<Milimeter>() as f64);
         let scale = (config.platform_resolution.cast::<f64>()).component_div(&platform);
 
-        let offset = self.alignment.offset(platform, polygons.bounds())
+        let offset = self.alignment.offset(platform, polygons.bounds)
             + self.offset.map(|x| x.get::<Milimeter>() as f64);
-        polygons.transform_mut(offset);
+        polygons.translate_mut(offset);
 
         if self.flip.enabled {
             let (sin, cos) = (self.flip.angle as f64).to_radians().sin_cos();
-            let anchor = self.flip.alignment.offset(platform, [Vector2::zeros(); 2]);
+            let bounds = Bounds2D::new_point(Vector2::zeros());
+            let anchor = self.flip.alignment.offset(platform, bounds);
 
             let normal = Vector2::new(sin, -cos);
             let center = anchor + normal * (self.flip.offset.get::<Milimeter>() as f64);
@@ -166,7 +199,8 @@ fn winding_order(polygon: &[Vector2<f64>]) -> f64 {
 impl Default for PrintedCircuitBoard {
     fn default() -> Self {
         Self {
-            gerber: Default::default(),
+            layers: Default::default(),
+
             alignment: Default::default(),
             flip: Default::default(),
             offset: Default::default(),

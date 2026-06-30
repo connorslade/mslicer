@@ -6,8 +6,19 @@ use svgwriter::{
     tags::{Path, TagWithPresentationAttributes as _},
 };
 
+use crate::misc::bounds::Bounds2D;
+
 pub struct Polygons {
     pub polygons: Vec<Vec<Vector2<f64>>>,
+    pub bounds: Bounds2D<f64>,
+
+    pub mode: Mode,
+}
+
+#[derive(Copy, Clone)]
+pub struct Mode {
+    pub polygon: bool,
+    pub bounds: bool,
 }
 
 const PRECISION: usize = 16;
@@ -16,16 +27,36 @@ impl Polygons {
     pub fn new() -> Self {
         Self {
             polygons: Vec::new(),
+            bounds: Bounds2D::<f64>::EMPTY,
+            mode: Mode {
+                polygon: true,
+                bounds: true,
+            },
         }
+    }
+
+    pub fn set_mode(&mut self, mode: Mode) {
+        self.mode = mode;
+    }
+
+    fn polygon(&mut self, points: Vec<Vector2<f64>>) {
+        if self.mode.bounds {
+            for point in points.iter() {
+                self.bounds
+                    .include_bound_mut(Bounds2D::new_point(point.cast()));
+            }
+        }
+
+        self.mode.polygon.then(|| self.polygons.push(points));
     }
 
     pub fn trace(&mut self, path: Vec<Vector2<f64>>, thickness: Option<f64>) {
         if let Some(thickness) = thickness {
             self.circle(*path.first().unwrap(), thickness / 2.0);
             self.circle(*path.last().unwrap(), thickness / 2.0);
-            self.polygons.push(close_path(path, thickness));
+            self.polygon(close_path(path, thickness));
         } else {
-            self.polygons.push(path);
+            self.polygon(path);
         }
     }
 
@@ -37,11 +68,11 @@ impl Polygons {
             let f = i as f64 / points as f64 * TAU;
             circle.push(center + Vector2::new(f.cos(), f.sin()) * r);
         }
-        self.polygons.push(circle);
+        self.polygon(circle);
     }
 
     pub fn rect(&mut self, [min, max]: [Vector2<f64>; 2]) {
-        self.polygons.push(vec![
+        self.polygon(vec![
             min,
             Vector2::new(min.x, max.y),
             max,
@@ -61,9 +92,10 @@ impl Polygons {
             out.push(p - b);
             out.push(p + a);
         }
-        self.polygons.push(out);
+        self.polygon(out);
     }
 
+    /// Note that bounds are not updated to reflect the transformation.
     pub fn nonuniform_scale_mut(&mut self, scale: Vector2<f64>) {
         for polygon in self.polygons.iter_mut() {
             for point in polygon.iter_mut() {
@@ -73,7 +105,8 @@ impl Polygons {
         }
     }
 
-    pub fn transform_mut(&mut self, transform: Vector2<f64>) {
+    /// Note that bounds are not updated to reflect the transformation.
+    pub fn translate_mut(&mut self, transform: Vector2<f64>) {
         for polygon in self.polygons.iter_mut() {
             for point in polygon.iter_mut() {
                 point.x += transform.x;
@@ -82,28 +115,16 @@ impl Polygons {
         }
     }
 
-    pub fn bounds(&self) -> [Vector2<f64>; 2] {
-        let [mut min, mut max] = [f64::INFINITY, f64::NEG_INFINITY].map(Vector2::repeat);
-        for polygon in self.polygons.iter() {
-            for point in polygon {
-                min.x = min.x.min(point.x);
-                min.y = min.y.min(point.y);
-                max.x = max.x.max(point.x);
-                max.y = max.y.max(point.y);
-            }
-        }
-
-        [min, max]
-    }
-
     pub fn svg(&self) -> String {
-        let [min, max] = self.bounds();
-        let [width, height] = [max.x - min.x, max.y - min.y];
+        let size = self.bounds.size();
 
         let mut svg = Graphic::new();
-        svg.set_width(width as i32);
-        svg.set_height(height as i32);
-        svg.set_view_box(format!("{} {} {width} {height}", min.x, min.y));
+        svg.set_width(size.x as i32);
+        svg.set_height(size.y as i32);
+        svg.set_view_box(format!(
+            "{} {} {} {}",
+            self.bounds.min.x, self.bounds.min.y, size.x, size.y
+        ));
 
         for poly in self.polygons.iter() {
             let mut data = Data::new();

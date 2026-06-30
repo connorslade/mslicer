@@ -1,9 +1,8 @@
 use nalgebra::{Vector2, Vector3};
 
-use crate::auto_layout::bounds::Bounds2D;
+use crate::misc::bounds::Bounds2D;
 
 mod annealing;
-mod bounds;
 mod cache;
 mod nfp;
 pub use self::{

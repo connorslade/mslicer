@@ -1,19 +1,21 @@
 use std::{fs::File, io::Write};
 
 use egui::{Align, Button, ComboBox, DragValue, Layout, Ui, Widget, vec2};
+use egui_extras::{Column, TableBuilder};
+use egui_phosphor::regular::{BOUNDING_BOX, EYE, TRASH};
 use tools::printed_circuit_board::Alignment;
 
 use crate::{
     app::App,
     generator_tool,
-    task::FileDialog,
+    task::{FileDialog, MultiFileDialog},
     ui::{
         components::grid,
         popup::{Popup, PopupApp},
     },
 };
 
-pub const DESCRIPTION: &str = "Use your msla resin printer to expose photoresist for PCB etching.";
+pub const DESCRIPTION: &str = "Use your MSLA resin printer to expose UV sensitive photoresist or soldermask for PCB manufacturing.";
 
 pub fn open(app: &mut App) {
     app.popup
@@ -28,14 +30,16 @@ fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
     let tool = &mut app.state.tools.printed_circuit_board;
 
     ui.horizontal(|ui| {
-        if ui.button("Load Gerber").clicked() {
-            app.tasks.add(FileDialog::pick_file(
+        if ui.button("Load Gerbers").clicked() {
+            app.tasks.add(MultiFileDialog::pick_files(
                 ("Gerber", &["gbr"]),
-                |app, path, _tasks| app.state.tools.printed_circuit_board.load(path),
+                |app, paths, _tasks| {
+                    (paths.iter()).for_each(|path| app.state.tools.printed_circuit_board.load(path))
+                },
             ));
         }
 
-        ui.add_enabled_ui(tool.gerber.is_some(), |ui| {
+        ui.add_enabled_ui(!tool.layers.is_empty(), |ui| {
             if ui.button("Export SVG").clicked() {
                 let svg = tool.svg();
                 app.tasks.add(FileDialog::save_file(
@@ -51,19 +55,64 @@ fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
         });
     });
 
-    if let Some(gerber) = &tool.gerber {
+    if !tool.layers.is_empty() {
         ui.add_space(8.0);
-        ui.horizontal(|ui| {
-            if let Some(name) = &gerber.name {
-                ui.label(format!("Loaded {name}."));
-            } else {
-                ui.label("Loaded.");
-            }
 
-            if let Some(layer) = &gerber.layer {
-                ui.label(format!("({layer})"));
-            }
-        });
+        ui.separator();
+        TableBuilder::new(ui)
+            .striped(true)
+            .column(Column::auto())
+            .column(Column::auto())
+            .column(Column::auto())
+            .column(Column::auto())
+            .column(Column::remainder())
+            .header(16.0, |mut row| {
+                row.col(|_| {});
+                row.col(|ui| {
+                    ui.label(EYE).on_hover_text("Layer visible");
+                });
+                row.col(|ui| {
+                    ui.label(BOUNDING_BOX).on_hover_text("Part of bounding box");
+                });
+
+                for label in ["Layer", "Project"] {
+                    row.col(|ui| {
+                        ui.label(label);
+                    });
+                }
+            })
+            .body(|mut body| {
+                let mut delete = None;
+                for (i, layer) in tool.layers.iter_mut().enumerate() {
+                    body.row(16.0, |mut row| {
+                        row.col(|ui| {
+                            ui.style_mut().visuals.button_frame = false;
+                            ui.button(TRASH).clicked().then(|| delete = Some(i));
+                        });
+
+                        row.col(|ui| {
+                            ui.checkbox(&mut layer.mode.polygon, "");
+                        });
+                        row.col(|ui| {
+                            ui.checkbox(&mut layer.mode.bounds, "");
+                        });
+
+                        row.col(|ui| {
+                            ui.label(or_unknown(&layer.gerber.layer));
+                        });
+
+                        row.col(|ui| {
+                            ui.label(or_unknown(&layer.gerber.name));
+                        });
+                    });
+                }
+
+                if let Some(idx) = delete {
+                    tool.layers.remove(idx);
+                }
+            });
+
+        ui.separator();
     }
 
     ui.add_space(8.0);
@@ -130,7 +179,7 @@ fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
     ui.vertical_centered(|ui| {
         let button = Button::new("Generate").min_size(vec2(ui.available_width(), 0.0));
         if ui
-            .add_enabled(!slicing && tool.gerber.is_some(), button)
+            .add_enabled(!slicing && !tool.layers.is_empty(), button)
             .clicked()
         {
             generator_tool!(app, tool);
@@ -148,4 +197,8 @@ fn alignment(ui: &mut Ui, value: &mut Alignment) {
                 ui.selectable_value(value, alignment, alignment.name());
             }
         });
+}
+
+fn or_unknown(val: &Option<String>) -> &str {
+    val.as_ref().map(|x| x.as_str()).unwrap_or("Unknown")
 }

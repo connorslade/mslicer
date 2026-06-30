@@ -54,12 +54,9 @@ impl<'a> SupportGenerator<'a> {
         let mut overhangs = Vec::new();
 
         let faces = self.overhanging_faces(mesh);
-        overhangs.extend(self.place_point_supports(mesh, half_edge).into_iter());
-        overhangs.extend(self.place_face_supports(mesh, &faces).into_iter());
-        overhangs.extend(
-            self.place_edge_supports(mesh, half_edge, &faces)
-                .into_iter(),
-        );
+        overhangs.extend(self.place_point_supports(mesh, half_edge));
+        overhangs.extend(self.place_face_supports(mesh, &faces));
+        overhangs.extend(self.place_edge_supports(mesh, half_edge, &faces));
 
         let mut builder = MeshBuilder::new();
         let raft_points = self.build_support_mesh(mesh, bvh, &overhangs, &mut builder);

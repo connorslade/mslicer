@@ -1,5 +1,7 @@
 use nalgebra::Vector2;
 
+use crate::misc::bounds::Bounds2D;
+
 #[derive(Clone, Copy, Default, PartialEq, Eq)]
 pub enum Alignment {
     #[default]
@@ -43,7 +45,8 @@ impl Alignment {
         }
     }
 
-    pub fn offset(&self, size: Vector2<f64>, [min, max]: [Vector2<f64>; 2]) -> Vector2<f64> {
+    pub fn offset(&self, size: Vector2<f64>, bounds: Bounds2D<f64>) -> Vector2<f64> {
+        let [min, max] = [bounds.min, bounds.max];
         let center = (size - min - max) / 2.0;
         match self {
             Alignment::TopLeft => Vector2::new(-min.x, -min.y),

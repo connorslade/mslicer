@@ -5,10 +5,12 @@ use itertools::Itertools;
 use nalgebra::Vector2;
 use tracing::warn;
 
-use crate::auto_layout::{
-    Model, Objective, Placement,
-    bounds::Bounds2D,
-    cache::{CacheEntry, LayoutCache},
+use crate::{
+    auto_layout::{
+        Model, Objective, Placement,
+        cache::{CacheEntry, LayoutCache},
+    },
+    misc::bounds::Bounds2D,
 };
 
 pub struct AutoLayoutNfp<'a> {
@@ -75,7 +77,7 @@ impl<'a> AutoLayoutNfp<'a> {
             let this_hull = self.cache.hull(&this_entry);
 
             // pick one of the points that is outside all nfps.
-            let mut best = (Vector2::repeat(f32::MAX), f32::MAX, Bounds2D::EMPTY);
+            let mut best = (Vector2::repeat(f32::MAX), f32::MAX, Bounds2D::<f32>::EMPTY);
             for j in 0..i {
                 let position = self.models[j].position;
                 let orbiting_entry = self.models[j].entry();

@@ -4,7 +4,7 @@ use common::geometry::convex_hull;
 use itertools::Itertools;
 use nalgebra::{Rotation2, Vector2};
 
-use crate::auto_layout::bounds::Bounds2D;
+use crate::misc::bounds::Bounds2D;
 
 const OFFSET_PRECISION: usize = 6;
 
@@ -30,7 +30,7 @@ pub struct CacheEntry {
 impl Hull {
     pub fn new(hull: Vec<Vector2<f32>>) -> Self {
         Self {
-            bounds: Bounds2D::new_containing(&hull),
+            bounds: Bounds2D::<f32>::new_containing(&hull),
             hull,
         }
     }
@@ -58,7 +58,7 @@ impl LayoutCache {
             let rotation = Rotation2::new(entry.rotation());
 
             let hull = hull.hull.iter().map(|x| rotation * *x).collect::<Vec<_>>();
-            let bounds = Bounds2D::new_containing(&hull);
+            let bounds = Bounds2D::<f32>::new_containing(&hull);
 
             let new = Arc::new(Hull { hull, bounds });
             self.hulls.insert(*entry, new.clone());
