@@ -118,7 +118,8 @@ fn viewport(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     let (rect, response) = ui.allocate_exact_size(ui.available_size(), Sense::click_and_drag());
     app.camera.handle_movement(&response, ui);
 
-    let mut is_moving = app.spacenav().handle_movement();
+    let focused = ui.input(|i| i.focused);
+    let mut is_moving = app.spacenav().handle_movement(focused);
     if is_moving {
         app.state.move_timeout = ((0.025 / app.fps.frame_time()).round() as u32).min(60);
     } else if app.state.move_timeout > 0 {

@@ -98,39 +98,43 @@ impl SpaceNav {
 }
 
 impl SpaceNavRef<'_> {
-    pub fn handle_movement(&mut self) -> bool {
-        let Some(event) = self.poll() else {
-            return false;
-        };
+    pub fn handle_movement(&mut self, focused: bool) -> bool {
+        let mut is_moving = false;
 
-        match event {
-            Event::Button { id: 0, press: true } => self.app.camera = Default::default(),
-            Event::Button { id: 1, press: true } => self.app.slice(),
-            Event::Motion {
-                translation,
-                rotation,
-            } => {
-                let config = &self.app.config.spacenav;
-                let p_gain = BASE_GAIN * 10.0 * config.gain * config.position_gain;
-                let r_gain = BASE_GAIN * 0.5 * config.gain * config.rotation_gain;
-
-                let camera = &mut self.app.camera;
-                camera.angle.x -= rotation.y as f32 * r_gain;
-                camera.angle.y -= rotation.x as f32 * r_gain;
-                camera.distance += translation.y as f32 * p_gain;
-
-                let camera_pos = camera.position(camera.distance) + camera.target;
-                let forward = (camera.target - camera_pos).normalize();
-                let right = forward.cross(&camera.up()).normalize();
-
-                camera.target += right * translation.x as f32 * p_gain;
-                camera.target += forward * translation.z as f32 * p_gain;
-
-                return translation != Vector3::zeros() || rotation != Vector3::zeros();
+        while let Some(event) = self.poll() {
+            if !focused {
+                continue;
             }
-            _ => {}
-        };
 
-        false
+            match event {
+                Event::Button { id: 0, press: true } => self.app.camera = Default::default(),
+                Event::Button { id: 1, press: true } => self.app.slice(),
+                Event::Motion {
+                    translation,
+                    rotation,
+                } => {
+                    let config = &self.app.config.spacenav;
+                    let p_gain = BASE_GAIN * 10.0 * config.gain * config.position_gain;
+                    let r_gain = BASE_GAIN * 0.5 * config.gain * config.rotation_gain;
+
+                    let camera = &mut self.app.camera;
+                    camera.angle.x -= rotation.y as f32 * r_gain;
+                    camera.angle.y -= rotation.x as f32 * r_gain;
+                    camera.distance += translation.y as f32 * p_gain;
+
+                    let camera_pos = camera.position(camera.distance) + camera.target;
+                    let forward = (camera.target - camera_pos).normalize();
+                    let right = forward.cross(&camera.up()).normalize();
+
+                    camera.target += right * translation.x as f32 * p_gain;
+                    camera.target += forward * translation.z as f32 * p_gain;
+
+                    is_moving |= translation != Vector3::zeros() || rotation != Vector3::zeros();
+                }
+                _ => {}
+            };
+        }
+
+        is_moving
     }
 }
