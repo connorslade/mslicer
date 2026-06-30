@@ -2,8 +2,8 @@ use std::f32;
 
 use const_format::concatcp;
 use egui::{
-    Color32, Context, DragAndDrop, Frame, ScrollArea, Sense, Stroke, StrokeKind, TopBottomPanel,
-    Ui, Vec2,
+    Color32, Context, DragAndDrop, Frame, Key, Response, ScrollArea, Sense, Stroke, StrokeKind,
+    TopBottomPanel, Ui, Vec2,
 };
 use egui_phosphor::regular::{COPY, CURSOR_TEXT, EYE, EYE_SLASH, FOLDER_DASHED, SELECTION, TRASH};
 use itertools::Itertools;
@@ -19,6 +19,15 @@ use crate::{
 
 mod collection;
 mod model;
+
+const DELETE_SHORTCUT: Key = Key::D;
+const COLLECT_SHORTCUT: Key = Key::G;
+const DUPLICATE_SHORTCUT: Key = Key::C;
+const RENAME_SHORTCUT: Key = Key::R;
+const HIDE_SHORTCUT: Key = Key::H;
+const SELECT_SHORTCUT: Key = Key::S;
+const ALIGN_SHORTCUT: Key = Key::A;
+const SPLIT_SHORTCUT: Key = Key::F;
 
 enum Action {
     None,
@@ -158,16 +167,26 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
     });
 }
 
+fn shortcut(response: Response, key: Key) -> bool {
+    let response = response.on_hover_ui(|ui| {
+        ui.label(format!("Shortcut: {}", key.symbol_or_name()));
+    });
+    response.clicked() || response.ctx.input(|i| i.key_pressed(key))
+}
+
 fn selection_properties(app: &mut App, ui: &mut Ui) {
     ui.horizontal_wrapped(|ui| {
-        if ui.button(concatcp!(TRASH, " Delete")).clicked() {
+        if shortcut(ui.button(concatcp!(TRASH, " Delete")), DELETE_SHORTCUT) {
             app.project
                 .models
                 .retain(|x| !app.state.selected.selected_models().contains(&x.id));
             app.state.selected.clear();
         }
 
-        if ui.button(concatcp!(FOLDER_DASHED, " Collect")).clicked() {
+        if shortcut(
+            ui.button(concatcp!(FOLDER_DASHED, " Collect")),
+            COLLECT_SHORTCUT,
+        ) {
             let collection = Collection::new_unnamed();
             for id in app.state.selected.selected_models() {
                 if let Some(model) = app.project.models.iter_mut().find(|x| x.id == id) {
@@ -177,7 +196,7 @@ fn selection_properties(app: &mut App, ui: &mut Ui) {
             app.project.collections.push(collection);
         }
 
-        if ui.button(concatcp!(COPY, " Duplicate")).clicked() {
+        if shortcut(ui.button(concatcp!(COPY, " Duplicate")), DUPLICATE_SHORTCUT) {
             for id in app.state.selected.selected_models() {
                 if let Some(model) = app.project.models.iter().find(|x| x.id == id) {
                     app.project.models.push(model.clone());
@@ -189,13 +208,15 @@ fn selection_properties(app: &mut App, ui: &mut Ui) {
 
 fn collection_properties(app: &mut App, ui: &mut Ui, id: CollectionId) {
     ui.horizontal_wrapped(|ui| {
-        if ui.button(concatcp!(CURSOR_TEXT, " Rename")).clicked()
-            && let Some(collection) = app.project.collection(id)
+        if shortcut(
+            ui.button(concatcp!(CURSOR_TEXT, " Rename")),
+            RENAME_SHORTCUT,
+        ) && let Some(collection) = app.project.collection(id)
         {
             collection.rename = crate::project::RenameState::Starting;
         }
 
-        if ui.button(concatcp!(TRASH, " Delete")).clicked() {
+        if shortcut(ui.button(concatcp!(TRASH, " Delete")), DELETE_SHORTCUT) {
             app.state.selected.clear();
             app.project.collections.retain(|x| x.id != id);
             app.project.models.iter_mut().for_each(|m| {
@@ -211,13 +232,16 @@ fn collection_properties(app: &mut App, ui: &mut Ui, id: CollectionId) {
             concatcp!(EYE_SLASH, " Hide All"),
             concatcp!(EYE, " Show All"),
         ][hidden as usize];
-        if ui.button(text).clicked() {
+        if shortcut(ui.button(text), HIDE_SHORTCUT) {
             (app.project.models.iter_mut())
                 .filter(|x| x.collection == Some(id))
                 .for_each(|m| m.hidden = !hidden);
         }
 
-        if ui.button(concatcp!(SELECTION, " Select Models")).clicked() {
+        if shortcut(
+            ui.button(concatcp!(SELECTION, " Select Models")),
+            SELECT_SHORTCUT,
+        ) {
             (app.project.models.iter())
                 .filter(|x| x.collection == Some(id))
                 .for_each(|x| app.state.selected.select_model(x.id));

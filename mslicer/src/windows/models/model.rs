@@ -22,7 +22,10 @@ use crate::{
     ui::components::{
         being_edited, grid, history_tracked_model, vec3_dragger, vec3_dragger_proportional,
     },
-    windows::models::Action,
+    windows::models::{
+        ALIGN_SHORTCUT, Action, COLLECT_SHORTCUT, DELETE_SHORTCUT, DUPLICATE_SHORTCUT,
+        RENAME_SHORTCUT, SPLIT_SHORTCUT, shortcut,
+    },
 };
 
 const WARN_NON_MANIFOLD: &str = "This mesh is non-manifold, it may produce unexpected results when sliced.\nConsider running it through a mesh repair tool.";
@@ -124,31 +127,48 @@ pub fn model_properties(app: &mut App, ui: &mut Ui, ctx: &Context, action: &mut 
     let id = model.id;
 
     ui.horizontal_wrapped(|ui| {
-        (ui.button(concatcp!(CURSOR_TEXT, " Rename")).clicked())
-            .then(|| model.ui.rename = RenameState::Starting);
-        (ui.button(concatcp!(TRASH, " Delete")).clicked()).then(|| *action = Action::Remove(i));
-        (ui.button(concatcp!(COPY, " Duplicate")).clicked())
-            .then(|| *action = Action::Duplicate(i));
-        ui.button(concatcp!(FOLDER_DASHED, " Collect"))
-            .clicked()
-            .then(|| {
-                let collection = Collection::new_unnamed();
-                model.collection = Some(collection.id);
-                app.project.collections.push(collection);
-            });
-        ui.button(concatcp!(ARROW_LINE_DOWN, " Align to Bed"))
-            .clicked()
-            .then(|| {
-                let old_pos = model.mesh.position();
-                app.history.track_model(id, ModelAction::Position(old_pos));
+        if shortcut(
+            ui.button(concatcp!(CURSOR_TEXT, " Rename")),
+            RENAME_SHORTCUT,
+        ) {
+            model.ui.rename = RenameState::Starting;
+        }
 
-                model.align_to_bed();
-                model.update_oob(platform);
-            });
+        if shortcut(ui.button(concatcp!(TRASH, " Delete")), DELETE_SHORTCUT) {
+            *action = Action::Remove(i);
+            app.state.selected.clear();
+        }
 
-        ui.button(concatcp!(SUBTRACT_SQUARE, " Split Bodies"))
-            .clicked()
-            .then(|| app.tasks.add(SplitBodies::new(model)));
+        if shortcut(ui.button(concatcp!(COPY, " Duplicate")), DUPLICATE_SHORTCUT) {
+            *action = Action::Duplicate(i);
+        }
+
+        if shortcut(
+            ui.button(concatcp!(FOLDER_DASHED, " Collect")),
+            COLLECT_SHORTCUT,
+        ) {
+            let collection = Collection::new_unnamed();
+            model.collection = Some(collection.id);
+            app.project.collections.push(collection);
+        }
+
+        if shortcut(
+            ui.button(concatcp!(ARROW_LINE_DOWN, " Align to Bed")),
+            ALIGN_SHORTCUT,
+        ) {
+            let old_pos = model.mesh.position();
+            app.history.track_model(id, ModelAction::Position(old_pos));
+
+            model.align_to_bed();
+            model.update_oob(platform);
+        }
+
+        if shortcut(
+            ui.button(concatcp!(SUBTRACT_SQUARE, " Split Bodies")),
+            SPLIT_SHORTCUT,
+        ) {
+            app.tasks.add(SplitBodies::new(model));
+        }
     });
 
     CollapsingHeader::new("Transform")

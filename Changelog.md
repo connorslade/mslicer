@@ -24,6 +24,8 @@
 - Fix model properties getting pushed off screen by lots of model entries
 - Create model collections for organization
 - Split mesh with multiple shells into separate models
+- Selection keyboard shortcuts
+  - Like when you have selected a model, you can press D to delete it, or R to rename it
 
 ## v0.7.0 &mdash; May 7th, 2026
 
