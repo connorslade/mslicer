@@ -1,6 +1,6 @@
 # Changelog
 
-## v0.8.0 &mdash; Coming Soon™
+## v0.8.0 &mdash; June 30th, 2026
 
 - Fix 'First Layers' setting disappearing
 - Don't send print completion alert on connection

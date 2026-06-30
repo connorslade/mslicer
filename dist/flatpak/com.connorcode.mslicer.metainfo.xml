@@ -35,6 +35,30 @@
 	</screenshots>
 
 	<releases>
+        <release version="0.8.0" date="2026-06-30">
+            <description>
+     			<ul>
+     			    <li>Fix 'First Layers' setting disappearing</li>
+                    <li>Don't send print completion alert on connection</li>
+                    <li>Remote print UI refresh</li>
+                    <li>Show when remote printer is disconnected</li>
+                    <li>PCB tool (Load and rasterize gerber files to expose photoresist)</li>
+                    <li>Load multiple models at once through file dialog</li>
+                    <li>Exposure remapping</li>
+                    <li>Send print completion notifs from async thread (Fixes bug on some linux systems)</li>
+                    <li>Allow picking slice preview coordinate space (screen space or world space)</li>
+                    <li>Automatic model layout (Quick layout uses a single pass, Advanced layout uses simulated annealing to find better layouts  )</li>
+                    <li>Slice preview view direction selector (lcd screen vs build plate)</li>
+                    <li>Support for Spacenav input (3Dconnexion 3D input device)</li>
+                    <li>Initial camera distance increased</li>
+                    <li>Fix model properties getting pushed off screen by lots of model entries</li>
+                    <li>Create model collections for organization</li>
+                    <li>Split mesh with multiple shells into separate models</li>
+                    <li>Selection keyboard shortcuts</li>
+                    <li>Select old text when renaming model</li>
+                </ul>
+            </description>
+        </release>
 	    <release version="0.7.0" date="2026-05-07">
 			<description>
     			<ul>

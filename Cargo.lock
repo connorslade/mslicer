@@ -3188,7 +3188,7 @@ dependencies = [
 
 [[package]]
 name = "mslicer"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "anyhow",
  "bitflags 2.9.4",
