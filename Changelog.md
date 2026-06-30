@@ -26,6 +26,7 @@
 - Split mesh with multiple shells into separate models
 - Selection keyboard shortcuts
   - Like when you have selected a model, you can press D to delete it, or R to rename it
+- Select old text when renaming model
 
 ## v0.7.0 &mdash; May 7th, 2026
 

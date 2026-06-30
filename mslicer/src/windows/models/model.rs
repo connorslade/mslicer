@@ -6,8 +6,8 @@ use common::{
 };
 use const_format::concatcp;
 use egui::{
-    CollapsingHeader, Color32, Context, DragValue, Label, Popup, Response, Sense, Ui, UiBuilder,
-    Widget, vec2,
+    CollapsingHeader, Color32, Context, DragValue, Label, Popup, Response, Sense, TextEdit, Ui,
+    UiBuilder, Widget, text::CCursorRange, vec2,
 };
 use egui_phosphor::regular::{
     ARROW_LINE_DOWN, COPY, CURSOR_TEXT, DICE_THREE, EYE, EYE_SLASH, FOLDER_DASHED, LINK_BREAK,
@@ -98,13 +98,16 @@ pub fn model_entry(
             if matches!(model.ui.rename, RenameState::None) {
                 Label::new(&model.name).selectable(false).ui(ui);
             } else {
-                let text_edit = ui.text_edit_singleline(&mut model.name);
+                let mut text_edit = TextEdit::singleline(&mut model.name).show(ui);
                 if matches!(model.ui.rename, RenameState::Starting) {
-                    text_edit.request_focus();
+                    text_edit.response.request_focus();
+                    (text_edit.state.cursor)
+                        .set_char_range(Some(CCursorRange::select_all(&text_edit.galley)));
+                    text_edit.state.store(ui.ctx(), text_edit.response.id);
                     model.ui.rename = RenameState::Editing;
                 }
 
-                let editing = being_edited(&text_edit);
+                let editing = being_edited(&text_edit.response);
                 (!editing).then(|| model.ui.rename = RenameState::None);
 
                 history_tracked_model(
