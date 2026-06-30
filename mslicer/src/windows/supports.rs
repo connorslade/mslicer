@@ -20,17 +20,6 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     dragger(ui, "Overhang Angle", &mut overhang.1, |x| x.speed(0.1));
 
     ui.add_space(8.0);
-    ui.menu_button("Detect Overhanging Points", |ui| {
-        ui.style_mut().visuals.button_frame = false;
-        for idx in 0..app.project.models.len() {
-            let model = &mut app.project.models[idx];
-            if ui.button(&model.name).clicked() {
-                // model.find_overhangs();
-            }
-        }
-    });
-
-    ui.add_space(8.0);
     ui.heading("Manual Supports");
     ui.label("Unfinished!");
 

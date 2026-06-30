@@ -19,18 +19,16 @@ use crate::{
             bind_group,
         },
         util::{ResizingBuffer, gpu_mesh_buffers},
-        workspace::point::{overhangs::OverhangPointDispatch, target::TargetPointDispatch},
+        workspace::point::target::TargetPointDispatch,
     },
 };
 
-mod overhangs;
 mod target;
 
 pub struct PointDispatch {
     render_pipeline: PointPipeline,
 
     target_point: TargetPointDispatch,
-    overhangs: OverhangPointDispatch,
 }
 
 const INSTANCE_BUFFER_LAYOUT: VertexBufferLayout = VertexBufferLayout {
@@ -99,18 +97,16 @@ impl PointDispatch {
             render_pipeline: PointPipeline::new(device, texture),
 
             target_point: TargetPointDispatch::new(),
-            overhangs: OverhangPointDispatch::new(),
         }
     }
 
     pub fn prepare(&mut self, gcx: &Gcx, app: &mut App) {
-        let dispatches: &mut [&mut dyn PointGenerator] =
-            &mut [&mut self.target_point, &mut self.overhangs];
+        let dispatches: &mut [&mut dyn PointGenerator] = &mut [&mut self.target_point];
         for dispatch in dispatches.iter_mut() {
             dispatch.generate_points(app);
         }
 
-        let points = &[self.target_point.points(), self.overhangs.points()][..];
+        let points = &[self.target_point.points()][..];
         self.render_pipeline.prepare(gcx, app, points);
     }
 
