@@ -155,7 +155,7 @@ fn perturb(rotation: Rotation, models: &[Model]) -> Vec<Model> {
     let mut rng = rng();
     let range = 0..models.len();
 
-    match rng.random_range(0..=(3 + (!matches!(rotation, Rotation::Disabled)) as u8)) {
+    match rng.random_range(0..=[5, 3][matches!(rotation, Rotation::Disabled) as usize]) {
         // Swap two random model's insertion order
         0 => out.swap(rng.random_range(range.clone()), rng.random_range(range)),
         // Swap two model's with an adjacent insertion order
@@ -181,6 +181,12 @@ fn perturb(rotation: Rotation, models: &[Model]) -> Vec<Model> {
         4 => {
             let i = rng.random_range(range);
             out[i].rotation = rotation.random(&mut rng);
+        }
+        // Rotate all models by the same amount
+        5 => {
+            for model in out.iter_mut() {
+                model.rotation = (model.rotation + rotation.random(&mut rng)).rem_euclid(TAU);
+            }
         }
         _ => unreachable!(),
     }
