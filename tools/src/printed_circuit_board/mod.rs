@@ -14,16 +14,13 @@ use nalgebra::Vector2;
 
 pub use misc::Alignment;
 use polygons::Polygons;
-use slicer::slicer::raster;
+use slicer::slicer::raster::{self, Segment};
 
 use crate::{misc::bounds::Bounds2D, printed_circuit_board::polygons::Mode};
 
 mod gerber;
 mod misc;
 pub mod polygons;
-
-/// Segment, normal, exposure
-type SliceSegment = (([Vector2<f32>; 2], bool), u8);
 
 #[derive(Clone)]
 pub struct PrintedCircuitBoard {
@@ -142,12 +139,12 @@ impl PrintedCircuitBoard {
         polygons.svg()
     }
 
-    fn screen_segments(&self, config: &SliceConfig, mut polygons: Polygons) -> Vec<SliceSegment> {
+    fn screen_segments(&self, config: &SliceConfig, mut polygons: Polygons) -> Vec<Segment> {
         let platform = (config.platform_size.xy()).map(|x| x.get::<Milimeter>() as f64);
         let scale = (config.platform_resolution.cast::<f64>()).component_div(&platform);
 
         let offset = self.alignment.offset(platform, polygons.bounds)
-            + self.offset.map(|x| x.get::<Milimeter>() as f64);
+            + self.pre_offset.map(|x| x.get::<Milimeter>() as f64);
         polygons.translate_mut(offset);
 
         if self.flip.enabled {
@@ -166,6 +163,7 @@ impl PrintedCircuitBoard {
             }
         }
 
+        polygons.translate_mut(self.post_offset.map(|x| x.get::<Milimeter>() as f64));
         polygons.nonuniform_scale_mut(scale * config.supersample as f64); // screen space to pixel space
 
         let mut out = Vec::new();
@@ -176,7 +174,12 @@ impl PrintedCircuitBoard {
             for (&a, &b) in polygon.iter().tuple_windows().chain(iter::once(close)) {
                 let segment = [a, b].map(|x| x.cast());
                 let normal = (b.y - a.y) * winding > 0.0;
-                out.push(((segment, normal), 255));
+                out.push(Segment {
+                    endpoints: segment,
+                    entering: normal,
+                    priority: 255,
+                    exposure: 255,
+                });
             }
         }
 

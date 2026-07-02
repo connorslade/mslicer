@@ -6,13 +6,16 @@ use itertools::Itertools;
 use nalgebra::Vector2;
 use ordered_float::OrderedFloat;
 
+use crate::slicer::raster::Segment;
+
 #[derive(Debug)]
 pub struct Edge {
     pub min: Vector2<u32>,
 
     pub y_max: u32,
     pub inv_slope: f32,
-    pub direction: bool,
+    pub entering: bool,
+    pub priority: u8,
     pub exposure: u8,
 }
 
@@ -22,15 +25,20 @@ pub struct ActiveEdge {
 
     pub y_max: u32,
     pub inv_slope: f32,
-    pub direction: bool,
+    pub entering: bool,
+    pub priority: u8,
     pub exposure: u8,
 }
 
-pub fn global_edge_table(
-    segments: impl Iterator<Item = (([Vector2<f32>; 2], bool), u8)>,
-) -> VecDeque<Edge> {
+pub fn global_edge_table(segments: impl Iterator<Item = Segment>) -> VecDeque<Edge> {
     let mut edges = Vec::new();
-    for (([p0, p1], direction), exposure) in segments {
+    for Segment {
+        endpoints: [p0, p1],
+        entering,
+        priority,
+        exposure,
+    } in segments
+    {
         let delta = p1 - p0;
 
         let (mut t_vals, mut t_len) = ([0.0, 1.0, 0.0, 0.0], 2);
@@ -63,7 +71,8 @@ pub fn global_edge_table(
                 min: pos[(pos[0].y >= pos[1].y) as usize],
                 y_max: pos[0].y.max(pos[1].y),
                 inv_slope,
-                direction,
+                entering,
+                priority,
                 exposure,
             });
         }
@@ -82,7 +91,8 @@ pub fn update_active_edges(edges: &mut VecDeque<Edge>, active: &mut Vec<ActiveEd
             x: edge.min.x as f32,
             y_max: edge.y_max,
             inv_slope: edge.inv_slope,
-            direction: edge.direction,
+            entering: edge.entering,
+            priority: edge.priority,
             exposure: edge.exposure,
         });
     }

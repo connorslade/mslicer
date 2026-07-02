@@ -3,8 +3,11 @@ use tools::{
     internal_exposure_test::InternalExposureTest, printed_circuit_board::PrintedCircuitBoard,
 };
 
+use crate::windows::tools::graphics_3d::Graphics3D;
+
 pub mod auto_layout;
 pub mod exposure_test;
+pub mod graphics_3d;
 pub mod internal_exposure_test;
 pub mod printed_circuit_board;
 
@@ -14,6 +17,7 @@ pub struct Tools {
     internal_exposure_test: InternalExposureTest,
     printed_circuit_board: PrintedCircuitBoard,
     advanced_layout: AutoLayoutAnnealing,
+    graphics_3d: Graphics3D,
 }
 
 // i couldn't get lifetimes working to do this with a function... so

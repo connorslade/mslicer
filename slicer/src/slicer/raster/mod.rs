@@ -20,6 +20,13 @@ use crate::{
 
 mod edge_table;
 
+pub struct Segment {
+    pub endpoints: [Vector2<f32>; 2],
+    pub entering: bool,
+    pub priority: u8,
+    pub exposure: u8,
+}
+
 impl Slicer {
     /// Actually runs the slicing operation, it is multithreaded.
     pub fn slice_raster(&self) -> Vec<Layer> {
@@ -50,8 +57,11 @@ impl Slicer {
                 // interpreted as line segments making up a polygon.
                 let segments = self.models.iter().enumerate().flat_map(|(idx, model)| {
                     let intersections = segments[idx].intersect_plane(&model.mesh, height);
-                    intersections.into_iter().map(|(pos, dir)| {
-                        ((pos.map(|x| x * supersample as f32), dir), model.exposure)
+                    intersections.into_iter().map(|(pos, dir)| Segment {
+                        endpoints: pos.map(|x| x * supersample as f32),
+                        entering: dir,
+                        priority: model.exposure,
+                        exposure: model.exposure,
                     })
                 });
 
@@ -81,7 +91,7 @@ impl Slicer {
 pub fn layer(
     supersample: u8,
     real_platform: Vector2<u32>,
-    segments: impl Iterator<Item = (([Vector2<f32>; 2], bool), u8)>,
+    segments: impl Iterator<Item = Segment>,
 ) -> Vec<Run> {
     let platform = real_platform * supersample as u32;
 
@@ -103,20 +113,31 @@ pub fn layer(
         // Convert the intersections into runs of voxels to be
         // encoded into the layer.
         let mut depth = 0;
-        let mut exposures = [0; 256];
+        let mut exposures = [(0, 0); 256];
         let mut last = 0;
         for (a, b) in active.iter().tuple_windows() {
-            let delta = 1 - (a.direction as i32) * 2;
+            let delta = 1 - (a.entering as i32) * 2;
             depth += delta;
-            exposures[a.exposure as usize] += delta;
+
+            let exposure = &mut exposures[a.priority as usize];
+            exposure.1 += delta;
+
+            if a.entering {
+                (exposure.1 == 0).then(|| exposure.0 = 0);
+            } else {
+                exposure.0 = a.exposure;
+            }
 
             let [a, b] = [a.x, b.x].map(|x| (x.round() as u64).min(platform.x as u64));
             if depth != 0 && b != a {
                 let (start, length) = (a, b - a);
                 (start > last).then(|| out.push(Run::new(start - last, 0)));
 
-                let exposure = exposures.iter().rposition(|&x| x > 0).unwrap_or(255);
-                out.push(Run::new(length, exposure as u8));
+                let exposure = (exposures.iter().copied())
+                    .rfind(|&x| x.1 > 0)
+                    .map(|x| x.0)
+                    .unwrap_or(255);
+                out.push(Run::new(length, exposure));
                 last = start + length;
             }
         }

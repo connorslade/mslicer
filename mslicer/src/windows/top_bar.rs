@@ -14,7 +14,10 @@ use crate::{
     project::{Collection, Project},
     task::{AutoLayout, MeshLoad, MultiFileDialog, ProjectLoad},
     ui::{components::labeled_separator, popup::Popup},
-    windows::{Tab, tools},
+    windows::{
+        Tab,
+        tools::{self, graphics_3d},
+    },
 };
 
 const COMMAND_SHIFT: Modifiers = Modifiers::COMMAND.plus(Modifiers::SHIFT);
@@ -141,6 +144,10 @@ pub fn ui(app: &mut App, ctx: &Context) {
                     ui.button("Collect Instances")
                         .clicked()
                         .then(|| collect_instances(app));
+
+                    if ui.button("3D Graphics").clicked() {
+                        graphics_3d::open(app);
+                    }
                 });
 
                 ui.menu_button(concatcp!(CARDS, " View"), |ui| {
@@ -170,7 +177,7 @@ pub fn ui(app: &mut App, ctx: &Context) {
                     ui.add_space(2.0);
                     tasks_button(app, ctx, ui);
                     ui.take_available_width();
-                })
+                });
             });
         });
 }

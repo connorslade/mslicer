@@ -10,6 +10,7 @@ use crate::{
     app::{config::Config, is_slicing, remote_print::RemotePrint, slice_operation::SliceOperation},
     app_ref_type,
     project::Project,
+    render::camera::Camera,
     task::TaskManager,
     ui::{panels::Panels, state::UiState},
 };
@@ -37,6 +38,7 @@ pub struct PopupApp<'a> {
     pub tasks: &'a mut TaskManager,
     pub remote_print: &'a mut RemotePrint,
     pub slice_operation: &'a mut Option<SliceOperation>,
+    pub camera: &'a mut Camera,
     pub state: &'a mut UiState,
     pub config: &'a mut Config,
     pub project: &'a mut Project,
@@ -67,6 +69,7 @@ impl<'a> PopupManagerRef<'a> {
             tasks: &mut self.app.tasks,
             remote_print: &mut self.app.remote_print,
             slice_operation: &mut self.app.slice_operation,
+            camera: &mut self.app.camera,
             state: &mut self.app.state,
             config: &mut self.app.config,
             project: &mut self.app.project,
