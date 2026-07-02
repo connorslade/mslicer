@@ -2,7 +2,7 @@ use std::{fs::File, io::Write};
 
 use egui::{Align, Button, ComboBox, DragValue, Layout, Ui, Widget, vec2};
 use egui_extras::{Column, TableBuilder};
-use egui_phosphor::regular::{BOUNDING_BOX, EYE, TRASH};
+use egui_phosphor::regular::{BOUNDING_BOX, EYE, INFO, TRASH};
 use tools::printed_circuit_board::Alignment;
 
 use crate::{
@@ -64,7 +64,7 @@ fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
             .column(Column::auto())
             .column(Column::auto())
             .column(Column::auto())
-            .column(Column::auto())
+            .column(Column::auto().at_least(150.0))
             .column(Column::remainder())
             .header(16.0, |mut row| {
                 row.col(|_| {});
@@ -132,14 +132,6 @@ fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
         alignment(ui, &mut tool.alignment);
         ui.end_row();
 
-        ui.label("Offset (mm)");
-        ui.horizontal(|ui| {
-            ui.add(DragValue::new(tool.offset.x.raw_mut()).speed(0.1));
-            ui.label("×");
-            ui.add(DragValue::new(tool.offset.y.raw_mut()).speed(0.1));
-        });
-        ui.end_row();
-
         ui.label("Photoresist");
         ComboBox::from_id_salt("photoresist")
             .selected_text(if tool.invert { "Positive" } else { "Negative" })
@@ -151,6 +143,35 @@ fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
     });
 
     ui.add_space(8.0);
+    ui.collapsing("Offset", |ui| {
+        ui.label("All offset distances are in millimeters.");
+
+        grid("").show(ui, |ui| {
+            ui.horizontal(|ui| {
+                ui.label("Pre Offset");
+                ui.label(INFO).on_hover_text("Applied before flip");
+            });
+            ui.horizontal(|ui| {
+                ui.add(DragValue::new(tool.pre_offset.x.raw_mut()).speed(0.1));
+                ui.label("×");
+                ui.add(DragValue::new(tool.pre_offset.y.raw_mut()).speed(0.1));
+            });
+            ui.end_row();
+
+            ui.horizontal(|ui| {
+                ui.label("Post Offset");
+                ui.label(INFO).on_hover_text("Applied after flip");
+            });
+            ui.horizontal(|ui| {
+                ui.add(DragValue::new(tool.post_offset.x.raw_mut()).speed(0.1));
+                ui.label("×");
+                ui.add(DragValue::new(tool.post_offset.y.raw_mut()).speed(0.1));
+                ui.take_available_width();
+            });
+            ui.end_row();
+        });
+    });
+
     ui.with_layout(Layout::right_to_left(Align::Min), |ui| {
         ui.checkbox(&mut tool.flip.enabled, "");
         ui.collapsing("Flip", |ui| {

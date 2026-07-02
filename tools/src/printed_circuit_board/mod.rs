@@ -28,12 +28,14 @@ type SliceSegment = (([Vector2<f32>; 2], bool), u8);
 #[derive(Clone)]
 pub struct PrintedCircuitBoard {
     pub layers: Vec<GerberLayer>,
-
-    pub alignment: Alignment,
     pub flip: Flip,
-    pub offset: Vector2<Milimeters>,
+
     pub exposure_time: Seconds,
+    pub alignment: Alignment,
     pub invert: bool,
+
+    pub pre_offset: Vector2<Milimeters>,
+    pub post_offset: Vector2<Milimeters>,
 }
 
 pub struct Gerber {
@@ -200,12 +202,14 @@ impl Default for PrintedCircuitBoard {
     fn default() -> Self {
         Self {
             layers: Default::default(),
-
-            alignment: Default::default(),
             flip: Default::default(),
-            offset: Default::default(),
+
             exposure_time: Minutes::new(5.0).convert(),
+            alignment: Default::default(),
             invert: Default::default(),
+
+            pre_offset: Default::default(),
+            post_offset: Default::default(),
         }
     }
 }
