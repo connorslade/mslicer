@@ -93,6 +93,7 @@ impl ExposureTest {
             .enumerate()
             .map(|(layer, data)| Layer {
                 data,
+                height: config.default_height(layer as u32),
                 exposure: config.exposure_config(layer as u32).into_owned(),
             })
             .collect()

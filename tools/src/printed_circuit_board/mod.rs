@@ -85,6 +85,7 @@ impl PrintedCircuitBoard {
 
         vec![Layer {
             data: runs,
+            height: config.default_height(0),
             exposure: ExposureConfig {
                 exposure_time: self.exposure_time,
                 exposure_delay: Seconds::new(0.0),

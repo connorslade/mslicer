@@ -8,12 +8,14 @@ use egui_plot::{Line, MarkerShape, Plot, Points};
 use itertools::Itertools;
 use nalgebra::Vector2;
 use num_integer::cbrt;
-use slicer::post_process::elephant_foot_fixer::ElephantFootFixer;
+use slicer::post_process::{
+    elephant_foot_fixer::ElephantFootFixer, variable_layer_height::VariableLayerHeight,
+};
 
 use crate::{
     app::App,
     ui::{
-        components::{grid, vec2_dragger},
+        components::{collapsing_toggle, grid, vec2_dragger},
         popup::{Popup, PopupApp},
     },
 };
@@ -173,9 +175,19 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     });
 
     let post_processing = &mut app.project.post_processing;
-    ui.collapsing("Elephant Foot Fixer", |ui| {
-        elephant_foot_fixer(&mut post_processing.elephant_foot_fixer, ui)
-    });
+    post_processing.variable_layer_height.enabled = collapsing_toggle(
+        "Variable Layer Height",
+        post_processing.variable_layer_height.enabled,
+        |ui| variable_layer_height(&mut post_processing.variable_layer_height, ui),
+        ui,
+    );
+
+    post_processing.elephant_foot_fixer.enabled = collapsing_toggle(
+        "Elephant Foot Fixer",
+        post_processing.elephant_foot_fixer.enabled,
+        |ui| elephant_foot_fixer(&mut post_processing.elephant_foot_fixer, ui),
+        ui,
+    );
 }
 
 fn exposure_config(ui: &mut Ui, config: &mut ExposureConfig) {
@@ -407,9 +419,23 @@ fn exposure_remapping(
     }
 }
 
+fn variable_layer_height(this: &mut VariableLayerHeight, ui: &mut Ui) {
+    ui.label("Merges identical layers into thicker layers to reduce printing time while retaining resolution where needed.");
+    ui.add_space(8.0);
+
+    grid("variable_layer_height").show(ui, |ui| {
+        ui.label("Max Layers");
+        DragValue::new(&mut this.max_layers).ui(ui);
+        ui.end_row();
+
+        ui.label("Exposure");
+        DragValue::new(this.exposure.raw_mut()).suffix(" s").ui(ui);
+        ui.end_row();
+    });
+}
+
 fn elephant_foot_fixer(this: &mut ElephantFootFixer, ui: &mut Ui) {
     ui.label("Fixes the 'Elephant Foot' effect by exposing the edges of the bottom layers at a lower intensity. You may have to make a few test prints to find the right settings for your printer and resin.");
-    ui.checkbox(&mut this.enabled, "Enabled");
     ui.add_space(8.0);
 
     const INSET_TIP: &str = "The distance in from the edges that will have a reduced intensity.";

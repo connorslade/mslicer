@@ -115,10 +115,15 @@ impl EncodableLayer for LayerEncoder {
         self.add_run(length, value);
     }
 
-    fn finish(self, layer: u32, config: &SliceConfig, exposure: &ExposureConfig) -> Self::Output {
+    fn finish(
+        self,
+        _config: &SliceConfig,
+        exposure: &ExposureConfig,
+        height: Milimeters,
+    ) -> Self::Output {
         // note that retract_distance is not used...
         Layer {
-            position_z: config.slice_height * (layer + 1) as f32,
+            position_z: height,
             exposure_time: exposure.exposure_time,
             light_off_delay: Seconds::new(0.0),
             lift_height: exposure.lift_distance,

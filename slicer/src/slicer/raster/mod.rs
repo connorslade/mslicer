@@ -81,7 +81,12 @@ impl Slicer {
                     .for_each(|x| x.value = remap[x.value as usize]);
 
                 let exposure = self.slice_config.exposure_config(i as u32).into_owned();
-                Layer { data, exposure }
+                let height = (i + 1) as f32 * self.slice_config.slice_height;
+                Layer {
+                    data,
+                    height,
+                    exposure,
+                }
             })
             .inspect(|_| self.progress.add_complete(1))
             .collect::<Vec<_>>()

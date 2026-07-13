@@ -7,7 +7,7 @@ pub mod downsample;
 pub mod png;
 
 /// Sequence of identical items.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Run<T = u8> {
     pub length: u64,
     pub value: T,

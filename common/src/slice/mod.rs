@@ -47,7 +47,12 @@ pub trait EncodableLayer {
 
     fn new(platform: Vector2<u32>) -> Self;
     fn add_run(&mut self, length: u64, value: u8);
-    fn finish(self, layer: u32, config: &SliceConfig, exposure: &ExposureConfig) -> Self::Output;
+    fn finish(
+        self,
+        config: &SliceConfig,
+        exposure: &ExposureConfig,
+        height: Milimeters,
+    ) -> Self::Output;
 }
 
 /// Format agnostic sliced file info.
@@ -60,6 +65,7 @@ pub struct SliceInfo {
 
 pub struct Layer {
     pub data: Vec<Run>,
+    pub height: Milimeters,
     pub exposure: ExposureConfig,
 }
 

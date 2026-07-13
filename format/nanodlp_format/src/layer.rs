@@ -71,7 +71,12 @@ impl EncodableLayer for LayerEncoder {
         self.runs.push(Run { length, value });
     }
 
-    fn finish(self, _layer: u32, config: &SliceConfig, _exposure: &ExposureConfig) -> Self::Output {
+    fn finish(
+        self,
+        config: &SliceConfig,
+        _exposure: &ExposureConfig,
+        _height: Milimeters,
+    ) -> Self::Output {
         let nonzero = rle::bits::from_runs(&self.runs);
         let chunks = rle::bits::chunks(&nonzero, config.platform_resolution.x as u64);
 

@@ -29,7 +29,7 @@ pub struct SliceOperation {
 pub struct SliceOperationInner {
     start_time: Instant,
     pub progress: Progress,
-    pub post_processing_progress: CombinedProgress<1>,
+    pub post_processing_progress: CombinedProgress<2>,
     pub result: Mutex<Option<SliceResult>>,
 
     preview_image: Mutex<Option<Arc<RgbaImage>>>,
@@ -90,7 +90,7 @@ pub enum Annotation {
 }
 
 impl SliceOperation {
-    pub fn new(slice: Progress, post_process: CombinedProgress<1>) -> Self {
+    pub fn new(slice: Progress, post_process: CombinedProgress<2>) -> Self {
         Self {
             inner: Arc::new(SliceOperationInner {
                 start_time: Instant::now(),

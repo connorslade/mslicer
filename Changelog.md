@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.9.0 &mdash; Coming Soon™
+
+- PCB Tool
+  - Pre and post flip offsets
+- Toy rasterizer (3d renderer) for some reason /shrug
+- Variable layer height (#23)
+
 ## v0.8.0 &mdash; June 30th, 2026
 
 - Fix 'First Layers' setting disappearing

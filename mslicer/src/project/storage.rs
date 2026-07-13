@@ -13,11 +13,16 @@ use common::{
 };
 use slicer::{
     mesh::{Mesh, MeshInner},
-    post_process::elephant_foot_fixer::ElephantFootFixer,
+    post_process::{
+        elephant_foot_fixer::ElephantFootFixer, variable_layer_height::VariableLayerHeight,
+    },
 };
 
 /// Project format version. Value should be incremented whenever the save format
 /// changes, even in development.
+///
+/// ## v10
+/// Added variable layer height post processor.
 ///
 /// ## v9
 /// Added collections.
@@ -45,7 +50,7 @@ use slicer::{
 /// ## v2
 /// A complete rewrite using a custom serilizer/deserilizer because of the
 /// bincode drama...
-const VERSION: u16 = 9;
+const VERSION: u16 = 10;
 
 struct ModelInfo {
     mesh: u32,
@@ -248,12 +253,18 @@ impl Collection {
 
 impl PostProcessing {
     pub fn serialize<T: Serializer>(&self, ser: &mut T) {
+        self.variable_layer_height.serialize(ser);
         self.elephant_foot_fixer.serialize(ser);
     }
 
     pub fn deserialize<T: Deserializer>(des: &mut T, version: u16) -> Self {
         (version < 5).then(|| des.advance_by(5));
         Self {
+            variable_layer_height: if version < 10 {
+                Default::default()
+            } else {
+                VariableLayerHeight::deserialize(des)
+            },
             elephant_foot_fixer: ElephantFootFixer::deserialize(des),
         }
     }

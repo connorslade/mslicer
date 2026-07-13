@@ -9,7 +9,9 @@ use common::{
     progress::CombinedProgress,
     slice::{Layer, SliceConfig},
 };
-use slicer::post_process::elephant_foot_fixer::ElephantFootFixer;
+use slicer::post_process::{
+    elephant_foot_fixer::ElephantFootFixer, variable_layer_height::VariableLayerHeight,
+};
 
 pub mod model;
 pub mod storage;
@@ -34,6 +36,7 @@ pub struct Collection {
 
 #[derive(Default, Clone)]
 pub struct PostProcessing {
+    pub variable_layer_height: VariableLayerHeight,
     pub elephant_foot_fixer: ElephantFootFixer,
 }
 
@@ -116,11 +119,13 @@ impl PostProcessing {
     pub fn process(
         &self,
         config: &SliceConfig,
-        layers: &mut [Layer],
-        progress: CombinedProgress<1>,
+        layers: &mut Vec<Layer>,
+        progress: CombinedProgress<2>,
     ) {
-        self.elephant_foot_fixer
+        self.variable_layer_height
             .post_slice(config, layers, progress[0].clone());
+        self.elephant_foot_fixer
+            .post_slice(config, layers, progress[1].clone());
     }
 }
 

@@ -65,6 +65,10 @@ impl SliceConfig {
         }
     }
 
+    pub fn default_height(&self, layer: u32) -> Milimeters {
+        self.slice_height * (layer + 1) as f32
+    }
+
     pub fn pixel_area(&self) -> SquareMilimeters {
         let x = self.platform_size.x / self.platform_resolution.x as f32;
         let y = self.platform_size.y / self.platform_resolution.y as f32;

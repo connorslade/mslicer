@@ -252,7 +252,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                     let post_process = &slice_operation.post_processing_progress;
                     for i in 0..post_process.count() {
                         let progress = post_process[i].progress();
-                        let name = ["Elephant Foot Fixer"][i];
+                        let name = ["Elephant Foot Fixer", "Variable Layer Heights"][i];
                         if progress > 0.0 {
                             ui.label(name);
                             ui.add(ProgressBar::new(progress).show_percentage());

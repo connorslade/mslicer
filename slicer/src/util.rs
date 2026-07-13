@@ -55,12 +55,11 @@ where
 {
     layers
         .into_iter()
-        .enumerate()
-        .map(|(i, layer)| {
+        .map(|layer| {
             let layer = layer.borrow();
             let mut encoder = Encoder::new(config.platform_resolution);
             (layer.data.iter()).for_each(|run| encoder.add_run(run.length, run.value));
-            encoder.finish(i as u32, config, &layer.exposure)
+            encoder.finish(config, &layer.exposure, layer.height)
         })
         .collect()
 }

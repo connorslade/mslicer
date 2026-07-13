@@ -135,6 +135,7 @@ impl Graphics3D {
 
                 Layer {
                     data: runs,
+                    height: config.default_height(i as u32),
                     exposure: config.exposure_config(i as u32).into_owned(),
                 }
             })

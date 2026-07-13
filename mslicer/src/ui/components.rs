@@ -1,6 +1,8 @@
 use std::{hash::Hash, mem};
 
-use egui::{Color32, DragValue, FontId, Grid, Response, Separator, Ui, emath::Numeric};
+use egui::{
+    Align, Color32, DragValue, FontId, Grid, Layout, Response, Separator, Ui, emath::Numeric,
+};
 
 use crate::{
     app::history::{Action, History, ModelAction},
@@ -143,4 +145,17 @@ pub fn history_tracked_model(
             action: value(),
         }),
     );
+}
+
+pub fn collapsing_toggle(
+    title: &str,
+    mut toggle: bool,
+    content: impl FnOnce(&mut Ui),
+    ui: &mut Ui,
+) -> bool {
+    ui.with_layout(Layout::right_to_left(Align::Min), |ui| {
+        ui.checkbox(&mut toggle, "");
+        ui.collapsing(title, |ui| content(ui));
+    });
+    toggle
 }
