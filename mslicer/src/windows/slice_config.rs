@@ -421,6 +421,7 @@ fn exposure_remapping(
 
 fn variable_layer_height(this: &mut VariableLayerHeight, ui: &mut Ui) {
     ui.label("Merges identical layers into thicker layers to reduce printing time while retaining resolution where needed.");
+    ui.label("Note that with this post processor enabled you won't be able to save as NanoDLP.");
     ui.add_space(8.0);
 
     grid("variable_layer_height").show(ui, |ui| {

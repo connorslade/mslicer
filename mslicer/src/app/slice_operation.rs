@@ -17,6 +17,7 @@ use common::{
 };
 use egui::Color32;
 use image::RgbaImage;
+use itertools::Itertools;
 use parking_lot::{Condvar, Mutex, MutexGuard};
 use slicer::{slicer::vector::SvgFile, util};
 use tracing::info;
@@ -41,6 +42,7 @@ pub struct SliceResult {
     pub elapsed: Duration,
     pub fresh: bool,
 
+    pub variable_layer_height: bool,
     pub inner: GenericSliceResult,
 }
 
@@ -132,6 +134,7 @@ impl SliceOperationInner {
         let elapsed = self.start_time.elapsed();
         info!("Raster slice operation completed in {:?}", elapsed);
 
+        let variable_layer_height = !layers.iter().map(|x| x.height).all_equal();
         let raster = RasterSliceResult {
             voxels,
             volume: (voxels as f32 * config.voxel_volume()).convert(),
@@ -146,6 +149,8 @@ impl SliceOperationInner {
             config,
             elapsed,
             fresh: true,
+
+            variable_layer_height,
             inner: raster.into(),
         });
     }
@@ -158,6 +163,8 @@ impl SliceOperationInner {
             config,
             elapsed,
             fresh: true,
+
+            variable_layer_height: false,
             inner: VectorSliceResult { layers }.into(),
         });
     }

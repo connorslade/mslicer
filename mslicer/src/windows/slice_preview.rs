@@ -114,7 +114,13 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
 
                             ui.set_width(150.0);
                             for &format in formats {
-                                if ui.button(format.name()).clicked() {
+                                let disabled = result.variable_layer_height
+                                    && matches!(format, Format::Raster(RasterFormat::NanoDLP));
+
+                                if ui
+                                    .add_enabled(!disabled, Button::new(format.name()))
+                                    .clicked()
+                                {
                                     app.tasks.add(save_file(
                                         result.config.clone(),
                                         slice_operation.preview_image(),
