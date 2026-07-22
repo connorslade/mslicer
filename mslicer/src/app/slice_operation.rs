@@ -10,7 +10,7 @@ use std::{
 
 use common::{
     container::Run,
-    misc::human_duration,
+    misc::{IteratorExt, human_duration},
     progress::{CombinedProgress, Progress},
     slice::{DynSlicedFile, Layer, SliceConfig, VectorLayer, format::Format},
     units::{Miliseconds, Milliliters, Seconds},
@@ -134,7 +134,12 @@ impl SliceOperationInner {
         let elapsed = self.start_time.elapsed();
         info!("Raster slice operation completed in {:?}", elapsed);
 
-        let variable_layer_height = !layers.iter().map(|x| x.height).all_equal();
+        let variable_layer_height = !layers
+            .iter()
+            .map(|x| x.height.raw())
+            .tuple_windows()
+            .map(|(a, b)| b - a)
+            .all_equal_float(0.001);
         let raster = RasterSliceResult {
             voxels,
             volume: (voxels as f32 * config.voxel_volume()).convert(),

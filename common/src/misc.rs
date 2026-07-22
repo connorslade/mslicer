@@ -62,6 +62,22 @@ where
     a * (1.0 - t) + b * t
 }
 
+pub trait IteratorExt {
+    fn all_equal_float(&mut self, epsilon: f32) -> bool;
+}
+
+impl<I> IteratorExt for I
+where
+    I: Iterator<Item = f32>,
+{
+    fn all_equal_float(&mut self, epsilon: f32) -> bool {
+        match self.next() {
+            None => true,
+            Some(a) => self.all(|x| (x - a).abs() < epsilon),
+        }
+    }
+}
+
 #[macro_export]
 macro_rules! id_type {
     ($name:ident, $inner:ty) => {
