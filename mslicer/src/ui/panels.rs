@@ -1,7 +1,7 @@
 use std::mem;
 
 use egui::Vec2;
-use egui_dock::{DockState, NodeIndex, Tree};
+use egui_dock::{DockState, Node, NodeIndex, Tree};
 use nalgebra::Vector2;
 
 use crate::{app::config::Config, windows::Tab};
@@ -59,6 +59,30 @@ impl Panels {
         } else if open && existing.is_none() {
             self.dock_state.add_window(vec![tab]);
         }
+    }
+
+    pub fn update(&mut self, window_width: f32) {
+        let surface = self.dock_state.main_surface_mut();
+        let (mut node, _) = surface.find_tab(&Tab::Viewport).unwrap();
+
+        while let Some(parent) = node.parent()
+            && parent != NodeIndex::root()
+        {
+            node = parent;
+        }
+
+        let Node::Horizontal(split) = &mut surface[NodeIndex::root()] else {
+            return;
+        };
+
+        let previous_width = split.rect.width();
+        let change = previous_width / window_width;
+        split.fraction = if node.is_left() {
+            1.0 - (1.0 - split.fraction) * change
+        } else {
+            split.fraction * change
+        }
+        .clamp(0.0, 1.0);
     }
 }
 

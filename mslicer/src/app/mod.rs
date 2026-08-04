@@ -232,6 +232,7 @@ impl eframe::App for App {
         ctx.request_repaint();
         self.set_title(ctx);
 
+        self.panels.update(ctx.viewport_rect().width());
         self.fps.update();
         self.popup().render(ctx);
         self.tasks().poll();
