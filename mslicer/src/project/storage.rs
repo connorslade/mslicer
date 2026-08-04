@@ -21,36 +21,39 @@ use slicer::{
 /// Project format version. Value should be incremented whenever the save format
 /// changes, even in development.
 ///
-/// ## v10
+/// ## v11 (v0.9.0)
+/// Customizable variable layer height similarity threshold.
+///
+/// ## v10 (v0.9.0)
 /// Added variable layer height post processor.
 ///
-/// ## v9
+/// ## v9 (v0.8.0)
 /// Added collections.
 ///
-/// ## v8
+/// ## v8 (v0.8.0)
 /// Added exposure remapping curve to slice config.
 ///
-/// ## v7
+/// ## v7 (v0.7.0)
 /// Added exposure delay option to exposure config.
 ///
-/// ## v6
+/// ## v6 (v0.7.0)
 /// Store SliceMode (raster / vector) instead of the specific Format to save to.
 /// Since slicing and encoding are now separated.
 ///
-/// ## v5
+/// ## v5  (v0.7.0)
 /// Replaced the (inaccurate and incredibly slow) blur based anti aliasing with
 /// a super sampling approach.
 ///
-/// ## v4
+/// ## v4 (v0.6.0)
 /// Added relative exposure value to models.
 ///
-/// ## v3
+/// ## v3 (v0.6.0)
 /// Added the PWM value to SliceConfig -> ExposureConfig.
 ///
-/// ## v2
+/// ## v2 (v0.5.0)
 /// A complete rewrite using a custom serilizer/deserilizer because of the
 /// bincode drama...
-const VERSION: u16 = 10;
+const VERSION: u16 = 11;
 
 struct ModelInfo {
     mesh: u32,
@@ -263,7 +266,7 @@ impl PostProcessing {
             variable_layer_height: if version < 10 {
                 Default::default()
             } else {
-                VariableLayerHeight::deserialize(des)
+                VariableLayerHeight::deserialize(des, version)
             },
             elephant_foot_fixer: ElephantFootFixer::deserialize(des),
         }

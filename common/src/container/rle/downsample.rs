@@ -1,10 +1,10 @@
 use crate::container::Run;
 
 #[derive(Clone)]
-struct RunQueue<'a, T> {
-    runs: &'a [Run<T>],
-    next: usize,
-    active: Run<T>,
+pub struct RunQueue<'a, T> {
+    pub runs: &'a [Run<T>],
+    pub next: usize,
+    pub active: Run<T>,
 }
 
 pub fn downsample_adjacent(factor: u8, runs: &[Run], out: &mut Vec<Run>) {
@@ -13,7 +13,7 @@ pub fn downsample_adjacent(factor: u8, runs: &[Run], out: &mut Vec<Run>) {
 
     let mut i = 0;
     while queue.remaining() {
-        let run = queue.next();
+        let run = queue.advance();
         i += run.length;
 
         let length = run.length / factor;
@@ -89,7 +89,7 @@ impl<'a, T: Copy + Default> RunQueue<'a, T> {
         self.active.length > 0
     }
 
-    pub fn next(&mut self) -> Run<T> {
+    pub fn advance(&mut self) -> Run<T> {
         let out = self.active;
         if self.next < self.runs.len() {
             self.active = self.runs[self.next];
@@ -102,7 +102,7 @@ impl<'a, T: Copy + Default> RunQueue<'a, T> {
 
     pub fn take_up_to(&mut self, n: u64) -> Run<T> {
         if self.active.length <= n {
-            self.next()
+            self.advance()
         } else {
             self.active.length -= n;
             Run::new(n, self.active.value)

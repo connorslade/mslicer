@@ -420,11 +420,22 @@ fn exposure_remapping(
 }
 
 fn variable_layer_height(this: &mut VariableLayerHeight, ui: &mut Ui) {
+    const VARIABLE_LAYER_HEIGHT_THRESHOLD_TOOLTIP: &str =
+        "Maximum allowed average value deviation between layers (in value/mm²).";
+
     ui.label("Merges identical layers into thicker layers to reduce printing time while retaining resolution where needed.");
     ui.label("Note that with this post processor enabled you won't be able to save as NanoDLP.");
     ui.add_space(8.0);
 
     grid("variable_layer_height").show(ui, |ui| {
+        ui.horizontal(|ui| {
+            ui.label("Threshold");
+            ui.label(INFO)
+                .on_hover_text(VARIABLE_LAYER_HEIGHT_THRESHOLD_TOOLTIP);
+        });
+        DragValue::new(&mut this.threshold).ui(ui);
+        ui.end_row();
+
         ui.label("Max Layers");
         DragValue::new(&mut this.max_layers).ui(ui);
         ui.end_row();

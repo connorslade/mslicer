@@ -2,6 +2,8 @@
 
 use std::{borrow::Borrow, iter::repeat_n};
 
+use crate::container::rle::downsample::RunQueue;
+
 pub mod bits;
 pub mod downsample;
 pub mod png;
@@ -49,4 +51,21 @@ where
     }
 
     out
+}
+
+/// Finds the difference between two RLE sequences. That is the sum of all pixel
+/// value differences (abs) between the two sequences.
+///
+/// Assumes the (uncompressed) input data are equal length.
+pub fn difference(a: &[Run], b: &[Run]) -> u64 {
+    let (mut a, mut b) = (RunQueue::new(a), RunQueue::new(b));
+    let mut difference = 0;
+
+    while a.remaining() || b.remaining() {
+        let len = a.active.length.min(b.active.length);
+        let (a, b) = (a.take_up_to(len), b.take_up_to(len));
+        difference += a.value.abs_diff(b.value) as u64 * len;
+    }
+
+    difference
 }
