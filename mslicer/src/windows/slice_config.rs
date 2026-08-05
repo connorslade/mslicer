@@ -101,7 +101,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                 ui.end_row();
             }
             SelectedPrinter::Custom(idx) => {
-                let printer = &app.config.printers[idx - 1];
+                let printer = &app.config.printers[idx];
                 slice_config.platform_resolution = printer.resolution;
                 *platform = printer.size;
             }
@@ -207,11 +207,16 @@ fn printer_presets(ui: &mut Ui, config: &mut Config, state: &mut UiState) {
 
             let this_selected =
                 matches!(state.selected_printer, SelectedPrinter::Custom(x) if x == i);
-            ui.selectable_label(this_selected, &*printer.name)
+            if ui
+                .selectable_label(this_selected, &*printer.name)
                 .on_hover_text(format!(
                     "{}x{} ({}x{}x{})",
                     res.x, res.y, size.x, size.y, size.z
-                ));
+                ))
+                .clicked()
+            {
+                state.selected_printer = SelectedPrinter::Custom(i);
+            }
         }
     });
 

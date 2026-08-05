@@ -11,7 +11,9 @@ use tracing::{info, warn};
 
 use crate::{
     app::{
-        config::Config, history::History, remote_print::RemotePrint,
+        config::{Config, DEFAULT_PRINTERS},
+        history::History,
+        remote_print::RemotePrint,
         slice_operation::SliceOperation,
     },
     project::{Project, model::ModelId},
@@ -25,11 +27,15 @@ use crate::{
         drag_and_drop,
         panels::Panels,
         popup::{Popup, PopupIcon, PopupManager},
-        state::{UiState, WorkspaceHover},
+        state::{SelectedPrinter, UiState, WorkspaceHover},
     },
     windows::{self, Tab},
 };
-use common::{progress::CombinedProgress, slice::SliceMode, units::Milimeter};
+use common::{
+    progress::CombinedProgress,
+    slice::{SliceConfig, SliceMode},
+    units::Milimeter,
+};
 use slicer::slicer::{Slicer, SlicerModel};
 
 pub mod config;
@@ -69,18 +75,10 @@ impl App {
         mut config: Config,
         event_collector: EventCollector,
     ) -> Self {
-        let slice_config = config.default_slice_config.clone();
-        let selected_printer = (config.printers.iter())
-            .position(|x| {
-                x.resolution == slice_config.platform_resolution
-                    && x.size == slice_config.platform_size
-            })
-            .map(|x| x + 1)
-            .unwrap_or_default();
-
         let mut spacenav = SpaceNav::unconnected();
         spacenav.try_connect();
 
+        let slice_config = config.default_slice_config.clone();
         Self {
             render_state,
             panels: Panels::new(&mut config),
@@ -94,7 +92,7 @@ impl App {
             spacenav,
             state: UiState {
                 event_collector,
-                // selected_printer,
+                selected_printer: selected_printer(&config, &slice_config),
                 ..Default::default()
             },
             history: History::default(),
@@ -290,4 +288,26 @@ pub fn is_slicing(slice_operation: &Option<SliceOperation>) -> bool {
         .as_ref()
         .map(|x| !x.progress.complete())
         .unwrap_or_default()
+}
+
+fn selected_printer(config: &Config, slice_config: &SliceConfig) -> SelectedPrinter {
+    for (i, printer) in config.printers.iter().enumerate() {
+        if printer.resolution == slice_config.platform_resolution
+            && printer.size == slice_config.platform_size
+        {
+            return SelectedPrinter::Custom(i);
+        }
+    }
+
+    for (i, brand) in DEFAULT_PRINTERS.iter().enumerate() {
+        for (j, printer) in brand.1.iter().enumerate() {
+            if printer.resolution == slice_config.platform_resolution
+                && printer.size == slice_config.platform_size
+            {
+                return SelectedPrinter::Preset(i, j);
+            }
+        }
+    }
+
+    SelectedPrinter::Project
 }
