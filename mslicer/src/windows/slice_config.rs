@@ -220,6 +220,7 @@ fn printer_presets(ui: &mut Ui, config: &mut Config, state: &mut UiState) {
         }
     });
 
+    ui.separator();
     for (i, (brand, models)) in DEFAULT_PRINTERS.iter().enumerate() {
         ui.menu_button(*brand, |ui| {
             for (j, model) in models.iter().enumerate() {
