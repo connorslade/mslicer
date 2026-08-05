@@ -2,12 +2,7 @@ use egui::{CollapsingHeader, Context, Ui};
 use slicer::builder::MeshBuilder;
 use tools::supports::{SupportGenerator, route_support};
 
-use crate::{
-    app::App,
-    project::model::Model,
-    task::{BuildAccelerationStructures, MeshManifold},
-    ui::components::dragger,
-};
+use crate::{app::App, ui::components::dragger};
 
 pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     ui.label("This feature is still very early in development.");
@@ -87,33 +82,23 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
         dragger(ui, "Support Precision", &mut support.precision, |x| x);
     });
 
-    (app.state.support_placement).then(|| manual_support_placement(app));
+    (app.state.support_placement).then(|| manual_support_placement(app, false));
 }
 
 fn generate_support(app: &mut App, model: usize) {
-    let model = &app.project.models[model];
+    let model = &mut app.project.models[model];
     let half_edge = model.half_edge.as_ref().unwrap();
     let bvh = model.bvh.as_ref().unwrap();
 
-    let generator = SupportGenerator::new(
-        &app.state.support_config,
-        app.project.slice_config.platform_size.map(|x| x.convert()),
-    );
+    let support_config = &app.state.support_config;
+    let platform_size = app.project.slice_config.platform_size.map(|x| x.convert());
 
-    let Some(supports) = generator.generate_supports(&model.mesh, half_edge, bvh) else {
-        return;
-    };
-
-    let mut model = Model::from_mesh(supports)
-        .with_name(format!("Supports {}", model.name))
-        .with_random_color();
-    model.update_oob(&app.project.slice_config.platform_size);
-    app.tasks.add(MeshManifold::new(&model));
-    app.tasks.add(BuildAccelerationStructures::new(&model));
-    app.project.models.push(model);
+    let generator = SupportGenerator::new(support_config, platform_size);
+    let supports = generator.generate_supports(&model.mesh, half_edge, bvh);
+    model.supports.replace_auto(support_config, supports);
 }
 
-fn manual_support_placement(app: &mut App) {
+pub fn manual_support_placement(app: &mut App, clicked: bool) {
     let workspace = &app.state.workspace;
     if workspace.is_moving {
         return;
@@ -124,7 +109,7 @@ fn manual_support_placement(app: &mut App) {
     };
 
     let mut builder = MeshBuilder::new();
-    for model in app.project.models.iter() {
+    for model in app.project.models.iter_mut() {
         let Some(bvh) = model.bvh.as_ref() else {
             continue;
         };
@@ -133,18 +118,25 @@ fn manual_support_placement(app: &mut App) {
             continue;
         };
 
+        let config = &app.state.support_config;
         let normal = (model.mesh).transform_normal(&model.mesh.normal(intersection.face));
-        let start = intersection.position + normal * 0.1;
+        let intersection = model.mesh.transform(&intersection.position);
+        let start = intersection + normal * config.tip_length;
 
-        if let Some(lines) = route_support(&model.mesh, bvh, start) {
+        if let Some(middle) = route_support(&model.mesh, bvh, start) {
             let (r, p) = (1.0, 100);
-            builder.add_cylinder((intersection.position, start), (0.2, r), p);
-            builder.add_cylinder((lines[0], lines[1]), (r, r), p);
-            builder.add_cylinder((lines[1], lines[2]), (r, r), p);
+            builder.add_cylinder((intersection, start), (config.tip_radius, r), p);
+            builder.add_cylinder((start, middle), (r, r), p);
+            builder.add_cylinder((middle, middle.xy().push(0.0)), (r, r), p);
 
-            builder.add_sphere(intersection.position, 0.2, p);
-            builder.add_sphere(lines[0], r, p);
-            builder.add_sphere(lines[1], r, p);
+            builder.add_sphere(intersection, 0.2, p);
+            builder.add_sphere(start, r, p);
+            builder.add_sphere(middle, r, p);
+
+            if clicked {
+                let support = [intersection, start, middle];
+                model.supports.add_manual(config, support);
+            }
         }
     }
 

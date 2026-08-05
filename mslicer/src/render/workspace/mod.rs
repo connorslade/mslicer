@@ -59,7 +59,7 @@ impl CallbackTrait for WorkspaceRenderCallback {
         workspace.solid_line.paint(render_pass);
         workspace.model.paint(render_pass, app);
         workspace.point.paint(render_pass);
-        workspace.support.paint(render_pass);
+        workspace.support.paint(render_pass, app);
     }
 }
 

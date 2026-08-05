@@ -12,7 +12,7 @@ use wgpu::{Buffer, Device};
 use slicer::{geometry::bvh::Bvh, half_edge::HalfEdgeMesh, mesh::Mesh};
 
 use crate::{
-    project::{CollectionId, RenameState},
+    project::{CollectionId, RenameState, supports::Supports},
     render::util::gpu_mesh_buffers,
 };
 
@@ -33,6 +33,7 @@ pub struct Model {
 
     pub warnings: MeshWarnings,
     buffers: Option<RenderedMeshBuffers>,
+    pub supports: Supports,
 }
 
 #[derive(Clone)]
@@ -73,6 +74,7 @@ impl Model {
 
             warnings: MeshWarnings::empty(),
             buffers: None,
+            supports: Supports::default(),
         }
     }
 
@@ -187,6 +189,7 @@ impl Clone for Model {
 
             warnings: self.warnings,
             buffers: None,
+            supports: Supports::default(),
         }
     }
 }

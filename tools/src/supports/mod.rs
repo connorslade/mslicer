@@ -1,5 +1,3 @@
-use std::f32::consts::PI;
-
 use common::{geometry::convex_hull, units::Milimeters};
 use nalgebra::Vector2;
 use nalgebra::Vector3;
@@ -53,7 +51,7 @@ impl<'a> SupportGenerator<'a> {
         mesh: &Mesh,
         half_edge: &HalfEdgeMesh,
         bvh: &Bvh,
-    ) -> Option<Mesh> {
+    ) -> Vec<[Vector3<f32>; 3]> {
         let mut overhangs = Vec::new();
         let min_dist = self.config.min_spacing;
 
@@ -80,83 +78,24 @@ impl<'a> SupportGenerator<'a> {
         );
         overhangs.extend([points, faces, edges].into_iter().flatten());
 
-        let mut builder = MeshBuilder::new();
-        let raft_points = self.build_support_mesh(mesh, bvh, &overhangs, &mut builder);
-        self.build_raft_mesh(&raft_points, &mut builder);
-
-        (!builder.is_empty()).then(|| builder.build())
+        overhangs
+            .into_iter()
+            .filter_map(|x| {
+                let tip_start = x.point + x.normal * self.config.tip_length;
+                let mid = route_support(mesh, bvh, tip_start);
+                mid.map(|mid| [x.point, tip_start, mid])
+            })
+            .collect()
     }
 
-    fn build_support_mesh(
-        &self,
-        mesh: &Mesh,
-        bvh: &Bvh,
-        overhangs: &[SupportPlacement],
-        builder: &mut MeshBuilder,
-    ) -> Vec<Vector2<f32>> {
-        let (r, p) = (self.config.support_radius, self.config.precision);
-
-        let mut raft_points = Vec::new();
-        for SupportPlacement { point, normal } in overhangs.iter() {
-            let start = point + normal * self.config.tip_length;
-            if let Some(lines) = route_support(mesh, bvh, start) {
-                builder.add_cylinder((*point, start), (self.config.tip_radius, r), p);
-                builder.add_cylinder((lines[0], lines[1]), (r, r), p);
-                builder.add_cylinder((lines[1], lines[2]), (r, r), p);
-
-                for i in 0..(p * 2) {
-                    let angle = i as f32 / p as f32 * PI;
-                    let normal = Vector2::new(angle.cos(), angle.sin());
-                    raft_points.push(lines[2].xy() + normal * r);
-                }
-
-                builder.add_sphere(*point, 0.2, p);
-                builder.add_sphere(lines[0], r, p);
-                builder.add_sphere(lines[1], r, p);
-            }
-        }
-
-        raft_points
-    }
-
-    fn build_raft_mesh(&self, points: &[Vector2<f32>], builder: &mut MeshBuilder) {
-        let hull = convex_hull(points);
-        let idx = builder.next_idx();
-        for i in 0..hull.len() {
-            let point = hull[i];
-            let next = hull[(i + 1) % hull.len()];
-            let prev = hull[(i + hull.len() - 1) % hull.len()];
-
-            let edge_1 = next - point;
-            let edge_2 = point - prev;
-            let offset = (Vector2::new(edge_1.y, -edge_1.x).normalize()
-                + Vector2::new(edge_2.y, -edge_2.x).normalize())
-            .normalize();
-
-            builder.add_vertex(point.push(0.0));
-            builder.add_vertex(
-                (point + offset * self.config.raft_offset).push(self.config.raft_height),
-            );
-        }
-
-        let verts = builder.next_idx() - idx;
-        for i in (0..verts).step_by(2) {
-            if i != 0 && i + 3 < verts {
-                builder.add_face([idx, idx + i + 2, idx + i]);
-                builder.add_face([idx + 1, idx + i + 1, idx + i + 3]);
-            }
-
-            builder.add_quad([
-                idx + i % verts,
-                idx + (i + 1) % verts,
-                idx + (i + 2) % verts,
-                idx + (i + 3) % verts,
-            ]);
-        }
-    }
+    // let mut builder = MeshBuilder::new();
+    // let raft_points = self.build_support_mesh(mesh, bvh, &overhangs, &mut builder);
+    // self.build_raft_mesh(&raft_points, &mut builder);
 }
 
-pub fn route_support(mesh: &Mesh, bvh: &Bvh, position: Vector3<f32>) -> Option<[Vector3<f32>; 3]> {
+/// Returns the middle of the three points defining a support. The final point
+/// (that touches the build plate) is just this returned point projected down.
+pub fn route_support(mesh: &Mesh, bvh: &Bvh, position: Vector3<f32>) -> Option<Vector3<f32>> {
     let mut point = position;
     let mut momentum = Vector3::zeros();
     let beta = 0.9;
@@ -169,11 +108,52 @@ pub fn route_support(mesh: &Mesh, bvh: &Bvh, position: Vector3<f32>) -> Option<[
         point += momentum.xy().push(momentum.z.min(0.0)).normalize() * closest.t.min(1.0);
 
         if bvh.intersect_ray(mesh, point, -Vector3::z()).is_none() {
-            return Some([position, point, point.xy().to_homogeneous()]);
+            return Some(point);
         }
     }
 
     None
+}
+
+// todo: the config values are stored in support generator struct but not used
+// through it...
+pub fn build_raft_mesh(
+    raft_offset: f32,
+    raft_height: f32,
+    points: &[Vector2<f32>],
+    builder: &mut MeshBuilder,
+) {
+    let hull = convex_hull(points);
+    let idx = builder.next_idx();
+    for i in 0..hull.len() {
+        let point = hull[i];
+        let next = hull[(i + 1) % hull.len()];
+        let prev = hull[(i + hull.len() - 1) % hull.len()];
+
+        let edge_1 = next - point;
+        let edge_2 = point - prev;
+        let offset = (Vector2::new(edge_1.y, -edge_1.x).normalize()
+            + Vector2::new(edge_2.y, -edge_2.x).normalize())
+        .normalize();
+
+        builder.add_vertex(point.push(0.0));
+        builder.add_vertex((point + offset * raft_offset).push(raft_height));
+    }
+
+    let verts = builder.next_idx() - idx;
+    for i in (0..verts).step_by(2) {
+        if i != 0 && i + 3 < verts {
+            builder.add_face([idx, idx + i + 2, idx + i]);
+            builder.add_face([idx + 1, idx + i + 1, idx + i + 3]);
+        }
+
+        builder.add_quad([
+            idx + i % verts,
+            idx + (i + 1) % verts,
+            idx + (i + 2) % verts,
+            idx + (i + 3) % verts,
+        ]);
+    }
 }
 
 impl Default for SupportConfig {

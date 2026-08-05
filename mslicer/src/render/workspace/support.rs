@@ -100,16 +100,6 @@ impl SupportPipeline {
 
 impl SupportPipeline {
     pub fn prepare(&mut self, gcx: &Gcx, app: &mut App) {
-        let Some(mesh) = &app.state.support_preview else {
-            self.index_count = 0;
-            return;
-        };
-
-        let (vertices, indices) = gpu_mesh(mesh);
-        self.vertex_buffer.write_slice(gcx, &vertices);
-        self.index_buffer.write_slice(gcx, &indices);
-        self.index_count = indices.len() as u32;
-
         let uniform = SupportUniforms {
             transform: app.view_projection(),
             camera_direction: app.camera.position(1.0),
@@ -119,18 +109,38 @@ impl SupportPipeline {
         buffer.write(&uniform).unwrap();
         gcx.queue
             .write_buffer(&self.uniform_buffer, 0, &buffer.into_inner());
-    }
 
-    pub fn paint(&self, render_pass: &mut RenderPass) {
-        if self.index_count == 0 {
-            return;
+        for model in app.project.models.iter_mut() {
+            model.supports.get_buffers(&gcx.device);
         }
 
+        let Some(mesh) = &app.state.support_preview else {
+            self.index_count = 0;
+            return;
+        };
+
+        let (vertices, indices) = gpu_mesh(mesh);
+        self.vertex_buffer.write_slice(gcx, &vertices);
+        self.index_buffer.write_slice(gcx, &indices);
+        self.index_count = indices.len() as u32;
+    }
+
+    pub fn paint(&self, render_pass: &mut RenderPass, app: &mut App) {
         render_pass.set_pipeline(&self.render_pipeline);
         render_pass.set_bind_group(0, &self.bind_group, &[]);
 
-        render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
-        render_pass.set_index_buffer(self.index_buffer.slice(..), IndexFormat::Uint32);
-        render_pass.draw_indexed(0..self.index_count, 0, 0..1);
+        if self.index_count > 0 {
+            render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
+            render_pass.set_index_buffer(self.index_buffer.slice(..), IndexFormat::Uint32);
+            render_pass.draw_indexed(0..self.index_count, 0, 0..1);
+        }
+
+        for model in app.project.models.iter() {
+            if let Some((supports, count)) = model.supports.try_get_buffers() {
+                render_pass.set_vertex_buffer(0, supports.vertex_buffer.slice(..));
+                render_pass.set_index_buffer(supports.index_buffer.slice(..), IndexFormat::Uint32);
+                render_pass.draw_indexed(0..count, 0, 0..1);
+            }
+        }
     }
 }

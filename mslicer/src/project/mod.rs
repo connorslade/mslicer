@@ -15,6 +15,7 @@ use slicer::post_process::{
 
 pub mod model;
 pub mod storage;
+pub mod supports;
 
 #[derive(Default, Clone)]
 pub struct Project {

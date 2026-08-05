@@ -6,7 +6,10 @@ use egui_wgpu::Callback;
 use nalgebra::Matrix4;
 use serde::{Deserialize, Serialize};
 
-use crate::{app::App, render::workspace::WorkspaceRenderCallback, ui::state::WorkspaceHover};
+use crate::{
+    app::App, render::workspace::WorkspaceRenderCallback, ui::state::WorkspaceHover,
+    windows::supports::manual_support_placement,
+};
 
 mod logs;
 mod models;
@@ -132,13 +135,14 @@ fn viewport(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     let uv = (response.hover_pos().unwrap_or_default() - rect.min) / rect.size();
     app.state.workspace = WorkspaceHover::new(is_moving, aspect, uv);
 
-    if response.clicked()
-        && !is_moving
-        && let Some(id) = app.hovered_model()
-    {
-        app.state
-            .selected
-            .model_clicked(id, ui.input(|x| x.modifiers.shift));
+    if response.clicked() && !is_moving {
+        if app.state.support_placement {
+            manual_support_placement(app, true);
+        } else if let Some(id) = app.hovered_model() {
+            app.state
+                .selected
+                .model_clicked(id, ui.input(|x| x.modifiers.shift));
+        }
     }
 
     let painter = ui.painter();
