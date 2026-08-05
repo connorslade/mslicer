@@ -65,6 +65,12 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
             &mut support.edge_support_spacing,
             |x| x,
         );
+        dragger(
+            ui,
+            "Minimum Support Spacing",
+            &mut support.min_spacing,
+            |x| x,
+        );
     });
 
     CollapsingHeader::new("Support Generation").show(ui, |ui| {

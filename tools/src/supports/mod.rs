@@ -4,6 +4,7 @@ use common::{geometry::convex_hull, units::Milimeters};
 use nalgebra::Vector2;
 use nalgebra::Vector3;
 use slicer::{builder::MeshBuilder, geometry::bvh::Bvh, half_edge::HalfEdgeMesh, mesh::Mesh};
+use tracing::info;
 
 pub mod detect;
 pub mod quazirandom;
@@ -25,6 +26,8 @@ pub struct SupportConfig {
     pub tip_radius: f32,
     pub tip_length: f32,
     pub precision: u32,
+
+    pub min_spacing: f32,
 
     pub raft_height: f32,
     pub raft_offset: f32,
@@ -52,11 +55,30 @@ impl<'a> SupportGenerator<'a> {
         bvh: &Bvh,
     ) -> Option<Mesh> {
         let mut overhangs = Vec::new();
+        let min_dist = self.config.min_spacing;
 
-        let faces = self.overhanging_faces(mesh);
-        overhangs.extend(self.place_point_supports(mesh, half_edge));
-        overhangs.extend(self.place_face_supports(mesh, &faces));
-        overhangs.extend(self.place_edge_supports(mesh, half_edge, &faces));
+        let overhanging_faces = self.overhanging_faces(mesh);
+        let mut faces = self.place_face_supports(mesh, &overhanging_faces);
+        let mut edges = self.place_edge_supports(mesh, half_edge, &overhanging_faces);
+        for overhang in edges.iter() {
+            // i know its n²... shut up.
+            faces.retain(|x| (x.point - overhang.point).magnitude() > min_dist);
+        }
+
+        let points = self.place_point_supports(mesh, half_edge);
+        for overhang in points.iter() {
+            faces.retain(|x| (x.point - overhang.point).magnitude() > min_dist);
+            edges.retain(|x| (x.point - overhang.point).magnitude() > min_dist);
+        }
+
+        info!(
+            "Placed {} supports. {{ point: {}, face: {}, edge: {} }}",
+            points.len() + faces.len() + edges.len(),
+            points.len(),
+            faces.len(),
+            edges.len()
+        );
+        overhangs.extend([points, faces, edges].into_iter().flatten());
 
         let mut builder = MeshBuilder::new();
         let raft_points = self.build_support_mesh(mesh, bvh, &overhangs, &mut builder);
@@ -162,6 +184,7 @@ impl Default for SupportConfig {
             tip_length: 3.0,
             raft_height: 1.0,
             raft_offset: 1.0,
+            min_spacing: 5.0,
             precision: 10,
             max_angle: 30.0,
             face_support_spacing: 50.0,
