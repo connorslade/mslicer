@@ -94,7 +94,7 @@ impl App {
             spacenav,
             state: UiState {
                 event_collector,
-                selected_printer,
+                // selected_printer,
                 ..Default::default()
             },
             history: History::default(),

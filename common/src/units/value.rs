@@ -143,7 +143,7 @@ macro_rules! quantity {
             }
 
             impl<$($param: $constraint),+> $name<$($param),+> {
-                pub fn new(value: f32) -> Self {
+                pub const fn new(value: f32) -> Self {
                     Self {
                         value,
                         _unit: PhantomData,

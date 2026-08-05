@@ -6,6 +6,7 @@
 - Toy rasterizer (3d renderer) for some reason /shrug
 - Variable layer height (#23)
 - Side panel keeps constant width when resizing the viewport
+- Add lots more printer presets for Elegoo printers
 
 ## v0.8.0 &mdash; June 30th, 2026
 

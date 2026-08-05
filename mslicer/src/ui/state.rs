@@ -24,7 +24,7 @@ pub struct UiState {
     pub support_placement: bool,
 
     pub selected: Selected,
-    pub selected_printer: usize,
+    pub selected_printer: SelectedPrinter,
     pub support_preview: Option<Mesh>,
 
     pub selected_remap_point: Option<u8>,
@@ -45,6 +45,18 @@ pub struct UiState {
     pub tools: Tools,
 
     pub move_timeout: u32,
+}
+
+pub enum SelectedPrinter {
+    Project,
+    Custom(usize),
+    Preset(usize, usize),
+}
+
+impl Default for SelectedPrinter {
+    fn default() -> Self {
+        SelectedPrinter::Preset(0, 0)
+    }
 }
 
 #[derive(Default)]

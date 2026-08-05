@@ -1,4 +1,5 @@
 use std::{
+    borrow::Cow,
     fs, iter,
     net::Ipv4Addr,
     path::{Path, PathBuf},
@@ -17,6 +18,23 @@ use crate::{
     render::{camera::Projection, workspace::model::RenderStyle},
     windows::Tab,
 };
+
+#[rustfmt::skip]
+pub const DEFAULT_PRINTERS: &[(&str, &[PrinterProperties])] = &[(
+    "Elegoo", &[
+        PrinterProperties::new("Saturn 3",           [11_520, 5_120], [218.88,  122.88,  250.0]),
+        PrinterProperties::new("Saturn 3 Ultra",     [11_520, 5_120], [218.88,  122.904, 260.0]),
+        PrinterProperties::new("Saturn 4",           [11_520, 5_120], [218.88,  122.88,  220.0]),
+        PrinterProperties::new("Saturn 4 Ultra",     [11_520, 5_120], [218.88,  122.88,  220.0]),
+        PrinterProperties::new("Saturn 4 Ultra 16K", [15_120, 6_230], [211.68,  118.37,  220.0]),
+        PrinterProperties::new("Jupiter SE",         [5_448,  3_064], [277.848, 156.264, 300.0]),
+        PrinterProperties::new("Jupiter 2",          [15_120, 6_230], [302.0,   162.0,   300.0]),
+        PrinterProperties::new("Mars 5",             [4_098,  2_560], [143.43,  89.6,    150.0]),
+        PrinterProperties::new("Mars 5 Ultra",       [8_520,  4_320], [153.36,  77.76,   165.0]),
+        PrinterProperties::new("Mars 4",             [8_520,  4_320], [153.36,  77.76,   175.0]),
+        PrinterProperties::new("Mars 4 Ultra",       [8_520,  4_320], [153.36,  77.76,   165.0]),
+    ],
+)];
 
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(default)]
@@ -39,7 +57,7 @@ pub struct Config {
     pub spacenav: SpacenavConfig,
     pub show_normals: bool,
     pub max_buffer_size: u64,
-    pub printers: Vec<PrinterDefaults>,
+    pub printers: Vec<PrinterProperties>,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -96,8 +114,8 @@ pub enum SlicePreviewView {
 }
 
 #[derive(Clone, Serialize, Deserialize)]
-pub struct PrinterDefaults {
-    pub name: String,
+pub struct PrinterProperties {
+    pub name: Cow<'static, str>,
     pub resolution: Vector2<u32>,
     pub size: Vector3<Milimeters>,
 }
@@ -187,6 +205,20 @@ impl SlicePreviewView {
     }
 }
 
+impl PrinterProperties {
+    pub const fn new(name: &'static str, [rx, ry]: [u32; 2], [sx, sy, sz]: [f32; 3]) -> Self {
+        Self {
+            name: Cow::Borrowed(name),
+            resolution: Vector2::new(rx, ry),
+            size: Vector3::new(
+                Milimeters::new(sx),
+                Milimeters::new(sy),
+                Milimeters::new(sz),
+            ),
+        }
+    }
+}
+
 impl Default for Config {
     fn default() -> Self {
         Self {
@@ -209,11 +241,11 @@ impl Default for Config {
             spacenav: Default::default(),
             max_buffer_size: 512 << 20,
             show_normals: false,
-            printers: vec![PrinterDefaults {
-                name: "Elegoo Saturn 3 Ultra".into(),
-                resolution: Vector2::new(11_520, 5_120),
-                size: Vector3::new(218.88, 122.904, 260.0).map(Milimeters::new),
-            }],
+            printers: vec![PrinterProperties::new(
+                "Custom Printer",
+                [11_520, 5_120],
+                [218.88, 122.904, 260.0],
+            )],
         }
     }
 }
@@ -249,10 +281,10 @@ impl Default for RemotePrintConfig {
     }
 }
 
-impl Default for PrinterDefaults {
+impl Default for PrinterProperties {
     fn default() -> Self {
         Self {
-            name: "New Printer".into(),
+            name: Cow::Owned("New Printer".into()),
             resolution: Vector2::new(10_000, 5_000),
             size: Vector3::repeat(100.0).map(Milimeters::new),
         }

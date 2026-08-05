@@ -13,10 +13,14 @@ use slicer::post_process::{
 };
 
 use crate::{
-    app::App,
+    app::{
+        App,
+        config::{Config, DEFAULT_PRINTERS},
+    },
     ui::{
         components::{collapsing_toggle, grid, vec2_dragger},
         popup::{Popup, PopupApp},
+        state::{SelectedPrinter, UiState},
     },
 };
 use common::{
@@ -62,50 +66,50 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
             ui.style_mut().spacing.item_spacing.x = 4.0;
             ComboBox::from_id_salt("printer")
                 .selected_text(match app.state.selected_printer {
-                    0 => "Custom",
-                    i => &app.config.printers[i - 1].name,
+                    SelectedPrinter::Project => "Custom",
+                    SelectedPrinter::Custom(i) => &app.config.printers[i].name,
+                    SelectedPrinter::Preset(brand, model) => &DEFAULT_PRINTERS[brand].1[model].name,
                 })
                 .show_ui(ui, |ui| {
-                    ui.selectable_value(&mut app.state.selected_printer, 0, "Custom");
-                    for (i, printer) in app.config.printers.iter().enumerate() {
-                        let res = printer.resolution;
-                        let size = printer.size.map(|x| x.get::<Milimeter>());
-
-                        ui.selectable_value(&mut app.state.selected_printer, i + 1, &printer.name)
-                            .on_hover_text(format!(
-                                "{}x{} ({}x{}x{})",
-                                res.x, res.y, size.x, size.y, size.z
-                            ));
-                    }
+                    printer_presets(ui, &mut app.config, &mut app.state);
                 });
 
             if ui.button(PENCIL).clicked() {
                 app.popup
-                    .open(Popup::new("Edit Printer Presets", edit_presets).close_button(true));
+                    .open(Popup::new("Edit Your Printer Presets", edit_presets).close_button(true));
             }
         });
         ui.end_row();
 
         let platform = &mut slice_config.platform_size;
         let prev = *platform;
-        if app.state.selected_printer == 0 {
-            ui.label("Platform Resolution");
-            vec2_dragger(ui, slice_config.platform_resolution.as_mut(), |x| x);
-            ui.end_row();
 
-            ui.label("Platform Size (mm)");
-            ui.horizontal(|ui| {
-                ui.add(DragValue::new(platform.x.raw_mut()));
-                ui.label("×");
-                ui.add(DragValue::new(platform.y.raw_mut()));
-                ui.label("×");
-                ui.add(DragValue::new(platform.z.raw_mut()));
-            });
-            ui.end_row();
-        } else {
-            let printer = &app.config.printers[app.state.selected_printer - 1];
-            slice_config.platform_resolution = printer.resolution;
-            *platform = printer.size;
+        match app.state.selected_printer {
+            SelectedPrinter::Project => {
+                ui.label("Platform Resolution");
+                vec2_dragger(ui, slice_config.platform_resolution.as_mut(), |x| x);
+                ui.end_row();
+
+                ui.label("Platform Size (mm)");
+                ui.horizontal(|ui| {
+                    ui.add(DragValue::new(platform.x.raw_mut()));
+                    ui.label("×");
+                    ui.add(DragValue::new(platform.y.raw_mut()));
+                    ui.label("×");
+                    ui.add(DragValue::new(platform.z.raw_mut()));
+                });
+                ui.end_row();
+            }
+            SelectedPrinter::Custom(idx) => {
+                let printer = &app.config.printers[idx - 1];
+                slice_config.platform_resolution = printer.resolution;
+                *platform = printer.size;
+            }
+            SelectedPrinter::Preset(brand, model) => {
+                let printer = &DEFAULT_PRINTERS[brand].1[model];
+                slice_config.platform_resolution = printer.resolution;
+                *platform = printer.size;
+            }
         }
 
         if *platform != prev {
@@ -188,6 +192,50 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
         |ui| elephant_foot_fixer(&mut post_processing.elephant_foot_fixer, ui),
         ui,
     );
+}
+
+fn printer_presets(ui: &mut Ui, config: &mut Config, state: &mut UiState) {
+    let this_selected = matches!(state.selected_printer, SelectedPrinter::Project);
+    if ui.selectable_label(this_selected, "Custom").clicked() {
+        state.selected_printer = SelectedPrinter::Project;
+    }
+
+    ui.menu_button("Your Presets", |ui| {
+        for (i, printer) in config.printers.iter().enumerate() {
+            let res = printer.resolution;
+            let size = printer.size.map(|x| x.get::<Milimeter>());
+
+            let this_selected =
+                matches!(state.selected_printer, SelectedPrinter::Custom(x) if x == i);
+            ui.selectable_label(this_selected, &*printer.name)
+                .on_hover_text(format!(
+                    "{}x{} ({}x{}x{})",
+                    res.x, res.y, size.x, size.y, size.z
+                ));
+        }
+    });
+
+    for (i, (brand, models)) in DEFAULT_PRINTERS.iter().enumerate() {
+        ui.menu_button(*brand, |ui| {
+            for (j, model) in models.iter().enumerate() {
+                let res = model.resolution;
+                let size = model.size.map(|x| x.get::<Milimeter>());
+
+                let this_selected = matches!(state.selected_printer,
+                    SelectedPrinter::Preset(brand, model) if brand == i && model == j);
+                if ui
+                    .selectable_label(this_selected, &*model.name)
+                    .on_hover_text(format!(
+                        "{}x{} ({}x{}x{})",
+                        res.x, res.y, size.x, size.y, size.z
+                    ))
+                    .clicked()
+                {
+                    state.selected_printer = SelectedPrinter::Preset(i, j);
+                }
+            }
+        });
+    }
 }
 
 fn exposure_config(ui: &mut Ui, config: &mut ExposureConfig) {
