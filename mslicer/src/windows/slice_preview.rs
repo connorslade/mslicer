@@ -210,6 +210,11 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                                     }
                                 });
 
+                            DragValue::new(&mut state.preview_multisample)
+                                .range(1..=64)
+                                .suffix("× AA")
+                                .ui(ui);
+
                             ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                                 let duration = human_duration(raster.print_time.convert());
                                 ui.label(format!("{CLOCK} {duration}"));
@@ -357,6 +362,7 @@ fn slice_preview(
                         pixel_aspect,
                         scale,
                         new_preview,
+                        multisample: state.preview_multisample,
                     },
                 );
                 ui.painter().add(callback);

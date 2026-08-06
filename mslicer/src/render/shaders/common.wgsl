@@ -11,3 +11,11 @@ fn blinn_phong(normal: vec3f, light: vec3f) -> f32 {
 
     return diffuse + specular + 0.1;
 }
+
+var<private> seed: u32 = 0u;
+
+fn rand() -> f32 {
+    seed = seed * 747796405u + 2891336453u;
+    let f = f32(seed >> 9u) / f32(1u << 23u);
+    return fract(f);
+}

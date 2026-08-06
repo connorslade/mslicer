@@ -16,6 +16,7 @@ pub struct SlicePreviewRenderCallback {
     pub scale: Vector2<f32>,
     pub aspect: f32,
     pub pixel_aspect: f32,
+    pub multisample: u32,
 
     pub new_preview: Option<(Vec<u8>, Vec<u8>)>,
 }

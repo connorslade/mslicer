@@ -39,6 +39,7 @@ pub struct UiState {
     pub last_preview_layer: usize,
     pub preview_offset: Vector2<f32>,
     pub preview_scale: f32,
+    pub preview_multisample: u32,
     pub layer_count: (usize, u8),
 
     // tools

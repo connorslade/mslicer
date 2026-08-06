@@ -43,11 +43,13 @@ struct SlicePreviewUniforms {
     scale: Vector2<f32>,
     aspect: f32,
     pixel_aspect: f32,
+    multisample: u32,
 }
 
 impl SlicePreviewPipeline {
     pub fn new(device: &Device, texture: TextureFormat) -> Self {
-        let shader = device.create_shader_module(include_shader!("slice_preview.wgsl"));
+        let shader =
+            device.create_shader_module(include_shader!("slice_preview.wgsl", "common.wgsl"));
 
         let uniform_buffer = device.create_buffer(&BufferDescriptor {
             size: SlicePreviewUniforms::SHADER_SIZE.get(),
@@ -177,6 +179,7 @@ impl SlicePreviewPipeline {
                 scale: resources.scale,
                 offset: resources.offset,
                 aspect: resources.aspect,
+                multisample: resources.multisample,
             })
             .unwrap();
         queue.write_buffer(&self.uniform_buffer, 0, &buffer.into_inner());
