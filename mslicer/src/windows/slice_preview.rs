@@ -210,7 +210,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                                     }
                                 });
 
-                            DragValue::new(&mut state.preview_multisample)
+                            DragValue::new(&mut app.config.slice_preview_multisample)
                                 .range(1..=64)
                                 .suffix("× AA")
                                 .ui(ui);
@@ -243,7 +243,8 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
 
                         let flip =
                             matches!(app.config.slice_preview_view, SlicePreviewView::Screen);
-                        slice_preview(state, ui, raster, platform, pixel_aspect, flip);
+                        let multisample = app.config.slice_preview_multisample;
+                        slice_preview(state, ui, raster, platform, pixel_aspect, flip, multisample);
                     });
                 }
                 GenericSliceResult::Vector(_) => {
@@ -290,6 +291,7 @@ fn slice_preview(
     platform: Vector2<u32>,
     pixel_aspect: f32,
     flip: bool,
+    multisample: u32,
 ) {
     ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
         layer_slider(state, ui, result);
@@ -362,7 +364,7 @@ fn slice_preview(
                         pixel_aspect,
                         scale,
                         new_preview,
-                        multisample: state.preview_multisample,
+                        multisample,
                     },
                 );
                 ui.painter().add(callback);

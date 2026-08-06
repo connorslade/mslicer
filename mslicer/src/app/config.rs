@@ -59,6 +59,7 @@ pub struct Config {
     pub default_slice_config: SliceConfig,
     pub slice_preview_mode: SlicePreviewCoordinateSpace,
     pub slice_preview_view: SlicePreviewView,
+    pub slice_preview_multisample: u32,
 
     pub remote_print: RemotePrintConfig,
 
@@ -238,6 +239,7 @@ impl Default for Config {
             default_slice_config: SliceConfig::default(),
             slice_preview_mode: SlicePreviewCoordinateSpace::WorldSpace,
             slice_preview_view: SlicePreviewView::BuildPlate,
+            slice_preview_multisample: 8,
 
             recent_projects: Vec::new(),
             panels: None,
