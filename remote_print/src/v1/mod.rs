@@ -7,13 +7,13 @@ use std::{
 
 use anyhow::{Context, Result};
 use common::{misc::random_string, slice::format::RasterFormat};
-use parking_lot::{MappedRwLockReadGuard, Mutex, RwLockReadGuard};
+use parking_lot::{Mutex, RwLockReadGuard};
 use tracing::{info, warn};
 
 use crate::{
     manager::Client,
     mqtt::MqttServer,
-    shared::{PrintInfo, Response, addr},
+    shared::{Response, addr},
     v1::{
         commands::{DisconnectCommand, StartPrinting, UploadFile},
         http_server::HttpServer,
@@ -58,7 +58,7 @@ impl RemotePrintV1 {
     pub fn init(
         &mut self,
         (p_mqqt, p_http): (u16, u16),
-        print_completion: impl FnMut(&Client, &PrintInfo) + Send + Sync + 'static,
+        print_completion: impl FnMut(&Client) + Send + Sync + 'static,
     ) -> Result<()> {
         assert!(self.services.is_none());
         let print_completion = Mutex::new(print_completion);
@@ -66,12 +66,13 @@ impl RemotePrintV1 {
         let mqtt_listener = TcpListener::bind(addr(p_mqqt)).context("Failed to bind MQTT")?;
         let mqtt_port = mqtt_listener.local_addr()?.port();
         let mqtt = Mqtt::new_callback(move |client| {
-            let print_info = &client.status.lock().print_info;
-            let is_printing = print_info.status.is_printing();
+            let client_status = client.status.lock();
+            let is_printing = client_status.print_info.status.is_printing();
             let was_printing = client.was_printing.swap(is_printing, Ordering::Relaxed);
+            drop(client_status);
 
             let client = Client::from_v1(&client);
-            (was_printing && !is_printing).then(|| print_completion.lock()(&client, print_info));
+            (was_printing && !is_printing).then(|| print_completion.lock()(&client));
         });
         MqttServer::new(mqtt.clone()).start_async(mqtt_listener)?;
 
@@ -156,10 +157,6 @@ impl Services {
             start_layer: 0,
         };
         self.mqtt.send_command(mainboard, command)
-    }
-
-    pub fn get_client(&self, mainboard: &str) -> MappedRwLockReadGuard<'_, MqttClient> {
-        self.mqtt.get_client(mainboard)
     }
 
     pub fn clients(&self) -> RwLockReadGuard<'_, HashMap<String, MqttClient>> {

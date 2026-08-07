@@ -56,7 +56,7 @@ impl RemotePrintManager {
         &mut self,
         (udp, mqqt, http): (u16, u16, u16),
         timeout: Duration,
-        print_completion: impl FnMut(&Client, &PrintInfo) + Send + Sync + 'static,
+        print_completion: impl FnMut(&Client) + Send + Sync + 'static,
     ) -> Result<()> {
         let udp = UdpSocket::bind(addr(udp)).context("Failed to bind UDP")?;
         udp.set_read_timeout(Some(timeout))?;
@@ -84,9 +84,7 @@ impl RemotePrintManager {
 
     // not ideal allocating every frame but its whatever...
     pub fn clients(&self) -> Vec<Client> {
-        self.v1
-            .clients()
-            .iter()
+        (self.v1.clients().iter())
             .map(|(_, c)| Client::from_v1(c))
             .collect()
     }
@@ -150,7 +148,6 @@ impl RemotePrintManager {
     pub fn add_printer(&self, address: Ipv4Addr) -> Result<()> {
         info!("Attempting to connect to printer at {address}");
         let address = SocketAddr::new(address.into(), 3000);
-
         self.udp().send_to(b"M99999", address)?;
 
         let mut buffer = [0; 1024];
@@ -187,7 +184,7 @@ impl Client {
     pub fn from_v1(client: &MqttClient) -> Self {
         let status = client.status.lock();
         Client {
-            mainboard: client.machine_id.clone(),
+            mainboard: client.attributes.mainboard_id.clone(),
             name: client.attributes.name.clone(),
             last_update: client.last_update.load(Ordering::Relaxed),
             print_info: status.print_info.clone(),

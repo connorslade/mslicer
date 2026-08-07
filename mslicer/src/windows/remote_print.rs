@@ -51,7 +51,8 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
                 let timeout = Duration::from_secs_f32(config.timeout);
                 let callback = clone!(
                     [{ app.state.shared_webhook } as completion],
-                    move |client: &Client, print_info: &PrintInfo| {
+                    move |client: &Client| {
+                        let print_info = &client.print_info;
                         if completion.alert {
                             Notification::new()
                                 .summary("Print Complete")
@@ -206,7 +207,6 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
                     });
             });
         }
-        drop(clients);
 
         ui.add_space(8.0);
         ui.heading("Add Printer");
@@ -238,6 +238,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
                         app.remote_print
                             .scan(app.config.remote_print.broadcast_address)
                             .unwrap();
+                        println!("scan complete");
                         // app.tasks.add(PrinterScan::new(
                         //     &app.remote_print,
                         //     app.config.remote_print.broadcast_address,

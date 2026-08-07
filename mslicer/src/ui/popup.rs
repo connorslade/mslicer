@@ -5,7 +5,7 @@ use egui::{
     WidgetText, Window, vec2,
 };
 use egui_phosphor::regular::X;
-use remote_print::{manager::RemotePrintManager, v1::RemotePrintV1};
+use remote_print::manager::RemotePrintManager;
 
 use crate::{
     app::{config::Config, is_slicing, slice_operation::SliceOperation},
