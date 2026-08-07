@@ -104,6 +104,11 @@ impl RemotePrintV1 {
         }
     }
 
+    pub fn set_timeout(&self, timeout: Duration) -> Result<()> {
+        self.services().udp.set_read_timeout(Some(timeout))?;
+        Ok(())
+    }
+
     pub fn is_initialized(&self) -> bool {
         self.services.is_some()
     }

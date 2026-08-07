@@ -62,7 +62,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
         let clients = app.remote_print.clients();
         (clients.is_empty()).then(|| ui.label("No printers have been added yet."));
 
-        for (i, (mainboard, client)) in clients.iter().enumerate() {
+        for (mainboard, client) in clients.iter() {
             let attributes = &client.attributes;
 
             ui.with_layout(Layout::right_to_left(Align::Min), |ui| {
@@ -371,9 +371,8 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
         });
 
         if app.remote_print.is_initialized() && last_timeout != config.timeout {
-            // TODO(remote-print)
-            // app.remote_print
-            //     .set_network_timeout(Duration::from_secs_f32(config.timeout));
+            let duration = Duration::from_secs_f32(config.timeout);
+            app.remote_print.set_timeout(duration).unwrap();
         }
     });
 }
