@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use const_format::concatcp;
 use egui::{Color32, ComboBox, Context, DragValue, Grid, Ui, Widget, emath::OrderedFloat};
 use egui_extras::{Column, TableBuilder};
@@ -66,9 +68,12 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
             ui.style_mut().spacing.item_spacing.x = 4.0;
             ComboBox::from_id_salt("printer")
                 .selected_text(match app.state.selected_printer {
-                    SelectedPrinter::Project => "Custom",
-                    SelectedPrinter::Custom(i) => &app.config.printers[i].name,
-                    SelectedPrinter::Preset(brand, model) => &DEFAULT_PRINTERS[brand].1[model].name,
+                    SelectedPrinter::Project => Cow::Borrowed("Custom"),
+                    SelectedPrinter::Custom(i) => app.config.printers[i].name.clone(),
+                    SelectedPrinter::Preset(brand, model) => {
+                        let brand = DEFAULT_PRINTERS[brand];
+                        Cow::Owned(format!("{} {}", brand.0, brand.1[model].name))
+                    }
                 })
                 .show_ui(ui, |ui| {
                     printer_presets(ui, &mut app.config, &mut app.state);

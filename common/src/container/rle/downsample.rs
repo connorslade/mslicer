@@ -132,7 +132,7 @@ impl<I: Iterator<Item = Run>> Iterator for RunFlatten<I> {
         }
 
         let prev = self.prev.as_mut().unwrap();
-        while let Some(next) = self.iter.next() {
+        for next in self.iter.by_ref() {
             if next.value == prev.value {
                 prev.length += next.length;
             } else {

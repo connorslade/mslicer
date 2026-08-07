@@ -7,7 +7,7 @@
 - Variable layer height (#23)
 - Side panel keeps constant width when resizing the viewport
 - Add lots more printer presets for Elegoo and Phrozen printers
-- Support generation
+- Support generation progress
   - Prune auto-generated supports with min distance constraint
   - Allow placing supports manually
 - Add anti-aliasing to slice preview
