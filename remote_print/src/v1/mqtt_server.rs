@@ -3,7 +3,7 @@ use std::{
     ops::Deref,
     sync::{
         Arc, Weak,
-        atomic::{AtomicI64, AtomicU16, Ordering},
+        atomic::{AtomicBool, AtomicI64, AtomicU16, Ordering},
     },
 };
 
@@ -53,6 +53,7 @@ pub struct MqttClient {
     pub status: Mutex<Status>,
     pub machine_id: String,
     pub last_update: AtomicI64,
+    pub was_printing: AtomicBool,
     client_id: Option<ClientId>,
     next_packet_id: AtomicU16,
 }
@@ -241,6 +242,7 @@ impl Mqtt {
 
         let mainboard_id = mainboard_id.clone();
         let client = MqttClient {
+            was_printing: AtomicBool::new(response.data.status.print_info.status.is_printing()),
             attributes: response.data.attributes,
             status: Mutex::new(response.data.status),
             machine_id: response.id,

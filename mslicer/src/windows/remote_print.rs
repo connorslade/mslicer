@@ -7,6 +7,7 @@ use std::{
 };
 
 use chrono::{DateTime, Utc};
+use clone_macro::clone;
 use common::{misc::human_duration, slice::format::RasterFormat, units::Miliseconds};
 use const_format::concatcp;
 use egui::{
@@ -14,13 +15,17 @@ use egui::{
     ProgressBar, RichText, Separator, Spinner, Style, TextEdit, Ui, text::LayoutJob, vec2,
 };
 use egui_phosphor::regular::{COPY, NETWORK, PLUGS, PRINTER, STOP, TRASH_SIMPLE, UPLOAD_SIMPLE};
-use remote_print::v1::status::{FileTransferStatus, PrintInfoStatus};
+use notify_rust::Notification;
+use remote_print::v1::{
+    mqtt_server::MqttClient,
+    status::{FileTransferStatus, PrintInfo, PrintInfoStatus},
+};
 use rfd::FileDialog;
 use tracing::info;
 
 use crate::{
     app::{App, config::ContentType},
-    task::{PrinterConnect, PrinterScan},
+    task::{PrinterConnect, PrinterScan, Webhook},
     ui::{
         components::grid,
         popup::{Popup, PopupIcon},
@@ -48,10 +53,33 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
             if ui.button(concatcp!(NETWORK, " Initialize")).clicked() {
                 let config = &app.config.remote_print;
                 let timeout = Duration::from_secs_f32(config.timeout);
+                let callback = clone!(
+                    [{ app.state.shared_webhook } as webhook],
+                    move |client: &MqttClient, print_info: &PrintInfo| {
+                        Notification::new()
+                            .summary("Print Complete")
+                            .body(&format!(
+                                "Printer `{}` has finished printing `{}`.",
+                                client.attributes.name, print_info.filename
+                            ))
+                            .show()
+                            .unwrap();
+
+                        if webhook.enabled {
+                            let body = (webhook.body)
+                                .replace("%file%", &print_info.filename)
+                                .replace("%printer%", &client.attributes.name);
+                            let task = Webhook::new(&webhook.url, body, webhook.content_type);
+                            // todo: poll task
+                        }
+                    }
+                );
+
                 app.remote_print
                     .init(
                         (config.mqtt_port, config.udp_port, config.http_port),
                         timeout,
+                        callback,
                     )
                     .unwrap();
             }

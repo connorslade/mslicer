@@ -3,7 +3,7 @@ use std::{
     io::ErrorKind,
     net::{Ipv4Addr, SocketAddr, SocketAddrV4, TcpListener, UdpSocket},
     ops::Deref,
-    sync::Arc,
+    sync::{Arc, Mutex, atomic::Ordering},
     time::Duration,
 };
 
@@ -19,7 +19,7 @@ use crate::{
         http_server::HttpServer,
         misc::Response,
         mqtt_server::{Mqtt, MqttClient},
-        status::FullStatusData,
+        status::{FullStatusData, PrintInfo, PrintInfoStatus},
     },
 };
 
@@ -63,14 +63,22 @@ impl RemotePrintV1 {
         &mut self,
         (p_mqqt, p_udp, p_http): (u16, u16, u16),
         timeout: Duration,
+        print_completion: impl FnMut(&MqttClient, &PrintInfo) + Send + Sync + 'static,
     ) -> Result<()> {
         assert!(self.services.is_none());
 
+        let print_completion = Mutex::new(print_completion);
         let addr = |port| SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, port);
 
         let mqtt_listener = TcpListener::bind(addr(p_mqqt)).context("Failed to bind MQTT")?;
         let mqtt_port = mqtt_listener.local_addr()?.port();
-        let mqtt = Mqtt::new_callback(|_client| {}); // todo: completion webhooks
+        let mqtt = Mqtt::new_callback(move |client| {
+            let print_info = &client.status.lock().print_info;
+            let is_printing = print_info.status.is_printing();
+            let was_printing = client.was_printing.swap(is_printing, Ordering::Relaxed);
+            (was_printing && !is_printing)
+                .then(|| print_completion.lock().unwrap()(client, print_info));
+        });
         MqttServer::new(mqtt.clone()).start_async(mqtt_listener)?;
 
         let http_listener = TcpListener::bind(addr(p_http)).context("Failed to bind HTTP")?;

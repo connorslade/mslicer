@@ -1,4 +1,4 @@
-use std::{collections::HashSet, iter};
+use std::{collections::HashSet, iter, sync::Arc};
 
 use egui::Vec2;
 use egui_tracing::EventCollector;
@@ -8,6 +8,7 @@ use slicer::mesh::Mesh;
 use tools::supports::SupportConfig;
 
 use crate::{
+    app::config::Webhook,
     project::{CollectionId, model::ModelId},
     windows::tools::Tools,
 };
@@ -33,6 +34,7 @@ pub struct UiState {
     pub working_address: String,
     pub working_filename: String,
     pub remote_print_connecting: RemotePrintConnectStatus,
+    pub shared_webhook: Arc<Webhook>,
 
     // slice preview
     pub slice_preview_layer: usize,
