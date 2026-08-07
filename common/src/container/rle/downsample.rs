@@ -1,3 +1,5 @@
+use std::mem;
+
 use crate::container::Run;
 
 #[derive(Clone)]
@@ -5,6 +7,11 @@ pub struct RunQueue<'a, T> {
     pub runs: &'a [Run<T>],
     pub next: usize,
     pub active: Run<T>,
+}
+
+pub struct RunFlatten<I> {
+    iter: I,
+    prev: Option<Run>,
 }
 
 pub fn downsample_adjacent(factor: u8, runs: &[Run], out: &mut Vec<Run>) {
@@ -109,3 +116,40 @@ impl<'a, T: Copy + Default> RunQueue<'a, T> {
         }
     }
 }
+
+impl<I: Iterator<Item = Run>> RunFlatten<I> {
+    pub fn new(iter: I) -> Self {
+        Self { iter, prev: None }
+    }
+}
+
+impl<I: Iterator<Item = Run>> Iterator for RunFlatten<I> {
+    type Item = Run;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.prev.is_none() {
+            self.prev = Some(self.iter.next()?);
+        }
+
+        let prev = self.prev.as_mut().unwrap();
+        while let Some(next) = self.iter.next() {
+            if next.value == prev.value {
+                prev.length += next.length;
+            } else {
+                let out = *prev;
+                *prev = next;
+                return Some(out);
+            }
+        }
+
+        mem::take(&mut self.prev)
+    }
+}
+
+pub trait RunFlattenExt: Iterator<Item = Run> + Sized {
+    fn run_flatten(self) -> RunFlatten<Self> {
+        RunFlatten::new(self)
+    }
+}
+
+impl<I: Iterator<Item = Run>> RunFlattenExt for I {}

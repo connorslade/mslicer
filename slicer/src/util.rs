@@ -1,8 +1,11 @@
 use std::{borrow::Borrow, sync::Arc};
 
-use common::slice::{
-    self, DynSlicedFile, EncodableLayer, SliceConfig, VectorLayer,
-    format::{RasterFormat, VectorFormat},
+use common::{
+    container::rle::downsample::RunFlattenExt,
+    slice::{
+        self, DynSlicedFile, EncodableLayer, SliceConfig, VectorLayer,
+        format::{RasterFormat, VectorFormat},
+    },
 };
 
 use crate::slicer::vector::SvgFile;
@@ -58,7 +61,16 @@ where
         .map(|layer| {
             let layer = layer.borrow();
             let mut encoder = Encoder::new(config.platform_resolution);
-            (layer.data.iter()).for_each(|run| encoder.add_run(run.length, run.value));
+
+            // The runs need to be 'flattened' (adjacent runs with the same
+            // value combined) because due to the way anti-aliasing is
+            // implemented no runs (excluding the first and last run) will
+            // continue for multiple scan lines.
+            //
+            // This mainly affects the fully black (value = 0) runs.
+            (layer.data.iter().copied())
+                .run_flatten()
+                .for_each(|run| encoder.add_run(run.length, run.value));
             encoder.finish(config, &layer.exposure, layer.height)
         })
         .collect()
