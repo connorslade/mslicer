@@ -85,7 +85,7 @@ impl App {
             config_dir,
             popup: PopupManager::default(),
             tasks: TaskManager::new(),
-            remote_print: RemotePrintManager::new(),
+            remote_print: RemotePrintManager::default(),
             slice_operation: None,
             camera: Camera::default(),
             spacenav,

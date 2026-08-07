@@ -71,7 +71,7 @@ impl RemotePrintV1 {
             let was_printing = client.was_printing.swap(is_printing, Ordering::Relaxed);
             drop(client_status);
 
-            let client = Client::from_v1(&client);
+            let client = Client::from_v1(client);
             (was_printing && !is_printing).then(|| print_completion.lock()(&client));
         });
         MqttServer::new(mqtt.clone()).start_async(mqtt_listener)?;
@@ -169,5 +169,11 @@ impl Deref for RemotePrintV1 {
 
     fn deref(&self) -> &Self::Target {
         self.services.as_ref().unwrap()
+    }
+}
+
+impl Drop for RemotePrintV1 {
+    fn drop(&mut self) {
+        self.shutdown();
     }
 }

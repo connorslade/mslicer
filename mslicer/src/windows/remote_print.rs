@@ -10,17 +10,13 @@ use egui::{
 };
 use egui_phosphor::regular::{COPY, NETWORK, PLUGS, PRINTER, STOP, TRASH_SIMPLE, UPLOAD_SIMPLE};
 use notify_rust::Notification;
-use remote_print::{
-    manager::Client,
-    shared::{PrintInfo, PrintInfoStatus},
-    v1::{mqtt_server::MqttClient, status::FileTransferStatus},
-};
+use remote_print::{manager::Client, shared::PrintInfoStatus, v1::status::FileTransferStatus};
 use rfd::FileDialog;
 use tracing::info;
 
 use crate::{
     app::{App, config::ContentType},
-    task::Webhook,
+    task::{PrinterConnect, PrinterScan, Webhook},
     ui::{
         components::grid,
         popup::{Popup, PopupIcon},
@@ -235,14 +231,10 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
                     let height = scan.rect.height();
                     if scan.clicked() {
                         app.state.remote_print_connecting = RemotePrintConnectStatus::Scanning;
-                        app.remote_print
-                            .scan(app.config.remote_print.broadcast_address)
-                            .unwrap();
-                        println!("scan complete");
-                        // app.tasks.add(PrinterScan::new(
-                        //     &app.remote_print,
-                        //     app.config.remote_print.broadcast_address,
-                        // ));
+                        app.tasks.add(PrinterScan::new(
+                            &app.remote_print,
+                            app.config.remote_print.broadcast_address,
+                        ));
                     }
 
                     ui.add_sized(vec2(2.0, height), Separator::default());
@@ -250,9 +242,8 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
                         if let Ok(address) = Ipv4Addr::from_str(&app.state.working_address) {
                             app.state.remote_print_connecting =
                                 RemotePrintConnectStatus::Connecting;
-                            app.remote_print.add_printer(address).unwrap();
-                            // app.tasks
-                            //     .add(PrinterConnect::new(&app.remote_print, address));
+                            app.tasks
+                                .add(PrinterConnect::new(&app.remote_print, address));
                         } else {
                             app.popup.open(Popup::simple(
                                 "Remote Print Error",

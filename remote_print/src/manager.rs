@@ -1,6 +1,7 @@
 use std::{
     io::ErrorKind,
     net::{Ipv4Addr, SocketAddr, UdpSocket},
+    ops::Deref,
     sync::{Arc, atomic::Ordering},
     time::Duration,
 };
@@ -19,11 +20,16 @@ use crate::{
     v3::{RemotePrintV3, status::DiscoveryResponse},
 };
 
+#[derive(Default)]
 pub struct RemotePrintManager {
+    inner: Option<Arc<RemotePrintManagerInner>>,
+}
+
+pub struct RemotePrintManagerInner {
     pub v1: RemotePrintV1,
     pub v3: RemotePrintV3,
 
-    pub udp: Option<UdpSocket>,
+    pub udp: UdpSocket,
     pub udp_port: u16,
 }
 
@@ -42,55 +48,49 @@ pub struct Client {
 }
 
 impl RemotePrintManager {
-    pub fn new() -> Self {
-        Self {
-            v1: RemotePrintV1::uninitialized(),
-            v3: RemotePrintV3::default(),
-
-            udp: None,
-            udp_port: 0,
-        }
-    }
-
     pub fn init(
         &mut self,
         (udp, mqqt, http): (u16, u16, u16),
         timeout: Duration,
         print_completion: impl FnMut(&Client) + Send + Sync + 'static,
     ) -> Result<()> {
+        assert!(self.inner.is_none());
+
         let udp = UdpSocket::bind(addr(udp)).context("Failed to bind UDP")?;
         udp.set_read_timeout(Some(timeout))?;
         udp.set_broadcast(true)?;
-        self.udp_port = udp.local_addr()?.port();
-        self.udp = Some(udp);
 
-        self.v1.init((mqqt, http), print_completion)?;
+        let mut v1 = RemotePrintV1::uninitialized();
+        v1.init((mqqt, http), print_completion)?;
+
+        self.inner = Some(Arc::new(RemotePrintManagerInner {
+            v1,
+            v3: RemotePrintV3::default(),
+            udp_port: udp.local_addr()?.port(),
+            udp,
+        }));
         Ok(())
     }
 
-    pub fn is_initialized(&self) -> bool {
-        self.udp.is_some()
-    }
-
     pub fn shutdown(&mut self) {
-        self.v1.shutdown();
-        self.udp.take();
-        self.udp_port = 0;
+        self.inner.take();
     }
 
-    pub fn udp(&self) -> &UdpSocket {
-        self.udp.as_ref().unwrap()
+    pub fn is_initialized(&self) -> bool {
+        self.inner.is_some()
+    }
+
+    pub fn inner(&self) -> Option<Arc<RemotePrintManagerInner>> {
+        self.inner.clone()
     }
 
     // not ideal allocating every frame but its whatever...
     pub fn clients(&self) -> Vec<Client> {
-        (self.v1.clients().iter())
-            .map(|(_, c)| Client::from_v1(c))
-            .collect()
+        self.v1.clients().values().map(Client::from_v1).collect()
     }
 }
 
-impl RemotePrintManager {
+impl RemotePrintManagerInner {
     pub fn protocol_version(&self, mainboard: &str) -> Option<ProtocolVersion> {
         if self.v1.clients().contains_key(mainboard) {
             Some(ProtocolVersion::V1)
@@ -125,19 +125,17 @@ impl RemotePrintManager {
             ProtocolVersion::V3 => todo!(),
         }
     }
-}
 
-impl RemotePrintManager {
     pub fn set_timeout(&self, timeout: Duration) -> Result<()> {
-        self.udp().set_read_timeout(Some(timeout))?;
+        self.udp.set_read_timeout(Some(timeout))?;
         Ok(())
     }
 
     fn on_response(&self, address: SocketAddr, received: &str) -> Result<()> {
-        if let Ok(response) = serde_json::from_str::<Response<DiscoveryResponse>>(&received) {
+        if let Ok(response) = serde_json::from_str::<Response<DiscoveryResponse>>(received) {
             self.v3.connect_printer(response)?;
-        } else if let Ok(response) = serde_json::from_str::<Response<FullStatusData>>(&received) {
-            self.v1.connect_printer(self.udp(), response, address)?;
+        } else if let Ok(response) = serde_json::from_str::<Response<FullStatusData>>(received) {
+            self.v1.connect_printer(&self.udp, response, address)?;
         } else {
             bail!("Received invalid response from printer.");
         }
@@ -148,10 +146,10 @@ impl RemotePrintManager {
     pub fn add_printer(&self, address: Ipv4Addr) -> Result<()> {
         info!("Attempting to connect to printer at {address}");
         let address = SocketAddr::new(address.into(), 3000);
-        self.udp().send_to(b"M99999", address)?;
+        self.udp.send_to(b"M99999", address)?;
 
         let mut buffer = [0; 1024];
-        let (len, _addr) = (self.udp())
+        let (len, _addr) = (self.udp)
             .recv_from(&mut buffer)
             .context("No response from printer.")?;
 
@@ -162,11 +160,11 @@ impl RemotePrintManager {
 
     pub fn scan(&self, broadcast: Ipv4Addr) -> Result<()> {
         info!("Scanning for printers on {broadcast}");
-        (self.udp()).send_to(b"M99999", SocketAddr::new(broadcast.into(), 3000))?;
+        (self.udp).send_to(b"M99999", SocketAddr::new(broadcast.into(), 3000))?;
 
         let mut buffer = [0; 1024];
         loop {
-            let (len, address) = match self.udp().recv_from(&mut buffer) {
+            let (len, address) = match self.udp.recv_from(&mut buffer) {
                 Ok(data) => data,
                 Err(e) if matches!(e.kind(), ErrorKind::TimedOut | ErrorKind::WouldBlock) => break,
                 Err(_) => continue,
@@ -190,5 +188,13 @@ impl Client {
             print_info: status.print_info.clone(),
             transfer_info: status.file_transfer_info.clone(),
         }
+    }
+}
+
+impl Deref for RemotePrintManager {
+    type Target = Arc<RemotePrintManagerInner>;
+
+    fn deref(&self) -> &Self::Target {
+        self.inner.as_ref().unwrap()
     }
 }
