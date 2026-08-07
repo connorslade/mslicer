@@ -34,7 +34,7 @@ pub struct UiState {
     pub working_address: String,
     pub working_filename: String,
     pub remote_print_connecting: RemotePrintConnectStatus,
-    pub shared_webhook: Arc<Webhook>,
+    pub shared_webhook: Arc<SharedPrintCompletion>,
 
     // slice preview
     pub slice_preview_layer: usize,
@@ -47,6 +47,12 @@ pub struct UiState {
     pub tools: Tools,
 
     pub move_timeout: u32,
+}
+
+#[derive(Default)]
+pub struct SharedPrintCompletion {
+    pub webhook: Webhook,
+    pub alert: bool,
 }
 
 pub enum SelectedPrinter {

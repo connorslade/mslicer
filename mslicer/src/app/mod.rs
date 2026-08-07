@@ -40,7 +40,6 @@ use slicer::slicer::{Slicer, SlicerModel};
 
 pub mod config;
 pub mod history;
-pub mod remote_print;
 pub mod slice_operation;
 
 pub struct App {
@@ -85,7 +84,7 @@ impl App {
             fps: FpsTracker::new(),
             config_dir,
             popup: PopupManager::default(),
-            tasks: TaskManager::default(),
+            tasks: TaskManager::new(),
             remote_print: RemotePrintV1::uninitialized(),
             slice_operation: None,
             camera: Camera::default(),

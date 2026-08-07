@@ -1,4 +1,7 @@
-use std::borrow::Cow;
+use std::{
+    borrow::Cow,
+    sync::mpsc::{self, Receiver, SyncSender},
+};
 
 use crate::{
     app::config::Config,
@@ -33,6 +36,11 @@ pub use self::{
     webhook::Webhook,
 };
 
+type TaskQueue = (
+    SyncSender<Box<dyn Task + Send + Sync>>,
+    Receiver<Box<dyn Task + Send + Sync>>,
+);
+
 // Async operation that can be polled every frame.
 pub trait Task {
     /// Returns true if the task has completed.
@@ -54,9 +62,11 @@ pub struct TaskStatus<'a> {
     pub progress: f32,
 }
 
-#[derive(Default)]
 pub struct TaskManager {
+    /// List of current tasks that get polled every frame.
     tasks: Vec<Box<dyn Task>>,
+    /// MPSC channel to add tasks to be polled from the UI from async threads.
+    task_queue: TaskQueue,
 }
 
 /// A subset of App fields, excluding `tasks`. This allows mutable access to
@@ -72,6 +82,18 @@ pub struct TaskApp<'a> {
 app_ref_type!(TaskManager, tasks);
 
 impl TaskManager {
+    pub fn new() -> Self {
+        let (tx, rx) = mpsc::sync_channel(16);
+        Self {
+            tasks: Vec::new(),
+            task_queue: (tx, rx),
+        }
+    }
+
+    pub fn sender(&self) -> SyncSender<Box<dyn Task + Send + Sync>> {
+        self.task_queue.0.clone()
+    }
+
     pub fn add(&mut self, task: impl Task + 'static) {
         self.add_boxed(Box::new(task));
     }
@@ -110,6 +132,10 @@ impl TaskManager {
 impl<'a> TaskManagerRef<'a> {
     pub(super) fn poll(&mut self) {
         let this = &mut self.app.tasks;
+        while let Ok(pending) = this.task_queue.1.try_recv() {
+            this.add_boxed(pending);
+        }
+
         let mut app = TaskApp {
             popup: &mut self.app.popup,
             state: &mut self.app.state,

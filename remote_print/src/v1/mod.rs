@@ -19,7 +19,7 @@ use crate::{
         http_server::HttpServer,
         misc::Response,
         mqtt_server::{Mqtt, MqttClient},
-        status::{FullStatusData, PrintInfo, PrintInfoStatus},
+        status::{FullStatusData, PrintInfo},
     },
 };
 

@@ -52,25 +52,29 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
         ui.vertical_centered(|ui| {
             if ui.button(concatcp!(NETWORK, " Initialize")).clicked() {
                 let config = &app.config.remote_print;
+                let sender = app.tasks.sender();
                 let timeout = Duration::from_secs_f32(config.timeout);
                 let callback = clone!(
-                    [{ app.state.shared_webhook } as webhook],
+                    [{ app.state.shared_webhook } as completion],
                     move |client: &MqttClient, print_info: &PrintInfo| {
-                        Notification::new()
-                            .summary("Print Complete")
-                            .body(&format!(
-                                "Printer `{}` has finished printing `{}`.",
-                                client.attributes.name, print_info.filename
-                            ))
-                            .show()
-                            .unwrap();
+                        if completion.alert {
+                            Notification::new()
+                                .summary("Print Complete")
+                                .body(&format!(
+                                    "Printer `{}` has finished printing `{}`.",
+                                    client.attributes.name, print_info.filename
+                                ))
+                                .show()
+                                .unwrap();
+                        }
 
+                        let webhook = &completion.webhook;
                         if webhook.enabled {
                             let body = (webhook.body)
                                 .replace("%file%", &print_info.filename)
                                 .replace("%printer%", &client.attributes.name);
                             let task = Webhook::new(&webhook.url, body, webhook.content_type);
-                            // todo: poll task
+                            sender.send(Box::new(task)).unwrap();
                         }
                     }
                 );
