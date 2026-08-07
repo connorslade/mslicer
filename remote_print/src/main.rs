@@ -8,15 +8,17 @@ use std::{
 
 use anyhow::Result;
 use remote_print::{
-    Response,
-    commands::{StartPrinting, UploadFile},
-    http_server::HttpServer,
     mqtt::MqttServer,
-    mqtt_server::Mqtt,
-    status::FullStatusData,
+    v1::{
+        Response,
+        commands::{StartPrinting, UploadFile},
+        http_server::HttpServer,
+        mqtt_server::Mqtt,
+        status::FullStatusData,
+    },
 };
 
-const PRINTER_ADDRESS: &str = "192.168.1.233:3000";
+const PRINTER_ADDRESS: &str = "192.168.1.230:3000";
 
 fn main() -> Result<()> {
     let mqtt_listener = TcpListener::bind("0.0.0.0:0")?;
@@ -41,6 +43,7 @@ fn main() -> Result<()> {
 
     let received = String::from_utf8_lossy(&buffer[..len]);
     let response = serde_json::from_str::<Response<FullStatusData>>(&received)?;
+    dbg!(&response);
     println!(
         "Got status from `{}`",
         response.data.attributes.machine_name

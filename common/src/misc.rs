@@ -3,6 +3,8 @@ use std::{
     ops::{Add, Mul},
 };
 
+use rand::{RngExt, distr::Alphanumeric};
+
 use crate::units::Miliseconds;
 
 pub fn human_duration(duration: Miliseconds) -> String {
@@ -53,6 +55,14 @@ pub fn subscript_number(num: impl Into<u64>) -> String {
     }
 
     out
+}
+
+pub fn random_string(len: usize) -> String {
+    rand::rng()
+        .sample_iter(&Alphanumeric)
+        .take(len)
+        .map(char::from)
+        .collect()
 }
 
 pub fn lerp<T>(a: T, b: T, t: f32) -> T

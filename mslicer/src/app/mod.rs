@@ -1,5 +1,6 @@
 use std::{path::PathBuf, sync::Arc, thread, time::Instant};
 
+use ::remote_print::v1::RemotePrintV1;
 use clone_macro::clone;
 use const_format::concatcp;
 use egui::{Theme, ViewportCommand, Visuals};
@@ -13,7 +14,6 @@ use crate::{
     app::{
         config::{Config, DEFAULT_PRINTERS},
         history::History,
-        remote_print::RemotePrint,
         slice_operation::SliceOperation,
     },
     project::{Project, model::ModelId},
@@ -51,7 +51,7 @@ pub struct App {
 
     pub popup: PopupManager,
     pub tasks: TaskManager,
-    pub remote_print: RemotePrint,
+    pub remote_print: RemotePrintV1,
     pub slice_operation: Option<SliceOperation>,
 
     pub camera: Camera,
@@ -86,7 +86,7 @@ impl App {
             config_dir,
             popup: PopupManager::default(),
             tasks: TaskManager::default(),
-            remote_print: RemotePrint::uninitialized(),
+            remote_print: RemotePrintV1::uninitialized(),
             slice_operation: None,
             camera: Camera::default(),
             spacenav,
@@ -244,7 +244,7 @@ impl eframe::App for App {
             }
         });
 
-        self.remote_print().tick();
+        // self.remote_print().tick(); TODO(remote-print)
         preview::process_previews(self);
         drag_and_drop::update(self, ctx);
         windows::ui(self, ctx);

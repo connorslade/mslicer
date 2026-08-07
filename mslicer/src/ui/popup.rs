@@ -5,9 +5,10 @@ use egui::{
     WidgetText, Window, vec2,
 };
 use egui_phosphor::regular::X;
+use remote_print::v1::RemotePrintV1;
 
 use crate::{
-    app::{config::Config, is_slicing, remote_print::RemotePrint, slice_operation::SliceOperation},
+    app::{config::Config, is_slicing, slice_operation::SliceOperation},
     app_ref_type,
     project::Project,
     render::camera::Camera,
@@ -36,7 +37,7 @@ pub struct Popup {
 pub struct PopupApp<'a> {
     pub panels: &'a mut Panels,
     pub tasks: &'a mut TaskManager,
-    pub remote_print: &'a mut RemotePrint,
+    pub remote_print: &'a mut RemotePrintV1,
     pub slice_operation: &'a mut Option<SliceOperation>,
     pub camera: &'a mut Camera,
     pub state: &'a mut UiState,

@@ -14,8 +14,6 @@ use soon::Soon;
 use tracing::{info, trace, warn};
 
 use crate::{
-    Response,
-    commands::{Command, CommandTrait, DisconnectCommand},
     mqtt::{
         ClientId, MqttHandler, MqttServer,
         packets::{
@@ -27,7 +25,11 @@ use crate::{
             subscribe_ack::{SubscribeAckPacket, SubscribeReturnCode},
         },
     },
-    status::{Attributes, FullStatusData, Status, StatusData},
+    v1::{
+        commands::{Command, CommandTrait, DisconnectCommand},
+        misc::Response,
+        status::{Attributes, FullStatusData, Status, StatusData},
+    },
 };
 
 pub type Callback = Box<dyn Fn(&MqttClient) + Send + Sync>;
