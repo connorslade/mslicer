@@ -20,6 +20,7 @@ use tracing::info;
 
 use crate::{
     app::{App, config::ContentType},
+    task::{PrinterConnect, PrinterScan},
     ui::{
         components::grid,
         popup::{Popup, PopupIcon},
@@ -212,9 +213,10 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
                     let height = scan.rect.height();
                     if scan.clicked() {
                         app.state.remote_print_connecting = RemotePrintConnectStatus::Scanning;
-                        app.remote_print
-                            .scan(app.config.remote_print.broadcast_address)
-                            .unwrap()
+                        app.tasks.add(PrinterScan::new(
+                            &app.remote_print,
+                            app.config.remote_print.broadcast_address,
+                        ));
                     }
 
                     ui.add_sized(vec2(2.0, height), Separator::default());
@@ -222,7 +224,8 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
                         if let Ok(address) = Ipv4Addr::from_str(&app.state.working_address) {
                             app.state.remote_print_connecting =
                                 RemotePrintConnectStatus::Connecting;
-                            app.remote_print.add_printer(address).unwrap();
+                            app.tasks
+                                .add(PrinterConnect::new(&app.remote_print, address));
                         } else {
                             app.popup.open(Popup::simple(
                                 "Remote Print Error",

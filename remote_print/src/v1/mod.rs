@@ -2,6 +2,7 @@ use std::{
     collections::HashMap,
     io::ErrorKind,
     net::{Ipv4Addr, SocketAddr, SocketAddrV4, TcpListener, UdpSocket},
+    ops::Deref,
     sync::Arc,
     time::Duration,
 };
@@ -29,7 +30,7 @@ pub mod mqtt_server;
 pub mod status;
 
 pub struct RemotePrintV1 {
-    services: Option<Services>,
+    services: Option<Arc<Services>>,
 }
 
 pub struct Services {
@@ -47,7 +48,7 @@ impl RemotePrintV1 {
         Self { services: None }
     }
 
-    pub fn services(&self) -> &Services {
+    pub fn services(&self) -> &Arc<Services> {
         self.services
             .as_ref()
             .expect("RemotePrintV1 not initialized.")
@@ -84,7 +85,7 @@ impl RemotePrintV1 {
 
         info!("Binds: {{ UDP: {_udp_port}, MQTT: {mqtt_port}, HTTP: {http_port} }}");
 
-        self.services = Some(Services {
+        self.services = Some(Arc::new(Services {
             mqtt,
             http,
             udp,
@@ -92,7 +93,7 @@ impl RemotePrintV1 {
             mqtt_port,
             http_port,
             udp_port: _udp_port,
-        });
+        }));
         Ok(())
     }
 
@@ -104,17 +105,19 @@ impl RemotePrintV1 {
         }
     }
 
-    pub fn set_timeout(&self, timeout: Duration) -> Result<()> {
-        self.services().udp.set_read_timeout(Some(timeout))?;
-        Ok(())
-    }
-
     pub fn is_initialized(&self) -> bool {
         self.services.is_some()
     }
+}
+
+impl Services {
+    pub fn set_timeout(&self, timeout: Duration) -> Result<()> {
+        self.udp.set_read_timeout(Some(timeout))?;
+        Ok(())
+    }
 
     fn connect_printer(
-        &mut self,
+        &self,
         response: Response<FullStatusData>,
         address: SocketAddr,
     ) -> Result<()> {
@@ -122,8 +125,7 @@ impl RemotePrintV1 {
         let mainboard_id = &response.data.attributes.mainboard_id;
         info!("Got status from `{machine_name}`",);
 
-        let services = self.services();
-        if services.mqtt.clients.read().contains_key(mainboard_id) {
+        if self.mqtt.clients.read().contains_key(mainboard_id) {
             warn!("Printer `{mainboard_id}` already connected.",);
             return Ok(());
         }
@@ -133,23 +135,22 @@ impl RemotePrintV1 {
         //     (print_completion.lock().sent).insert(response.data.attributes.mainboard_id.to_owned());
         // }
 
-        services.mqtt.add_future_client(response);
-        (services.udp)
-            .send_to(format!("M66666 {}", services.mqtt_port).as_bytes(), address)
+        self.mqtt.add_future_client(response);
+        (self.udp)
+            .send_to(format!("M66666 {}", self.mqtt_port).as_bytes(), address)
             .context("Failed to send mqtt connection command.")?;
 
         Ok(())
     }
 
-    pub fn add_printer(&mut self, address: Ipv4Addr) -> Result<()> {
+    pub fn add_printer(&self, address: Ipv4Addr) -> Result<()> {
         info!("Attempting to connect to printer at {address}");
         let address = SocketAddr::new(address.into(), 3000);
 
-        let services = self.services();
-        services.udp.send_to(b"M99999", address)?;
+        self.udp.send_to(b"M99999", address)?;
 
         let mut buffer = [0; 1024];
-        let (len, _addr) = (services.udp)
+        let (len, _addr) = (self.udp)
             .recv_from(&mut buffer)
             .context("No response from printer.")?;
 
@@ -161,13 +162,13 @@ impl RemotePrintV1 {
         Ok(())
     }
 
-    pub fn scan(&mut self, broadcast: Ipv4Addr) -> Result<()> {
+    pub fn scan(&self, broadcast: Ipv4Addr) -> Result<()> {
         info!("Scanning for printers on {broadcast}");
-        (self.services().udp).send_to(b"M99999", SocketAddr::new(broadcast.into(), 3000))?;
+        (self.udp).send_to(b"M99999", SocketAddr::new(broadcast.into(), 3000))?;
 
         let mut buffer = [0; 1024];
         loop {
-            let (len, addr) = match self.services().udp.recv_from(&mut buffer) {
+            let (len, addr) = match self.udp.recv_from(&mut buffer) {
                 Ok(data) => data,
                 Err(e) if matches!(e.kind(), ErrorKind::TimedOut | ErrorKind::WouldBlock) => break,
                 Err(_) => continue,
@@ -183,13 +184,9 @@ impl RemotePrintV1 {
 
         Ok(())
     }
-}
 
-impl RemotePrintV1 {
     pub fn remove_printer(&self, mainboard: &str) -> Result<()> {
-        self.services()
-            .mqtt
-            .send_command(mainboard, DisconnectCommand)
+        self.mqtt.send_command(mainboard, DisconnectCommand)
     }
 
     pub fn upload(
@@ -199,36 +196,38 @@ impl RemotePrintV1 {
         mut filename: String,
         format: RasterFormat,
     ) -> Result<()> {
-        let services = self.services();
-
         (!filename.is_empty()).then(|| filename.push('_'));
         filename.push_str(&random_string(8));
         filename.push('.');
         filename.push_str(format.extension());
 
-        services.http.add_file(&filename, data.clone());
+        self.http.add_file(&filename, data.clone());
 
-        let command = UploadFile::new(filename, services.http_port, &data);
-        services.mqtt.send_command(mainboard, command)
+        let command = UploadFile::new(filename, self.http_port, &data);
+        self.mqtt.send_command(mainboard, command)
     }
 
     pub fn print(&self, mainboard: &str, filename: &str) -> Result<()> {
-        let services = self.services();
-
         let command = StartPrinting {
             filename: filename.to_owned(),
             start_layer: 0,
         };
-        services.mqtt.send_command(mainboard, command)
+        self.mqtt.send_command(mainboard, command)
     }
-}
 
-impl RemotePrintV1 {
     pub fn get_client(&self, mainboard: &str) -> MappedRwLockReadGuard<'_, MqttClient> {
-        self.services().mqtt.get_client(mainboard)
+        self.mqtt.get_client(mainboard)
     }
 
     pub fn clients(&self) -> RwLockReadGuard<'_, HashMap<String, MqttClient>> {
-        self.services().mqtt.clients.read()
+        self.mqtt.clients.read()
+    }
+}
+
+impl Deref for RemotePrintV1 {
+    type Target = Arc<Services>;
+
+    fn deref(&self) -> &Self::Target {
+        self.services.as_ref().unwrap()
     }
 }
