@@ -67,23 +67,20 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                             app.remote_print.is_initialized() && format == SliceMode::Raster;
                         ui.add_enabled_ui(enabled, |ui| {
                             ui.menu_button(concatcp!(PAPER_PLANE_TILT, " Send to Printer"), |ui| {
-                                for (mainboard, client) in app.remote_print.clients().iter() {
+                                for client in app.remote_print.clients().iter() {
                                     let mut layout_job = LayoutJob::default();
-                                    RichText::new(format!("{} ", client.attributes.name))
-                                        .append_to(
-                                            &mut layout_job,
-                                            &Style::default(),
-                                            FontSelection::Default,
-                                            Align::LEFT,
-                                        );
-                                    RichText::new(&client.attributes.mainboard_id)
-                                        .monospace()
-                                        .append_to(
-                                            &mut layout_job,
-                                            &Style::default(),
-                                            FontSelection::Default,
-                                            Align::LEFT,
-                                        );
+                                    RichText::new(format!("{} ", client.name)).append_to(
+                                        &mut layout_job,
+                                        &Style::default(),
+                                        FontSelection::Default,
+                                        Align::LEFT,
+                                    );
+                                    RichText::new(&client.mainboard).monospace().append_to(
+                                        &mut layout_job,
+                                        &Style::default(),
+                                        FontSelection::Default,
+                                        Align::LEFT,
+                                    );
 
                                     if ui.button(layout_job).clicked() {
                                         let file = result.slice_data().file(
@@ -96,7 +93,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                                         file.serialize(&mut serializer, Progress::new());
                                         let data = Arc::new(serializer.into_inner());
 
-                                        app.popup.open(name_popup(mainboard.clone(), data));
+                                        app.popup.open(name_popup(client.mainboard.clone(), data));
                                     }
                                 }
                             });

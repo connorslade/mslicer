@@ -18,3 +18,4 @@ serde_json.workspace = true
 serde_repr.workspace = true
 soon.workspace = true
 tracing.workspace = true
+tungstenite.workspace = true

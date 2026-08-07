@@ -25,9 +25,9 @@ use crate::{
             subscribe_ack::{SubscribeAckPacket, SubscribeReturnCode},
         },
     },
+    shared::Response,
     v1::{
         commands::{Command, CommandTrait, DisconnectCommand},
-        misc::Response,
         status::{Attributes, FullStatusData, Status, StatusData},
     },
 };

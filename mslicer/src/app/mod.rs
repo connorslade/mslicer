@@ -1,6 +1,5 @@
 use std::{path::PathBuf, sync::Arc, thread, time::Instant};
 
-use ::remote_print::v1::RemotePrintV1;
 use clone_macro::clone;
 use const_format::concatcp;
 use egui::{Theme, ViewportCommand, Visuals};
@@ -8,6 +7,7 @@ use egui_phosphor::regular::CARET_RIGHT;
 use egui_tracing::EventCollector;
 use egui_wgpu::RenderState;
 use nalgebra::{Vector2, Vector3};
+use remote_print::manager::RemotePrintManager;
 use tracing::{info, warn};
 
 use crate::{
@@ -50,7 +50,7 @@ pub struct App {
 
     pub popup: PopupManager,
     pub tasks: TaskManager,
-    pub remote_print: RemotePrintV1,
+    pub remote_print: RemotePrintManager,
     pub slice_operation: Option<SliceOperation>,
 
     pub camera: Camera,
@@ -85,7 +85,7 @@ impl App {
             config_dir,
             popup: PopupManager::default(),
             tasks: TaskManager::new(),
-            remote_print: RemotePrintV1::uninitialized(),
+            remote_print: RemotePrintManager::new(),
             slice_operation: None,
             camera: Camera::default(),
             spacenav,
