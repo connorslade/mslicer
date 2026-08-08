@@ -29,6 +29,21 @@ pub struct DiscoveryResponse {
     pub firmware_version: String,
 }
 
+// // https://github.com/danielcherubini/elegoo-homeassistant/blob/83db65f58d8d8b6d4575c5d9c5d7d48ddd7fe37f/custom_components/elegoo_printer/websocket/server/discovery.py#L100-L101
+// #[derive(Debug, Clone, Deserialize, Serialize)]
+// #[serde(rename_all = "PascalCase")]
+// pub struct LegacyDiscoveryResponse {
+//     pub name: String,
+//     pub machine_name: String,
+//     pub brand_name: String,
+//     #[serde(rename = "MainboardIP")]
+//     pub mainboard_ip: String,
+//     #[serde(rename = "MainboardID")]
+//     pub mainboard_id: String,
+//     pub protocol_version: String,
+//     pub firmware_version: String,
+// }
+
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct Attributes {
@@ -63,4 +78,43 @@ pub enum CurrentStatus {
     FileTransferring = 2,
     ExposureTesting = 3,
     DevicesTesting = 4,
+}
+
+/*
+* ts = int(time.time())
+        data = data or {}
+        request_id = secrets.token_hex(8)
+        payload = {
+            "Id": self.printer.connection,
+            "Data": {
+                "Cmd": cmd,
+                "Data": data,
+                "RequestID": request_id,
+                "MainboardID": self.printer.id,
+                "TimeStamp": ts,
+                "From": 0,
+            },
+            "Topic": f"sdcp/request/{self.printer.id}",
+        }
+*/
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+#[serde(rename_all = "PascalCase")]
+pub struct Command<T> {
+    pub id: String,
+    pub data: CommandData<T>,
+    pub topic: String,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+#[serde(rename_all = "PascalCase")]
+pub struct CommandData<T> {
+    pub cmd: u8,
+    pub data: T,
+    #[serde(rename = "RequestID")]
+    pub request_id: String,
+    #[serde(rename = "MainboardID")]
+    pub mainboard_id: String,
+    pub time_stamp: i64,
+    pub from: u8,
 }

@@ -4598,6 +4598,7 @@ dependencies = [
  "chrono",
  "clone-macro",
  "common",
+ "hex",
  "md5",
  "parking_lot",
  "rand 0.10.2",

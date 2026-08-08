@@ -4,12 +4,14 @@ use anyhow::Result;
 use clone_macro::clone;
 use common::slice::format::RasterFormat;
 use parking_lot::{Mutex, MutexGuard};
+use rand::{RngExt, rng};
+use serde_json::{Map, Value, json};
 use tracing::{info, trace, warn};
 use tungstenite::Error;
 
 use crate::{
     shared::{Response, epoch},
-    v3::status::{Attributes, DiscoveryResponse, Message, Status},
+    v3::status::{Attributes, Command, CommandData, DiscoveryResponse, Message, Status},
 };
 
 pub mod status;
@@ -41,6 +43,46 @@ impl RemotePrintV3 {
         let ip = &response.data.mainboard_ip;
         let (mut socket, response) = tungstenite::connect(format!("ws://{ip}:3030/websocket"))?;
         trace!("Websocket connected: {response:?}");
+
+        {
+            let message = serde_json::to_string(&Command {
+                id: mainboard_id.clone(),
+                data: CommandData {
+                    cmd: 0,
+                    data: json!({}),
+                    request_id: hex::encode(rng().random::<[u8; 8]>()),
+                    mainboard_id: mainboard_id.clone(),
+                    time_stamp: epoch(),
+                    from: 0,
+                },
+                topic: format!("sdcp/request/{mainboard_id}"),
+            })
+            .unwrap();
+            socket
+                .send(tungstenite::Message::Text(message.into()))
+                .unwrap();
+        }
+
+        {
+            let message = serde_json::to_string(&Command {
+                id: mainboard_id.clone(),
+                data: CommandData {
+                    cmd: 1,
+                    data: json!({}),
+                    request_id: hex::encode(rng().random::<[u8; 8]>()),
+                    mainboard_id: mainboard_id.clone(),
+                    time_stamp: epoch(),
+                    from: 0,
+                },
+                topic: format!("sdcp/request/{mainboard_id}"),
+            })
+            .unwrap();
+            socket
+                .send(tungstenite::Message::Text(message.into()))
+                .unwrap();
+        }
+
+        trace!("Sent commands");
 
         thread::spawn(clone!([{ self.clients } as clients], move || {
             loop {
