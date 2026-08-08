@@ -1,13 +1,13 @@
 #![windows_subsystem = "windows"]
 
-use std::{panic, sync::Arc, thread};
+use std::{fs::File, panic, sync::Arc, thread};
 
 use anyhow::Result;
 use eframe::NativeOptions;
 use egui::{FontDefinitions, IconData, Vec2, ViewportBuilder};
 use egui_wgpu::{WgpuConfiguration, WgpuSetup, WgpuSetupCreateNew};
 use tracing::{info, level_filters::LevelFilter};
-use tracing_subscriber::{filter, layer::SubscriberExt, util::SubscriberInitExt};
+use tracing_subscriber::{filter, fmt::layer, layer::SubscriberExt, util::SubscriberInitExt};
 use wgpu::{DeviceDescriptor, Features, Limits, TextureFormat};
 
 const DEPTH_TEXTURE_FORMAT: TextureFormat = TextureFormat::Depth24PlusStencil8;
@@ -37,14 +37,18 @@ fn main() -> Result<()> {
     let format = tracing_subscriber::fmt::layer();
     let collector = egui_tracing::EventCollector::new();
 
+    let config_dir = dirs::config_dir().unwrap().join("mslicer");
+    let log_file = File::create(config_dir.join("mslicer.log")).unwrap();
+    let file_layer = layer().with_writer(log_file);
+
     tracing_subscriber::registry()
         .with(filter)
         .with(format)
         .with(collector.clone())
+        .with(file_layer)
         .init();
     info!("Starting mslicer v{}", env!("CARGO_PKG_VERSION"));
 
-    let config_dir = dirs::config_dir().unwrap().join("mslicer");
     let config = Config::load_or_default(&config_dir);
     let max_buffer_size = config.max_buffer_size;
 

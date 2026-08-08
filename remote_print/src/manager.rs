@@ -8,7 +8,7 @@ use std::{
 
 use anyhow::{Context, Result, bail};
 use common::slice::format::RasterFormat;
-use tracing::info;
+use tracing::{info, trace};
 
 use crate::{
     shared::{PrintInfo, Response, addr},
@@ -136,6 +136,7 @@ impl RemotePrintManagerInner {
     }
 
     fn on_response(&self, address: SocketAddr, received: &str) -> Result<()> {
+        trace!("Got response: {received:?}");
         if let Ok(response) = serde_json::from_str::<Response<DiscoveryResponse>>(received) {
             self.v3.connect_printer(response)?;
         } else if let Ok(response) = serde_json::from_str::<Response<FullStatusData>>(received) {
