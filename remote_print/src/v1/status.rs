@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use serde_repr::Deserialize_repr;
 
-use crate::{Resolution, parse_resolution};
+use crate::shared::{PrintInfo, Resolution, parse_resolution};
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "PascalCase")]
@@ -59,18 +59,6 @@ pub struct Status {
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "PascalCase")]
-pub struct PrintInfo {
-    pub status: PrintInfoStatus,
-    pub current_layer: u32,
-    pub total_layer: u32,
-    pub current_ticks: u32,
-    pub total_ticks: u32,
-    pub error_number: u8,
-    pub filename: String,
-}
-
-#[derive(Debug, Clone, Deserialize, Serialize)]
-#[serde(rename_all = "PascalCase")]
 pub struct FileTransferInfo {
     pub status: FileTransferStatus,
     pub download_offset: u32,
@@ -89,27 +77,8 @@ pub enum CurrentStatus {
 
 #[repr(u8)]
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize_repr, Serialize)]
-pub enum PrintInfoStatus {
-    None = 0,
-    InitialLower = 1,
-    Lowering = 2,
-    Exposure = 3,
-    Retracting = 4,
-    FinalRetract = 12,
-    Canceled = 13, // maybe?
-    Complete = 16,
-}
-
-#[repr(u8)]
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize_repr, Serialize)]
 pub enum FileTransferStatus {
     None = 0,
     Done = 2,
     Error = 3,
-}
-
-impl PrintInfoStatus {
-    pub fn is_printing(&self) -> bool {
-        !matches!(self, Self::None | Self::Complete)
-    }
 }

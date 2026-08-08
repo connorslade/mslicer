@@ -3,7 +3,7 @@ use std::{
     ops::Deref,
     sync::{
         Arc, Weak,
-        atomic::{AtomicI64, AtomicU16, Ordering},
+        atomic::{AtomicBool, AtomicI64, AtomicU16, Ordering},
     },
 };
 
@@ -14,8 +14,6 @@ use soon::Soon;
 use tracing::{info, trace, warn};
 
 use crate::{
-    Response,
-    commands::{Command, CommandTrait, DisconnectCommand},
     mqtt::{
         ClientId, MqttHandler, MqttServer,
         packets::{
@@ -27,7 +25,11 @@ use crate::{
             subscribe_ack::{SubscribeAckPacket, SubscribeReturnCode},
         },
     },
-    status::{Attributes, FullStatusData, Status, StatusData},
+    shared::{Response, epoch},
+    v1::{
+        commands::{Command, CommandTrait, DisconnectCommand},
+        status::{Attributes, FullStatusData, Status, StatusData},
+    },
 };
 
 pub type Callback = Box<dyn Fn(&MqttClient) + Send + Sync>;
@@ -51,6 +53,7 @@ pub struct MqttClient {
     pub status: Mutex<Status>,
     pub machine_id: String,
     pub last_update: AtomicI64,
+    pub was_printing: AtomicBool,
     client_id: Option<ClientId>,
     next_packet_id: AtomicU16,
 }
@@ -239,6 +242,7 @@ impl Mqtt {
 
         let mainboard_id = mainboard_id.clone();
         let client = MqttClient {
+            was_printing: AtomicBool::new(response.data.status.print_info.status.is_printing()),
             attributes: response.data.attributes,
             status: Mutex::new(response.data.status),
             machine_id: response.id,
@@ -279,8 +283,4 @@ impl Drop for Mqtt {
             let _ = self.send_command(mainboard_id, DisconnectCommand);
         }
     }
-}
-
-fn epoch() -> i64 {
-    chrono::Utc::now().timestamp()
 }

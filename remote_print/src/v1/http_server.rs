@@ -19,7 +19,7 @@ use serde::Serialize;
 use serde_json::json;
 use tracing::{error, trace};
 
-use crate::{
+use crate::v1::{
     mqtt_server::{Mqtt, MqttInner},
     status::{self, Attributes},
 };

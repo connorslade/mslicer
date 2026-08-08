@@ -1,12 +1,7 @@
-use std::{
-    fs,
-    net::Ipv4Addr,
-    str::FromStr,
-    sync::{Arc, atomic::Ordering},
-    time::Duration,
-};
+use std::{fs, net::Ipv4Addr, str::FromStr, sync::Arc, time::Duration};
 
 use chrono::{DateTime, Utc};
+use clone_macro::clone;
 use common::{misc::human_duration, slice::format::RasterFormat, units::Miliseconds};
 use const_format::concatcp;
 use egui::{
@@ -14,13 +9,14 @@ use egui::{
     ProgressBar, RichText, Separator, Spinner, Style, TextEdit, Ui, text::LayoutJob, vec2,
 };
 use egui_phosphor::regular::{COPY, NETWORK, PLUGS, PRINTER, STOP, TRASH_SIMPLE, UPLOAD_SIMPLE};
-use remote_print::status::{FileTransferStatus, PrintInfoStatus};
+use notify_rust::Notification;
+use remote_print::{manager::Client, shared::PrintInfoStatus, v1::status::FileTransferStatus};
 use rfd::FileDialog;
 use tracing::info;
 
 use crate::{
     app::{App, config::ContentType},
-    task::{PrinterConnect, PrinterScan},
+    task::{PrinterConnect, PrinterScan, Webhook},
     ui::{
         components::grid,
         popup::{Popup, PopupIcon},
@@ -34,7 +30,7 @@ const WEBHOOK_DESCRIPTION: &str =
 
 enum Action {
     None,
-    Remove(usize),
+    Remove(String),
     UploadFile { mainboard_id: String },
 }
 
@@ -46,45 +42,71 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
 
         ui.vertical_centered(|ui| {
             if ui.button(concatcp!(NETWORK, " Initialize")).clicked() {
-                app.remote_print().init();
+                let config = &app.config.remote_print;
+                let sender = app.tasks.sender();
+                let timeout = Duration::from_secs_f32(config.timeout);
+                let callback = clone!(
+                    [{ app.state.shared_webhook } as completion],
+                    move |client: &Client| {
+                        let print_info = &client.print_info;
+                        if completion.alert {
+                            Notification::new()
+                                .summary("Print Complete")
+                                .body(&format!(
+                                    "Printer `{}` has finished printing `{}`.",
+                                    client.name, print_info.filename
+                                ))
+                                .show()
+                                .unwrap();
+                        }
 
-                let timeout = Duration::from_secs_f32(app.config.remote_print.timeout);
-                app.remote_print.set_network_timeout(timeout); // todo: move into init function
+                        let webhook = &completion.webhook;
+                        if webhook.enabled {
+                            let body = (webhook.body)
+                                .replace("%file%", &print_info.filename)
+                                .replace("%printer%", &client.name);
+                            let task = Webhook::new(&webhook.url, body, webhook.content_type);
+                            sender.send(Box::new(task)).unwrap();
+                        }
+                    }
+                );
+
+                app.remote_print
+                    .init(
+                        (config.mqtt_port, config.udp_port, config.http_port),
+                        timeout,
+                        callback,
+                    )
+                    .unwrap();
             }
         });
     } else {
-        let mqtt = app.remote_print.mqtt();
         let mut action = Action::None;
 
         ui.heading("Printers");
-        let mut printers = app.remote_print.printers();
-        if printers.is_empty() {
-            ui.label("No printers have been added yet.");
-        }
+        let clients = app.remote_print.clients();
+        (clients.is_empty()).then(|| ui.label("No printers have been added yet."));
 
-        for (i, printer) in printers.iter_mut().enumerate() {
-            let client = mqtt.get_client(&printer.mainboard_id);
-            let attributes = &client.attributes;
-
+        for client in clients.iter() {
             ui.with_layout(Layout::right_to_left(Align::Min), |ui| {
                 if ui.button(TRASH_SIMPLE).on_hover_text("Delate").clicked() {
-                    action = Action::Remove(i);
+                    action = Action::Remove(client.mainboard.clone());
                 }
 
                 if ui.button(UPLOAD_SIMPLE).on_hover_text("Upload").clicked() {
                     action = Action::UploadFile {
-                        mainboard_id: attributes.mainboard_id.clone(),
+                        mainboard_id: client.mainboard.clone(),
                     };
                 }
 
                 let mut job = LayoutJob::default();
-                RichText::new(&attributes.name).strong().append_to(
+                RichText::new(&client.name).strong().append_to(
                     &mut job,
                     &Style::default(),
                     FontSelection::Default,
                     Align::Min,
                 );
-                RichText::new(format!(" ({})", attributes.mainboard_id))
+                RichText::new(format!(" ({})", client.mainboard))
                     .monospace()
                     .append_to(
                         &mut job,
@@ -93,8 +115,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
                         Align::Min,
                     );
 
-                let last_update = client.last_update.load(Ordering::Relaxed);
-                let last_update = DateTime::from_timestamp(last_update, 0).unwrap();
+                let last_update = DateTime::from_timestamp(client.last_update, 0).unwrap();
                 if (Utc::now() - last_update).num_seconds() > 15 {
                     RichText::new(concatcp!("  ", PLUGS)).strong().append_to(
                         &mut job,
@@ -107,9 +128,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
                 CollapsingHeader::new(job)
                     .default_open(true)
                     .show(ui, |ui| {
-                        let status = client.status.lock();
-
-                        let print_info = &status.print_info;
+                        let print_info = &client.print_info;
                         let printing = print_info.status.is_printing();
                         if printing {
                             ui.horizontal(|ui| {
@@ -148,7 +167,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
                             });
                         }
 
-                        let file_transfer = &status.file_transfer_info;
+                        let file_transfer = &client.transfer_info;
                         if file_transfer.status == FileTransferStatus::None
                             && file_transfer.file_total_size != 0
                         {
@@ -177,14 +196,13 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
                             });
                             if ui.button(concatcp!(PRINTER, " Print")).clicked() {
                                 app.remote_print
-                                    .print(&attributes.mainboard_id, &file_transfer.filename)
+                                    .print(&client.mainboard, &file_transfer.filename)
                                     .unwrap();
                             }
                         }
                     });
             });
         }
-        drop(printers);
 
         ui.add_space(8.0);
         ui.heading("Add Printer");
@@ -250,7 +268,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
         );
 
         match action {
-            Action::Remove(i) => app.remote_print.remove_printer(i).unwrap(),
+            Action::Remove(c) => app.remote_print.remove_printer(&c).unwrap(),
             Action::UploadFile { mainboard_id } => upload_file(app, mainboard_id),
             Action::None => {}
         }
@@ -268,13 +286,18 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
         ui.label(PORTS_DESCRIPTION);
         let initialized = app.remote_print.is_initialized();
 
-        let mut ports = app.remote_print.ports();
-        let (mqtt, http, udp) = if let Some(ports) = ports.as_mut() {
-            (&mut ports.0, &mut ports.1, &mut ports.2)
+        let (mut mqtt, mut http, mut udp) = (&mut 0, &mut 0, &mut 0);
+        if app.remote_print.is_initialized() {
+            let ports = app.remote_print.v1.ports();
+            *udp = app.remote_print.udp_port;
+            *mqtt = ports.0;
+            *http = ports.1;
         } else {
             let cfg = &mut app.config.remote_print;
-            (&mut cfg.mqtt_port, &mut cfg.http_port, &mut cfg.udp_port)
-        };
+            mqtt = &mut cfg.mqtt_port;
+            http = &mut cfg.http_port;
+            udp = &mut cfg.udp_port;
+        }
 
         ui.add_space(8.0);
         grid("ports").show(ui, |ui| {
@@ -352,7 +375,9 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
         ui.checkbox(&mut config.status_proxy, "Enable HTTP status proxy");
 
         if last_status_proxy != config.status_proxy {
-            (app.remote_print.http()).set_proxy_enabled(config.status_proxy);
+            // TODO: status proxy only works for v1 printers rn!
+            let http = &app.remote_print.v1.services().http;
+            http.set_proxy_enabled(config.status_proxy);
         }
 
         let last_timeout = config.timeout;
@@ -368,8 +393,8 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
         });
 
         if app.remote_print.is_initialized() && last_timeout != config.timeout {
-            app.remote_print
-                .set_network_timeout(Duration::from_secs_f32(config.timeout));
+            let duration = Duration::from_secs_f32(config.timeout);
+            app.remote_print.set_timeout(duration).unwrap();
         }
     });
 }

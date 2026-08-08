@@ -67,28 +67,21 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                             app.remote_print.is_initialized() && format == SliceMode::Raster;
                         ui.add_enabled_ui(enabled, |ui| {
                             ui.menu_button(concatcp!(PAPER_PLANE_TILT, " Send to Printer"), |ui| {
-                                let mqtt = app.remote_print.mqtt();
-                                for printer in app.remote_print.printers().iter() {
-                                    let client = mqtt.get_client(&printer.mainboard_id);
-
+                                for client in app.remote_print.clients().iter() {
                                     let mut layout_job = LayoutJob::default();
-                                    RichText::new(format!("{} ", client.attributes.name))
-                                        .append_to(
-                                            &mut layout_job,
-                                            &Style::default(),
-                                            FontSelection::Default,
-                                            Align::LEFT,
-                                        );
-                                    RichText::new(&client.attributes.mainboard_id)
-                                        .monospace()
-                                        .append_to(
-                                            &mut layout_job,
-                                            &Style::default(),
-                                            FontSelection::Default,
-                                            Align::LEFT,
-                                        );
+                                    RichText::new(format!("{} ", client.name)).append_to(
+                                        &mut layout_job,
+                                        &Style::default(),
+                                        FontSelection::Default,
+                                        Align::LEFT,
+                                    );
+                                    RichText::new(&client.mainboard).monospace().append_to(
+                                        &mut layout_job,
+                                        &Style::default(),
+                                        FontSelection::Default,
+                                        Align::LEFT,
+                                    );
 
-                                    let mainboard_id = printer.mainboard_id.clone();
                                     if ui.button(layout_job).clicked() {
                                         let file = result.slice_data().file(
                                             &result.config,
@@ -100,7 +93,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                                         file.serialize(&mut serializer, Progress::new());
                                         let data = Arc::new(serializer.into_inner());
 
-                                        app.popup.open(name_popup(mainboard_id, data));
+                                        app.popup.open(name_popup(client.mainboard.clone(), data));
                                     }
                                 }
                             });

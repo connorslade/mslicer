@@ -7,13 +7,13 @@ use egui_phosphor::regular::CARET_RIGHT;
 use egui_tracing::EventCollector;
 use egui_wgpu::RenderState;
 use nalgebra::{Vector2, Vector3};
+use remote_print::manager::RemotePrintManager;
 use tracing::{info, warn};
 
 use crate::{
     app::{
         config::{Config, DEFAULT_PRINTERS},
         history::History,
-        remote_print::RemotePrint,
         slice_operation::SliceOperation,
     },
     project::{Project, model::ModelId},
@@ -40,7 +40,6 @@ use slicer::slicer::{Slicer, SlicerModel};
 
 pub mod config;
 pub mod history;
-pub mod remote_print;
 pub mod slice_operation;
 
 pub struct App {
@@ -51,7 +50,7 @@ pub struct App {
 
     pub popup: PopupManager,
     pub tasks: TaskManager,
-    pub remote_print: RemotePrint,
+    pub remote_print: RemotePrintManager,
     pub slice_operation: Option<SliceOperation>,
 
     pub camera: Camera,
@@ -85,8 +84,8 @@ impl App {
             fps: FpsTracker::new(),
             config_dir,
             popup: PopupManager::default(),
-            tasks: TaskManager::default(),
-            remote_print: RemotePrint::uninitialized(),
+            tasks: TaskManager::new(),
+            remote_print: RemotePrintManager::default(),
             slice_operation: None,
             camera: Camera::default(),
             spacenav,
@@ -244,7 +243,7 @@ impl eframe::App for App {
             }
         });
 
-        self.remote_print().tick();
+        // self.remote_print().tick(); TODO(remote-print)
         preview::process_previews(self);
         drag_and_drop::update(self, ctx);
         windows::ui(self, ctx);

@@ -1,10 +1,9 @@
 use std::net::Ipv4Addr;
 
-use clone_macro::clone;
+use remote_print::manager::RemotePrintManager;
 use tracing::trace;
 
 use crate::{
-    app::remote_print::{RemotePrint, add_printer, scan_for_printers},
     task::{PollResult, Task, TaskApp, thread::TaskThread},
     ui::state::RemotePrintConnectStatus,
 };
@@ -18,30 +17,18 @@ pub struct PrinterScan {
 }
 
 impl PrinterConnect {
-    pub fn new(remote_print: &RemotePrint, address: Ipv4Addr) -> Self {
-        let services = remote_print.services.as_ref().unwrap().clone();
-        let handle = TaskThread::spawn(clone!(
-            [
-                { remote_print.printers } as printers,
-                { remote_print.completion } as completion
-            ],
-            move || { add_printer(services, printers, completion, address).unwrap() }
-        ));
+    pub fn new(remote_print: &RemotePrintManager, address: Ipv4Addr) -> Self {
+        let inner = remote_print.inner().unwrap();
+        let handle = TaskThread::spawn(move || inner.add_printer(address).unwrap());
 
         Self { handle }
     }
 }
 
 impl PrinterScan {
-    pub fn new(remote_print: &RemotePrint, broadcast: Ipv4Addr) -> Self {
-        let services = remote_print.services.as_ref().unwrap().clone();
-        let handle = TaskThread::spawn(clone!(
-            [
-                { remote_print.printers } as printers,
-                { remote_print.completion } as completion
-            ],
-            move || { scan_for_printers(services, printers, completion, broadcast).unwrap() }
-        ));
+    pub fn new(remote_print: &RemotePrintManager, broadcast: Ipv4Addr) -> Self {
+        let inner = remote_print.inner().unwrap();
+        let handle = TaskThread::spawn(move || inner.scan(broadcast).unwrap());
 
         Self { handle }
     }
