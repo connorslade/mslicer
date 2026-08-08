@@ -80,24 +80,6 @@ pub enum CurrentStatus {
     DevicesTesting = 4,
 }
 
-/*
-* ts = int(time.time())
-        data = data or {}
-        request_id = secrets.token_hex(8)
-        payload = {
-            "Id": self.printer.connection,
-            "Data": {
-                "Cmd": cmd,
-                "Data": data,
-                "RequestID": request_id,
-                "MainboardID": self.printer.id,
-                "TimeStamp": ts,
-                "From": 0,
-            },
-            "Topic": f"sdcp/request/{self.printer.id}",
-        }
-*/
-
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct Command<T> {

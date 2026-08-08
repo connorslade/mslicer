@@ -1,19 +1,31 @@
-use std::{collections::HashMap, sync::Arc, thread, time::Duration};
+use std::{
+    collections::HashMap,
+    io::ErrorKind,
+    net::{SocketAddr, TcpStream},
+    sync::{
+        Arc,
+        mpsc::{self, Sender},
+    },
+    thread,
+    time::Duration,
+};
 
 use anyhow::Result;
 use clone_macro::clone;
 use common::slice::format::RasterFormat;
 use parking_lot::{Mutex, MutexGuard};
-use rand::{RngExt, rng};
-use serde_json::{Map, Value, json};
 use tracing::{info, trace, warn};
 use tungstenite::Error;
 
 use crate::{
     shared::{Response, epoch},
-    v3::status::{Attributes, Command, CommandData, DiscoveryResponse, Message, Status},
+    v3::{
+        commands::{Cmd, send_command},
+        status::{Attributes, DiscoveryResponse, Message, Status},
+    },
 };
 
+pub mod commands;
 pub mod status;
 
 #[derive(Default)]
@@ -21,12 +33,12 @@ pub struct RemotePrintV3 {
     clients: Arc<Mutex<HashMap<String, Client>>>,
 }
 
-#[derive(Default)]
 pub struct Client {
     pub attributes: Option<Attributes>,
     pub status: Option<Status>,
     pub last_update: i64,
     pub pending_removal: bool,
+    pub sender: Sender<Cmd>,
 }
 
 impl RemotePrintV3 {
@@ -41,51 +53,26 @@ impl RemotePrintV3 {
         }
 
         let ip = &response.data.mainboard_ip;
-        let (mut socket, response) = tungstenite::connect(format!("ws://{ip}:3030/websocket"))?;
-        trace!("Websocket connected: {response:?}");
+        let stream = TcpStream::connect(SocketAddr::new(ip.parse().unwrap(), 3000))?;
+        stream.set_nonblocking(true)?;
 
-        {
-            let message = serde_json::to_string(&Command {
-                id: mainboard_id.clone(),
-                data: CommandData {
-                    cmd: 0,
-                    data: json!({}),
-                    request_id: hex::encode(rng().random::<[u8; 8]>()),
-                    mainboard_id: mainboard_id.clone(),
-                    time_stamp: epoch(),
-                    from: 0,
-                },
-                topic: format!("sdcp/request/{mainboard_id}"),
-            })
-            .unwrap();
-            socket
-                .send(tungstenite::Message::Text(message.into()))
-                .unwrap();
-        }
+        let (mut socket, rsp) = tungstenite::client(format!("ws://{ip}:3030/websocket"), stream)?;
+        trace!("Websocket connected: {rsp:?}");
 
-        {
-            let message = serde_json::to_string(&Command {
-                id: mainboard_id.clone(),
-                data: CommandData {
-                    cmd: 1,
-                    data: json!({}),
-                    request_id: hex::encode(rng().random::<[u8; 8]>()),
-                    mainboard_id: mainboard_id.clone(),
-                    time_stamp: epoch(),
-                    from: 0,
-                },
-                topic: format!("sdcp/request/{mainboard_id}"),
-            })
-            .unwrap();
-            socket
-                .send(tungstenite::Message::Text(message.into()))
-                .unwrap();
-        }
+        let (tx, rx) = mpsc::channel();
+        tx.send(Cmd::RefreshStatus).unwrap();
+        tx.send(Cmd::RefreshAttributes).unwrap();
 
-        trace!("Sent commands");
+        self.clients
+            .lock()
+            .insert(mainboard_id.clone(), Client::new(tx));
 
         thread::spawn(clone!([{ self.clients } as clients], move || {
             loop {
+                while let Ok(command) = rx.recv() {
+                    send_command(&mut socket, &mainboard_id, command);
+                }
+
                 {
                     let mut clients = clients.lock();
                     if clients
@@ -98,7 +85,6 @@ impl RemotePrintV3 {
                     }
                 }
 
-                // todo: does this block?
                 match socket.read() {
                     Ok(message) => {
                         let text = match message.to_text() {
@@ -120,7 +106,7 @@ impl RemotePrintV3 {
 
                         trace!("message: {message:?}");
                         let mut clients = clients.lock();
-                        let client = clients.entry(mainboard_id.clone()).or_default();
+                        let client = clients.get_mut(&mainboard_id).unwrap();
                         client.last_update = epoch();
 
                         if let Some(attributes) = message.attributes {
@@ -132,6 +118,11 @@ impl RemotePrintV3 {
                             trace!("Got status");
                             client.status = Some(status);
                         }
+                    }
+                    Err(Error::Io(e))
+                        if matches!(e.kind(), ErrorKind::TimedOut | ErrorKind::WouldBlock) =>
+                    {
+                        continue;
                     }
                     Err(Error::ConnectionClosed) => {
                         trace!("Connection to `{mainboard_id}` closed.");
@@ -166,7 +157,27 @@ impl RemotePrintV3 {
         Ok(())
     }
 
-    pub fn print(&self, _mainboard: &str, _filename: &str) -> Result<()> {
+    pub fn print(&self, mainboard: &str, filename: &str) -> Result<()> {
+        let cmd = Cmd::StartPrinting {
+            filename: filename.to_owned(),
+            start_layer: 0,
+        };
+
+        let clients = self.clients();
+        let client = clients.get(mainboard).unwrap();
+        client.sender.send(cmd).unwrap();
         Ok(())
+    }
+}
+
+impl Client {
+    fn new(sender: Sender<Cmd>) -> Self {
+        Self {
+            attributes: None,
+            status: None,
+            last_update: 0,
+            pending_removal: false,
+            sender,
+        }
     }
 }
