@@ -6,7 +6,6 @@ use std::{
 };
 
 use anyhow::{Context, Result};
-use common::{misc::random_string, slice::format::RasterFormat};
 use parking_lot::{Mutex, RwLockReadGuard};
 use tracing::{info, warn};
 
@@ -133,18 +132,7 @@ impl Services {
         self.mqtt.send_command(mainboard, DisconnectCommand)
     }
 
-    pub fn upload(
-        &self,
-        mainboard: &str,
-        data: Arc<Vec<u8>>,
-        mut filename: String,
-        format: RasterFormat,
-    ) -> Result<()> {
-        (!filename.is_empty()).then(|| filename.push('_'));
-        filename.push_str(&random_string(8));
-        filename.push('.');
-        filename.push_str(format.extension());
-
+    pub fn upload(&self, mainboard: &str, data: Arc<Vec<u8>>, filename: String) -> Result<()> {
         self.http.add_file(&filename, data.clone());
 
         let command = UploadFile::new(filename, self.http_port, &data);

@@ -1,7 +1,7 @@
 use std::{
     collections::HashMap,
     io::ErrorKind,
-    net::{SocketAddr, TcpStream},
+    net::{Ipv4Addr, SocketAddr, TcpStream},
     sync::{
         Arc,
         mpsc::{self, Sender},
@@ -12,13 +12,15 @@ use std::{
 
 use anyhow::Result;
 use clone_macro::clone;
-use common::slice::format::RasterFormat;
 use parking_lot::{Mutex, MutexGuard};
 use tracing::{info, trace, warn};
 use tungstenite::Error;
+use ureq::unversioned::multipart::{Form, Part};
+use uuid::Uuid;
 
 use crate::{
     shared::{Response, epoch},
+    v1::status::{FileTransferInfo, FileTransferStatus},
     v3::{
         commands::{Cmd, send_command},
         status::{Attributes, DiscoveryResponse, Message, Status},
@@ -36,6 +38,9 @@ pub struct RemotePrintV3 {
 pub struct Client {
     pub attributes: Option<Attributes>,
     pub status: Option<Status>,
+    pub transfer_info: FileTransferInfo,
+
+    pub ip: Ipv4Addr,
     pub last_update: i64,
     pub pending_removal: bool,
     pub sender: Sender<Cmd>,
@@ -52,8 +57,8 @@ impl RemotePrintV3 {
             return Ok(());
         }
 
-        let ip = &response.data.mainboard_ip;
-        let stream = TcpStream::connect(SocketAddr::new(ip.parse().unwrap(), 3000))?;
+        let ip = response.data.mainboard_ip.parse::<Ipv4Addr>().unwrap();
+        let stream = TcpStream::connect(SocketAddr::new(ip.into(), 3000))?;
         stream.set_nonblocking(true)?;
 
         let (mut socket, rsp) = tungstenite::client(format!("ws://{ip}:3030/websocket"), stream)?;
@@ -65,7 +70,7 @@ impl RemotePrintV3 {
 
         self.clients
             .lock()
-            .insert(mainboard_id.clone(), Client::new(tx));
+            .insert(mainboard_id.clone(), Client::new(ip, tx));
 
         thread::spawn(clone!([{ self.clients } as clients], move || {
             loop {
@@ -147,13 +152,33 @@ impl RemotePrintV3 {
         Ok(())
     }
 
-    pub fn upload(
-        &self,
-        _mainboard: &str,
-        _data: Arc<Vec<u8>>,
-        _filename: String,
-        _format: RasterFormat,
-    ) -> Result<()> {
+    pub fn upload(&self, mainboard: &str, data: Arc<Vec<u8>>, filename: String) -> Result<()> {
+        let file = Part::bytes(&data)
+            .file_name(&filename)
+            .mime_str("application/octet-stream")?;
+
+        let md5 = format!("{:x}", md5::compute(&*data));
+        let uuid = Uuid::new_v4().to_string();
+        let size = data.len().to_string();
+        let form = Form::new()
+            .text("S-File-MD5", &md5)
+            .text("Check", "1")
+            .text("Offset", "0")
+            .text("Uuid", &uuid)
+            .text("TotalSize", &size)
+            .part("File", file);
+
+        let mut clients = self.clients.lock();
+        let client = clients.get_mut(mainboard).unwrap();
+
+        let url = format!("http://{}:3030/uploadFile/upload", client.ip);
+        ureq::post(url).send(form)?;
+        client.transfer_info.filename = filename;
+        client.transfer_info.status = FileTransferStatus::Done;
+        client.transfer_info.download_offset = data.len() as u32;
+        client.transfer_info.check_offset = data.len() as u32;
+        client.transfer_info.file_total_size = data.len() as u32;
+
         Ok(())
     }
 
@@ -171,10 +196,19 @@ impl RemotePrintV3 {
 }
 
 impl Client {
-    fn new(sender: Sender<Cmd>) -> Self {
+    fn new(ip: Ipv4Addr, sender: Sender<Cmd>) -> Self {
         Self {
             attributes: None,
             status: None,
+            transfer_info: FileTransferInfo {
+                status: FileTransferStatus::None,
+                download_offset: 0,
+                check_offset: 0,
+                file_total_size: 0,
+                filename: "".into(),
+            },
+
+            ip,
             last_update: 0,
             pending_removal: false,
             sender,

@@ -7,7 +7,7 @@ use std::{
 };
 
 use anyhow::{Context, Result, bail};
-use common::slice::format::RasterFormat;
+use common::{misc::random_string, slice::format::RasterFormat};
 use tracing::{info, trace};
 
 use crate::{
@@ -114,12 +114,17 @@ impl RemotePrintManagerInner {
         &self,
         mainboard: &str,
         data: Arc<Vec<u8>>,
-        filename: String,
+        mut filename: String,
         format: RasterFormat,
     ) -> Result<()> {
+        (!filename.is_empty()).then(|| filename.push('_'));
+        filename.push_str(&random_string(8));
+        filename.push('.');
+        filename.push_str(format.extension());
+
         match self.protocol_version(mainboard).unwrap() {
-            ProtocolVersion::V1 => self.v1.upload(mainboard, data, filename, format),
-            ProtocolVersion::V3 => self.v3.upload(mainboard, data, filename, format),
+            ProtocolVersion::V1 => self.v1.upload(mainboard, data, filename),
+            ProtocolVersion::V3 => self.v3.upload(mainboard, data, filename),
         }
     }
 

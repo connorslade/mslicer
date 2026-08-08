@@ -21,3 +21,5 @@ serde_repr.workspace = true
 soon.workspace = true
 tracing.workspace = true
 tungstenite.workspace = true
+ureq.workspace = true
+uuid.workspace = true
