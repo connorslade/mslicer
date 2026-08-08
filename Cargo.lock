@@ -4596,6 +4596,7 @@ dependencies = [
  "anyhow",
  "bitflags 2.9.4",
  "chrono",
+ "clone-macro",
  "common",
  "md5",
  "parking_lot",

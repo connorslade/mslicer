@@ -1,36 +1,126 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc, thread, time::Duration};
 
 use anyhow::Result;
+use clone_macro::clone;
+use common::slice::format::RasterFormat;
 use parking_lot::Mutex;
-use tracing::{info, warn};
+use tracing::{info, trace, warn};
+use tungstenite::Error;
 
-use crate::{shared::Response, v3::status::DiscoveryResponse};
+use crate::{
+    shared::{Response, epoch},
+    v3::status::{Attributes, DiscoveryResponse, Message, Status},
+};
 
 pub mod status;
 
 #[derive(Default)]
 pub struct RemotePrintV3 {
-    clients: Mutex<HashMap<String, Client>>,
+    clients: Arc<Mutex<HashMap<String, Client>>>,
 }
 
-pub struct Client {}
+#[derive(Default)]
+pub struct Client {
+    pub attributes: Option<Attributes>,
+    pub status: Option<Status>,
+    pub last_update: i64,
+    pub pending_removal: bool,
+}
 
 impl RemotePrintV3 {
     pub(crate) fn connect_printer(&self, response: Response<DiscoveryResponse>) -> Result<()> {
         let machine_name = &response.data.machine_name;
-        let mainboard_id = &response.data.mainboard_id;
+        let mainboard_id = response.data.mainboard_id.clone();
         info!("Got status from `{machine_name}`",);
 
-        if self.clients.lock().contains_key(mainboard_id) {
+        if self.clients.lock().contains_key(&mainboard_id) {
             warn!("Printer `{mainboard_id}` already connected.",);
             return Ok(());
         }
 
         let ip = &response.data.mainboard_ip;
-        let (socket, response) = tungstenite::connect(format!("ws://{ip}:3030/websocket"))?;
+        let (mut socket, response) = tungstenite::connect(format!("ws://{ip}:3030/websocket"))?;
+        trace!("Websocket connected: {response:?}");
 
-        unimplemented!();
+        thread::spawn(clone!([{ self.clients } as clients], move || {
+            loop {
+                {
+                    let mut clients = clients.lock();
+                    if clients
+                        .get(&mainboard_id)
+                        .map(|x| x.pending_removal)
+                        .unwrap_or_default()
+                    {
+                        clients.remove(&mainboard_id);
+                        socket.close(None).unwrap();
+                    }
+                }
 
+                // todo: does this block?
+                match socket.read() {
+                    Ok(message) => {
+                        let text = match message.to_text() {
+                            Ok(x) => x,
+                            Err(e) => {
+                                warn!("Failed to convert message to text: {e:?}");
+                                continue;
+                            }
+                        };
+
+                        trace!("text: {text:?}");
+                        let message = match serde_json::from_str::<Message>(text) {
+                            Ok(x) => x,
+                            Err(e) => {
+                                warn!("Failed to deserialize message: {e:?}");
+                                continue;
+                            }
+                        };
+
+                        trace!("message: {message:?}");
+                        let mut clients = clients.lock();
+                        let client = clients.entry(mainboard_id.clone()).or_default();
+                        client.last_update = epoch();
+
+                        if let Some(attributes) = message.attributes {
+                            trace!("Got attributes");
+                            client.attributes = Some(attributes);
+                        }
+
+                        if let Some(status) = message.status {
+                            trace!("Got status");
+                            client.status = Some(status);
+                        }
+                    }
+                    Err(Error::ConnectionClosed) => {
+                        trace!("Connection to `{mainboard_id}` closed.");
+                        break;
+                    }
+                    Err(e) => warn!("Socket error for `{mainboard_id}`: {e:?}"),
+                }
+
+                thread::sleep(Duration::from_secs(1));
+            }
+        }));
+
+        Ok(())
+    }
+
+    pub fn remove_printer(&self, mainboard: &str) -> Result<()> {
+        self.clients.lock().remove(mainboard);
+        Ok(())
+    }
+
+    pub fn upload(
+        &self,
+        _mainboard: &str,
+        _data: Arc<Vec<u8>>,
+        _filename: String,
+        _format: RasterFormat,
+    ) -> Result<()> {
+        Ok(())
+    }
+
+    pub fn print(&self, _mainboard: &str, _filename: &str) -> Result<()> {
         Ok(())
     }
 }

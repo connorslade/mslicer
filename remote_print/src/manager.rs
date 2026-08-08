@@ -13,11 +13,10 @@ use tracing::info;
 use crate::{
     shared::{PrintInfo, Response, addr},
     v1::{
-        RemotePrintV1,
-        mqtt_server::MqttClient,
-        status::{FileTransferInfo, FullStatusData},
+        self, RemotePrintV1,
+        status::{FileTransferInfo, FileTransferStatus, FullStatusData},
     },
-    v3::{RemotePrintV3, status::DiscoveryResponse},
+    v3::{self, RemotePrintV3, status::DiscoveryResponse},
 };
 
 #[derive(Default)]
@@ -102,7 +101,7 @@ impl RemotePrintManagerInner {
     pub fn remove_printer(&self, mainboard: &str) -> Result<()> {
         match self.protocol_version(mainboard).unwrap() {
             ProtocolVersion::V1 => self.v1.remove_printer(mainboard),
-            ProtocolVersion::V3 => todo!(),
+            ProtocolVersion::V3 => self.v3.remove_printer(mainboard),
         }
     }
 
@@ -115,14 +114,14 @@ impl RemotePrintManagerInner {
     ) -> Result<()> {
         match self.protocol_version(mainboard).unwrap() {
             ProtocolVersion::V1 => self.v1.upload(mainboard, data, filename, format),
-            ProtocolVersion::V3 => todo!(),
+            ProtocolVersion::V3 => self.v3.upload(mainboard, data, filename, format),
         }
     }
 
     pub fn print(&self, mainboard: &str, filename: &str) -> Result<()> {
         match self.protocol_version(mainboard).unwrap() {
             ProtocolVersion::V1 => self.v1.print(mainboard, filename),
-            ProtocolVersion::V3 => todo!(),
+            ProtocolVersion::V3 => self.v3.print(mainboard, filename),
         }
     }
 
@@ -179,7 +178,7 @@ impl RemotePrintManagerInner {
 }
 
 impl Client {
-    pub fn from_v1(client: &MqttClient) -> Self {
+    pub fn from_v1(client: &v1::mqtt_server::MqttClient) -> Self {
         let status = client.status.lock();
         Client {
             mainboard: client.attributes.mainboard_id.clone(),
@@ -188,6 +187,24 @@ impl Client {
             print_info: status.print_info.clone(),
             transfer_info: status.file_transfer_info.clone(),
         }
+    }
+
+    pub fn from_v3(client: &v3::Client) -> Option<Self> {
+        let (attributes, status) = (client.attributes.as_ref()?, client.status.as_ref()?);
+        Some(Client {
+            mainboard: attributes.mainboard_id.clone(),
+            name: attributes.name.clone(),
+            last_update: client.last_update,
+            print_info: status.print_info.clone(),
+            // TODO ↓
+            transfer_info: FileTransferInfo {
+                status: FileTransferStatus::None,
+                download_offset: 0,
+                check_offset: 0,
+                file_total_size: 0,
+                filename: "".into(),
+            },
+        })
     }
 }
 

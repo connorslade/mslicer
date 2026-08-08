@@ -71,3 +71,7 @@ where
 pub fn addr(port: u16) -> SocketAddrV4 {
     SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, port)
 }
+
+pub fn epoch() -> i64 {
+    chrono::Utc::now().timestamp()
+}

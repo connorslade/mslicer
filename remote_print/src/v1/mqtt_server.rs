@@ -25,7 +25,7 @@ use crate::{
             subscribe_ack::{SubscribeAckPacket, SubscribeReturnCode},
         },
     },
-    shared::Response,
+    shared::{Response, epoch},
     v1::{
         commands::{Command, CommandTrait, DisconnectCommand},
         status::{Attributes, FullStatusData, Status, StatusData},
@@ -283,8 +283,4 @@ impl Drop for Mqtt {
             let _ = self.send_command(mainboard_id, DisconnectCommand);
         }
     }
-}
-
-fn epoch() -> i64 {
-    chrono::Utc::now().timestamp()
 }
