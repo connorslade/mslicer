@@ -85,7 +85,12 @@ impl RemotePrintManager {
 
     // not ideal allocating every frame but its whatever...
     pub fn clients(&self) -> Vec<Client> {
-        self.v1.clients().values().map(Client::from_v1).collect()
+        let v1_clients = self.v1.clients();
+        let v3_clients = self.v3.clients();
+
+        (v1_clients.values().map(Client::from_v1))
+            .chain(v3_clients.values().flat_map(Client::from_v3))
+            .collect()
     }
 }
 

@@ -3,7 +3,7 @@ use std::{collections::HashMap, sync::Arc, thread, time::Duration};
 use anyhow::Result;
 use clone_macro::clone;
 use common::slice::format::RasterFormat;
-use parking_lot::Mutex;
+use parking_lot::{Mutex, MutexGuard};
 use tracing::{info, trace, warn};
 use tungstenite::Error;
 
@@ -103,6 +103,10 @@ impl RemotePrintV3 {
         }));
 
         Ok(())
+    }
+
+    pub fn clients(&self) -> MutexGuard<'_, HashMap<String, Client>> {
+        self.clients.lock()
     }
 
     pub fn remove_printer(&self, mainboard: &str) -> Result<()> {
