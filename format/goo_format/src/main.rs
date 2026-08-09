@@ -10,8 +10,7 @@ use common::{
     container::rle::png::{ColorType, PngEncoder},
     serde::{DynamicSerializer, SliceDeserializer},
 };
-use goo_format::{File, LayerDecoder, PreviewImage};
-use image::RgbImage;
+use goo_format::{File, LayerDecoder};
 use nalgebra::Vector2;
 
 #[derive(Parser)]
@@ -46,8 +45,8 @@ fn main() -> Result<()> {
     if let Some(preview) = args.preview {
         fs::create_dir_all(&preview)?;
 
-        let small_preview = preview_to_image(&goo.header.small_preview);
-        let large_preview = preview_to_image(&goo.header.big_preview);
+        let small_preview = goo.header.small_preview.to_image();
+        let large_preview = goo.header.big_preview.to_image();
 
         small_preview.save(preview.join("small_preview.png"))?;
         large_preview.save(preview.join("large_preview.png"))?;
@@ -86,20 +85,4 @@ fn main() -> Result<()> {
     }
 
     Ok(())
-}
-
-fn preview_to_image<const WIDTH: usize, const HEIGHT: usize>(
-    preview: &PreviewImage<WIDTH, HEIGHT>,
-) -> RgbImage {
-    let mut out = RgbImage::new(WIDTH as u32, HEIGHT as u32);
-
-    for y in 0..HEIGHT {
-        for x in 0..WIDTH {
-            let (r, g, b) = preview.get_pixel(x, y);
-            let color = image::Rgb([(r * 255.0) as u8, (g * 255.0) as u8, (b * 255.0) as u8]);
-            out.put_pixel(x as u32, y as u32, color);
-        }
-    }
-
-    out
 }

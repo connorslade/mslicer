@@ -47,6 +47,21 @@ impl<const WIDTH: usize, const HEIGHT: usize> PreviewImage<WIDTH, HEIGHT> {
         Self::from_image(&scaled)
     }
 
+    pub fn to_image(&self) -> RgbaImage {
+        let mut out = RgbaImage::new(WIDTH as u32, HEIGHT as u32);
+
+        for y in 0..HEIGHT {
+            for x in 0..WIDTH {
+                let (r, g, b) = self.get_pixel(x, y);
+                let color =
+                    image::Rgba([(r * 255.0) as u8, (g * 255.0) as u8, (b * 255.0) as u8, 255]);
+                out.put_pixel(x as u32, y as u32, color);
+            }
+        }
+
+        out
+    }
+
     pub fn inner_data(&self) -> &[u16] {
         &self.data
     }

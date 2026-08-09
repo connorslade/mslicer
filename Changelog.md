@@ -13,6 +13,7 @@
 - Add anti-aliasing to slice preview
 - Reduce output file size (Reported by Jens Holländer)
 - Remote Print: Support SDCP V3.0.0 for newer printers
+- Allow loading previously sliced files for inspection
 
 ## v0.8.0 &mdash; June 30th, 2026
 

@@ -128,7 +128,7 @@ impl SliceOperationInner {
 
     pub fn add_raster_result(&self, config: SliceConfig, layers: Vec<Layer>) {
         let voxels = (layers.iter())
-            .map(|x| (x.data.iter().filter(|x| x.value != 0).map(|x| x.length)).sum::<u64>())
+            .flat_map(|x| x.data.iter().filter(|x| x.value != 0).map(|x| x.length))
             .sum::<u64>();
 
         let elapsed = self.start_time.elapsed();
@@ -142,6 +142,8 @@ impl SliceOperationInner {
             .all_equal_float(0.001);
         let raster = RasterSliceResult {
             voxels,
+            // todo: volume calculation currently doesn't respect nonuniform
+            // layer heights.
             volume: (voxels as f32 * config.voxel_volume()).convert(),
             print_time: config.print_time(layers.len() as u32),
 

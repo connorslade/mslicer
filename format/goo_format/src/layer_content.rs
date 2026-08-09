@@ -2,10 +2,11 @@ use anyhow::{Result, ensure};
 
 use common::{
     serde::{Deserializer, Serializer, SliceDeserializer},
+    slice::ExposureConfig,
     units::{Milimeters, MilimetersPerMinute, Seconds},
 };
 
-use crate::DELIMITER;
+use crate::{DELIMITER, LayerDecoder};
 
 /// Layer data with it's print parameters.
 pub struct Layer {
@@ -108,6 +109,22 @@ impl Layer {
                 checksum
             },
         })
+    }
+
+    pub fn into_layer(&self) -> common::slice::Layer {
+        common::slice::Layer {
+            data: LayerDecoder::new(&self.data).collect(),
+            height: self.layer_position_z,
+            exposure: ExposureConfig {
+                exposure_time: self.layer_exposure_time,
+                exposure_delay: self.after_retract_time,
+                pwm: self.light_pwm,
+                lift_distance: self.lift_distance,
+                lift_speed: self.lift_speed.convert(),
+                retract_distance: self.retract_distance,
+                retract_speed: self.retract_speed.convert(),
+            },
+        }
     }
 }
 

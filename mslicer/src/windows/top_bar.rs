@@ -1,5 +1,3 @@
-use std::{collections::HashMap, f32::consts::TAU, fs::File};
-
 use const_format::concatcp;
 use egui::{
     Align, Align2, Button, Context, FontId, Frame, Grid, Id, Key, KeyboardShortcut, Layout,
@@ -7,12 +5,13 @@ use egui::{
     vec2,
 };
 use egui_phosphor::regular::{CARDS, FILE_TEXT, GIT_DIFF, HAMMER, HOURGLASS, STACK};
+use std::{collections::HashMap, f32::consts::TAU, fs::File};
 
 use crate::{
     app::App,
     include_asset,
     project::{Collection, Project},
-    task::{AutoLayout, MeshLoad, MultiFileDialog, ProjectLoad},
+    task::{AutoLayout, FileDialog, LoadSliced, MeshLoad, MultiFileDialog, ProjectLoad},
     ui::{components::labeled_separator, popup::Popup},
     windows::{
         Tab,
@@ -144,6 +143,10 @@ pub fn ui(app: &mut App, ctx: &Context) {
                     ui.button("Collect Instances")
                         .clicked()
                         .then(|| collect_instances(app));
+
+                    ui.button("Load Sliced File")
+                        .clicked()
+                        .then(|| load_sliced(app));
 
                     if ui.button("3D Graphics").clicked() {
                         graphics_3d::open(app);
@@ -362,4 +365,11 @@ fn select_all(app: &mut App) {
     for model in app.project.models.iter() {
         app.state.selected.select_model(model.id);
     }
+}
+
+fn load_sliced(app: &mut App) {
+    app.tasks.add(FileDialog::pick_file(
+        ("Sliced Model", &["goo", "ctb", "nanodlp"]),
+        |_app, file, tasks| tasks.push(Box::new(LoadSliced::new(file.to_path_buf()))),
+    ));
 }

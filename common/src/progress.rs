@@ -33,6 +33,13 @@ impl Progress {
         }))
     }
 
+    pub fn already_complete() -> Self {
+        Self(Arc::new(ProgressInner {
+            complete: AtomicU64::new(1),
+            total: AtomicU64::new(1),
+        }))
+    }
+
     pub fn get_complete(&self) -> u64 {
         self.0.complete.load(Ordering::Relaxed)
     }
@@ -77,6 +84,12 @@ impl<const N: usize> CombinedProgress<N> {
     pub fn new() -> Self {
         Self {
             inner: array::from_fn(|_| Progress::new()),
+        }
+    }
+
+    pub fn already_complete() -> Self {
+        Self {
+            inner: array::repeat(Progress::already_complete()),
         }
     }
 

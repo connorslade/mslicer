@@ -4,16 +4,17 @@ use std::{
 };
 
 use crate::{
-    app::config::Config,
+    app::{config::Config, slice_operation::SliceOperation},
     app_ref_type,
     project::Project,
-    ui::{popup::PopupManager, state::UiState},
+    ui::{panels::Panels, popup::PopupManager, state::UiState},
 };
 
 mod acceleration_structures;
 mod auto_layout;
 mod file_dialog;
 mod island_detection;
+mod load_sliced;
 mod mesh_load;
 mod mesh_manifold;
 mod project;
@@ -27,6 +28,7 @@ pub use self::{
     auto_layout::AutoLayout,
     file_dialog::{FileDialog, MultiFileDialog},
     island_detection::IslandDetection,
+    load_sliced::LoadSliced,
     mesh_load::MeshLoad,
     mesh_manifold::MeshManifold,
     project::{ProjectLoad, ProjectSave},
@@ -73,7 +75,9 @@ pub struct TaskManager {
 /// these fields in task callbacks without two mutable references to the
 /// TaskManager.
 pub struct TaskApp<'a> {
+    pub panels: &'a mut Panels,
     pub popup: &'a mut PopupManager,
+    pub slice_operation: &'a mut Option<SliceOperation>,
     pub state: &'a mut UiState,
     pub config: &'a mut Config,
     pub project: &'a mut Project,
@@ -131,7 +135,9 @@ impl<'a> TaskManagerRef<'a> {
         }
 
         let mut app = TaskApp {
+            panels: &mut self.app.panels,
             popup: &mut self.app.popup,
+            slice_operation: &mut self.app.slice_operation,
             state: &mut self.app.state,
             config: &mut self.app.config,
             project: &mut self.app.project,

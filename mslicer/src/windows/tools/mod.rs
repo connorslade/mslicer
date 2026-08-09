@@ -26,10 +26,12 @@ macro_rules! generator_tool {
     ($app:expr, $tool:expr) => {{
         use clone_macro::clone;
         use image::RgbaImage;
-        use nalgebra::Vector2;
 
         use common::progress::{CombinedProgress, Progress};
-        use $crate::{app::slice_operation::SliceOperation, windows::Tab};
+        use $crate::{
+            app::{SLICE_PREVIEW_SIZE, slice_operation::SliceOperation},
+            windows::Tab,
+        };
 
         let mut config = $app.project.slice_config.clone();
         let operation = SliceOperation::new(Progress::new(), CombinedProgress::new());
@@ -42,7 +44,6 @@ macro_rules! generator_tool {
             operation.add_raster_result(config, layers);
         }));
         $app.slice_operation.replace(operation);
-        $app.panels
-            .focus_tab(Tab::SlicePreview, Vector2::new(700.0, 400.0));
+        $app.panels.focus_tab(Tab::SlicePreview, SLICE_PREVIEW_SIZE);
     }};
 }

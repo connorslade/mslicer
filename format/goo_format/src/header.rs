@@ -4,8 +4,10 @@ use anyhow::{Result, ensure};
 
 use common::{
     serde::{Deserializer, Serializer, SizedString, SliceDeserializer},
+    slice::{ExposureConfig, ExposureRemap, SliceConfig, SliceMode},
     units::{Milimeters, MilimetersPerMinute, Seconds},
 };
+use nalgebra::{Vector2, Vector3};
 
 use crate::{DELIMITER, MAGIC_TAG, PreviewImage};
 
@@ -290,6 +292,37 @@ impl Header {
             },
             transition_layers: des.read_u16_be(),
         })
+    }
+
+    pub fn into_slice_config(&self) -> SliceConfig {
+        SliceConfig {
+            mode: SliceMode::Raster,
+            supersample: 0,
+            exposure_remap: ExposureRemap::default(),
+            platform_resolution: Vector2::new(self.x_resolution, self.y_resolution).cast(),
+            platform_size: Vector3::new(self.x_size, self.y_size, self.x_size),
+            slice_height: self.layer_thickness,
+            exposure_config: ExposureConfig {
+                exposure_time: self.exposure_time,
+                exposure_delay: self.after_retract_time,
+                pwm: self.light_pwm,
+                lift_distance: self.lift_distance,
+                lift_speed: self.lift_speed.convert(),
+                retract_distance: self.retract_distance,
+                retract_speed: self.retract_speed.convert(),
+            },
+            first_exposure_config: ExposureConfig {
+                exposure_time: self.bottom_exposure_time,
+                exposure_delay: self.bottom_after_retract_time,
+                pwm: self.bottom_light_pwm,
+                lift_distance: self.bottom_lift_distance,
+                lift_speed: self.bottom_lift_speed.convert(),
+                retract_distance: self.bottom_retract_distance,
+                retract_speed: self.bottom_retract_speed.convert(),
+            },
+            first_layers: self.bottom_layers,
+            transition_layers: self.transition_layers as u32,
+        }
     }
 }
 

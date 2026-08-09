@@ -42,6 +42,8 @@ pub mod config;
 pub mod history;
 pub mod slice_operation;
 
+pub const SLICE_PREVIEW_SIZE: Vector2<f32> = Vector2::new(700.0, 400.0);
+
 pub struct App {
     pub render_state: RenderState,
     pub panels: Panels,
@@ -197,8 +199,7 @@ impl App {
         let post_process = CombinedProgress::new();
         let slice_operation = SliceOperation::new(slicer.progress(), post_process.clone());
         self.slice_operation.replace(slice_operation);
-        self.panels
-            .focus_tab(Tab::SlicePreview, Vector2::new(700.0, 400.0));
+        self.panels.focus_tab(Tab::SlicePreview, SLICE_PREVIEW_SIZE);
 
         thread::spawn(clone!(
             [

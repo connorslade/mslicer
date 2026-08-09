@@ -1,12 +1,17 @@
 use std::{borrow::Borrow, sync::Arc};
 
+use anyhow::Result;
+
 use common::{
     container::rle::downsample::RunFlattenExt,
+    progress::Progress,
+    serde::SliceDeserializer,
     slice::{
-        self, DynSlicedFile, EncodableLayer, SliceConfig, VectorLayer,
+        self, DynSlicedFile, EncodableLayer, Layer, SliceConfig, VectorLayer,
         format::{RasterFormat, VectorFormat},
     },
 };
+use image::RgbaImage;
 
 use crate::slicer::vector::SvgFile;
 
@@ -74,4 +79,32 @@ where
             encoder.finish(config, &layer.exposure, layer.height)
         })
         .collect()
+}
+
+// todo: make some kinda generic decoder maybe
+pub fn load_sliced(
+    progress: &Progress,
+    format: &RasterFormat,
+    data: &[u8],
+) -> Result<(SliceConfig, Vec<Layer>, RgbaImage)> {
+    let mut des = SliceDeserializer::new(data);
+    match format {
+        RasterFormat::Goo => {
+            let file = goo_format::File::deserialize(&mut des)?;
+            progress.set_total(file.layers.len() as _);
+
+            let config = file.header.into_slice_config();
+            let layers = (file.layers.iter())
+                .map(|x| {
+                    progress.add_complete(1);
+                    x.into_layer()
+                })
+                .collect();
+            let image = file.header.big_preview.to_image();
+            progress.set_finished();
+            Ok((config, layers, image))
+        }
+        RasterFormat::Ctb => todo!(),
+        RasterFormat::NanoDLP => todo!(),
+    }
 }
