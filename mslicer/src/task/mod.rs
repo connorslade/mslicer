@@ -15,6 +15,7 @@ mod auto_layout;
 mod file_dialog;
 mod island_detection;
 mod load_sliced;
+mod mesh_convert;
 mod mesh_load;
 mod mesh_manifold;
 mod project;
@@ -29,6 +30,7 @@ pub use self::{
     file_dialog::{FileDialog, MultiFileDialog},
     island_detection::IslandDetection,
     load_sliced::LoadSliced,
+    mesh_convert::MeshConvert,
     mesh_load::MeshLoad,
     mesh_manifold::MeshManifold,
     project::{ProjectLoad, ProjectSave},

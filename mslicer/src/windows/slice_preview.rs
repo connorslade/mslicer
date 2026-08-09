@@ -7,8 +7,8 @@ use egui::{
     style::HandleShape, text::LayoutJob,
 };
 use egui_phosphor::regular::{
-    ARROW_U_UP_RIGHT, CARET_DOWN, CARET_UP, CLOCK, CORNERS_IN, CROSSHAIR, DROP, FLOPPY_DISK_BACK,
-    PAPER_PLANE_TILT, VECTOR_TWO,
+    ARROW_U_UP_RIGHT, CARET_DOWN, CARET_UP, CLOCK, CORNERS_IN, CROSSHAIR, CUBE_TRANSPARENT, DROP,
+    FLOPPY_DISK_BACK, PAPER_PLANE_TILT, VECTOR_TWO,
 };
 use egui_wgpu::Callback;
 use image::RgbaImage;
@@ -21,7 +21,7 @@ use crate::{
         slice_operation::{GenericSliceData, GenericSliceResult, ISLAND_COLOR, RasterSliceResult},
     },
     render::slice_preview::SlicePreviewRenderCallback,
-    task::{FileDialog, IslandDetection, SaveResult},
+    task::{FileDialog, IslandDetection, MeshConvert, SaveResult},
     ui::{popup::Popup, state::UiState},
 };
 use common::{
@@ -125,6 +125,9 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                         });
 
                         ui.separator();
+
+                        // todo: these functions shouldn't available if slice is
+                        // not raster
                         let can_detect = (result.inner.as_raster())
                             .map(|x| !x.detected_islands)
                             .unwrap_or_default();
@@ -144,6 +147,17 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                             }
                             slice_preview
                         });
+
+                        if ui
+                            .button(concatcp!(CUBE_TRANSPARENT, " Convert to Mesh"))
+                            .clicked()
+                            && let GenericSliceResult::Raster(raster) = &mut result.inner
+                        {
+                            app.tasks.add(MeshConvert::new(
+                                result.config.platform_resolution.xy(),
+                                raster.layers.clone(),
+                            ));
+                        }
                     })
                 });
             });

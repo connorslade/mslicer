@@ -20,7 +20,7 @@ use crate::{
 
 pub struct MeshLoad {
     progress: Progress,
-    join: TaskThread<mesh_format::Mesh>,
+    join: TaskThread<Mesh>,
     name: String,
 }
 
@@ -30,7 +30,8 @@ impl MeshLoad {
         let progress = Progress::new();
         Self {
             join: TaskThread::spawn(clone!([progress], move || {
-                load_mesh(des, &format, progress).unwrap()
+                let mesh = load_mesh(des, &format, progress).unwrap();
+                Mesh::new(mesh.verts, mesh.faces)
             })),
             progress,
             name,
@@ -42,9 +43,18 @@ impl MeshLoad {
         let progress = Progress::new();
         Self {
             join: TaskThread::spawn(clone!([progress], move || {
-                load_mesh(des, &format, progress).unwrap()
+                let mesh = load_mesh(des, &format, progress).unwrap();
+                Mesh::new(mesh.verts, mesh.faces)
             })),
             progress,
+            name,
+        }
+    }
+
+    pub fn complete(name: String, mesh: Mesh) -> Self {
+        Self {
+            progress: Progress::already_complete(),
+            join: TaskThread::spawn(|| mesh),
             name,
         }
     }
@@ -53,7 +63,6 @@ impl MeshLoad {
 impl Task for MeshLoad {
     fn poll(&mut self, app: &mut TaskApp) -> PollResult {
         (self.join.poll(app, "Failed to Load Model")).into_poll_result(|mesh| {
-            let mesh = Mesh::new(mesh.verts, mesh.faces);
             info!(
                 "Loaded model `{}` with {} faces",
                 self.name,
