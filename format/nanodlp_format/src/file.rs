@@ -8,7 +8,7 @@ use common::{
     container::{Image, Run},
     progress::Progress,
     serde::{DynamicSerializer, Serializer},
-    slice::{SliceConfig, SliceInfo, SlicedFile},
+    slice::{ExposureConfig, SliceConfig, SliceInfo, SliceMode, SlicedFile},
 };
 use image::{DynamicImage, RgbaImage};
 use nalgebra::{Vector2, Vector3};
@@ -180,6 +180,35 @@ impl File {
 
             layer_info,
             layers,
+        })
+    }
+
+    pub fn into_slice_config(&self) -> SliceConfig {
+        let platform_size = Vector3::new(
+            self.options.x_pixel_size * self.options.p_width as f32,
+            self.options.y_pixel_size * self.options.p_height as f32,
+            (self.profile.depth * self.layers.len() as f32).convert(),
+        );
+
+        SliceConfig {
+            mode: SliceMode::Raster,
+            supersample: 0,
+            exposure_remap: Default::default(),
+            platform_resolution: Vector2::new(self.options.p_width, self.options.p_height),
+            platform_size,
+            slice_height: self.profile.depth.convert(),
+            exposure_config: ExposureConfig::default(),
+            first_exposure_config: ExposureConfig::default(),
+            first_layers: 0,
+            transition_layers: 0,
+        }
+    }
+
+    pub fn into_layers(&self) -> impl Iterator<Item = common::slice::Layer> {
+        self.layers.iter().map(|layer| common::slice::Layer {
+            data: LayerDecoder::new(layer).runs().collect(),
+            height: self.profile.depth.convert(),
+            exposure: ExposureConfig::default(),
         })
     }
 }

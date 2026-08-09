@@ -1,6 +1,6 @@
-use std::{borrow::Borrow, sync::Arc};
+use std::{borrow::Borrow, io::Cursor, sync::Arc};
 
-use anyhow::Result;
+use anyhow::{Ok, Result};
 
 use common::{
     container::rle::downsample::RunFlattenExt,
@@ -87,9 +87,9 @@ pub fn load_sliced(
     format: &RasterFormat,
     data: &[u8],
 ) -> Result<(SliceConfig, Vec<Layer>, RgbaImage)> {
-    let mut des = SliceDeserializer::new(data);
     match format {
         RasterFormat::Goo => {
+            let mut des = SliceDeserializer::new(data);
             let file = goo_format::File::deserialize(&mut des)?;
             progress.set_total(file.layers.len() as _);
 
@@ -100,11 +100,40 @@ pub fn load_sliced(
                     x.into_layer()
                 })
                 .collect();
-            let image = file.header.big_preview.to_image();
-            progress.set_finished();
+            let image = file.header.big_preview.into_image();
+
             Ok((config, layers, image))
         }
-        RasterFormat::Ctb => todo!(),
-        RasterFormat::NanoDLP => todo!(),
+        RasterFormat::Ctb => {
+            let mut des = SliceDeserializer::new(data);
+            let file = ctb_format::File::deserialize(&mut des)?;
+            progress.set_total(file.layers.len() as _);
+
+            let config = file.into_slice_config();
+            let layers = (file.layers.iter())
+                .map(|x| {
+                    progress.add_complete(1);
+                    x.into_layer()
+                })
+                .collect();
+            let image = file.large_preview.into_image();
+
+            Ok((config, layers, image))
+        }
+        RasterFormat::NanoDLP => {
+            let file = nanodlp_format::File::deserialize(Cursor::new(data))?;
+            progress.set_total(file.layers.len() as _);
+
+            let config = file.into_slice_config();
+            // todo: optimize since this calls the image crate to load each png
+            // image then converts to runs...
+            let layers = file
+                .into_layers()
+                .inspect(|_| progress.add_complete(1))
+                .collect();
+            let image = file.preview.into_rgba8();
+
+            Ok((config, layers, image))
+        }
     }
 }

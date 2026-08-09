@@ -4,10 +4,11 @@ use anyhow::{Result, ensure};
 
 use common::{
     serde::{Deserializer, Serializer, SliceDeserializer},
+    slice::ExposureConfig,
     units::{Milimeters, MilimetersPerMinute, Seconds},
 };
 
-use crate::{Section, crypto::decrypt_in_place};
+use crate::{LayerDecoder, Section, crypto::decrypt_in_place};
 
 #[derive(Debug)]
 pub struct LayerRef {
@@ -136,6 +137,22 @@ impl Layer {
         if xor_key != 0 {
             let buffer = ser.view_mut(position, self.data.len());
             xor_cypher(buffer, xor_key, layer);
+        }
+    }
+
+    pub fn into_layer(&self) -> common::slice::Layer {
+        common::slice::Layer {
+            data: LayerDecoder::new(&self.data).collect(),
+            height: self.position_z,
+            exposure: ExposureConfig {
+                exposure_time: self.exposure_time,
+                exposure_delay: self.rest_time_after_retract,
+                pwm: self.light_pwm as u8,
+                lift_distance: self.lift_height,
+                lift_speed: self.lift_speed.convert(),
+                retract_distance: Milimeters::new(0.0),
+                retract_speed: self.retract_speed.convert(),
+            },
         }
     }
 }

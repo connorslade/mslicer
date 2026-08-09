@@ -45,8 +45,8 @@ fn main() -> Result<()> {
     if let Some(preview) = args.preview {
         fs::create_dir_all(&preview)?;
 
-        let small_preview = goo.header.small_preview.to_image();
-        let large_preview = goo.header.big_preview.to_image();
+        let small_preview = goo.header.small_preview.into_image();
+        let large_preview = goo.header.big_preview.into_image();
 
         small_preview.save(preview.join("small_preview.png"))?;
         large_preview.save(preview.join("large_preview.png"))?;

@@ -47,7 +47,7 @@ impl<const WIDTH: usize, const HEIGHT: usize> PreviewImage<WIDTH, HEIGHT> {
         Self::from_image(&scaled)
     }
 
-    pub fn to_image(&self) -> RgbaImage {
+    pub fn into_image(&self) -> RgbaImage {
         let mut out = RgbaImage::new(WIDTH as u32, HEIGHT as u32);
 
         for y in 0..HEIGHT {

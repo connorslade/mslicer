@@ -48,6 +48,21 @@ impl PreviewImage {
         let index = y * self.width + x;
         self.data[index as usize] = rgb;
     }
+
+    pub fn into_image(&self) -> RgbaImage {
+        let size = self.size();
+        let mut out = RgbaImage::new(size.x, size.y);
+
+        for y in 0..size.y {
+            for x in 0..size.x {
+                let [r, g, b] = self.get_pixel(x, y).into();
+                let color = image::Rgba([r, g, b, 255]);
+                out.put_pixel(x, y, color);
+            }
+        }
+
+        out
+    }
 }
 
 impl PreviewImage {

@@ -9,7 +9,7 @@ use common::{
     container::{Image, Run},
     progress::Progress,
     serde::{Deserializer, DynamicSerializer, Serializer, SliceDeserializer},
-    slice::{SliceConfig, SliceInfo, SlicedFile},
+    slice::{ExposureConfig, SliceConfig, SliceInfo, SliceMode, SlicedFile},
     units::{Milimeters, MilimetersPerMinute, Seconds},
 };
 use image::imageops::FilterType;
@@ -444,6 +444,37 @@ impl File {
             bottom_retract_height_2: Milimeters::new(1.5),
             rest_time_after_retract: config.exposure_config.exposure_delay,
             rest_time_after_lift_2: Seconds::new(0.0),
+        }
+    }
+
+    pub fn into_slice_config(&self) -> SliceConfig {
+        SliceConfig {
+            mode: SliceMode::Raster,
+            supersample: 0,
+            exposure_remap: Default::default(),
+            platform_resolution: self.resolution,
+            platform_size: self.size,
+            slice_height: self.layer_height,
+            exposure_config: ExposureConfig {
+                exposure_time: self.exposure_time,
+                exposure_delay: self.rest_time_after_retract,
+                pwm: self.light_pwm as u8,
+                lift_distance: self.lift_height,
+                lift_speed: self.lift_speed.convert(),
+                retract_distance: Milimeters::new(0.0),
+                retract_speed: self.retract_speed.convert(),
+            },
+            first_exposure_config: ExposureConfig {
+                exposure_time: self.bottom_exposure_time,
+                exposure_delay: self.rest_time_after_retract_2,
+                pwm: self.bottom_light_pwm as u8,
+                lift_distance: self.lift_height_2,
+                lift_speed: self.lift_speed_2.convert(),
+                retract_distance: Milimeters::new(0.0),
+                retract_speed: self.retract_speed_2.convert(),
+            },
+            first_layers: self.bottom_layer_count,
+            transition_layers: self.transition_layer_count,
         }
     }
 }
