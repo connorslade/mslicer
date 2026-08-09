@@ -11,7 +11,8 @@ use common::{
         },
     },
     progress::Progress,
-    slice::Layer,
+    slice::{Layer, SliceConfig},
+    units::Milimeter,
 };
 use itertools::Itertools;
 use nalgebra::{Vector2, Vector3};
@@ -36,6 +37,104 @@ const GRID_POINTS: [Vector3<u32>; 8] = [
     Vector3::new(1, 1, 1),
     Vector3::new(0, 1, 1),
 ];
+
+// todo: consider non-uniform layer heights
+pub fn marching_cubes(
+    progress: &Progress,
+    iso_level: f32,
+    config: &SliceConfig,
+    layers: &[Layer],
+    subsample: u8,
+) -> (Vec<Vector3<f32>>, Vec<[u32; 3]>) {
+    progress.set_total(layers.len() as _);
+
+    let mut vertex_lookup = HashMap::<Vector3<OrderedFloat<f32>>, u32>::new();
+    let mut vertices = Vec::new();
+    let mut faces = Vec::new();
+
+    let size = config.platform_size.map(|x| x.get::<Milimeter>());
+    let platform = config.platform_resolution;
+    let mm_per_px = Vector3::new(
+        size.x / platform.x as f32,
+        size.y / platform.y as f32,
+        config.slice_height.get::<Milimeter>(),
+    );
+
+    let subsample_platform = Vector2::new(
+        platform.x.div_ceil(subsample as u32),
+        platform.y.div_ceil(subsample as u32),
+    );
+
+    let mut layer_this = Vec::new();
+    let mut layer_next = decode(platform, subsample, &layers[0]);
+
+    for z in 0..layers.len() as u32 - 1 {
+        mem::swap(&mut layer_this, &mut layer_next);
+        layer_next = decode(platform, subsample, &layers[z as usize + 1]);
+
+        for (x, y) in (0..subsample_platform.x - 1).cartesian_product(0..subsample_platform.y - 1) {
+            let mut grid = [(Vector3::zeros(), 0.0); 8];
+            let mut cube_index = 0;
+
+            for (i, offset) in GRID_POINTS.iter().enumerate() {
+                let pos = Vector3::new(x, y, z) + offset;
+                let index = pos.y * subsample_platform.x + pos.x;
+
+                let value = if offset.z == 1 {
+                    &layer_next
+                } else {
+                    &layer_this
+                }[index as usize] as f32
+                    / 255.0;
+
+                grid[i] = (
+                    Vector3::new(pos.x * subsample as u32, pos.y * subsample as u32, pos.z)
+                        .map(|x| x as f32)
+                        .component_mul(&mm_per_px),
+                    value,
+                );
+                cube_index |= ((value < iso_level) as usize) << i;
+            }
+
+            let edge = EDGE_TABLE[cube_index];
+            let mut vertlist = [Vector3::zeros(); 12];
+            for (i, &(p1, p2)) in EDGE_CONNECTIONS
+                .iter()
+                .enumerate()
+                .filter(|(i, _)| edge & (1 << i) != 0)
+            {
+                vertlist[i] = vertex_interp(iso_level, grid[p1], grid[p2]);
+            }
+
+            let triangles = TRIANGULATION_TABLE[cube_index];
+            for triangle in triangles.chunks(3) {
+                let mut get_point_idx = |vert: u8| {
+                    let point = vertlist[vert as usize];
+                    let orderd = point.map(OrderedFloat);
+                    if let Some(&idx) = vertex_lookup.get(&orderd) {
+                        return idx;
+                    }
+
+                    let idx = vertices.len() as u32;
+                    vertices.push(point);
+                    vertex_lookup.insert(orderd, idx);
+                    idx
+                };
+
+                faces.push([
+                    get_point_idx(triangle[0]),
+                    get_point_idx(triangle[2]),
+                    get_point_idx(triangle[1]),
+                ]);
+            }
+        }
+
+        progress.add_complete(1);
+    }
+
+    progress.set_finished();
+    (vertices, faces)
+}
 
 fn pad_layer(
     runs: &[Run],
@@ -84,95 +183,6 @@ fn decode(res: Vector2<u32>, factor: u8, layer: &Layer) -> Vec<u8> {
     let mut pixels = vec![0; (size.x / factor as u32 * size.y / factor as u32) as usize];
     decode_into(out, &mut pixels);
     pixels
-}
-
-// todo: consider non-uniform layer heights
-pub fn marching_cubes(
-    progress: &Progress,
-    iso_level: f32,
-    size: Vector2<u32>,
-    layers: &[Layer],
-    subsample: u8,
-) -> (Vec<Vector3<f32>>, Vec<[u32; 3]>) {
-    progress.set_total(layers.len() as _);
-
-    let mut vertex_lookup = HashMap::<Vector3<OrderedFloat<f32>>, u32>::new();
-    let mut vertices = Vec::new();
-    let mut faces = Vec::new();
-
-    let subsample_size = Vector2::new(
-        size.x.div_ceil(subsample as u32),
-        size.y.div_ceil(subsample as u32),
-    );
-
-    let mut layer_this = Vec::new();
-    let mut layer_next = decode(size, subsample, &layers[0]);
-
-    for z in 0..layers.len() as u32 - 1 {
-        mem::swap(&mut layer_this, &mut layer_next);
-        layer_next = decode(size, subsample, &layers[z as usize + 1]);
-
-        for (x, y) in (0..subsample_size.x - 1).cartesian_product(0..subsample_size.y - 1) {
-            let mut grid = [(Vector3::zeros(), 0.0); 8];
-            let mut cube_index = 0;
-
-            for (i, offset) in GRID_POINTS.iter().enumerate() {
-                let pos = Vector3::new(x, y, z) + offset;
-                let index = pos.y * subsample_size.x + pos.x;
-
-                let value = if offset.z == 1 {
-                    &layer_next
-                } else {
-                    &layer_this
-                }[index as usize] as f32
-                    / 255.0;
-
-                grid[i] = (
-                    Vector3::new(pos.x * subsample as u32, pos.y * subsample as u32, pos.z)
-                        .map(|x| x as f32),
-                    value,
-                );
-                cube_index |= ((value < iso_level) as usize) << i;
-            }
-
-            let edge = EDGE_TABLE[cube_index];
-            let mut vertlist = [Vector3::zeros(); 12];
-            for (i, &(p1, p2)) in EDGE_CONNECTIONS
-                .iter()
-                .enumerate()
-                .filter(|(i, _)| edge & (1 << i) != 0)
-            {
-                vertlist[i] = vertex_interp(iso_level, grid[p1], grid[p2]);
-            }
-
-            let triangles = TRIANGULATION_TABLE[cube_index];
-            for triangle in triangles.chunks(3) {
-                let mut get_point_idx = |vert: u8| {
-                    let point = vertlist[vert as usize];
-                    let orderd = point.map(OrderedFloat);
-                    if let Some(&idx) = vertex_lookup.get(&orderd) {
-                        return idx;
-                    }
-
-                    let idx = vertices.len() as u32;
-                    vertices.push(point);
-                    vertex_lookup.insert(orderd, idx);
-                    idx
-                };
-
-                faces.push([
-                    get_point_idx(triangle[0]),
-                    get_point_idx(triangle[2]),
-                    get_point_idx(triangle[1]),
-                ]);
-            }
-        }
-
-        progress.add_complete(1);
-    }
-
-    progress.set_finished();
-    (vertices, faces)
 }
 
 fn vertex_interp(

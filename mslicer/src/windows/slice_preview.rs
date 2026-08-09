@@ -154,7 +154,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                             && let GenericSliceResult::Raster(raster) = &mut result.inner
                         {
                             app.tasks.add(MeshConvert::new(
-                                result.config.platform_resolution.xy(),
+                                result.config.clone(),
                                 raster.layers.clone(),
                             ));
                         }
