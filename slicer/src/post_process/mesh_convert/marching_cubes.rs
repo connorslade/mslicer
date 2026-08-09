@@ -65,12 +65,17 @@ pub fn marching_cubes(
         platform.y.div_ceil(subsample as u32),
     );
 
+    let pixels = (subsample_platform.x * subsample_platform.y) as usize;
     let mut layer_this = Vec::new();
-    let mut layer_next = decode(platform, subsample, &layers[0]);
+    let mut layer_next = vec![0; pixels];
 
-    for z in 0..layers.len() as u32 - 1 {
+    for z in 0..=layers.len() as u32 {
         mem::swap(&mut layer_this, &mut layer_next);
-        layer_next = decode(platform, subsample, &layers[z as usize + 1]);
+        if z as usize == layers.len() {
+            layer_next = vec![0; pixels];
+        } else {
+            layer_next = decode(platform, subsample, &layers[z as usize]);
+        }
 
         for (x, y) in (0..subsample_platform.x - 1).cartesian_product(0..subsample_platform.y - 1) {
             let mut grid = [(Vector3::zeros(), 0.0); 8];

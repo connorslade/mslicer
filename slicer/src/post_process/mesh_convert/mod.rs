@@ -1,6 +1,8 @@
 //! Marching cubes implementation is modified from my wave-sim-3d project.
 //! https://github.com/connorslade/wave-sim-3d
 
+// todo: move to tools
+
 use common::{
     progress::Progress,
     slice::{Layer, SliceConfig},
