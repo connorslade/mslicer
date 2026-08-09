@@ -71,6 +71,27 @@ pub fn downsample(chunks: &[Vec<Run>], width: u64, out: &mut Vec<Run>) {
     }
 }
 
+pub fn chunks(runs: &[Run], width: u64) -> Vec<Vec<Run>> {
+    let mut out = Vec::new();
+    let mut working = Vec::new();
+    let mut working_len = 0;
+
+    let mut queue = RunQueue::new(runs);
+    while queue.remaining() {
+        let run = queue.take_up_to(width - working_len);
+        working.push(run);
+        working_len += run.length;
+
+        if working_len == width {
+            out.push(mem::take(&mut working));
+            working_len = 0;
+        }
+    }
+
+    (!working.is_empty()).then(|| out.push(working));
+    out
+}
+
 impl<'a, T: Copy + Default> RunQueue<'a, T> {
     pub fn new(runs: &'a [Run<T>]) -> Self {
         Self {

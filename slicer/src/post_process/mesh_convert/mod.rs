@@ -10,6 +10,6 @@ mod marching_cubes;
 mod table;
 
 pub fn mesh_convert(progress: &Progress, size: Vector2<u32>, result: &[Layer]) -> Mesh {
-    let (vertices, faces) = marching_cubes(progress, 0.5, size, result);
+    let (vertices, faces) = marching_cubes(progress, 0.5, size, result, 5);
     Mesh::new(vertices, faces)
 }
