@@ -19,6 +19,11 @@ struct VertexOutput {
     @location(0) position: vec2f,
 }
 
+struct FragmentOutput {
+    @location(0) color: vec4<f32>,
+    @builtin(frag_depth) depth: f32,
+};
+
 @vertex
 fn vert(@builtin(vertex_index) index: u32) -> VertexOutput {
     let position = POINTS[index];
@@ -26,13 +31,16 @@ fn vert(@builtin(vertex_index) index: u32) -> VertexOutput {
 }
 
 @fragment
-fn frag(in: VertexOutput) -> @location(0) vec4f {
+fn frag(in: VertexOutput) -> FragmentOutput {
     let uv = vec2(0.0, 1.0) + (in.position * 0.5 + vec2(0.5)) * vec2f(1.0, -1.0);
+    let depth = sample_depth(uv);
+    let color = textureSample(texture, texture_sampler, uv);
 
+    return FragmentOutput(color, depth);
+}
 
+fn sample_depth(uv: vec2f) -> f32 {
     let dims = textureDimensions(depth);
     let coord = vec2<i32>(uv * vec2f(dims));
-
-
-    return vec4(vec3(textureLoad(depth, coord, 0)), 1.0);
+    return textureLoad(depth, coord, 0);
 }
