@@ -5,22 +5,21 @@ use egui_wgpu::ScreenDescriptor;
 use encase::{ShaderSize, ShaderType, UniformBuffer};
 use nalgebra::{Matrix4, Vector2, Vector3};
 use serde::{Deserialize, Serialize};
-use tracing::instrument::WithSubscriber;
 use wgpu::{
     AddressMode, BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayout,
     BindGroupLayoutDescriptor, BindGroupLayoutEntry, BindingResource, BindingType, BlendState,
     Buffer, BufferBindingType, BufferDescriptor, BufferUsages, Color, ColorTargetState,
-    ColorWrites, CommandEncoder, Device, Extent3d, FilterMode, FragmentState, IndexFormat, LoadOp,
-    MultisampleState, Operations, PipelineLayoutDescriptor, RenderPass, RenderPassColorAttachment,
+    ColorWrites, CommandEncoder, CompareFunction, DepthBiasState, DepthStencilState, Device,
+    Extent3d, FilterMode, FragmentState, IndexFormat, LoadOp, MultisampleState, Operations,
+    PipelineLayoutDescriptor, RenderPass, RenderPassColorAttachment,
     RenderPassDepthStencilAttachment, RenderPassDescriptor, RenderPipeline,
     RenderPipelineDescriptor, Sampler, SamplerBindingType, SamplerDescriptor, ShaderStages,
-    StoreOp, TextureDescriptor, TextureDimension, TextureFormat, TextureSampleType, TextureUsages,
-    TextureView, TextureViewDimension, VertexState,
+    StencilFaceState, StencilState, StoreOp, TextureDescriptor, TextureDimension, TextureFormat,
+    TextureSampleType, TextureUsages, TextureView, TextureViewDimension, VertexState,
     util::{BufferInitDescriptor, DeviceExt},
 };
 
 use crate::{
-    DEPTH_TEXTURE_FORMAT,
     app::App,
     include_shader,
     render::{
@@ -108,7 +107,22 @@ impl ModelPipeline {
                 compilation_options: Default::default(),
             }),
             primitive: Default::default(),
-            depth_stencil: Some(DEPTH_STENCIL_STATE),
+            depth_stencil: Some(DepthStencilState {
+                format: TextureFormat::Depth32Float,
+                depth_write_enabled: true,
+                depth_compare: CompareFunction::Less,
+                stencil: StencilState {
+                    front: StencilFaceState::IGNORE,
+                    back: StencilFaceState::IGNORE,
+                    read_mask: 0,
+                    write_mask: 0,
+                },
+                bias: DepthBiasState {
+                    constant: 0,
+                    slope_scale: 0.0,
+                    clamp: 0.0,
+                },
+            }),
             multisample: MultisampleState {
                 count: 4,
                 ..Default::default()
@@ -165,6 +179,16 @@ impl ModelPipeline {
                 },
                 BindGroupLayoutEntry {
                     binding: 2,
+                    visibility: ShaderStages::FRAGMENT,
+                    ty: BindingType::Texture {
+                        sample_type: TextureSampleType::Depth,
+                        view_dimension: TextureViewDimension::D2,
+                        multisampled: true,
+                    },
+                    count: None,
+                },
+                BindGroupLayoutEntry {
+                    binding: 3,
                     visibility: ShaderStages::FRAGMENT,
                     ty: BindingType::Sampler(SamplerBindingType::NonFiltering),
                     count: None,
@@ -279,8 +303,8 @@ impl ModelPipeline {
             mip_level_count: 1,
             sample_count: 4,
             dimension: TextureDimension::D2,
-            format: DEPTH_TEXTURE_FORMAT,
-            usage: TextureUsages::RENDER_ATTACHMENT,
+            format: TextureFormat::Depth32Float,
+            usage: TextureUsages::RENDER_ATTACHMENT | TextureUsages::TEXTURE_BINDING,
             view_formats: &[],
         });
 
@@ -313,6 +337,10 @@ impl ModelPipeline {
                 },
                 BindGroupEntry {
                     binding: 2,
+                    resource: BindingResource::TextureView(&depth_target_view),
+                },
+                BindGroupEntry {
+                    binding: 3,
                     resource: BindingResource::Sampler(&self.sampler),
                 },
             ],
@@ -366,9 +394,11 @@ impl ModelPipeline {
         }
 
         let mut buffer = UniformBuffer::new(Vec::new());
-        buffer.write(&PostUniforms {
-            x: self.start.elapsed().as_secs_f32(),
-        });
+        buffer
+            .write(&PostUniforms {
+                x: self.start.elapsed().as_secs_f32(),
+            })
+            .unwrap();
         gcx.queue
             .write_buffer(&self.post_uniform, 0, &buffer.into_inner());
 
