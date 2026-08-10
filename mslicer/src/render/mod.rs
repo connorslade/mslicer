@@ -50,6 +50,8 @@ pub fn init_wgpu(cc: &CreationContext) -> RenderState {
 
     let resources = &mut render_state.renderer.write().callback_resources;
     resources.insert(WorkspaceRenderResources {
+        texture,
+
         model: ModelPipeline::new(device, texture),
         support: SupportPipeline::new(device, texture),
         point: PointDispatch::new(device, texture),
