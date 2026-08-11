@@ -30,6 +30,7 @@ fn frag(in: VertexOutput) -> FragmentOutput {
     let uv = vec2(0.0, 1.0) + (in.position * 0.5 + vec2(0.5)) * vec2f(1.0, -1.0);
     let depth = sample_depth(uv);
     let world_normal = sample_normal(uv).xyz;
+    let color = sample_color(uv);
 
     return FragmentOutput(vec4f(world_normal, color.a), depth);
 }

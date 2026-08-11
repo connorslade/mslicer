@@ -80,3 +80,6 @@ uuid = { version = "1.24.0", features = ["v4"] }
 wgpu = "27.0.1"
 winres = "0.1.12"
 zip = "7.2.0"
+
+[profile.dev]
+opt-level = 3
