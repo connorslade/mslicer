@@ -1,3 +1,9 @@
+const CLIP_TRI = array(
+    vec2( 1.0,  1.0),
+    vec2(-3.0,  1.0),
+    vec2( 1.0, -3.0)
+);
+
 fn screen_normal(world_position: vec3f) -> vec3f {
     let dy = dpdy(world_position);
     let dx = dpdx(world_position);
@@ -18,4 +24,8 @@ fn rand() -> f32 {
     seed = seed * 747796405u + 2891336453u;
     let f = f32(seed >> 9u) / f32(1u << 23u);
     return fract(f);
+}
+
+fn rand_full() -> f32 {
+    return rand() * 2.0 - 1.0;
 }

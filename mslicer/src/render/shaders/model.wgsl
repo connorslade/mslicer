@@ -28,6 +28,11 @@ struct VertexOutput {
     @location(2) vertex_index: u32
 }
 
+struct FragmentOutput {
+    @location(0) color: vec4f,
+    @location(1) normal: vec4f,
+}
+
 @vertex
 fn vert(in: VertexInput) -> VertexOutput {
     var out: VertexOutput;
@@ -41,11 +46,15 @@ fn vert(in: VertexInput) -> VertexOutput {
 fn frag(
    @builtin(front_facing) is_front: bool,
    in: VertexOutput
-) -> @location(0) vec4f {
+) -> FragmentOutput {
     let normal = screen_normal(in.world_position);
-    let view_dir = normalize(context.camera_position - in.world_position);
+    return FragmentOutput(render(is_front, in, normal), vec4f(normal, 0.0));
+}
 
+fn render(is_front: bool, in: VertexOutput, normal: vec3f) -> vec4f {
+    let view_dir = normalize(context.camera_position - in.world_position);
     let intensity = blinn_phong(normal, normalize(context.camera_position));
+
     switch context.render_style {
         case STYLE_NORMAL: {
             return vec4f((normal * 0.5 + 0.5) * intensity, 1.0);

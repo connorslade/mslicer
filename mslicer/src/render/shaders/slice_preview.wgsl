@@ -4,12 +4,6 @@
 
 const GRID_WIDTH: f32 = 2.0;
 
-const POINTS = array(
-    vec2( 1.0,  1.0),
-    vec2(-3.0,  1.0),
-    vec2( 1.0, -3.0)
-);
-
 const SAMPLE_OFFSETS = array(
     vec2f(-0.25, -0.25),
     vec2f( 0.25, -0.25),
@@ -41,7 +35,7 @@ struct VertexOutput {
 
 @vertex
 fn vert(@builtin(vertex_index) index: u32) -> VertexOutput {
-    let position = POINTS[index];
+    let position = CLIP_TRI[index];
     return VertexOutput(vec4f(vec4(position, 0, 1)), vec2f(position));
 }
 

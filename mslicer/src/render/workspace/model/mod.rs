@@ -1,5 +1,3 @@
-use std::time::Instant;
-
 use common::units::Milimeter;
 use egui_wgpu::ScreenDescriptor;
 use encase::{ShaderSize, ShaderType, UniformBuffer};
@@ -41,12 +39,12 @@ pub struct ModelPipeline {
     sampler: Sampler,
 
     bind_groups: Vec<BindGroup>,
-    start: Instant,
 }
 
 struct MultiStage {
     target: TextureView,
     depth_target: TextureView,
+    normal_target: TextureView,
     resolved_target: TextureView,
 
     post_bind_group: BindGroup,
@@ -65,7 +63,8 @@ struct ModelUniforms {
 
 #[derive(ShaderType)]
 struct PostUniforms {
-    x: f32,
+    view: Matrix4<f32>,
+    inv_view: Matrix4<f32>,
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -99,11 +98,18 @@ impl ModelPipeline {
             fragment: Some(FragmentState {
                 module: &shader,
                 entry_point: None,
-                targets: &[Some(ColorTargetState {
-                    format: texture,
-                    blend: Some(BlendState::ALPHA_BLENDING),
-                    write_mask: ColorWrites::all(),
-                })],
+                targets: &[
+                    Some(ColorTargetState {
+                        format: texture,
+                        blend: Some(BlendState::ALPHA_BLENDING),
+                        write_mask: ColorWrites::all(),
+                    }),
+                    Some(ColorTargetState {
+                        format: TextureFormat::Rgba16Float,
+                        blend: Some(BlendState::REPLACE),
+                        write_mask: ColorWrites::all(),
+                    }),
+                ],
                 compilation_options: Default::default(),
             }),
             primitive: Default::default(),
@@ -153,7 +159,8 @@ impl ModelPipeline {
             mapped_at_creation: false,
         });
 
-        let post_shader = device.create_shader_module(include_shader!("model_post.wgsl"));
+        let post_shader =
+            device.create_shader_module(include_shader!("model_post.wgsl", "common.wgsl"));
         let post_group_layout = device.create_bind_group_layout(&BindGroupLayoutDescriptor {
             label: None,
             entries: &[
@@ -181,7 +188,7 @@ impl ModelPipeline {
                     binding: 2,
                     visibility: ShaderStages::FRAGMENT,
                     ty: BindingType::Texture {
-                        sample_type: TextureSampleType::Depth,
+                        sample_type: TextureSampleType::Float { filterable: false },
                         view_dimension: TextureViewDimension::D2,
                         multisampled: true,
                     },
@@ -189,6 +196,16 @@ impl ModelPipeline {
                 },
                 BindGroupLayoutEntry {
                     binding: 3,
+                    visibility: ShaderStages::FRAGMENT,
+                    ty: BindingType::Texture {
+                        sample_type: TextureSampleType::Depth,
+                        view_dimension: TextureViewDimension::D2,
+                        multisampled: true,
+                    },
+                    count: None,
+                },
+                BindGroupLayoutEntry {
+                    binding: 4,
                     visibility: ShaderStages::FRAGMENT,
                     ty: BindingType::Sampler(SamplerBindingType::NonFiltering),
                     count: None,
@@ -249,7 +266,6 @@ impl ModelPipeline {
             multi_stage: None,
 
             bind_groups: Vec::new(),
-            start: Instant::now(),
         }
     }
 
@@ -308,6 +324,17 @@ impl ModelPipeline {
             view_formats: &[],
         });
 
+        let normal_target = device.create_texture(&TextureDescriptor {
+            label: None,
+            size: extent,
+            mip_level_count: 1,
+            sample_count: 4,
+            dimension: TextureDimension::D2,
+            format: TextureFormat::Rgba16Float,
+            usage: TextureUsages::RENDER_ATTACHMENT | TextureUsages::TEXTURE_BINDING,
+            view_formats: &[],
+        });
+
         let resolved_target = device.create_texture(&TextureDescriptor {
             label: None,
             size: extent,
@@ -321,6 +348,7 @@ impl ModelPipeline {
 
         let target_view = target.create_view(&Default::default());
         let depth_target_view = depth_target.create_view(&Default::default());
+        let normal_target_view = normal_target.create_view(&Default::default());
         let resolved_target_view = resolved_target.create_view(&Default::default());
 
         let post_bind_group = device.create_bind_group(&BindGroupDescriptor {
@@ -337,10 +365,14 @@ impl ModelPipeline {
                 },
                 BindGroupEntry {
                     binding: 2,
-                    resource: BindingResource::TextureView(&depth_target_view),
+                    resource: BindingResource::TextureView(&normal_target_view),
                 },
                 BindGroupEntry {
                     binding: 3,
+                    resource: BindingResource::TextureView(&depth_target_view),
+                },
+                BindGroupEntry {
+                    binding: 4,
                     resource: BindingResource::Sampler(&self.sampler),
                 },
             ],
@@ -349,6 +381,7 @@ impl ModelPipeline {
         self.multi_stage = Some(MultiStage {
             target: target_view,
             depth_target: depth_target_view,
+            normal_target: normal_target_view,
             resolved_target: resolved_target_view,
             post_bind_group,
         });
@@ -396,7 +429,8 @@ impl ModelPipeline {
         let mut buffer = UniformBuffer::new(Vec::new());
         buffer
             .write(&PostUniforms {
-                x: self.start.elapsed().as_secs_f32(),
+                view: view_projection,
+                inv_view: view_projection.try_inverse().unwrap(),
             })
             .unwrap();
         gcx.queue
@@ -406,15 +440,26 @@ impl ModelPipeline {
         let multi = self.multi_stage.as_ref().unwrap();
         let mut render_pass = encoder.begin_render_pass(&RenderPassDescriptor {
             label: None,
-            color_attachments: &[Some(RenderPassColorAttachment {
-                view: &multi.target,
-                resolve_target: Some(&multi.resolved_target),
-                ops: Operations {
-                    load: LoadOp::Clear(Color::TRANSPARENT),
-                    store: StoreOp::Store,
-                },
-                depth_slice: None,
-            })],
+            color_attachments: &[
+                Some(RenderPassColorAttachment {
+                    view: &multi.target,
+                    resolve_target: Some(&multi.resolved_target),
+                    ops: Operations {
+                        load: LoadOp::Clear(Color::TRANSPARENT),
+                        store: StoreOp::Store,
+                    },
+                    depth_slice: None,
+                }),
+                Some(RenderPassColorAttachment {
+                    view: &multi.normal_target,
+                    resolve_target: None,
+                    ops: Operations {
+                        load: LoadOp::Clear(Color::TRANSPARENT),
+                        store: StoreOp::Store,
+                    },
+                    depth_slice: None,
+                }),
+            ],
             depth_stencil_attachment: Some(RenderPassDepthStencilAttachment {
                 view: &multi.depth_target,
                 depth_ops: Some(Operations {
