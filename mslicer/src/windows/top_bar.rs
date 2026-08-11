@@ -72,9 +72,12 @@ pub fn ui(app: &mut App, ctx: &Context) {
                 ui.menu_button(concatcp!(FILE_TEXT, " File"), |ui| {
                     ui.set_width(150.0);
 
-                    labeled_separator(ui, "Model");
-                    menu_button((ui, app, ctx), SHORTCUTS[0], "Import Mesh");
+                    labeled_separator(ui, "Import");
+                    menu_button((ui, app, ctx), SHORTCUTS[0], "Load Mesh");
                     menu_button((ui, app, ctx), SHORTCUTS[1], "Utah Teapot");
+                    ui.button("Load Sliced File")
+                        .clicked()
+                        .then(|| load_sliced(app));
 
                     labeled_separator(ui, "Project");
                     menu_button((ui, app, ctx), SHORTCUTS[2], "New");
@@ -143,10 +146,6 @@ pub fn ui(app: &mut App, ctx: &Context) {
                     ui.button("Collect Instances")
                         .clicked()
                         .then(|| collect_instances(app));
-
-                    ui.button("Load Sliced File")
-                        .clicked()
-                        .then(|| load_sliced(app));
 
                     if ui.button("3D Graphics").clicked() {
                         graphics_3d::open(app);
