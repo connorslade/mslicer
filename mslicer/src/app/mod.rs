@@ -1,4 +1,4 @@
-use std::{path::PathBuf, sync::Arc, thread, time::Instant};
+use std::{path::PathBuf, sync::Arc, thread};
 
 use clone_macro::clone;
 use const_format::concatcp;
@@ -13,6 +13,7 @@ use tracing::{info, warn};
 use crate::{
     app::{
         config::{Config, DEFAULT_PRINTERS},
+        fps_tracker::FpsTracker,
         history::History,
         slice_operation::SliceOperation,
     },
@@ -39,6 +40,7 @@ use common::{
 use slicer::slicer::{Slicer, SlicerModel};
 
 pub mod config;
+mod fps_tracker;
 pub mod history;
 pub mod slice_operation;
 
@@ -62,11 +64,6 @@ pub struct App {
 
     pub config: Config,
     pub project: Project,
-}
-
-pub struct FpsTracker {
-    last_frame: Instant,
-    last_frame_time: f32,
 }
 
 impl App {
@@ -260,26 +257,6 @@ impl Drop for App {
         } else {
             info!("Successfully saved config");
         }
-    }
-}
-
-impl FpsTracker {
-    fn new() -> Self {
-        Self {
-            last_frame: Instant::now(),
-            last_frame_time: 0.0,
-        }
-    }
-
-    fn update(&mut self) {
-        let now = Instant::now();
-        let elapsed = now - self.last_frame;
-        self.last_frame_time = elapsed.as_secs_f32();
-        self.last_frame = now;
-    }
-
-    pub fn frame_time(&self) -> f32 {
-        self.last_frame_time
     }
 }
 

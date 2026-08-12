@@ -1,6 +1,7 @@
 use const_format::concatcp;
-use egui::{CollapsingHeader, ComboBox, Context, DragValue, Grid, Theme, Ui, Widget};
+use egui::{CollapsingHeader, Color32, ComboBox, Context, DragValue, Grid, Theme, Ui, Widget};
 use egui_phosphor::regular::{ARROW_COUNTER_CLOCKWISE, ARROWS_CLOCKWISE, FOLDER, INFO};
+use egui_plot::{Line, Plot};
 use tracing::error;
 
 use crate::{
@@ -173,5 +174,23 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
             app.fps.frame_time() * 1000.0
         ));
         ui.label(format!("FPS: {:.2}", 1.0 / app.fps.frame_time()));
+
+        Plot::new("fps")
+            .width(ui.available_width())
+            .allow_drag(false)
+            .allow_zoom(false)
+            .allow_scroll(false)
+            .allow_boxed_zoom(false)
+            .show_axes([false, true])
+            .view_aspect(3.0)
+            .show(ui, |plot| {
+                let series = app
+                    .fps
+                    .fps_history()
+                    .enumerate()
+                    .map(|(x, y)| [x as f64, y as f64])
+                    .collect::<Vec<_>>();
+                plot.add(Line::new("", series).color(Color32::WHITE));
+            });
     });
 }
