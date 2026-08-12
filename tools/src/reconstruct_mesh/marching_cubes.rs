@@ -18,7 +18,7 @@ use itertools::Itertools;
 use nalgebra::{Vector2, Vector3};
 use ordered_float::OrderedFloat;
 
-use crate::post_process::mesh_convert::table::{EDGE_TABLE, TRIANGULATION_TABLE};
+use super::table::{EDGE_TABLE, TRIANGULATION_TABLE};
 
 #[rustfmt::skip]
 const EDGE_CONNECTIONS: [(usize, usize); 12] = [

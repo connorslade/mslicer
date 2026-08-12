@@ -21,7 +21,7 @@ use crate::{
         slice_operation::{GenericSliceData, GenericSliceResult, ISLAND_COLOR, RasterSliceResult},
     },
     render::slice_preview::SlicePreviewRenderCallback,
-    task::{FileDialog, IslandDetection, MeshConvert, SaveResult},
+    task::{FileDialog, IslandDetection, ReconstructMesh, SaveResult},
     ui::{popup::Popup, state::UiState},
 };
 use common::{
@@ -149,11 +149,11 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                         });
 
                         if ui
-                            .button(concatcp!(CUBE_TRANSPARENT, " Convert to Mesh"))
+                            .button(concatcp!(CUBE_TRANSPARENT, " Reconstruct Mesh"))
                             .clicked()
                             && let GenericSliceResult::Raster(raster) = &mut result.inner
                         {
-                            app.tasks.add(MeshConvert::new(
+                            app.tasks.add(ReconstructMesh::new(
                                 result.config.clone(),
                                 raster.layers.clone(),
                             ));

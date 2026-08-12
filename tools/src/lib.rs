@@ -3,4 +3,5 @@ pub mod exposure_test;
 pub mod internal_exposure_test;
 mod misc;
 pub mod printed_circuit_board;
+pub mod reconstruct_mesh;
 pub mod supports;

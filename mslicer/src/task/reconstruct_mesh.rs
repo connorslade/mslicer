@@ -5,30 +5,31 @@ use common::{
     progress::Progress,
     slice::{Layer, SliceConfig},
 };
-use slicer::{mesh::Mesh, post_process::mesh_convert::mesh_convert};
+use slicer::mesh::Mesh;
+use tools::reconstruct_mesh::marching_cubes;
 
 use crate::task::{MeshLoad, PollResult, Task, TaskApp, TaskStatus, thread::TaskThread};
 
-pub struct MeshConvert {
+pub struct ReconstructMesh {
     progress: Progress,
     handle: TaskThread<Mesh>,
 }
 
-impl MeshConvert {
+impl ReconstructMesh {
     pub fn new(config: SliceConfig, result: Arc<Vec<Layer>>) -> Self {
         let progress = Progress::new();
         let handle = TaskThread::spawn(clone!([progress], move || {
-            mesh_convert(&progress, &config, &result)
+            marching_cubes(&progress, &config, &result)
         }));
 
         Self { progress, handle }
     }
 }
 
-impl Task for MeshConvert {
+impl Task for ReconstructMesh {
     fn poll(&mut self, app: &mut TaskApp) -> PollResult {
         self.handle
-            .poll(app, "Unexpected Error while Converting to Mesh")
+            .poll(app, "Unexpected Error while Reconstructing Mesh")
             .into_poll_result(|mesh| {
                 PollResult::complete()
                     .with_task(MeshLoad::complete("Reconstructed Model".into(), mesh))
@@ -37,7 +38,7 @@ impl Task for MeshConvert {
 
     fn status(&self) -> Option<TaskStatus<'_>> {
         Some(TaskStatus {
-            name: "Converting to Mesh".into(),
+            name: "Reconstructing Mesh".into(),
             details: None,
             progress: self.progress.progress(),
         })
