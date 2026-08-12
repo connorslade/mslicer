@@ -5,8 +5,8 @@ use egui_plot::{Line, Plot};
 use tracing::error;
 
 use crate::{
-    app::App,
-    render::{camera::Projection, workspace::model::RenderStyle},
+    app::{App, config::RenderStyle},
+    render::camera::Projection,
     ui::components::{dragger, vec2_dragger, vec3_dragger},
 };
 

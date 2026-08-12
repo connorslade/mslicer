@@ -3,15 +3,11 @@ use std::ops::Deref;
 use bytemuck::NoUninit;
 use slicer::mesh::Mesh;
 use wgpu::{
-    Buffer, BufferDescriptor, BufferUsages, Device, Extent3d, Texture, TextureDescriptor,
-    TextureDimension, TextureFormat, TextureUsages,
+    Buffer, BufferDescriptor, BufferUsages, Device,
     util::{BufferInitDescriptor, DeviceExt},
 };
 
-use crate::{
-    DEPTH_TEXTURE_FORMAT,
-    render::{Gcx, ModelVertex},
-};
+use crate::render::{Gcx, ModelVertex};
 
 #[macro_export]
 macro_rules! include_shader {
@@ -91,53 +87,4 @@ pub fn gpu_mesh_buffers(device: &Device, mesh: &Mesh) -> (Buffer, Buffer) {
     });
 
     (vertex_buffer, index_buffer)
-}
-
-pub fn init_textures(
-    device: &Device,
-    format: TextureFormat,
-    (width, height): (u32, u32),
-) -> (Texture, Texture, Texture) {
-    let size = Extent3d {
-        width,
-        height,
-        depth_or_array_layers: 1,
-    };
-
-    let texture = device.create_texture(&TextureDescriptor {
-        label: None,
-        size,
-        mip_level_count: 1,
-        sample_count: 4,
-        dimension: TextureDimension::D2,
-        format,
-        usage: TextureUsages::RENDER_ATTACHMENT,
-        view_formats: &[],
-    });
-
-    let resolved_texture = device.create_texture(&TextureDescriptor {
-        label: None,
-        size,
-        mip_level_count: 1,
-        sample_count: 1,
-        dimension: TextureDimension::D2,
-        format,
-        usage: TextureUsages::RENDER_ATTACHMENT
-            | TextureUsages::COPY_SRC
-            | TextureUsages::TEXTURE_BINDING,
-        view_formats: &[],
-    });
-
-    let depth_texture = device.create_texture(&TextureDescriptor {
-        label: None,
-        size,
-        mip_level_count: 1,
-        sample_count: 4,
-        dimension: TextureDimension::D2,
-        format: DEPTH_TEXTURE_FORMAT,
-        usage: TextureUsages::RENDER_ATTACHMENT,
-        view_formats: &[],
-    });
-
-    (texture, resolved_texture, depth_texture)
 }

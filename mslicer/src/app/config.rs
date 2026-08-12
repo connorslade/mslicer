@@ -14,10 +14,7 @@ use nalgebra::{Vector2, Vector3};
 use serde::{Deserialize, Serialize};
 use tracing::{info, warn};
 
-use crate::{
-    render::{camera::Projection, workspace::model::RenderStyle},
-    windows::Tab,
-};
+use crate::{render::camera::Projection, windows::Tab};
 
 #[rustfmt::skip]
 pub const DEFAULT_PRINTERS: &[(&str, &[PrinterProperties])] = &[
@@ -103,6 +100,14 @@ pub struct Webhook {
     pub content_type: ContentType,
 }
 
+#[derive(Copy, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[repr(u8)]
+pub enum RenderStyle {
+    Normals,
+    RandomTriangle,
+    Rendered,
+}
+
 #[derive(Default, Copy, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ContentType {
     #[default]
@@ -176,20 +181,32 @@ impl Config {
     }
 }
 
+impl RenderStyle {
+    pub const ALL: [Self; 3] = [Self::Normals, Self::RandomTriangle, Self::Rendered];
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            Self::Normals => "Normals",
+            Self::RandomTriangle => "Triangles",
+            Self::Rendered => "Rendered",
+        }
+    }
+}
+
 impl ContentType {
     pub const ALL: &[Self] = &[Self::Text, Self::Json];
 
     pub fn name(&self) -> &str {
         match self {
-            ContentType::Text => "Text",
-            ContentType::Json => "JSON",
+            Self::Text => "Text",
+            Self::Json => "JSON",
         }
     }
 
     pub fn header(&self) -> &str {
         match self {
-            ContentType::Text => "text/plain; charset=utf-8",
-            ContentType::Json => "application/json",
+            Self::Text => "text/plain; charset=utf-8",
+            Self::Json => "application/json",
         }
     }
 }
@@ -199,8 +216,8 @@ impl SlicePreviewCoordinateSpace {
 
     pub fn name(&self) -> &str {
         match self {
-            SlicePreviewCoordinateSpace::ScreenSpace => "Screen Space",
-            SlicePreviewCoordinateSpace::WorldSpace => "World Space",
+            Self::ScreenSpace => "Screen Space",
+            Self::WorldSpace => "World Space",
         }
     }
 }
@@ -210,8 +227,8 @@ impl SlicePreviewView {
 
     pub fn name(&self) -> &str {
         match self {
-            SlicePreviewView::Screen => "Screen",
-            SlicePreviewView::BuildPlate => "Build Plate",
+            Self::Screen => "Screen",
+            Self::BuildPlate => "Build Plate",
         }
     }
 }

@@ -4,7 +4,8 @@ use eframe::CreationContext;
 use egui_wgpu::RenderState;
 use nalgebra::Vector4;
 use wgpu::{
-    BufferAddress, Device, Queue, VertexAttribute, VertexBufferLayout, VertexFormat, VertexStepMode,
+    BufferAddress, Device, Queue, TextureFormat, VertexAttribute, VertexBufferLayout, VertexFormat,
+    VertexStepMode,
 };
 
 use crate::render::{
@@ -17,7 +18,6 @@ use crate::render::{
 
 pub mod camera;
 mod consts;
-pub mod preview;
 pub mod slice_preview;
 pub mod util;
 pub mod workspace;
@@ -35,6 +35,7 @@ pub const VERTEX_BUFFER_LAYOUT: VertexBufferLayout = VertexBufferLayout {
 pub struct Gcx {
     pub device: Device,
     pub queue: Queue,
+    pub texture: TextureFormat,
 }
 
 #[repr(C)]
@@ -50,8 +51,6 @@ pub fn init_wgpu(cc: &CreationContext) -> RenderState {
 
     let resources = &mut render_state.renderer.write().callback_resources;
     resources.insert(WorkspaceRenderResources {
-        texture,
-
         model: ModelPipeline::new(device, texture),
         support: SupportPipeline::new(device, texture),
         point: PointDispatch::new(device, texture),

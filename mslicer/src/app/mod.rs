@@ -21,7 +21,7 @@ use crate::{
     render::{
         Gcx,
         camera::{Camera, spacenav::SpaceNav},
-        preview,
+        workspace::model,
     },
     task::TaskManager,
     ui::{
@@ -107,9 +107,11 @@ impl App {
     }
 
     pub fn gcx(&self) -> Gcx {
+        let state = &self.render_state;
         Gcx {
-            device: self.render_state.device.clone(),
-            queue: self.render_state.queue.clone(),
+            device: state.device.clone(),
+            queue: state.queue.clone(),
+            texture: state.target_format,
         }
     }
 
@@ -242,7 +244,7 @@ impl eframe::App for App {
         });
 
         // self.remote_print().tick(); TODO(remote-print)
-        preview::process_previews(self);
+        model::process_previews(self);
         drag_and_drop::update(self, ctx);
         windows::ui(self, ctx);
     }

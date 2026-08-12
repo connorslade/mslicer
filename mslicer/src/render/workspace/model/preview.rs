@@ -1,29 +1,87 @@
+// TODO: Will need to be updated again to run the post processing shader.
+
 use std::f32::consts::PI;
+use std::mem;
 
 use egui_wgpu::RenderState;
+use encase::UniformBuffer;
 use image::{Rgba, RgbaImage};
-use nalgebra::Vector3;
+use nalgebra::{Vector2, Vector3};
 use parking_lot::MappedRwLockWriteGuard;
 use tracing::{error, info};
 use wgpu::{
-    BufferAddress, BufferDescriptor, BufferUsages, Color, Extent3d, LoadOp, MapMode, Operations,
-    Origin3d, PollType, RenderPassColorAttachment, RenderPassDepthStencilAttachment,
-    RenderPassDescriptor, StoreOp, TexelCopyBufferInfo, TexelCopyBufferLayout,
-    TexelCopyTextureInfo, Texture, TextureAspect, TextureFormat, TextureView,
+    BufferAddress, BufferDescriptor, BufferUsages, CommandEncoder, Extent3d, MapMode, Origin3d,
+    PollType, TexelCopyBufferInfo, TexelCopyBufferLayout, TexelCopyTextureInfo, Texture,
+    TextureAspect, TextureFormat, TextureView,
 };
 
 use crate::app::App;
+use crate::app::config::RenderStyle;
+use crate::render::camera::Projection;
+use crate::render::workspace::model::{ModelUniforms, PostUniforms};
 use crate::render::{
     Gcx,
     camera::Camera,
-    util::init_textures,
     workspace::{WorkspaceRenderResources, model::ModelPipeline},
 };
+
+impl ModelPipeline {
+    // Similar to `Self::prepare`, but render target buffers are only held for
+    // the single operation.
+    fn render_preview(
+        &mut self,
+        gcx: &Gcx,
+        encoder: &mut CommandEncoder,
+        app: &mut App,
+        size: Vector2<u32>,
+        camera: Camera,
+    ) -> TextureView {
+        self.upload_preview_uniforms(gcx, app, &camera);
+
+        // Switch out the multi stage state just for this operation
+        let mut old = self.multi_stage.take();
+        self.size_textures(gcx, size);
+        self.render(encoder, app);
+        mem::swap(&mut self.multi_stage, &mut old);
+
+        old.unwrap().resolved_target
+    }
+
+    fn upload_preview_uniforms(&mut self, gcx: &Gcx, app: &mut App, camera: &Camera) {
+        let view_projection = camera.view_projection_matrix(Projection::Perspective, 1.0);
+        self.bind_groups.clear();
+        for model in app.project.models.iter_mut() {
+            model.get_buffers(&gcx.device);
+
+            let model_transform = *model.mesh.transformation_matrix();
+            let uniforms = ModelUniforms {
+                transform: view_projection * model_transform,
+                model_transform,
+                build_volume: Vector3::repeat(f32::MAX),
+                model_color: model.color.to_srgb().into(),
+                camera_position: camera.position(camera.distance),
+                render_style: RenderStyle::Rendered as u32,
+                overhang_angle: 0.0,
+            };
+            self.bind_groups.push(self.bind_group(gcx, uniforms));
+        }
+
+        let post_uniform = PostUniforms {
+            view: view_projection,
+            inv_view: view_projection.try_inverse().unwrap(),
+        };
+
+        let mut buffer = UniformBuffer::new(Vec::new());
+        buffer.write(&post_uniform).unwrap();
+        gcx.queue
+            .write_buffer(&self.post_uniform, 0, &buffer.into_inner());
+    }
+}
 
 pub fn process_previews(app: &mut App) {
     match &app.slice_operation {
         Some(slice_operation) if slice_operation.needs_preview_image() => {
-            let image = render_preview_image(app, (512, 512));
+            let image = render_preview_image(app, Vector2::repeat(512));
             (app.slice_operation.as_ref().unwrap()).add_preview_image(image);
         }
         _ => {}
@@ -31,15 +89,9 @@ pub fn process_previews(app: &mut App) {
 }
 
 // TODO: Allow rendering multiple preview images at once
-fn render_preview_image(app: &mut App, size: (u32, u32)) -> RgbaImage {
-    info!("Generating {}x{} preview image", size.0, size.1);
+fn render_preview_image(app: &mut App, size: Vector2<u32>) -> RgbaImage {
+    info!("Generating {}x{} preview image", size.x, size.y);
     let gcx = app.gcx();
-
-    let format = app.render_state.target_format;
-    let (texture, resolved_texture, depth_texture) = init_textures(&gcx.device, format, size);
-    let texture_view = texture.create_view(&Default::default());
-    let resolved_texture_view = resolved_texture.create_view(&Default::default());
-    let depth_texture_view = depth_texture.create_view(&Default::default());
 
     let (mut min, mut max) = (Vector3::repeat(f32::MAX), Vector3::repeat(f32::MIN));
     for model in app.project.models.iter() {
@@ -56,59 +108,15 @@ fn render_preview_image(app: &mut App, size: (u32, u32)) -> RgbaImage {
     camera.distance = (max - camera.target).magnitude() / (camera.fov / 2.0).tan();
 
     let render_state = app.render_state.clone();
-    render_preview(
-        app,
-        &gcx,
-        &mut pipeline(&render_state),
-        &texture_view,
-        &resolved_texture_view,
-        &depth_texture_view,
-        camera,
-    );
 
-    download_preview(&gcx, format, &resolved_texture)
-}
-
-fn render_preview(
-    app: &mut App,
-    gcx: &Gcx,
-    model_pipeline: &mut ModelPipeline,
-    texture_view: &TextureView,
-    resolved_texture_view: &TextureView,
-    depth_texture_view: &TextureView,
-    camera: Camera,
-) {
     let mut encoder = gcx.device.create_command_encoder(&Default::default());
-    let mut preview_render_pass = encoder.begin_render_pass(&RenderPassDescriptor {
-        label: None,
-        color_attachments: &[Some(RenderPassColorAttachment {
-            view: texture_view,
-            resolve_target: Some(resolved_texture_view),
-            ops: Operations {
-                load: LoadOp::Clear(Color::BLACK),
-                store: StoreOp::Store,
-            },
-            depth_slice: None,
-        })],
-        depth_stencil_attachment: Some(RenderPassDepthStencilAttachment {
-            view: depth_texture_view,
-            depth_ops: Some(Operations {
-                load: LoadOp::Clear(1.0),
-                store: StoreOp::Store,
-            }),
-            stencil_ops: None,
-        }),
-        timestamp_writes: None,
-        occlusion_query_set: None,
-    });
-
-    model_pipeline.prepare_preview(gcx, app, camera);
-    model_pipeline.paint(&mut preview_render_pass, app);
-    drop(preview_render_pass);
+    let texture = pipeline(&render_state).render_preview(&gcx, &mut encoder, app, size, camera);
     gcx.queue.submit(std::iter::once(encoder.finish()));
+
+    download_preview(&gcx, texture.texture())
 }
 
-fn download_preview(gcx: &Gcx, format: TextureFormat, texture: &Texture) -> RgbaImage {
+fn download_preview(gcx: &Gcx, texture: &Texture) -> RgbaImage {
     let mut download_encoder = gcx.device.create_command_encoder(&Default::default());
     let texture_extent = texture.size();
     let texture_size = (texture_extent.width * texture_extent.height * 4) as BufferAddress;
@@ -152,7 +160,7 @@ fn download_preview(gcx: &Gcx, format: TextureFormat, texture: &Texture) -> Rgba
     // Convert texture to to RGBA image. Format is *not* guaranteed to be be,
     // but will almost always be Rgba8Unorm or Bgra8Unorm.
     let Extent3d { width, height, .. } = texture_extent;
-    let image = match format {
+    let image = match gcx.texture {
         TextureFormat::Rgba8Unorm => RgbaImage::from_raw(width, height, result.to_vec()).unwrap(),
         TextureFormat::Bgra8Unorm => {
             let mut image = RgbaImage::from_raw(width, height, result.to_vec()).unwrap();

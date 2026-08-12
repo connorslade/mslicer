@@ -1,6 +1,6 @@
 use egui::PaintCallbackInfo;
 use egui_wgpu::{CallbackResources, CallbackTrait, ScreenDescriptor};
-use wgpu::{CommandBuffer, CommandEncoder, Device, Queue, RenderPass, TextureFormat};
+use wgpu::{CommandBuffer, CommandEncoder, Device, Queue, RenderPass};
 
 use crate::{
     app::App,
@@ -15,8 +15,6 @@ pub mod point;
 pub mod support;
 
 pub struct WorkspaceRenderResources {
-    pub texture: TextureFormat,
-
     pub model: ModelPipeline,
     pub support: SupportPipeline,
 
@@ -41,9 +39,7 @@ impl CallbackTrait for WorkspaceRenderCallback {
         let app = self.app();
         let gcx = app.gcx();
 
-        workspace
-            .model
-            .prepare(&gcx, screen, encoder, workspace.texture, app);
+        workspace.model.prepare(&gcx, screen, encoder, app);
         workspace.support.prepare(&gcx, app);
         workspace.solid_line.prepare(&gcx, app);
         workspace.point.prepare(&gcx, app);

@@ -1,8 +1,9 @@
 use wgpu::{
-    BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayout, BindGroupLayoutDescriptor,
-    BindGroupLayoutEntry, BindingResource, BindingType, BufferBindingType, BufferDescriptor,
-    BufferUsages, CompareFunction, DepthBiasState, DepthStencilState, Device, ShaderStages,
-    StencilFaceState, StencilState,
+    AddressMode, BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayout,
+    BindGroupLayoutDescriptor, BindGroupLayoutEntry, BindingResource, BindingType,
+    BufferBindingType, BufferDescriptor, BufferUsages, CompareFunction, DepthBiasState,
+    DepthStencilState, Device, FilterMode, SamplerDescriptor, ShaderStages, StencilFaceState,
+    StencilState,
 };
 
 use crate::DEPTH_TEXTURE_FORMAT;
@@ -57,6 +58,21 @@ pub const DEPTH_STENCIL_STATE: DepthStencilState = DepthStencilState {
         slope_scale: 0.0,
         clamp: 0.0,
     },
+};
+
+pub const NONFILTERING_SAMPLER: SamplerDescriptor = SamplerDescriptor {
+    label: None,
+    address_mode_u: AddressMode::ClampToEdge,
+    address_mode_v: AddressMode::ClampToEdge,
+    address_mode_w: AddressMode::ClampToEdge,
+    mag_filter: FilterMode::Nearest,
+    min_filter: FilterMode::Nearest,
+    mipmap_filter: FilterMode::Nearest,
+    lod_min_clamp: 0.0,
+    lod_max_clamp: 0.0,
+    compare: None,
+    anisotropy_clamp: 1,
+    border_color: None,
 };
 
 pub fn bind_group<'a, const N: usize>(
