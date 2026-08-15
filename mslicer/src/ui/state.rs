@@ -8,7 +8,7 @@ use slicer::mesh::Mesh;
 use tools::supports::SupportConfig;
 
 use crate::{
-    app::config::Webhook,
+    app::config::peripherals::Webhook,
     project::{CollectionId, model::ModelId},
     windows::tools::Tools,
 };

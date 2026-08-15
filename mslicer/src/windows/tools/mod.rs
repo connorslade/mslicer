@@ -44,6 +44,6 @@ macro_rules! generator_tool {
             operation.add_raster_result(config, layers);
         }));
         $app.slice_operation.replace(operation);
-        $app.panels.focus_tab(Tab::SlicePreview, SLICE_PREVIEW_SIZE);
+        $app.panels.focus_tab(Tab::Sliced, SLICE_PREVIEW_SIZE);
     }};
 }

@@ -1,5 +1,5 @@
 use crate::{
-    app::config::ContentType,
+    app::config::peripherals::ContentType,
     task::{PollResult, Task, TaskApp, thread::TaskThread},
 };
 

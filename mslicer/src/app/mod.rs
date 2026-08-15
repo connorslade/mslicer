@@ -194,7 +194,7 @@ impl App {
         let post_process = CombinedProgress::new();
         let slice_operation = SliceOperation::new(slicer.progress(), post_process.clone());
         self.slice_operation.replace(slice_operation);
-        self.panels.focus_tab(Tab::SlicePreview, SLICE_PREVIEW_SIZE);
+        self.panels.focus_tab(Tab::Sliced, SLICE_PREVIEW_SIZE);
 
         thread::spawn(clone!(
             [

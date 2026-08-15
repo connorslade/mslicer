@@ -15,7 +15,7 @@ use rfd::FileDialog;
 use tracing::info;
 
 use crate::{
-    app::{App, config::ContentType},
+    app::{App, config::peripherals::ContentType},
     task::{PrinterConnect, PrinterScan, Webhook},
     ui::{
         components::grid,

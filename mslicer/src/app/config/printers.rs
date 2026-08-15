@@ -54,6 +54,16 @@ impl PrinterProperties {
     }
 }
 
+impl Default for PrinterProperties {
+    fn default() -> Self {
+        Self {
+            name: Cow::Owned("New Printer".into()),
+            resolution: Vector2::new(10_000, 5_000),
+            size: Vector3::repeat(100.0).map(Milimeters::new),
+        }
+    }
+}
+
 pub fn selected_printer(config: &Config, slice_config: &SliceConfig) -> SelectedPrinter {
     for (i, printer) in config.printers.iter().enumerate() {
         if printer.resolution == slice_config.platform_resolution

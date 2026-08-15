@@ -44,7 +44,7 @@ impl Task for LoadSliced {
                 operation.add_raster_result(config, layers);
                 operation.add_preview_image(image);
                 app.slice_operation.replace(operation);
-                app.panels.focus_tab(Tab::SlicePreview, SLICE_PREVIEW_SIZE);
+                app.panels.focus_tab(Tab::Sliced, SLICE_PREVIEW_SIZE);
 
                 PollResult::complete()
             })
