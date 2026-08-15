@@ -43,6 +43,7 @@ pub const DEFAULT_PRINTERS: &[(&str, &[PrinterProperties])] = &[
     ])
 ];
 
+// todo: clean this up into logical sub-structs
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Config {
@@ -54,9 +55,12 @@ pub struct Config {
     pub about: bool,
     pub tasks: bool,
     pub default_slice_config: SliceConfig,
+
+    // todo: extract this into struct
     pub slice_preview_mode: SlicePreviewCoordinateSpace,
     pub slice_preview_view: SlicePreviewView,
     pub slice_preview_multisample: u32,
+    pub slice_preview_sidebar: bool,
 
     pub remote_print: RemotePrintConfig,
 
@@ -257,6 +261,7 @@ impl Default for Config {
             slice_preview_mode: SlicePreviewCoordinateSpace::WorldSpace,
             slice_preview_view: SlicePreviewView::BuildPlate,
             slice_preview_multisample: 8,
+            slice_preview_sidebar: true,
 
             recent_projects: Vec::new(),
             panels: None,

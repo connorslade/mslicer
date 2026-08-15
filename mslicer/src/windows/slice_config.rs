@@ -249,7 +249,7 @@ fn printer_presets(ui: &mut Ui, config: &mut Config, state: &mut UiState) {
     }
 }
 
-fn exposure_config(ui: &mut Ui, config: &mut ExposureConfig) {
+pub fn exposure_config(ui: &mut Ui, config: &mut ExposureConfig) {
     TableBuilder::new(ui)
         .striped(true)
         .column(Column::exact(80.0))

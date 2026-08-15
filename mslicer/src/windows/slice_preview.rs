@@ -1,14 +1,16 @@
+// todo: split this into multiple files
+
 use std::{f32, fs::File, io::Write, mem, sync::Arc};
 
 use const_format::concatcp;
 use egui::{
-    Align, Button, Color32, ComboBox, Context, DragValue, FontSelection, Grid, Id, Layout,
-    ProgressBar, Rect, RichText, Sense, Slider, StrokeKind, Style, Ui, Vec2, Widget,
-    style::HandleShape, text::LayoutJob,
+    Align, Align2, Button, Color32, ComboBox, Context, DragValue, FontId, FontSelection, Grid, Id,
+    Layout, ProgressBar, Rect, RichText, Sense, SidePanel, Slider, StrokeKind, Style, Ui, Vec2,
+    Widget, panel::Side, style::HandleShape, text::LayoutJob, vec2,
 };
 use egui_phosphor::regular::{
     ARROW_U_UP_RIGHT, CARET_DOWN, CARET_UP, CLOCK, CORNERS_IN, CROSSHAIR, CUBE_TRANSPARENT, DROP,
-    FLOPPY_DISK_BACK, PAPER_PLANE_TILT, VECTOR_TWO,
+    FLOPPY_DISK_BACK, PAPER_PLANE_TILT, SIDEBAR, VECTOR_TWO,
 };
 use egui_wgpu::Callback;
 use image::RgbaImage;
@@ -17,12 +19,15 @@ use nalgebra::Vector2;
 use crate::{
     app::{
         App,
-        config::{SlicePreviewCoordinateSpace, SlicePreviewView},
-        slice_operation::{GenericSliceData, GenericSliceResult, ISLAND_COLOR, RasterSliceResult},
+        config::{Config, SlicePreviewCoordinateSpace, SlicePreviewView},
+        slice_operation::{
+            GenericSliceData, GenericSliceResult, ISLAND_COLOR, RasterSliceResult, SliceResult,
+        },
     },
     render::slice_preview::SlicePreviewRenderCallback,
     task::{FileDialog, IslandDetection, ReconstructMesh, SaveResult},
-    ui::{popup::Popup, state::UiState},
+    ui::{components::collapsing_toggle, popup::Popup, state::UiState},
+    windows::slice_config::exposure_config,
 };
 use common::{
     container::rle,
@@ -63,6 +68,8 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
 
                 ui.with_layout(Layout::default().with_cross_align(Align::Max), |ui| {
                     ui.horizontal(|ui| {
+                        sidebar_button(&mut app.config, ui);
+
                         let enabled =
                             app.remote_print.is_initialized() && format == SliceMode::Raster;
                         ui.add_enabled_ui(enabled, |ui| {
@@ -161,6 +168,12 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                     })
                 });
             });
+
+            SidePanel::new(Side::Right, "sidebar")
+                .resizable(false)
+                .show_animated_inside(ui, app.config.slice_preview_sidebar, |ui| {
+                    sidebar(result, ui)
+                });
 
             match &mut result.inner {
                 GenericSliceResult::Raster(raster) => {
@@ -490,4 +503,50 @@ fn save_file(
             )));
         },
     )
+}
+
+fn sidebar_button(config: &mut Config, ui: &mut Ui) {
+    let y = ui.spacing().interact_size.y;
+    let (rect, mut response) = ui.allocate_exact_size(vec2(y, y), egui::Sense::click());
+    response = response.on_hover_text("Toggle sidebar visibility.");
+    config.slice_preview_sidebar ^= response.clicked();
+
+    let visuals = ui
+        .style()
+        .interact_selectable(&response, config.slice_preview_sidebar);
+    ui.painter().rect(
+        rect,
+        visuals.corner_radius,
+        visuals.bg_fill,
+        visuals.bg_stroke,
+        StrokeKind::Outside,
+    );
+
+    // todo: flip over y axis
+    ui.painter().text(
+        rect.center(),
+        Align2::CENTER_CENTER,
+        SIDEBAR,
+        FontId::default(),
+        visuals.text_color(),
+    );
+}
+
+fn sidebar(result: &mut SliceResult, ui: &mut Ui) {
+    ui.collapsing("Normal Layers", |ui| {
+        exposure_config(ui, &mut result.config.exposure_config);
+    });
+
+    ui.collapsing("First Layers", |ui| {
+        exposure_config(ui, &mut result.config.first_exposure_config);
+    });
+
+    collapsing_toggle(
+        "Current Layer Override",
+        false,
+        |ui| {
+            ui.label("todo");
+        },
+        ui,
+    );
 }

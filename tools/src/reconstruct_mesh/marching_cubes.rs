@@ -1,6 +1,6 @@
 //! Implementation of <https://paulbourke.net/geometry/polygonise>.
 
-use std::{collections::HashMap, mem};
+use std::collections::HashMap;
 
 use common::{
     container::{
@@ -66,11 +66,11 @@ pub fn marching_cubes(
     );
 
     let pixels = (subsample_platform.x * subsample_platform.y) as usize;
-    let mut layer_this = Vec::new();
+    let mut layer_this;
     let mut layer_next = vec![0; pixels];
 
     for z in 0..=layers.len() as u32 {
-        mem::swap(&mut layer_this, &mut layer_next);
+        layer_this = layer_next;
         if z as usize == layers.len() {
             layer_next = vec![0; pixels];
         } else {
