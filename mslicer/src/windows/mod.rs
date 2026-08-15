@@ -146,7 +146,7 @@ fn viewport(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     }
 
     let painter = ui.painter();
-    let color = match app.config.theme {
+    let color = match app.config.ui.theme {
         Theme::Dark => Color32::from_rgb(9, 9, 9),
         Theme::Light => Color32::from_rgb(255, 255, 255),
     };
@@ -167,6 +167,6 @@ impl App {
     pub fn view_projection(&self) -> Matrix4<f32> {
         let aspect = self.state.workspace.aspect;
         self.camera
-            .view_projection_matrix(self.config.projection, aspect)
+            .view_projection_matrix(self.config.render.projection, aspect)
     }
 }

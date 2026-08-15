@@ -14,7 +14,7 @@ const HOMEPAGE_LINK: &str = "https://mslicer.com";
 const GETTING_STARTED_LINK: &str = "https://mslicer.com/docs/getting-started";
 
 pub fn ui(app: &mut App, ctx: &Context) {
-    if !app.config.about {
+    if !app.config.ui.about {
         return;
     }
 
@@ -55,7 +55,7 @@ pub fn ui(app: &mut App, ctx: &Context) {
                 let size = vec2(ui.available_size().x - spacing, 0.0) / 2.0;
 
                 if Button::new("Close").min_size(size).ui(ui).clicked() {
-                    app.config.about = false;
+                    app.config.ui.about = false;
                 }
 
                 if Button::new("Getting Started Guide")
@@ -72,10 +72,10 @@ pub fn ui(app: &mut App, ctx: &Context) {
         && let Some(pos) = ctx.pointer_interact_pos()
         && !window.unwrap().response.rect.contains(pos)
     {
-        app.config.about = false;
+        app.config.ui.about = false;
     }
 
     if ctx.input(|i| !i.keys_down.is_empty()) {
-        app.config.about = false;
+        app.config.ui.about = false;
     }
 }

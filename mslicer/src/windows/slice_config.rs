@@ -17,7 +17,7 @@ use slicer::post_process::{
 use crate::{
     app::{
         App,
-        config::{Config, DEFAULT_PRINTERS},
+        config::{Config, printers::DEFAULT_PRINTERS},
     },
     ui::{
         components::{collapsing_toggle, grid, vec2_dragger},

@@ -15,7 +15,7 @@ impl Panels {
         let mut dock_state = DockState::new(vec![Tab::Viewport]);
         let surface = dock_state.main_surface_mut();
 
-        if let Some(past_state) = &mut config.panels {
+        if let Some(past_state) = &mut config.ui.panels {
             *surface = mem::take(past_state);
         } else {
             default_dock_layout(surface);

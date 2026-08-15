@@ -5,7 +5,8 @@ use std::{
 
 use egui::{PointerButton, Response, Ui};
 use nalgebra::{Matrix4, Vector2, Vector3};
-use serde::{Deserialize, Serialize};
+
+use crate::app::config::render::Projection;
 
 pub mod spacenav;
 
@@ -19,12 +20,6 @@ pub struct Camera {
     pub angle: Vector2<f32>,
     pub distance: f32,
     pub fov: f32,
-}
-
-#[derive(Copy, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub enum Projection {
-    Perspective,
-    Orthographic,
 }
 
 impl Camera {

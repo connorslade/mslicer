@@ -50,7 +50,7 @@ fn main() -> Result<()> {
     info!("Starting mslicer v{}", env!("CARGO_PKG_VERSION"));
 
     let config = Config::load_or_default(&config_dir);
-    let max_buffer_size = config.max_buffer_size;
+    let max_buffer_size = config.render.max_buffer_size;
 
     eframe::run_native(
         "mslicer",

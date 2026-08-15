@@ -19,7 +19,7 @@ use nalgebra::Vector2;
 use crate::{
     app::{
         App,
-        config::{Config, SlicePreviewCoordinateSpace, SlicePreviewView},
+        config::sliced::{SlicePreviewCoordinateSpace, SlicePreviewView, SlicedConfig},
         slice_operation::{
             GenericSliceData, GenericSliceResult, ISLAND_COLOR, RasterSliceResult, SliceResult,
         },
@@ -68,7 +68,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
 
                 ui.with_layout(Layout::default().with_cross_align(Align::Max), |ui| {
                     ui.horizontal(|ui| {
-                        sidebar_button(&mut app.config, ui);
+                        sidebar_button(&mut app.config.sliced, ui);
 
                         let enabled =
                             app.remote_print.is_initialized() && format == SliceMode::Raster;
@@ -171,9 +171,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
 
             SidePanel::new(Side::Right, "sidebar")
                 .resizable(false)
-                .show_animated_inside(ui, app.config.slice_preview_sidebar, |ui| {
-                    sidebar(result, ui)
-                });
+                .show_animated_inside(ui, app.config.sliced.sidebar, |ui| sidebar(result, ui));
 
             match &mut result.inner {
                 GenericSliceResult::Raster(raster) => {
@@ -200,15 +198,16 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                             }
 
                             ui.separator();
+                            let sliced = &mut app.config.sliced;
                             ComboBox::from_id_salt("coordinate_space")
                                 .selected_text(format!(
                                     "{VECTOR_TWO} {}",
-                                    app.config.slice_preview_mode.name()
+                                    sliced.coordinate_space.name()
                                 ))
                                 .show_ui(ui, |ui| {
                                     for mode in SlicePreviewCoordinateSpace::ALL {
                                         ui.selectable_value(
-                                            &mut app.config.slice_preview_mode,
+                                            &mut sliced.coordinate_space,
                                             *mode,
                                             mode.name(),
                                         );
@@ -216,21 +215,14 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                                 });
 
                             ComboBox::from_id_salt("view")
-                                .selected_text(format!(
-                                    "{ARROW_U_UP_RIGHT} {}",
-                                    app.config.slice_preview_view.name()
-                                ))
+                                .selected_text(format!("{ARROW_U_UP_RIGHT} {}", sliced.view.name()))
                                 .show_ui(ui, |ui| {
                                     for view in SlicePreviewView::ALL {
-                                        ui.selectable_value(
-                                            &mut app.config.slice_preview_view,
-                                            *view,
-                                            view.name(),
-                                        );
+                                        ui.selectable_value(&mut sliced.view, *view, view.name());
                                     }
                                 });
 
-                            DragValue::new(&mut app.config.slice_preview_multisample)
+                            DragValue::new(&mut sliced.multisample)
                                 .range(1..=64)
                                 .suffix("× AA")
                                 .ui(ui);
@@ -251,7 +243,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                         // allows you to select between seeing each pixel as a
                         // square or as the actual shape on the printer.
                         let platform = result.config.platform_resolution;
-                        let pixel_aspect = match app.config.slice_preview_mode {
+                        let pixel_aspect = match app.config.sliced.coordinate_space {
                             SlicePreviewCoordinateSpace::ScreenSpace => 1.0,
                             SlicePreviewCoordinateSpace::WorldSpace => {
                                 let platform_size = (result.config.platform_size.xy())
@@ -261,9 +253,8 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                             }
                         };
 
-                        let flip =
-                            matches!(app.config.slice_preview_view, SlicePreviewView::Screen);
-                        let multisample = app.config.slice_preview_multisample;
+                        let flip = matches!(app.config.sliced.view, SlicePreviewView::Screen);
+                        let multisample = app.config.sliced.multisample;
                         slice_preview(state, ui, raster, platform, pixel_aspect, flip, multisample);
                     });
                 }
@@ -505,15 +496,13 @@ fn save_file(
     )
 }
 
-fn sidebar_button(config: &mut Config, ui: &mut Ui) {
+fn sidebar_button(sliced: &mut SlicedConfig, ui: &mut Ui) {
     let y = ui.spacing().interact_size.y;
     let (rect, mut response) = ui.allocate_exact_size(vec2(y, y), egui::Sense::click());
     response = response.on_hover_text("Toggle sidebar visibility.");
-    config.slice_preview_sidebar ^= response.clicked();
+    sliced.sidebar ^= response.clicked();
 
-    let visuals = ui
-        .style()
-        .interact_selectable(&response, config.slice_preview_sidebar);
+    let visuals = ui.style().interact_selectable(&response, sliced.sidebar);
     ui.painter().rect(
         rect,
         visuals.corner_radius,

@@ -16,8 +16,7 @@ use wgpu::{
 };
 
 use crate::app::App;
-use crate::app::config::RenderStyle;
-use crate::render::camera::Projection;
+use crate::app::config::render::{Projection, RenderStyle};
 use crate::render::workspace::model::{ModelUniforms, PostUniforms};
 use crate::render::{
     Gcx,

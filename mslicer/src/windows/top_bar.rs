@@ -156,7 +156,7 @@ pub fn ui(app: &mut App, ctx: &Context) {
                     ui.set_width(150.0);
 
                     labeled_separator(ui, "Actions");
-                    app.config.about |= ui.button("About mslicer").clicked();
+                    app.config.ui.about |= ui.button("About mslicer").clicked();
                     app.state.queue_reset_ui |= ui.button("Reset Interface").clicked();
 
                     labeled_separator(ui, "Windows");
@@ -188,9 +188,11 @@ fn tasks_button(app: &mut App, ctx: &Context, ui: &mut Ui) {
     let y = ui.spacing().interact_size.y;
     let (rect, mut response) = ui.allocate_exact_size(vec2(y, y), egui::Sense::click());
     response = response.on_hover_text("Monitor the progress of async background tasks.");
-    app.config.tasks ^= response.clicked();
+    app.config.ui.tasks ^= response.clicked();
 
-    let visuals = ui.style().interact_selectable(&response, app.config.tasks);
+    let visuals = ui
+        .style()
+        .interact_selectable(&response, app.config.ui.tasks);
     ui.painter().rect(
         rect,
         visuals.corner_radius,
@@ -220,7 +222,7 @@ fn tasks_button(app: &mut App, ctx: &Context, ui: &mut Ui) {
 
     let anchor = PopupAnchor::Position(response.rect.max + vec2(0.0, 4.0));
     egui::Popup::new(Id::new("tasks"), ctx.clone(), anchor, ui.layer_id())
-        .open(app.config.tasks && app.tasks.any_with_status())
+        .open(app.config.ui.tasks && app.tasks.any_with_status())
         .show(|ui| {
             ui.set_width(300.0);
             Grid::new("slice_config")

@@ -10,7 +10,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     ui.add_space(8.0);
     ui.heading("Overhang Detection");
 
-    let overhang = &mut app.config.overhang_visualization;
+    let overhang = &mut app.config.render.overhangs;
     ui.checkbox(&mut overhang.0, "Visualize Overhanging Faces");
     dragger(ui, "Overhang Angle", &mut overhang.1, |x| x.speed(0.1));
 

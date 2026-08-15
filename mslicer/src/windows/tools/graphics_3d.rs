@@ -12,9 +12,9 @@ use slicer::{
 };
 
 use crate::{
-    app::App,
+    app::{App, config::render::Projection},
     generator_tool,
-    render::camera::{Camera, Projection},
+    render::camera::Camera,
     ui::popup::{Popup, PopupApp},
 };
 

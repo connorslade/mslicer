@@ -5,8 +5,10 @@ use egui_plot::{Line, Plot};
 use tracing::error;
 
 use crate::{
-    app::{App, config::RenderStyle},
-    render::camera::Projection,
+    app::{
+        App,
+        config::render::{Projection, RenderStyle},
+    },
     ui::components::{dragger, vec2_dragger, vec3_dragger},
 };
 
@@ -42,13 +44,13 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
         .show(ui, |ui| {
             ui.label("Theme");
             ComboBox::from_id_salt("theme")
-                .selected_text(match app.config.theme {
+                .selected_text(match app.config.ui.theme {
                     Theme::Dark => "Dark",
                     Theme::Light => "Light",
                 })
                 .show_ui(ui, |ui| {
-                    ui.selectable_value(&mut app.config.theme, Theme::Dark, "Dark");
-                    ui.selectable_value(&mut app.config.theme, Theme::Light, "Light");
+                    ui.selectable_value(&mut app.config.ui.theme, Theme::Dark, "Dark");
+                    ui.selectable_value(&mut app.config.ui.theme, Theme::Light, "Light");
                 });
             ui.end_row();
 
@@ -58,27 +60,31 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                     .on_hover_text("This setting is really only intended for debugging.");
             });
             ComboBox::from_id_salt("render_style")
-                .selected_text(app.config.render_style.name())
+                .selected_text(app.config.render.style.name())
                 .show_ui(ui, |ui| {
                     for style in RenderStyle::ALL {
-                        ui.selectable_value(&mut app.config.render_style, style, style.name());
+                        ui.selectable_value(&mut app.config.render.style, style, style.name());
                     }
                 });
             ui.end_row();
 
             ui.label("Projection");
             ComboBox::from_id_salt("projection")
-                .selected_text(app.config.projection.name())
+                .selected_text(app.config.render.projection.name())
                 .show_ui(ui, |ui| {
                     for camera in Projection::ALL {
-                        ui.selectable_value(&mut app.config.projection, camera, camera.name());
+                        ui.selectable_value(
+                            &mut app.config.render.projection,
+                            camera,
+                            camera.name(),
+                        );
                     }
                 });
             ui.end_row();
 
             ui.label("Grid Size");
             ui.horizontal(|ui| {
-                dragger(ui, "", &mut app.config.grid_size, |x| {
+                dragger(ui, "", &mut app.config.render.grid_size, |x| {
                     x.speed(0.1).range(1.0..=f32::MAX)
                 });
                 ui.take_available_width();
@@ -87,7 +93,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
         });
 
     ui.add_space(8.0);
-    ui.checkbox(&mut app.config.show_normals, "Show Normals");
+    ui.checkbox(&mut app.config.render.normals, "Show Normals");
     ui.add_space(8.0);
 
     ui.collapsing("Camera", |ui| {

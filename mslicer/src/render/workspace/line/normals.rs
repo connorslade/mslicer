@@ -28,7 +28,7 @@ impl NormalsDispatch {
 
 impl LineGenerator for NormalsDispatch {
     fn generate_lines(&mut self, app: &mut App) {
-        let show_normals = app.config.show_normals;
+        let show_normals = app.config.render.normals;
         if !show_normals && show_normals == self.last_normals {
             return;
         }

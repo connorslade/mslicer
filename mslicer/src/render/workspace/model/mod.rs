@@ -101,7 +101,7 @@ impl ModelPipeline {
             .platform_size
             .map(|x| x.get::<Milimeter>());
 
-        let (show_overhang, overhang_angle) = app.config.overhang_visualization;
+        let (show_overhang, overhang_angle) = app.config.render.overhangs;
         let overhang_angle = show_overhang.then_some(overhang_angle);
         let overhang_angle = overhang_angle
             .map(|x| x.to_radians())
@@ -118,7 +118,7 @@ impl ModelPipeline {
                 build_volume,
                 model_color: model.color.to_srgb().into(),
                 camera_position: app.camera.position(app.camera.distance),
-                render_style: app.config.render_style as u32,
+                render_style: app.config.render.style as u32,
                 overhang_angle,
             };
             self.bind_groups.push(self.bind_group(gcx, uniforms));

@@ -12,7 +12,7 @@ use tracing::{info, warn};
 
 use crate::{
     app::{
-        config::{Config, DEFAULT_PRINTERS},
+        config::{Config, printers::selected_printer},
         fps_tracker::FpsTracker,
         history::History,
         slice_operation::SliceOperation,
@@ -28,15 +28,11 @@ use crate::{
         drag_and_drop,
         panels::Panels,
         popup::{Popup, PopupIcon, PopupManager},
-        state::{SelectedPrinter, UiState, WorkspaceHover},
+        state::{UiState, WorkspaceHover},
     },
     windows::{self, Tab},
 };
-use common::{
-    progress::CombinedProgress,
-    slice::{SliceConfig, SliceMode},
-    units::Milimeter,
-};
+use common::{progress::CombinedProgress, slice::SliceMode, units::Milimeter};
 use slicer::slicer::{Slicer, SlicerModel};
 
 pub mod config;
@@ -125,7 +121,7 @@ impl App {
     }
 
     pub fn hovered_ray(&self) -> Option<(Vector3<f32>, Vector3<f32>)> {
-        let projection = self.config.projection;
+        let projection = self.config.render.projection;
         let workspace @ WorkspaceHover { aspect, uv, .. } = &self.state.workspace;
 
         workspace
@@ -237,7 +233,7 @@ impl eframe::App for App {
         // only update the visuals if the theme has changed
         ctx.set_visuals(Visuals {
             collapsing_header_frame: true,
-            ..match self.config.theme {
+            ..match self.config.ui.theme {
                 Theme::Dark => Visuals::dark(),
                 Theme::Light => Visuals::light(),
             }
@@ -253,7 +249,7 @@ impl eframe::App for App {
 impl Drop for App {
     fn drop(&mut self) {
         // todo: save all surfaces (except slice operation?)
-        self.config.panels = Some(self.panels.dock_state.main_surface().clone());
+        self.config.ui.panels = Some(self.panels.dock_state.main_surface().clone());
         if let Err(err) = self.config.save(&self.config_dir) {
             warn!("Failed to save config: {}", err);
         } else {
@@ -267,26 +263,4 @@ pub fn is_slicing(slice_operation: &Option<SliceOperation>) -> bool {
         .as_ref()
         .map(|x| !x.progress.complete())
         .unwrap_or_default()
-}
-
-fn selected_printer(config: &Config, slice_config: &SliceConfig) -> SelectedPrinter {
-    for (i, printer) in config.printers.iter().enumerate() {
-        if printer.resolution == slice_config.platform_resolution
-            && printer.size == slice_config.platform_size
-        {
-            return SelectedPrinter::Custom(i);
-        }
-    }
-
-    for (i, brand) in DEFAULT_PRINTERS.iter().enumerate() {
-        for (j, printer) in brand.1.iter().enumerate() {
-            if printer.resolution == slice_config.platform_resolution
-                && printer.size == slice_config.platform_size
-            {
-                return SelectedPrinter::Preset(i, j);
-            }
-        }
-    }
-
-    SelectedPrinter::Project
 }

@@ -30,8 +30,8 @@ impl BuildPlateDispatch {
 impl LineGenerator for BuildPlateDispatch {
     fn generate_lines(&mut self, app: &mut App) {
         let platform_size = app.project.slice_config.platform_size;
-        let grid_size = app.config.grid_size;
-        let theme = app.config.theme;
+        let grid_size = app.config.render.grid_size;
+        let theme = app.config.ui.theme;
 
         if platform_size != self.last_bed_size
             || grid_size != self.last_grid_size
