@@ -6,8 +6,8 @@ use common::{
 };
 use const_format::concatcp;
 use egui::{
-    CollapsingHeader, Color32, Context, DragValue, Label, Popup, Response, Sense, TextEdit, Ui,
-    UiBuilder, Widget, text::CCursorRange, vec2,
+    CollapsingHeader, Color32, ComboBox, Context, DragValue, Label, Popup, Response, Sense,
+    TextEdit, Ui, UiBuilder, Widget, text::CCursorRange, vec2,
 };
 use egui_phosphor::regular::{
     ARROW_LINE_DOWN, COPY, CURSOR_TEXT, DICE_THREE, EYE, EYE_SLASH, FOLDER_DASHED, LINK_BREAK,
@@ -17,7 +17,10 @@ use nalgebra::Vector3;
 
 use crate::{
     app::{App, history::ModelAction},
-    project::{Collection, RenameState, model::MeshWarnings},
+    project::{
+        Collection, RenameState,
+        model::{MeshUnits, MeshWarnings},
+    },
     task::SplitBodies,
     ui::components::{
         being_edited, grid, history_tracked_model, vec3_dragger, vec3_dragger_proportional,
@@ -195,7 +198,9 @@ pub fn model_properties(app: &mut App, ui: &mut Ui, ctx: &Context, action: &mut 
                 ui.label("Scale");
 
                 ui.horizontal(|ui| {
-                    let mut scale = model.mesh.scale();
+                    let factor = model.units.conversion();
+                    let mut scale = model.mesh.scale() / factor;
+
                     let editing = if model.ui.locked_scale {
                         vec3_dragger_proportional(ui, scale.as_mut(), |x| {
                             x.speed(0.01).range(0.001..=f32::MAX)
@@ -209,6 +214,8 @@ pub fn model_properties(app: &mut App, ui: &mut Ui, ctx: &Context, action: &mut 
                         (editing, ui, &mut app.history),
                         (id, || ModelAction::Scale(model.mesh.scale())),
                     );
+
+                    scale *= factor;
                     (model.mesh.scale() != scale).then(|| model.set_scale(platform, scale));
 
                     model.ui.locked_scale ^= ui
@@ -248,16 +255,28 @@ pub fn model_properties(app: &mut App, ui: &mut Ui, ctx: &Context, action: &mut 
 
     ui.collapsing("Miscellaneous", |ui| {
         grid("model_props_grid").show(ui, |ui| {
-            ui.label("Faces");
+            ui.label("Mesh Units");
             ui.horizontal(|ui| {
-                ui.label(separate_thousands(model.mesh.face_count()));
-                ui.take_available_width();
-            });
-            ui.end_row();
+                let last_factor = model.units.conversion();
+                ComboBox::new("units", "")
+                    .selected_text(model.units.name())
+                    .show_ui(ui, |ui| {
+                        for unit in MeshUnits::ALL {
+                            ui.selectable_value(&mut model.units, unit, unit.name());
+                        }
+                    });
 
-            ui.label("Volume");
-            let volume = model.volume().convert::<Centimeter>().raw();
-            ui.label(format!("{volume:.2} cm³"));
+                if let MeshUnits::Custom(factor) = &mut model.units {
+                    DragValue::new(factor).speed(0.1).ui(ui);
+                }
+
+                let factor = model.units.conversion();
+                if factor != last_factor {
+                    let scale = model.mesh.scale() * factor / last_factor;
+                    model.set_scale(&app.project.slice_config.platform_size, scale);
+                }
+            });
+
             ui.end_row();
 
             ui.label("Exposure");
@@ -276,6 +295,18 @@ pub fn model_properties(app: &mut App, ui: &mut Ui, ctx: &Context, action: &mut 
             );
             editing.then(|| model.exposure = (value * 2.55).round() as u8);
 
+            ui.end_row();
+
+            ui.label("Faces");
+            ui.horizontal(|ui| {
+                ui.label(separate_thousands(model.mesh.face_count()));
+                ui.take_available_width();
+            });
+            ui.end_row();
+
+            ui.label("Volume");
+            let volume = model.volume().convert::<Centimeter>().raw();
+            ui.label(format!("{volume:.2} cm³"));
             ui.end_row();
         });
     });

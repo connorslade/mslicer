@@ -16,8 +16,13 @@
 - Allow loading previously sliced files for inspection
 - Convert sliced files back into meshes
 - Rename 'Slice Operation' window to 'Sliced'
-- Allow changing exposure settings after slicing or to previously sliced files
+- Sliced window sidebar
+  - Allow changing exposure settings after slicing or to previously sliced files
+  - View preview images
 - Update config format
+- Ambient occlusion in renderer
+- Optional automatic update checking
+- Allow selecting what units your mesh uses
 
 ## v0.8.0 &mdash; June 30th, 2026
 

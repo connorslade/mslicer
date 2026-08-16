@@ -11,7 +11,7 @@ const BACKGROUND_TINT: Color32 = Color32::from_rgba_premultiplied(0, 0, 0, 100);
 
 const DESCRIPTION: &str = "Welcome to mslicer — a high-performance, open-source slicer for MSLA resin printers, created by Connor Slade.";
 const UPDATE_CHECK_INFO: &str =
-    "You can customize the update check frequency in Workspace panel later.";
+    "You can disable or customize the check frequency in Workspace panel later.";
 
 const GITHUB_LINK: &str = "https://github.com/connorslade/mslicer";
 const HOMEPAGE_LINK: &str = "https://mslicer.com";
