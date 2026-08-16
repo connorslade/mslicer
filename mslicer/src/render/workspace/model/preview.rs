@@ -4,7 +4,6 @@ use std::f32::consts::PI;
 use std::mem;
 
 use egui_wgpu::RenderState;
-use encase::UniformBuffer;
 use image::{Rgba, RgbaImage};
 use nalgebra::{Vector2, Vector3};
 use parking_lot::MappedRwLockWriteGuard;
@@ -17,7 +16,7 @@ use wgpu::{
 
 use crate::app::App;
 use crate::app::config::render::{Projection, RenderStyle};
-use crate::render::workspace::model::{ModelUniforms, PostUniforms};
+use crate::render::workspace::model::ModelUniforms;
 use crate::render::{
     Gcx,
     camera::Camera,
@@ -64,16 +63,6 @@ impl ModelPipeline {
             };
             self.bind_groups.push(self.bind_group(gcx, uniforms));
         }
-
-        let post_uniform = PostUniforms {
-            view: view_projection,
-            inv_view: view_projection.try_inverse().unwrap(),
-        };
-
-        let mut buffer = UniformBuffer::new(Vec::new());
-        buffer.write(&post_uniform).unwrap();
-        gcx.queue
-            .write_buffer(&self.post_uniform, 0, &buffer.into_inner());
     }
 }
 

@@ -1,12 +1,14 @@
-@group(0) @binding(0) var<uniform> context: Context;
+@group(0) @binding(0) var<uniform> ctx: Context;
 @group(0) @binding(1) var texture: texture_2d<f32>;
-@group(0) @binding(2) var normal: texture_multisampled_2d<f32>;
+@group(0) @binding(2) var world: texture_multisampled_2d<f32>;
 @group(0) @binding(3) var depth: texture_depth_multisampled_2d;
 @group(0) @binding(4) var texture_sampler: sampler;
 
 struct Context {
-    view: mat4x4f,
-    inv_view: mat4x4f,
+    view: mat4x4f, // world space to clip space
+    samples: u32,
+    random: u32,
+    range: f32,
 }
 
 struct VertexOutput {
@@ -27,28 +29,36 @@ fn vert(@builtin(vertex_index) index: u32) -> VertexOutput {
 
 @fragment
 fn frag(in: VertexOutput) -> FragmentOutput {
-    let uv = vec2(0.0, 1.0) + (in.position * 0.5 + vec2(0.5)) * vec2f(1.0, -1.0);
-    // let world_normal = sample_normal(uv).xyz;
-
-    let depth = sample_depth(uv);
+    let uv = clip_to_uv(in.position);
     let color = sample_color(uv);
+    let depth = sample_depth(uv);
 
-    // todo: post processing idk
+    if ctx.samples == 0 { return FragmentOutput(vec4(color.rgb, color.w), depth); }
 
-    return FragmentOutput(color, depth);
+    let world_pos = sample_world(uv);
+    let world_normal = screen_normal(world_pos);
+
+    seed = u32(abs(i32(world_pos.x * 423123.0) + i32(world_pos.y * 1230.0) + i32(world_pos.z * 12308.0))) + ctx.random;
+
+    var occluded = 0u;
+    for (var i = 0u; i < ctx.samples; i++) {
+        let offset = vec3(rand(), rand(), rand()) * 2.0 - vec3(1.0);
+        let pos = world_pos + offset * ctx.range;
+
+        let clip = ctx.view * vec4(pos, 1.0);
+        let uv = clip_to_uv(clip.xy / clip.w);
+
+        occluded += u32(sample_depth(uv) < depth);
+    }
+
+    let ao = (1.0 - f32(occluded) / f32(ctx.samples - 1)) * 1.5;
+    return FragmentOutput(vec4(color.rgb * ao, color.w), depth);
 }
 
-fn sample_depth(uv: vec2f) -> f32 {
-    let coord = vec2i(uv * vec2f(textureDimensions(depth)));
-    return textureLoad(depth, coord, 0);
+fn clip_to_uv(clip: vec2f) -> vec2f {
+    return vec2(0.0, 1.0) + (clip * 0.5 + vec2(0.5)) * vec2f(1.0, -1.0);
 }
 
-fn sample_normal(uv: vec2f) -> vec4f {
-    let coord = vec2i(uv * vec2f(textureDimensions(normal)));
-    return textureLoad(normal, coord, 0);
-}
-
-fn sample_color(uv: vec2f) -> vec4f {
-    let coord = vec2i(uv * vec2f(textureDimensions(texture)));
-    return textureLoad(texture, coord, 0);
-}
+fn sample_depth(uv: vec2f) -> f32   { return textureLoad(depth,   vec2i(uv * vec2f(textureDimensions(depth)))  , 0);     }
+fn sample_world(uv: vec2f) -> vec3f { return textureLoad(world,   vec2i(uv * vec2f(textureDimensions(world)))  , 0).xyz; }
+fn sample_color(uv: vec2f) -> vec4f { return textureLoad(texture, vec2i(uv * vec2f(textureDimensions(texture))), 0);     }

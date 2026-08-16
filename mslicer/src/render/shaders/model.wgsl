@@ -30,16 +30,16 @@ struct VertexOutput {
 
 struct FragmentOutput {
     @location(0) color: vec4f,
-    @location(1) normal: vec4f,
+    @location(1) world: vec4f,
 }
 
 @vertex
 fn vert(in: VertexInput) -> VertexOutput {
-    var out: VertexOutput;
-    out.position = context.transform * in.position;
-    out.world_position = (context.model_transform * in.position).xyz;
-    out.vertex_index = in.index;
-    return out;
+    return VertexOutput(
+        context.transform * in.position,
+        (context.model_transform * in.position).xyz,
+        in.index
+    );
 }
 
 @fragment
@@ -48,7 +48,10 @@ fn frag(
    in: VertexOutput
 ) -> FragmentOutput {
     let normal = screen_normal(in.world_position);
-    return FragmentOutput(render(is_front, in, normal), vec4f(normal, 0.0));
+    return FragmentOutput(
+        render(is_front, in, normal),
+        vec4f(in.world_position, 0.0)
+    );
 }
 
 fn render(is_front: bool, in: VertexOutput, normal: vec3f) -> vec4f {

@@ -37,11 +37,13 @@ pub fn pipeline(device: &Device, texture: TextureFormat) -> (RenderPipeline, Bin
             module: &shader,
             entry_point: None,
             targets: &[
+                // target
                 Some(ColorTargetState {
                     format: texture,
                     blend: Some(BlendState::ALPHA_BLENDING),
                     write_mask: ColorWrites::all(),
                 }),
+                // world space
                 Some(ColorTargetState {
                     format: TextureFormat::Rgba16Float,
                     blend: Some(BlendState::REPLACE),

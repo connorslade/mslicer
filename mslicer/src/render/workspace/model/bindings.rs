@@ -56,28 +56,6 @@ impl ModelPipeline {
             view_formats: &[],
         });
 
-        let depth_target = gcx.device.create_texture(&TextureDescriptor {
-            label: None,
-            size: extent,
-            mip_level_count: 1,
-            sample_count: 4,
-            dimension: TextureDimension::D2,
-            format: TextureFormat::Depth32Float,
-            usage: TextureUsages::RENDER_ATTACHMENT | TextureUsages::TEXTURE_BINDING,
-            view_formats: &[],
-        });
-
-        let normal_target = gcx.device.create_texture(&TextureDescriptor {
-            label: None,
-            size: extent,
-            mip_level_count: 1,
-            sample_count: 4,
-            dimension: TextureDimension::D2,
-            format: TextureFormat::Rgba16Float,
-            usage: TextureUsages::RENDER_ATTACHMENT | TextureUsages::TEXTURE_BINDING,
-            view_formats: &[],
-        });
-
         let resolved_target = gcx.device.create_texture(&TextureDescriptor {
             label: None,
             size: extent,
@@ -91,10 +69,32 @@ impl ModelPipeline {
             view_formats: &[],
         });
 
+        let depth_target = gcx.device.create_texture(&TextureDescriptor {
+            label: None,
+            size: extent,
+            mip_level_count: 1,
+            sample_count: 4,
+            dimension: TextureDimension::D2,
+            format: TextureFormat::Depth32Float,
+            usage: TextureUsages::RENDER_ATTACHMENT | TextureUsages::TEXTURE_BINDING,
+            view_formats: &[],
+        });
+
+        let world_target = gcx.device.create_texture(&TextureDescriptor {
+            label: None,
+            size: extent,
+            mip_level_count: 1,
+            sample_count: 4,
+            dimension: TextureDimension::D2,
+            format: TextureFormat::Rgba16Float,
+            usage: TextureUsages::RENDER_ATTACHMENT | TextureUsages::TEXTURE_BINDING,
+            view_formats: &[],
+        });
+
         let target_view = target.create_view(&Default::default());
-        let depth_target_view = depth_target.create_view(&Default::default());
-        let normal_target_view = normal_target.create_view(&Default::default());
         let resolved_target_view = resolved_target.create_view(&Default::default());
+        let depth_target_view = depth_target.create_view(&Default::default());
+        let world_target_view = world_target.create_view(&Default::default());
 
         let post_bind_group = gcx.device.create_bind_group(&BindGroupDescriptor {
             label: None,
@@ -110,7 +110,7 @@ impl ModelPipeline {
                 },
                 BindGroupEntry {
                     binding: 2,
-                    resource: BindingResource::TextureView(&normal_target_view),
+                    resource: BindingResource::TextureView(&world_target_view),
                 },
                 BindGroupEntry {
                     binding: 3,
@@ -125,9 +125,9 @@ impl ModelPipeline {
 
         self.multi_stage = Some(MultiStage {
             target: target_view,
-            depth_target: depth_target_view,
-            normal_target: normal_target_view,
             resolved_target: resolved_target_view,
+            depth_target: depth_target_view,
+            world_target: world_target_view,
             post_bind_group,
         });
     }

@@ -85,6 +85,15 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                 });
             ui.end_row();
 
+            ui.label("Ambient Occlusion");
+            ui.horizontal(|ui| {
+                DragValue::new(&mut app.config.render.ambient_occlusion.samples)
+                    .suffix("×")
+                    .ui(ui);
+                DragValue::new(&mut app.config.render.ambient_occlusion.range).ui(ui);
+            });
+            ui.end_row();
+
             ui.label("Grid Size");
             ui.horizontal(|ui| {
                 dragger(ui, "", &mut app.config.render.grid_size, |x| {

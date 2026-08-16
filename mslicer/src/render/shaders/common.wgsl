@@ -25,7 +25,3 @@ fn rand() -> f32 {
     let f = f32(seed >> 9u) / f32(1u << 23u);
     return fract(f);
 }
-
-fn rand_full() -> f32 {
-    return rand() * 2.0 - 1.0;
-}

@@ -2,6 +2,7 @@ use common::units::Milimeter;
 use egui_wgpu::ScreenDescriptor;
 use encase::{ShaderSize, ShaderType, UniformBuffer};
 use nalgebra::{Matrix4, Vector3};
+use rand::random;
 use wgpu::{
     BindGroup, BindGroupLayout, Buffer, BufferDescriptor, BufferUsages, Color, CommandEncoder,
     Device, IndexFormat, LoadOp, Operations, RenderPass, RenderPassColorAttachment,
@@ -36,9 +37,9 @@ pub struct ModelPipeline {
 
 struct MultiStage {
     target: TextureView,
-    depth_target: TextureView,
-    normal_target: TextureView,
     resolved_target: TextureView,
+    depth_target: TextureView,
+    world_target: TextureView,
 
     post_bind_group: BindGroup,
 }
@@ -57,7 +58,9 @@ struct ModelUniforms {
 #[derive(ShaderType)]
 struct PostUniforms {
     view: Matrix4<f32>,
-    inv_view: Matrix4<f32>,
+    samples: u32,
+    random: u32,
+    range: f32,
 }
 
 impl ModelPipeline {
@@ -124,9 +127,12 @@ impl ModelPipeline {
             self.bind_groups.push(self.bind_group(gcx, uniforms));
         }
 
+        let ao = &app.config.render.ambient_occlusion;
         let post_uniform = PostUniforms {
             view: view_projection,
-            inv_view: view_projection.try_inverse().unwrap(),
+            random: random(),
+            samples: ao.samples,
+            range: ao.range,
         };
 
         let mut buffer = UniformBuffer::new(Vec::new());
@@ -150,7 +156,7 @@ impl ModelPipeline {
                     depth_slice: None,
                 }),
                 Some(RenderPassColorAttachment {
-                    view: &multi.normal_target,
+                    view: &multi.world_target,
                     resolve_target: None,
                     ops: Operations {
                         load: LoadOp::Clear(Color::TRANSPARENT),
