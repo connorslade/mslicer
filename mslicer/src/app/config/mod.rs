@@ -5,26 +5,24 @@ use std::{
 
 use anyhow::Result;
 use common::slice::SliceConfig;
-use egui::Theme;
-use egui_dock::Tree;
+
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use tracing::{info, warn};
 
-use crate::{
-    app::config::{
-        peripherals::{RemotePrintConfig, SpacenavConfig},
-        printers::PrinterProperties,
-        render::RenderConfig,
-        sliced::SlicedConfig,
-    },
-    windows::Tab,
+use crate::app::config::{
+    peripherals::{RemotePrintConfig, SpacenavConfig},
+    printers::PrinterProperties,
+    render::RenderConfig,
+    sliced::SlicedConfig,
+    ui::UiConfig,
 };
 
 pub mod peripherals;
 pub mod printers;
 pub mod render;
 pub mod sliced;
+pub mod ui;
 
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(default)]
@@ -38,15 +36,6 @@ pub struct Config {
 
     pub recent_projects: Vec<PathBuf>,
     pub printers: Vec<PrinterProperties>,
-}
-
-#[derive(Clone, Serialize, Deserialize)]
-#[serde(default)]
-pub struct UiConfig {
-    pub theme: Theme,
-    pub panels: Option<Tree<Tab>>,
-    pub about: bool,
-    pub tasks: bool,
 }
 
 impl Config {
@@ -110,17 +99,6 @@ impl Default for Config {
                 [11_520, 5_120],
                 [218.88, 122.904, 260.0],
             )],
-        }
-    }
-}
-
-impl Default for UiConfig {
-    fn default() -> Self {
-        Self {
-            theme: Theme::Dark,
-            panels: None,
-            about: true,
-            tasks: true,
         }
     }
 }

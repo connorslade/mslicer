@@ -50,6 +50,21 @@ impl<T: Send + 'static> TaskThread<T> {
             TaskResult::Pending
         }
     }
+
+    /// Polls the task thread without any special handing of errors, they are
+    /// just ignored.
+    pub fn poll_ignore_err(&mut self) -> TaskResult<T> {
+        let handle = self.handle.as_ref().unwrap();
+        if handle.is_finished() {
+            let handle = self.handle.take().unwrap();
+            match handle.join() {
+                Ok(value) => TaskResult::Completed(value),
+                Err(_) => TaskResult::Failed,
+            }
+        } else {
+            TaskResult::Pending
+        }
+    }
 }
 
 impl<T> TaskResult<T> {

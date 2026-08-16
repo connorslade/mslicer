@@ -30,7 +30,7 @@ anyhow = "1.0.99"
 bitflags = "2.9.4"
 bytemuck = "1.23.2"
 cbc = "0.1.2"
-chrono = "0.4.42"
+chrono = { version = "0.4.42", features = ["serde"] }
 clap = { version = "4.5.47", features = ["derive"] }
 clone-macro = "1.0.0"
 concat-idents = "1.1.5"

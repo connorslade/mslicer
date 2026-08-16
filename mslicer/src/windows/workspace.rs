@@ -7,7 +7,10 @@ use tracing::error;
 use crate::{
     app::{
         App,
-        config::render::{Projection, RenderStyle},
+        config::{
+            render::{Projection, RenderStyle},
+            ui::UpdateCheckFrequency,
+        },
     },
     ui::components::{dragger, vec2_dragger, vec3_dragger},
 };
@@ -90,6 +93,15 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                 ui.take_available_width();
             });
             ui.end_row();
+
+            ui.label("Check for Updates");
+            ComboBox::from_id_salt("update_frequency")
+                .selected_text(app.config.ui.update_check.name())
+                .show_ui(ui, |ui| {
+                    for freq in UpdateCheckFrequency::ALL {
+                        ui.selectable_value(&mut app.config.ui.update_check, freq, freq.name());
+                    }
+                });
         });
 
     ui.add_space(8.0);

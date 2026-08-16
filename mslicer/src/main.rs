@@ -11,6 +11,7 @@ use tracing_subscriber::{filter, fmt::layer, layer::SubscriberExt, util::Subscri
 use wgpu::{DeviceDescriptor, Features, Limits, TextureFormat};
 
 const DEPTH_TEXTURE_FORMAT: TextureFormat = TextureFormat::Depth24PlusStencil8;
+const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 mod app;
 mod project;
@@ -20,6 +21,8 @@ mod ui;
 mod util;
 mod windows;
 use app::{App, config::Config};
+
+use crate::task::update_check_if_scheduled;
 
 fn main() -> Result<()> {
     // Don't print panics on threads that are handled by the task system.
@@ -47,7 +50,7 @@ fn main() -> Result<()> {
         .with(collector.clone())
         .with(file_layer)
         .init();
-    info!("Starting mslicer v{}", env!("CARGO_PKG_VERSION"));
+    info!("Starting mslicer v{VERSION}");
 
     let config = Config::load_or_default(&config_dir);
     let max_buffer_size = config.render.max_buffer_size;
@@ -89,7 +92,8 @@ fn main() -> Result<()> {
 
             egui_extras::install_image_loaders(&cc.egui_ctx);
 
-            let app = App::new(render::init_wgpu(cc), config_dir, config, collector);
+            let mut app = App::new(render::init_wgpu(cc), config_dir, config, collector);
+            update_check_if_scheduled(&mut app);
             Ok(Box::new(app))
         }),
     )

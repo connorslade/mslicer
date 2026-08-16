@@ -23,6 +23,7 @@ mod remote_print;
 mod save_result;
 mod split_bodies;
 mod thread;
+mod update_check;
 mod webhook;
 pub use self::{
     acceleration_structures::BuildAccelerationStructures,
@@ -37,6 +38,7 @@ pub use self::{
     remote_print::{PrinterConnect, PrinterScan},
     save_result::SaveResult,
     split_bodies::SplitBodies,
+    update_check::update_check_if_scheduled,
     webhook::Webhook,
 };
 

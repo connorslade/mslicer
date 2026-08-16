@@ -2,12 +2,16 @@ use egui::{
     Button, Color32, Context, Id, Image, ImageSource, LayerId, Order, Widget, Window,
     include_image, vec2,
 };
+use egui_phosphor::regular::INFO;
 
-use crate::app::App;
+use crate::{VERSION, app::App};
 
-const DESCRIPTION: &str = "Welcome to mslicer — a high-performance, open-source slicer for MSLA resin printers, created by Connor Slade.";
 const LOGO: ImageSource = include_image!("../../../dist/icon.png");
 const BACKGROUND_TINT: Color32 = Color32::from_rgba_premultiplied(0, 0, 0, 100);
+
+const DESCRIPTION: &str = "Welcome to mslicer — a high-performance, open-source slicer for MSLA resin printers, created by Connor Slade.";
+const UPDATE_CHECK_INFO: &str =
+    "You can customize the update check frequency in Workspace panel later.";
 
 const GITHUB_LINK: &str = "https://github.com/connorslade/mslicer";
 const HOMEPAGE_LINK: &str = "https://mslicer.com";
@@ -30,7 +34,7 @@ pub fn ui(app: &mut App, ctx: &Context) {
         .show(ctx, |ui| {
             ui.vertical_centered(|ui| {
                 Image::new(LOGO).max_width(80.0).ui(ui);
-                ui.heading(concat!("mslicer v", env!("CARGO_PKG_VERSION")));
+                ui.heading(format!("mslicer v{VERSION}"));
             });
             ui.separator();
 
@@ -51,10 +55,16 @@ pub fn ui(app: &mut App, ctx: &Context) {
 
             ui.add_space(5.0);
             ui.horizontal(|ui| {
+                ui.checkbox(&mut true, "Check for Updates on Startup");
+                ui.label(INFO).on_hover_text(UPDATE_CHECK_INFO);
+            });
+
+            ui.add_space(5.0);
+            ui.horizontal(|ui| {
                 let spacing = ui.style().spacing.item_spacing.x;
                 let size = vec2(ui.available_size().x - spacing, 0.0) / 2.0;
 
-                if Button::new("Close").min_size(size).ui(ui).clicked() {
+                if Button::new("Continue").min_size(size).ui(ui).clicked() {
                     app.config.ui.about = false;
                 }
 
@@ -64,6 +74,7 @@ pub fn ui(app: &mut App, ctx: &Context) {
                     .clicked()
                 {
                     let _ = open::that_detached(GETTING_STARTED_LINK);
+                    app.config.ui.about = false;
                 }
             });
         });
