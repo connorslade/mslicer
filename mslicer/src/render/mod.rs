@@ -9,6 +9,7 @@ use wgpu::{
 };
 
 use crate::render::{
+    interface::basis::BasisPipeline,
     slice_preview::{SlicePreviewPipeline, SlicePreviewRenderResources},
     workspace::{
         WorkspaceRenderResources, line::LineDispatch, model::ModelPipeline, point::PointDispatch,
@@ -18,6 +19,7 @@ use crate::render::{
 
 pub mod camera;
 mod consts;
+pub mod interface;
 pub mod slice_preview;
 pub mod util;
 pub mod workspace;
@@ -59,6 +61,7 @@ pub fn init_wgpu(cc: &CreationContext) -> RenderState {
     resources.insert(SlicePreviewRenderResources {
         slice_preview_pipeline: SlicePreviewPipeline::new(device, texture),
     });
+    resources.insert(BasisPipeline::new(device, texture));
 
     render_state.clone()
 }

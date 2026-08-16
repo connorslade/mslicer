@@ -15,6 +15,7 @@ pub struct RenderConfig {
     pub grid_size: f32,
     pub normals: bool,
     pub overhangs: (bool, f32),
+    pub basis_size: f32,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -62,6 +63,7 @@ impl Default for RenderConfig {
             grid_size: 12.16,
             overhangs: (false, 30.0),
             normals: false,
+            basis_size: 100.0,
         }
     }
 }

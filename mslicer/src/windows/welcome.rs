@@ -10,7 +10,7 @@ const LOGO: ImageSource = include_image!("../../../dist/icon.png");
 const BACKGROUND_TINT: Color32 = Color32::from_rgba_premultiplied(0, 0, 0, 100);
 
 const DESCRIPTION: &str = "Welcome to mslicer — a high-performance, open-source slicer for MSLA resin printers, created by Connor Slade.";
-const UPDATE_CHECK_INFO: &str =
+const UPDATE_CHECK_TIP: &str =
     "You can disable or customize the check frequency in Workspace panel later.";
 
 const GITHUB_LINK: &str = "https://github.com/connorslade/mslicer";
@@ -56,7 +56,7 @@ pub fn ui(app: &mut App, ctx: &Context) {
             ui.add_space(5.0);
             ui.horizontal(|ui| {
                 ui.checkbox(&mut true, "Check for Updates on Startup");
-                ui.label(INFO).on_hover_text(UPDATE_CHECK_INFO);
+                ui.label(INFO).on_hover_text(UPDATE_CHECK_TIP);
             });
 
             ui.add_space(5.0);

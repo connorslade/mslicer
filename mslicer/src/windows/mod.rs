@@ -1,13 +1,18 @@
 use std::mem;
 
-use egui::{CentralPanel, Color32, Context, Frame, Id, Sense, Theme, Ui, WidgetText};
+use egui::{
+    CentralPanel, Color32, Context, Frame, Id, Painter, Rect, Sense, Stroke, StrokeKind, Theme, Ui,
+    WidgetText, pos2, vec2,
+};
 use egui_dock::{DockArea, TabViewer};
 use egui_wgpu::Callback;
 use nalgebra::Matrix4;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    app::App, render::workspace::WorkspaceRenderCallback, ui::state::WorkspaceHover,
+    app::App,
+    render::{interface::basis::BasisRenderCallback, workspace::WorkspaceRenderCallback},
+    ui::state::WorkspaceHover,
     windows::supports::manual_support_placement,
 };
 
@@ -152,9 +157,39 @@ fn viewport(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     };
     painter.rect_filled(rect, 0.0, color);
 
-    let callback = app.get_workspace_render_callback();
-    let callback = Callback::new_paint_callback(rect, callback);
-    painter.add(callback);
+    painter.add(Callback::new_paint_callback(
+        rect,
+        app.get_workspace_render_callback(),
+    ));
+
+    paint_basis_vectors(painter, app, &rect);
+}
+
+fn paint_basis_vectors(painter: &Painter, app: &mut App, rect: &Rect) {
+    let size = app.config.render.basis_size;
+    if size == 0.0 {
+        return;
+    }
+
+    let pad = 4.0;
+
+    let color_bg = Color32::from_rgba_unmultiplied(0, 0, 0, 90);
+    let color_edge = Color32::from_rgba_unmultiplied(0, 0, 0, 180);
+    let stroke = Stroke::new(2.0, color_edge);
+
+    let rect = Rect::from_min_size(
+        pos2(rect.max.x - size - pad, rect.min.y + pad),
+        vec2(size, size),
+    );
+    painter.rect_filled(rect, size / 2.0, color_bg);
+    painter.rect_stroke(rect, size / 2.0, stroke, StrokeKind::Outside);
+
+    painter.add(Callback::new_paint_callback(
+        rect.expand(-pad),
+        BasisRenderCallback {
+            camera: app.camera.clone(),
+        },
+    ));
 }
 
 impl App {

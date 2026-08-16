@@ -10,8 +10,8 @@ use egui::{
     TextEdit, Ui, UiBuilder, Widget, text::CCursorRange, vec2,
 };
 use egui_phosphor::regular::{
-    ARROW_LINE_DOWN, COPY, CURSOR_TEXT, DICE_THREE, EYE, EYE_SLASH, FOLDER_DASHED, LINK_BREAK,
-    LINK_SIMPLE, SUBTRACT_SQUARE, TRASH, WARNING,
+    ARROW_LINE_DOWN, COPY, CURSOR_TEXT, DICE_THREE, EYE, EYE_SLASH, FOLDER_DASHED, INFO,
+    LINK_BREAK, LINK_SIMPLE, SUBTRACT_SQUARE, TRASH, WARNING,
 };
 use nalgebra::Vector3;
 
@@ -33,6 +33,7 @@ use crate::{
 
 const WARN_NON_MANIFOLD: &str = "This mesh is non-manifold, it may produce unexpected results when sliced.\nConsider running it through a mesh repair tool.";
 const WARN_OUT_OF_BOUNDS: &str = "This mesh extends beyond the printer volume and will be cut off.";
+const CUSTOM_UNIT_TIP: &str = "To use a custom unit, input the conversion factor from the input unit to Millimeters. For example if your mesh was defined in feet (for some reason) you would use 30.48.";
 
 pub fn model_entry(
     app: &mut App,
@@ -268,6 +269,7 @@ pub fn model_properties(app: &mut App, ui: &mut Ui, ctx: &Context, action: &mut 
 
                 if let MeshUnits::Custom(factor) = &mut model.units {
                     DragValue::new(factor).speed(0.1).ui(ui);
+                    ui.label(INFO).on_hover_text(CUSTOM_UNIT_TIP);
                 }
 
                 let factor = model.units.conversion();

@@ -11,8 +11,8 @@ use crate::app::config::render::Projection;
 pub mod spacenav;
 
 const EPSILON: f32 = 1e-5;
-const NEAR: f32 = 0.1;
-const FAR: f32 = 10_000.0;
+pub const NEAR: f32 = 0.1;
+pub const FAR: f32 = 10_000.0;
 
 #[derive(Clone, Debug)]
 pub struct Camera {

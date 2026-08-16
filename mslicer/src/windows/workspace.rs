@@ -15,6 +15,7 @@ use crate::{
     ui::components::{dragger, vec2_dragger, vec3_dragger},
 };
 
+const BASIS_TIP: &str = "Set size to 0px to disable.";
 const SPACENAV_CONNECTED: &str = "Connected to Spacenav.";
 const SPACENAV_UNCONNECTED: &str =
     "Failed to connect to Spacenav. Make sure the daemon is running and reconnect.";
@@ -101,6 +102,16 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                 });
                 ui.take_available_width();
             });
+            ui.end_row();
+
+            ui.horizontal(|ui| {
+                ui.label("Basis Size");
+                ui.label(INFO).on_hover_text(BASIS_TIP);
+            });
+            DragValue::new(&mut app.config.render.basis_size)
+                .range(0.0..=200.0)
+                .suffix(" px")
+                .ui(ui);
             ui.end_row();
 
             ui.label("Check for Updates");
