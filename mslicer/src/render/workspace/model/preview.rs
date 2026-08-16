@@ -78,12 +78,14 @@ impl ModelPipeline {
 }
 
 pub fn process_previews(app: &mut App) {
-    match &app.slice_operation {
-        Some(slice_operation) if slice_operation.needs_preview_image() => {
-            let image = render_preview_image(app, Vector2::repeat(512));
-            (app.slice_operation.as_ref().unwrap()).add_preview_image(image);
-        }
-        _ => {}
+    if let Some(operation) = &app.slice_operation
+        && operation.needs_previews()
+    {
+        // yes i know im downloading a texture from the gpu and then immediately
+        // reuploading it... sue me.
+        let image = render_preview_image(app, Vector2::repeat(512));
+        let operation = app.slice_operation.as_ref().unwrap();
+        operation.add_preview(image);
     }
 }
 

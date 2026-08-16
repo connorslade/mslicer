@@ -4,9 +4,10 @@ use std::{f32, fs::File, io::Write, mem, sync::Arc};
 
 use const_format::concatcp;
 use egui::{
-    Align, Align2, Button, Color32, ComboBox, Context, DragValue, FontId, FontSelection, Grid, Id,
-    Layout, ProgressBar, Rect, RichText, Sense, SidePanel, Slider, StrokeKind, Style, Ui, Vec2,
-    Widget, panel::Side, style::HandleShape, text::LayoutJob, vec2,
+    Align, Align2, Button, CollapsingHeader, Color32, ComboBox, Context, DragValue, FontId,
+    FontSelection, Frame, Grid, Id, ImageSource, Layout, ProgressBar, Rect, RichText, Sense,
+    SidePanel, Slider, StrokeKind, Style, Ui, Vec2, Widget, load::SizedTexture, panel::Side,
+    style::HandleShape, text::LayoutJob, vec2,
 };
 use egui_phosphor::regular::{
     ARROW_U_UP_RIGHT, CARET_DOWN, CARET_UP, CLOCK, CORNERS_IN, CROSSHAIR, CUBE_TRANSPARENT, DROP,
@@ -21,7 +22,8 @@ use crate::{
         App,
         config::sliced::{SlicePreviewCoordinateSpace, SlicePreviewView, SlicedConfig},
         slice_operation::{
-            GenericSliceData, GenericSliceResult, ISLAND_COLOR, RasterSliceResult, SliceResult,
+            GenericSliceData, GenericSliceResult, ISLAND_COLOR, RasterSliceResult, SliceOperation,
+            SliceResult,
         },
     },
     render::slice_preview::SlicePreviewRenderCallback,
@@ -46,7 +48,7 @@ const FILENAME_POPUP_TEXT: &str =
 const DETECT_ISLANDS_DESC: &str =
     "Will color disconnected chunks of voxels red in the slice preview.";
 
-pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
+pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
     if let Some(slice_operation) = &app.slice_operation {
         let progress = &slice_operation.progress;
 
@@ -92,7 +94,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                                     if ui.button(layout_job).clicked() {
                                         let file = result.slice_data().file(
                                             &result.config,
-                                            &slice_operation.preview_image(),
+                                            &slice_operation.first_preview(),
                                             RasterFormat::Ctb.into(),
                                         );
 
@@ -123,7 +125,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                                 {
                                     app.tasks.add(save_file(
                                         result.config.clone(),
-                                        slice_operation.preview_image(),
+                                        slice_operation.first_preview(),
                                         format,
                                         result.slice_data(),
                                     ));
@@ -171,7 +173,9 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
 
             SidePanel::new(Side::Right, "sidebar")
                 .resizable(false)
-                .show_animated_inside(ui, app.config.sliced.sidebar, |ui| sidebar(result, ui));
+                .show_animated_inside(ui, app.config.sliced.sidebar, |ui| {
+                    sidebar(slice_operation, result, ui, ctx)
+                });
 
             match &mut result.inner {
                 GenericSliceResult::Raster(raster) => {
@@ -329,7 +333,7 @@ fn slice_preview(
             None
         };
 
-        egui::Frame::canvas(ui.style())
+        Frame::canvas(ui.style())
             .fill(ui.style().visuals.panel_fill)
             .show(ui, |ui| {
                 let (rect, response) = ui.allocate_exact_size(
@@ -511,7 +515,6 @@ fn sidebar_button(sliced: &mut SlicedConfig, ui: &mut Ui) {
         StrokeKind::Outside,
     );
 
-    // todo: flip over y axis
     ui.painter().text(
         rect.center(),
         Align2::CENTER_CENTER,
@@ -521,7 +524,16 @@ fn sidebar_button(sliced: &mut SlicedConfig, ui: &mut Ui) {
     );
 }
 
-fn sidebar(result: &mut SliceResult, ui: &mut Ui) {
+fn sidebar(operation: &SliceOperation, result: &mut SliceResult, ui: &mut Ui, ctx: &Context) {
+    CollapsingHeader::new("Preview Image").show(ui, |ui| {
+        let width = ui.available_width();
+        for (image, texture) in operation.previews.lock().iter_mut() {
+            let aspect = image.width() as f32 / image.height() as f32;
+            let texture = SizedTexture::new(texture.get(ctx, image), vec2(width, width / aspect));
+            ui.image(ImageSource::Texture(texture));
+        }
+    });
+
     ui.collapsing("Normal Layers", |ui| {
         exposure_config(ui, &mut result.config.exposure_config);
     });

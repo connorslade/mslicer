@@ -18,9 +18,11 @@ use common::{
 use egui::Color32;
 use image::RgbaImage;
 use itertools::Itertools;
-use parking_lot::{Condvar, Mutex, MutexGuard};
+use parking_lot::{Mutex, MutexGuard};
 use slicer::{slicer::vector::SvgFile, util};
 use tracing::info;
+
+use crate::ui::management::LazyTextureId;
 
 #[derive(Clone)]
 pub struct SliceOperation {
@@ -32,9 +34,7 @@ pub struct SliceOperationInner {
     pub progress: Progress,
     pub post_processing_progress: CombinedProgress<2>,
     pub result: Mutex<Option<SliceResult>>,
-
-    preview_image: Mutex<Option<Arc<RgbaImage>>>,
-    preview_condvar: Condvar,
+    pub previews: Mutex<Vec<(Arc<RgbaImage>, LazyTextureId)>>,
 }
 
 pub struct SliceResult {
@@ -99,31 +99,27 @@ impl SliceOperation {
                 progress: slice,
                 post_processing_progress: post_process,
                 result: Mutex::new(None),
-
-                preview_image: Mutex::new(None),
-                preview_condvar: Condvar::new(),
+                previews: Mutex::new(Vec::new()),
             }),
         }
     }
 }
 
 impl SliceOperationInner {
-    pub fn needs_preview_image(&self) -> bool {
-        self.preview_image.lock().is_none()
+    pub fn needs_previews(&self) -> bool {
+        self.previews.lock().is_empty()
     }
 
-    pub fn add_preview_image(&self, image: RgbaImage) {
-        self.preview_image.lock().replace(Arc::new(image));
-        self.preview_condvar.notify_all();
+    pub fn add_preview(&self, image: RgbaImage) {
+        self.previews
+            .lock()
+            .push((Arc::new(image), LazyTextureId::empty()));
     }
 
-    pub fn preview_image(&self) -> Arc<RgbaImage> {
-        let mut preview_image = self.preview_image.lock();
-        while preview_image.is_none() {
-            self.preview_condvar.wait(&mut preview_image);
-        }
-
-        preview_image.as_ref().unwrap().clone()
+    // todo: this should be deprecates since many file formats support multiple
+    // preview images with potentially different aspect rations.
+    pub fn first_preview(&self) -> Arc<RgbaImage> {
+        self.previews.lock()[0].0.clone()
     }
 
     pub fn add_raster_result(&self, config: SliceConfig, layers: Vec<Layer>) {

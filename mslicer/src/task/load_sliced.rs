@@ -41,8 +41,9 @@ impl Task for LoadSliced {
                     Progress::already_complete(),
                     CombinedProgress::already_complete(),
                 );
+
                 operation.add_raster_result(config, layers);
-                operation.add_preview_image(image);
+                operation.add_preview(image);
                 app.slice_operation.replace(operation);
                 app.panels.focus_tab(Tab::Sliced, SLICE_PREVIEW_SIZE);
 
