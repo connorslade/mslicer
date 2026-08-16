@@ -15,7 +15,7 @@ use crate::{
 
 pub struct LoadSliced {
     progress: Progress,
-    handle: TaskThread<(SliceConfig, Vec<Layer>, RgbaImage)>,
+    handle: TaskThread<(SliceConfig, Vec<Layer>, Vec<RgbaImage>)>,
 }
 
 impl LoadSliced {
@@ -43,7 +43,7 @@ impl Task for LoadSliced {
                 );
 
                 operation.add_raster_result(config, layers);
-                operation.add_preview(image);
+                image.into_iter().for_each(|x| operation.add_preview(x));
                 app.slice_operation.replace(operation);
                 app.panels.focus_tab(Tab::Sliced, SLICE_PREVIEW_SIZE);
 

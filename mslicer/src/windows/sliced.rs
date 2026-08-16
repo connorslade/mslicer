@@ -10,8 +10,8 @@ use egui::{
     style::HandleShape, text::LayoutJob, vec2,
 };
 use egui_phosphor::regular::{
-    ARROW_U_UP_RIGHT, CARET_DOWN, CARET_UP, CLOCK, CORNERS_IN, CROSSHAIR, CUBE_TRANSPARENT, DROP,
-    FLOPPY_DISK_BACK, PAPER_PLANE_TILT, SIDEBAR, VECTOR_TWO,
+    ARROW_U_UP_RIGHT, CARET_DOWN, CARET_LEFT, CARET_RIGHT, CARET_UP, CLOCK, CORNERS_IN, CROSSHAIR,
+    CUBE_TRANSPARENT, DROP, FLOPPY_DISK_BACK, PAPER_PLANE_TILT, SIDEBAR, VECTOR_TWO,
 };
 use egui_wgpu::Callback;
 use image::RgbaImage;
@@ -28,7 +28,7 @@ use crate::{
     },
     render::slice_preview::SlicePreviewRenderCallback,
     task::{FileDialog, IslandDetection, ReconstructMesh, SaveResult},
-    ui::{components::collapsing_toggle, popup::Popup, state::UiState},
+    ui::{components::collapsing_toggle, management::LazyText, popup::Popup, state::UiState},
     windows::slice_config::exposure_config,
 };
 use common::{
@@ -60,6 +60,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
                 app.state.last_preview_layer = 0;
                 app.state.preview_offset = Vector2::zeros();
                 app.state.preview_scale = 1.0;
+                app.state.preview_image = 1;
 
                 let layers = result.inner.layers();
                 app.state.layer_count = (layers, layers.to_string().len() as u8);
@@ -174,7 +175,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
             SidePanel::new(Side::Right, "sidebar")
                 .resizable(false)
                 .show_animated_inside(ui, app.config.sliced.sidebar, |ui| {
-                    sidebar(slice_operation, result, ui, ctx)
+                    sidebar(slice_operation, result, &mut app.state, ui, ctx)
                 });
 
             match &mut result.inner {
@@ -183,17 +184,14 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
                         let state = &mut app.state;
                         ui.horizontal(|ui| {
                             let layer_digits = state.layer_count.1 as usize;
-                            ui.add(
-                                DragValue::new(&mut state.slice_preview_layer)
-                                    .range(1..=state.layer_count.0)
-                                    .custom_formatter(|n, _| {
-                                        format!("{:0>layer_digits$}/{}", n, state.layer_count.0)
-                                    }),
-                            );
-                            state.slice_preview_layer +=
-                                ui.button(RichText::new(CARET_UP)).clicked() as usize;
-                            state.slice_preview_layer -=
-                                ui.button(RichText::new(CARET_DOWN)).clicked() as usize;
+                            DragValue::new(&mut state.slice_preview_layer)
+                                .range(1..=state.layer_count.0)
+                                .custom_formatter(|n, _| {
+                                    format!("{:0>layer_digits$}/{}", n, state.layer_count.0)
+                                })
+                                .ui(ui);
+                            state.slice_preview_layer += ui.button(CARET_UP).clicked() as usize;
+                            state.slice_preview_layer -= ui.button(CARET_DOWN).clicked() as usize;
 
                             ui.separator();
                             if ui.button(concatcp!(CORNERS_IN, " Reset View")).clicked() {
@@ -524,14 +522,39 @@ fn sidebar_button(sliced: &mut SlicedConfig, ui: &mut Ui) {
     );
 }
 
-fn sidebar(operation: &SliceOperation, result: &mut SliceResult, ui: &mut Ui, ctx: &Context) {
+fn sidebar(
+    operation: &SliceOperation,
+    result: &mut SliceResult,
+    state: &mut UiState,
+    ui: &mut Ui,
+    ctx: &Context,
+) {
     CollapsingHeader::new("Preview Image").show(ui, |ui| {
-        let width = ui.available_width();
-        for (image, texture) in operation.previews.lock().iter_mut() {
-            let aspect = image.width() as f32 / image.height() as f32;
-            let texture = SizedTexture::new(texture.get(ctx, image), vec2(width, width / aspect));
-            ui.image(ImageSource::Texture(texture));
-        }
+        let mut previews = operation.previews.lock();
+        let count = previews.len();
+        let img = &mut state.preview_image;
+
+        ui.horizontal(|ui| {
+            *img -= ui.add_enabled(*img > 1, Button::new(CARET_LEFT)).clicked() as u8;
+            DragValue::new(img)
+                .range(1..=count)
+                .custom_formatter(|n, _| format!("{n}/{count}"))
+                .ui(ui);
+            *img += ui
+                .add_enabled(*img < count as u8, Button::new(CARET_RIGHT))
+                .clicked() as u8;
+        });
+
+        let (image, texture) = &mut previews[*img as usize - 1];
+        let (width, height) = (image.width(), image.height());
+
+        let available = ui.available_width();
+        let size = vec2(available, available / width as f32 * height as f32);
+        let texture = SizedTexture::new(texture.get(ctx, image), size);
+
+        ui.add_space(4.0);
+        ui.image(ImageSource::Texture(texture))
+            .on_hover_text(LazyText::new(move || format!("{width}×{height}")))
     });
 
     ui.collapsing("Normal Layers", |ui| {

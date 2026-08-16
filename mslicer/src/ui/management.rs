@@ -1,10 +1,14 @@
 use std::sync::Arc;
 
-use egui::{Color32, ColorImage, Context, ImageData, TextureId, TextureOptions};
+use egui::{Color32, ColorImage, Context, ImageData, TextureId, TextureOptions, WidgetText};
 use image::RgbaImage;
 
 pub struct LazyTextureId {
     inner: Option<TextureId>,
+}
+
+pub struct LazyText {
+    inner: Box<dyn FnOnce() -> WidgetText>,
 }
 
 impl LazyTextureId {
@@ -23,6 +27,20 @@ impl LazyTextureId {
     }
 }
 
+impl LazyText {
+    pub fn new<T: Into<WidgetText>>(text: impl FnOnce() -> T + 'static) -> Self {
+        Self {
+            inner: Box::new(move || text().into()),
+        }
+    }
+}
+
+impl From<LazyText> for WidgetText {
+    fn from(value: LazyText) -> Self {
+        (value.inner)()
+    }
+}
+
 // todo: dealloc when slice operation is overwritten!!
 fn upload_texture_egui(ctx: &Context, image: &RgbaImage) -> TextureId {
     let image = ColorImage::new(
@@ -35,6 +53,6 @@ fn upload_texture_egui(ctx: &Context, image: &RgbaImage) -> TextureId {
     ctx.tex_manager().write().alloc(
         "Preview Image".into(),
         ImageData::Color(Arc::new(image)),
-        TextureOptions::LINEAR,
+        TextureOptions::NEAREST,
     )
 }

@@ -43,6 +43,8 @@ pub struct UiState {
     pub preview_scale: f32,
     pub layer_count: (usize, u8),
 
+    pub preview_image: u8,
+
     // tools
     pub tools: Tools,
 

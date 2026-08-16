@@ -86,7 +86,7 @@ pub fn load_sliced(
     progress: &Progress,
     format: &RasterFormat,
     data: &[u8],
-) -> Result<(SliceConfig, Vec<Layer>, RgbaImage)> {
+) -> Result<(SliceConfig, Vec<Layer>, Vec<RgbaImage>)> {
     match format {
         RasterFormat::Goo => {
             let mut des = SliceDeserializer::new(data);
@@ -100,9 +100,12 @@ pub fn load_sliced(
                     x.into_layer()
                 })
                 .collect();
-            let image = file.header.big_preview.into_image();
+            let images = vec![
+                file.header.big_preview.into_image(),
+                file.header.big_preview.into_image(),
+            ];
 
-            Ok((config, layers, image))
+            Ok((config, layers, images))
         }
         RasterFormat::Ctb => {
             let mut des = SliceDeserializer::new(data);
@@ -116,9 +119,11 @@ pub fn load_sliced(
                     x.into_layer()
                 })
                 .collect();
-            let image = file.large_preview.into_image();
+            let images = [file.large_preview, file.small_preview]
+                .map(|x| x.into_image())
+                .to_vec();
 
-            Ok((config, layers, image))
+            Ok((config, layers, images))
         }
         RasterFormat::NanoDLP => {
             let file = nanodlp_format::File::deserialize(Cursor::new(data))?;
@@ -133,7 +138,7 @@ pub fn load_sliced(
                 .collect();
             let image = file.preview.into_rgba8();
 
-            Ok((config, layers, image))
+            Ok((config, layers, vec![image]))
         }
     }
 }
