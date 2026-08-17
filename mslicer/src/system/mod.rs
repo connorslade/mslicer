@@ -2,6 +2,9 @@ use std::{env, fs::File, path::PathBuf, str::FromStr};
 
 use egui::IconData;
 
+#[cfg(windows)]
+pub mod windows;
+
 #[cfg(not(target_os = "macos"))]
 use crate::include_dist;
 use crate::{

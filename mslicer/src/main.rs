@@ -29,6 +29,9 @@ use crate::{
 };
 
 fn main() -> Result<()> {
+    #[cfg(windows)]
+    crate::system::windows::install();
+
     // Don't print panics on threads that are handled by the task system.
     let old_panic = panic::take_hook();
     panic::set_hook(Box::new(move |panic| {
