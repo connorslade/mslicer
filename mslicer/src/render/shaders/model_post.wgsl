@@ -30,7 +30,7 @@ fn vert(@builtin(vertex_index) index: u32) -> VertexOutput {
 @fragment
 fn frag(in: VertexOutput) -> FragmentOutput {
     let uv = clip_to_uv(in.position);
-    let color = sample_color(uv);
+    let color = textureSample(texture, texture_sampler, uv);
     let depth = sample_depth(uv);
 
     if ctx.samples == 0 { return FragmentOutput(vec4(color.rgb, color.w), depth); }
@@ -61,4 +61,3 @@ fn clip_to_uv(clip: vec2f) -> vec2f {
 
 fn sample_depth(uv: vec2f) -> f32   { return textureLoad(depth,   vec2i(uv * vec2f(textureDimensions(depth)))  , 0);     }
 fn sample_world(uv: vec2f) -> vec3f { return textureLoad(world,   vec2i(uv * vec2f(textureDimensions(world)))  , 0).xyz; }
-fn sample_color(uv: vec2f) -> vec4f { return textureLoad(texture, vec2i(uv * vec2f(textureDimensions(texture))), 0);     }

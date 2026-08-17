@@ -4,7 +4,8 @@ use anyhow::{Result, ensure};
 use nalgebra::Vector3;
 
 use crate::project::{
-    Collection, CollectionId, PostProcessing, Project, RenameState, model::Model,
+    Collection, CollectionId, PostProcessing, Project, RenameState,
+    model::{MeshUnit, Model},
 };
 use common::{
     progress::Progress,
@@ -19,7 +20,11 @@ use slicer::{
 };
 
 /// Project format version. Value should be incremented whenever the save format
-/// changes, even in development.
+/// changes, even in development so anyone using the dev/prerelease versions
+/// don't ruin their projects.
+///
+/// ## v12 (v0.9.0)
+/// Store mesh units.
 ///
 /// ## v11 (v0.9.0)
 /// Customizable variable layer height similarity threshold.
@@ -53,13 +58,14 @@ use slicer::{
 /// ## v2 (v0.5.0)
 /// A complete rewrite using a custom serilizer/deserilizer because of the
 /// bincode drama...
-const VERSION: u16 = 11;
+const VERSION: u16 = 12;
 
 struct ModelInfo {
     mesh: u32,
     collection: Option<CollectionId>,
 
     name: String,
+    unit: MeshUnit,
     color: Vector3<f32>,
     exposure: u8,
     hidden: bool,
@@ -75,6 +81,7 @@ impl ModelInfo {
             mesh,
             collection: model.collection,
             name: model.name.to_owned(),
+            unit: model.unit,
             color: model.color.into(),
             exposure: model.exposure,
             hidden: model.hidden,
@@ -97,6 +104,7 @@ impl ModelInfo {
             .with_exposure(self.exposure)
             .with_hidden(self.hidden)
             .with_collection(self.collection)
+            .with_unit(self.unit)
     }
 
     pub fn serialize<T: Serializer>(&self, ser: &mut T) {
@@ -113,6 +121,7 @@ impl ModelInfo {
 
         ser.write_u32_be(self.name.len() as u32);
         ser.write_bytes(self.name.as_bytes());
+        self.unit.serialize(ser);
         Vector3::from(self.color).serialize(ser);
         ser.write_u8(self.exposure);
         ser.write_bool(self.hidden);
@@ -136,6 +145,11 @@ impl ModelInfo {
                 let name_len = des.read_u32_be();
                 let data = des.read_bytes(name_len as usize);
                 String::from_utf8_lossy(&data).into_owned()
+            },
+            unit: if version < 12 {
+                MeshUnit::Millimeters
+            } else {
+                MeshUnit::deserialize(des)
             },
             color: Vector3::<f32>::deserialize(des),
             exposure: if version < 4 { 255 } else { des.read_u8() },

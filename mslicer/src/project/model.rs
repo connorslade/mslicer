@@ -4,6 +4,7 @@ use bitflags::bitflags;
 use common::{
     color::{LinearRgb, START_COLOR},
     id_type,
+    serde::{Deserializer, Serializer},
     units::{CubicMilimeters, Milimeters},
 };
 use nalgebra::Vector3;
@@ -26,7 +27,7 @@ pub struct Model {
     pub half_edge: Option<Arc<HalfEdgeMesh>>,
     base_volume: CubicMilimeters,
 
-    pub units: MeshUnits,
+    pub unit: MeshUnit,
     pub color: LinearRgb<f32>,
     pub exposure: u8,
     pub hidden: bool,
@@ -57,8 +58,10 @@ pub struct RenderedMeshBuffers {
 }
 
 #[derive(Clone, Copy, PartialEq)]
-pub enum MeshUnits {
+pub enum MeshUnit {
     Millimeters,
+    Centimeters,
+    Meters,
     Inches,
     Custom(f32),
 }
@@ -75,7 +78,7 @@ impl Model {
             half_edge: None,
             mesh,
 
-            units: MeshUnits::Millimeters,
+            unit: MeshUnit::Millimeters,
             color: LinearRgb::repeat(1.0),
             hidden: false,
             exposure: 255,
@@ -114,6 +117,11 @@ impl Model {
 
     pub fn with_collection(mut self, collection: Option<CollectionId>) -> Self {
         self.collection = collection;
+        self
+    }
+
+    pub fn with_unit(mut self, unit: MeshUnit) -> Self {
+        self.unit = unit;
         self
     }
 
@@ -178,23 +186,69 @@ impl Model {
     }
 }
 
-impl MeshUnits {
-    pub const ALL: [Self; 3] = [Self::Millimeters, Self::Inches, Self::Custom(1.0)];
+impl MeshUnit {
+    pub const ALL: [Self; 5] = [
+        Self::Millimeters,
+        Self::Centimeters,
+        Self::Meters,
+        Self::Inches,
+        Self::Custom(1.0),
+    ];
 
     pub fn name(&self) -> &str {
         match self {
-            MeshUnits::Millimeters => "Millimeters",
-            MeshUnits::Inches => "Inches",
-            MeshUnits::Custom(_) => "Custom",
+            Self::Millimeters => "Millimeters",
+            Self::Centimeters => "Centimeters",
+            Self::Meters => "Meters",
+            Self::Inches => "Inches",
+            Self::Custom(_) => "Custom",
         }
     }
 
     /// Conversion factor from self to millimeters
     pub fn conversion(&self) -> f32 {
         match self {
-            MeshUnits::Millimeters => 1.0,
-            MeshUnits::Inches => 2.54,
-            MeshUnits::Custom(x) => *x,
+            Self::Millimeters => 1.0,
+            Self::Centimeters => 10.0,
+            Self::Meters => 1000.0,
+            Self::Inches => 2.54,
+            Self::Custom(x) => *x,
+        }
+    }
+
+    pub fn ordinal(&self) -> u8 {
+        match self {
+            Self::Custom(_) => 0,
+            Self::Millimeters => 1,
+            Self::Centimeters => 2,
+            Self::Meters => 3,
+            Self::Inches => 4,
+        }
+    }
+
+    pub fn from_ordinal(ordinal: u8) -> Option<Self> {
+        Some(match ordinal {
+            1 => Self::Millimeters,
+            2 => Self::Centimeters,
+            3 => Self::Meters,
+            4 => Self::Inches,
+            _ => return None,
+        })
+    }
+
+    pub fn serialize<T: Serializer>(&self, ser: &mut T) {
+        ser.write_u8(self.ordinal());
+        if let MeshUnit::Custom(factor) = self {
+            ser.write_f32_be(*factor);
+        }
+    }
+
+    pub fn deserialize<T: Deserializer>(des: &mut T) -> Self {
+        let ordinal = des.read_u8();
+        if ordinal == 0 {
+            Self::Custom(des.read_f32_be())
+        } else {
+            Self::from_ordinal(ordinal).unwrap_or(Self::Millimeters)
         }
     }
 }
@@ -211,7 +265,7 @@ impl Clone for Model {
             half_edge: self.half_edge.clone(),
             base_volume: self.base_volume,
 
-            units: self.units,
+            unit: self.unit,
             color: self.color,
             hidden: self.hidden,
             ui: self.ui.clone(),

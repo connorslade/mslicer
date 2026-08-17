@@ -19,7 +19,7 @@ use crate::{
     app::{App, history::ModelAction},
     project::{
         Collection, RenameState,
-        model::{MeshUnits, MeshWarnings},
+        model::{MeshUnit, MeshWarnings},
     },
     task::SplitBodies,
     ui::components::{
@@ -33,6 +33,7 @@ use crate::{
 
 const WARN_NON_MANIFOLD: &str = "This mesh is non-manifold, it may produce unexpected results when sliced.\nConsider running it through a mesh repair tool.";
 const WARN_OUT_OF_BOUNDS: &str = "This mesh extends beyond the printer volume and will be cut off.";
+const UNIT_TIP: &str = "Common polygon mesh formats like .stl and .obj don't include unit information. For this reason you need to manually specify the units for each mesh, although Millimeters, the default, is often correct.";
 const CUSTOM_UNIT_TIP: &str = "To use a custom unit, input the conversion factor from the input unit to Millimeters. For example if your mesh was defined in feet (for some reason) you would use 30.48.";
 
 pub fn model_entry(
@@ -199,7 +200,7 @@ pub fn model_properties(app: &mut App, ui: &mut Ui, ctx: &Context, action: &mut 
                 ui.label("Scale");
 
                 ui.horizontal(|ui| {
-                    let factor = model.units.conversion();
+                    let factor = model.unit.conversion();
                     let mut scale = model.mesh.scale() / factor;
 
                     let editing = if model.ui.locked_scale {
@@ -256,23 +257,26 @@ pub fn model_properties(app: &mut App, ui: &mut Ui, ctx: &Context, action: &mut 
 
     ui.collapsing("Miscellaneous", |ui| {
         grid("model_props_grid").show(ui, |ui| {
-            ui.label("Mesh Units");
             ui.horizontal(|ui| {
-                let last_factor = model.units.conversion();
+                ui.label("Mesh Units");
+                ui.label(INFO).on_hover_text(UNIT_TIP);
+            });
+            ui.horizontal(|ui| {
+                let last_factor = model.unit.conversion();
                 ComboBox::new("units", "")
-                    .selected_text(model.units.name())
+                    .selected_text(model.unit.name())
                     .show_ui(ui, |ui| {
-                        for unit in MeshUnits::ALL {
-                            ui.selectable_value(&mut model.units, unit, unit.name());
+                        for unit in MeshUnit::ALL {
+                            ui.selectable_value(&mut model.unit, unit, unit.name());
                         }
                     });
 
-                if let MeshUnits::Custom(factor) = &mut model.units {
+                if let MeshUnit::Custom(factor) = &mut model.unit {
                     DragValue::new(factor).speed(0.1).ui(ui);
                     ui.label(INFO).on_hover_text(CUSTOM_UNIT_TIP);
                 }
 
-                let factor = model.units.conversion();
+                let factor = model.unit.conversion();
                 if factor != last_factor {
                     let scale = model.mesh.scale() * factor / last_factor;
                     model.set_scale(&app.project.slice_config.platform_size, scale);
