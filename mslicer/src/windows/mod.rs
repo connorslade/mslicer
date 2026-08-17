@@ -172,10 +172,12 @@ fn paint_basis_vectors(painter: &Painter, app: &mut App, rect: &Rect) {
     }
 
     let pad = 4.0;
-
-    let color_bg = Color32::from_rgba_unmultiplied(0, 0, 0, 90);
-    let color_edge = Color32::from_rgba_unmultiplied(0, 0, 0, 180);
-    let stroke = Stroke::new(2.0, color_edge);
+    let color = |r, g, b, a| Color32::from_rgba_unmultiplied(r, g, b, a);
+    let (color_bg, color_edge) = match app.config.ui.theme {
+        Theme::Dark => (color(255, 255, 255, 40), color(255, 255, 255, 180)),
+        Theme::Light => (color(0, 0, 0, 40), color(0, 0, 0, 180)),
+    };
+    let stroke = Stroke::new(1.5, color_edge);
 
     let rect = Rect::from_min_size(
         pos2(rect.max.x - size - pad, rect.min.y + pad),

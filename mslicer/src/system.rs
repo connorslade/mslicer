@@ -1,6 +1,5 @@
 use std::{env, fs::File, path::PathBuf, str::FromStr};
 
-#[cfg(not(target_os = "macos"))]
 use egui::IconData;
 
 #[cfg(not(target_os = "macos"))]

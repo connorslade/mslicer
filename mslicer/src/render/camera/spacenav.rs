@@ -119,15 +119,9 @@ impl SpaceNavRef<'_> {
 
                     let camera = &mut self.app.camera;
                     camera.angle.x -= rotation.y as f32 * r_gain;
-                    camera.angle.y -= rotation.x as f32 * r_gain;
-                    camera.distance += translation.y as f32 * p_gain;
-
-                    let camera_pos = camera.position(camera.distance) + camera.target;
-                    let forward = (camera.target - camera_pos).normalize();
-                    let right = forward.cross(&camera.up()).normalize();
-
-                    camera.target += right * translation.x as f32 * p_gain;
-                    camera.target += forward * translation.z as f32 * p_gain;
+                    camera.angle.y += rotation.x as f32 * r_gain;
+                    camera.distance -= translation.z as f32 * p_gain;
+                    camera.distance = camera.distance.max(0.0);
 
                     is_moving |= translation != Vector3::zeros() || rotation != Vector3::zeros();
                 }
