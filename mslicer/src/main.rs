@@ -1,10 +1,10 @@
 #![windows_subsystem = "windows"]
 
-use std::{fs::File, panic, sync::Arc, thread};
+use std::{env, fs::File, panic, sync::Arc, thread};
 
 use anyhow::Result;
 use eframe::NativeOptions;
-use egui::{FontDefinitions, IconData, Vec2, ViewportBuilder};
+use egui::{FontDefinitions, Vec2, ViewportBuilder};
 use egui_wgpu::{WgpuConfiguration, WgpuSetup, WgpuSetupCreateNew};
 use tracing::{info, level_filters::LevelFilter};
 use tracing_subscriber::{filter, fmt::layer, layer::SubscriberExt, util::SubscriberInitExt};
@@ -16,13 +16,17 @@ const VERSION: &str = env!("CARGO_PKG_VERSION");
 mod app;
 mod project;
 mod render;
+mod system;
 mod task;
 mod ui;
 mod util;
 mod windows;
 use app::{App, config::Config};
 
-use crate::task::update_check_if_scheduled;
+use crate::{
+    system::{icon, open_arguments},
+    task::update_check_if_scheduled,
+};
 
 fn main() -> Result<()> {
     // Don't print panics on threads that are handled by the task system.
@@ -94,26 +98,12 @@ fn main() -> Result<()> {
 
             let mut app = App::new(render::init_wgpu(cc), config_dir, config, collector);
             update_check_if_scheduled(&mut app);
+            open_arguments(&mut app);
+
             Ok(Box::new(app))
         }),
     )
     .unwrap();
 
     Ok(())
-}
-
-// On MacOS the icons are loaded automacally from the icon.icns file.
-#[cfg(target_os = "macos")]
-fn icon() -> IconData {
-    IconData::default()
-}
-
-#[cfg(not(target_os = "macos"))]
-fn icon() -> IconData {
-    let icon = image::load_from_memory(include_dist!("icon.png")).unwrap();
-    IconData {
-        rgba: icon.to_rgba8().to_vec(),
-        width: icon.width(),
-        height: icon.height(),
-    }
 }

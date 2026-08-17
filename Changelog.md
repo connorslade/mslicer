@@ -24,6 +24,7 @@
 - Optional automatic update checking
 - Allow selecting what units your mesh uses
 - Add basis vector gizmo
+- Support opening into projects, sliced files, and meshes
 
 ## v0.8.0 &mdash; June 30th, 2026
 

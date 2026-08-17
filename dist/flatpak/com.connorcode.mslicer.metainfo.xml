@@ -116,7 +116,7 @@
                     <li>Replace tasks panel with top bar widget</li>
                 </ul>
             </description>
-        </release>   
+        </release>
     	<release version="0.5.0" date="2026-02-21">
             <description>
                 <ul>
@@ -148,7 +148,7 @@
                     <li>Remove inconsistent slice preview pixel outlines (for now)</li>
                 </ul>
             </description>
-        </release>    
+        </release>
         <release version="0.4.0" date="2025-11-25">
             <description>
                 <ul>
@@ -215,6 +215,13 @@
 
 	<provides>
 		<binary>mslicer</binary>
+
+        <mediatype>model/stl</mediatype>
+        <mediatype>model/obj</mediatype>
+        <mediatype>application/vnd.chitubox.ctb</mediatype>
+        <mediatype>application/vnd.elegoo.goo</mediatype>
+        <mediatype>application/vnd.nano3d.nanodlp</mediatype>
+        <mediatype>application/vnd.connorcode.mslicer</mediatype>
 	</provides>
 
 	<recommends>
