@@ -12,17 +12,14 @@ use tracing::{info, warn};
 
 use crate::{
     app::{
+        camera::{Camera, spacenav::SpaceNav},
         config::{Config, printers::selected_printer},
         fps_tracker::FpsTracker,
         history::History,
         slice_operation::SliceOperation,
     },
     project::{Project, model::ModelId},
-    render::{
-        Gcx,
-        camera::{Camera, spacenav::SpaceNav},
-        workspace::model,
-    },
+    render::{Gcx, workspace::model},
     task::TaskManager,
     ui::{
         drag_and_drop,
@@ -35,6 +32,7 @@ use crate::{
 use common::{progress::CombinedProgress, slice::SliceMode, units::Milimeter};
 use slicer::slicer::{Slicer, SlicerModel};
 
+pub mod camera;
 pub mod config;
 mod fps_tracker;
 pub mod history;

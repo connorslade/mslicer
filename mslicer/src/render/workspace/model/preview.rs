@@ -14,13 +14,17 @@ use wgpu::{
     TextureAspect, TextureFormat, TextureView,
 };
 
-use crate::app::App;
-use crate::app::config::render::{Projection, RenderStyle};
-use crate::render::workspace::model::ModelUniforms;
-use crate::render::{
-    Gcx,
-    camera::Camera,
-    workspace::{WorkspaceRenderResources, model::ModelPipeline},
+use crate::{
+    app::{
+        App,
+        camera::Camera,
+        config::render::{Projection, RenderStyle},
+    },
+    render::{
+        Gcx,
+        workspace::model::ModelUniforms,
+        workspace::{WorkspaceRenderResources, model::ModelPipeline},
+    },
 };
 
 impl ModelPipeline {

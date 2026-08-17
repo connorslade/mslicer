@@ -11,10 +11,10 @@ use wgpu::{
 };
 
 use crate::{
+    app::camera::{Camera, FAR},
     include_shader,
     render::{
         VERTEX_BUFFER_LAYOUT,
-        camera::{Camera, FAR},
         consts::{
             BASE_BIND_GROUP_LAYOUT_DESCRIPTOR, BASE_UNIFORM_DESCRIPTOR, DEPTH_STENCIL_STATE,
             bind_group,

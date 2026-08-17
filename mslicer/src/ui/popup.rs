@@ -8,10 +8,9 @@ use egui_phosphor::regular::X;
 use remote_print::manager::RemotePrintManager;
 
 use crate::{
-    app::{config::Config, is_slicing, slice_operation::SliceOperation},
+    app::{camera::Camera, config::Config, is_slicing, slice_operation::SliceOperation},
     app_ref_type,
     project::Project,
-    render::camera::Camera,
     task::TaskManager,
     ui::{panels::Panels, state::UiState},
 };
