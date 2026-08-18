@@ -212,6 +212,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
             app.fps.frame_time() * 1000.0
         ));
         ui.label(format!("FPS: {:.2}", 1.0 / app.fps.frame_time()));
+        ui.add_space(4.0);
 
         Plot::new("fps")
             .width(ui.available_width())
@@ -230,5 +231,6 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                     .collect::<Vec<_>>();
                 plot.add(Line::new("", series).color(Color32::WHITE));
             });
+        ui.add_space(4.0);
     });
 }

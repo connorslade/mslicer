@@ -46,7 +46,7 @@ impl ModelPipeline {
         self.render(encoder, app);
         mem::swap(&mut self.multi_stage, &mut old);
 
-        old.unwrap().resolved_target
+        old.unwrap().target
     }
 
     fn upload_preview_uniforms(&mut self, gcx: &Gcx, app: &mut App, camera: &Camera) {

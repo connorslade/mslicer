@@ -78,6 +78,7 @@ fn main() -> Result<()> {
             depth_buffer: 24,
             stencil_buffer: 8,
             multisampling: 4,
+            centered: true,
             wgpu_options: WgpuConfiguration {
                 wgpu_setup: WgpuSetup::CreateNew(WgpuSetupCreateNew {
                     device_descriptor: Arc::new(move |_adapter| DeviceDescriptor {

@@ -110,7 +110,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
                 .find(|(_, rect)| rect.contains(pointer))
                 .map(|&(id, rect)| (id, rect));
 
-            let stroke = Stroke::new(1.0, Color32::WHITE);
+            let stroke = Stroke::new(1.0_f32, Color32::WHITE);
             if let Some((coll_id, header_rect)) = header_target {
                 ui.painter()
                     .rect_stroke(header_rect, 2.0, stroke, StrokeKind::Outside);

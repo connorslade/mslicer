@@ -221,7 +221,7 @@ fn tasks_button(app: &mut App, ctx: &Context, ui: &mut Ui) {
             visuals.text_color(),
         );
     } else {
-        let stroke = Stroke::new(2.0, visuals.text_color());
+        let stroke = Stroke::new(2.0_f32, visuals.text_color());
         let points = (0..=10).map(|i| {
             let t = i as f32 / 10.0 * TAU * f_ease;
             rect.center() + vec2(t.cos(), t.sin()) * ((y * 0.75 - stroke.width) / 2.0)

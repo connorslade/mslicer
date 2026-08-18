@@ -177,7 +177,7 @@ fn paint_basis_vectors(painter: &Painter, app: &mut App, rect: &Rect) {
         Theme::Dark => (color(255, 255, 255, 40), color(255, 255, 255, 180)),
         Theme::Light => (color(0, 0, 0, 40), color(0, 0, 0, 180)),
     };
-    let stroke = Stroke::new(1.5, color_edge);
+    let stroke = Stroke::new(1.5_f32, color_edge);
 
     let rect = Rect::from_min_size(
         pos2(rect.max.x - size - pad, rect.min.y + pad),

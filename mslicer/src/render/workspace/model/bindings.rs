@@ -34,8 +34,8 @@ impl ModelPipeline {
 
     pub(super) fn size_textures(&mut self, gcx: &Gcx, size: Vector2<u32>) {
         let extent = Extent3d {
-            width: size.x,
-            height: size.y,
+            width: size.x * 3,
+            height: size.y * 3,
             depth_or_array_layers: 1,
         };
 
@@ -49,23 +49,10 @@ impl ModelPipeline {
             label: None,
             size: extent,
             mip_level_count: 1,
-            sample_count: 4,
-            dimension: TextureDimension::D2,
-            format: gcx.texture,
-            usage: TextureUsages::RENDER_ATTACHMENT | TextureUsages::TEXTURE_BINDING,
-            view_formats: &[],
-        });
-
-        let resolved_target = gcx.device.create_texture(&TextureDescriptor {
-            label: None,
-            size: extent,
-            mip_level_count: 1,
             sample_count: 1,
             dimension: TextureDimension::D2,
             format: gcx.texture,
-            usage: TextureUsages::RENDER_ATTACHMENT
-                | TextureUsages::TEXTURE_BINDING
-                | TextureUsages::COPY_SRC,
+            usage: TextureUsages::RENDER_ATTACHMENT | TextureUsages::TEXTURE_BINDING,
             view_formats: &[],
         });
 
@@ -73,7 +60,7 @@ impl ModelPipeline {
             label: None,
             size: extent,
             mip_level_count: 1,
-            sample_count: 4,
+            sample_count: 1,
             dimension: TextureDimension::D2,
             format: TextureFormat::Depth32Float,
             usage: TextureUsages::RENDER_ATTACHMENT | TextureUsages::TEXTURE_BINDING,
@@ -84,7 +71,7 @@ impl ModelPipeline {
             label: None,
             size: extent,
             mip_level_count: 1,
-            sample_count: 4,
+            sample_count: 1,
             dimension: TextureDimension::D2,
             format: TextureFormat::Rgba16Float,
             usage: TextureUsages::RENDER_ATTACHMENT | TextureUsages::TEXTURE_BINDING,
@@ -92,7 +79,6 @@ impl ModelPipeline {
         });
 
         let target_view = target.create_view(&Default::default());
-        let resolved_target_view = resolved_target.create_view(&Default::default());
         let depth_target_view = depth_target.create_view(&Default::default());
         let world_target_view = world_target.create_view(&Default::default());
 
@@ -106,7 +92,7 @@ impl ModelPipeline {
                 },
                 BindGroupEntry {
                     binding: 1,
-                    resource: BindingResource::TextureView(&resolved_target_view),
+                    resource: BindingResource::TextureView(&target_view),
                 },
                 BindGroupEntry {
                     binding: 2,
@@ -125,7 +111,6 @@ impl ModelPipeline {
 
         self.multi_stage = Some(MultiStage {
             target: target_view,
-            resolved_target: resolved_target_view,
             depth_target: depth_target_view,
             world_target: world_target_view,
             post_bind_group,

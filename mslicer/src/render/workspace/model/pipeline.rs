@@ -69,10 +69,7 @@ pub fn pipeline(device: &Device, texture: TextureFormat) -> (RenderPipeline, Bin
                 clamp: 0.0,
             },
         }),
-        multisample: MultisampleState {
-            count: 4,
-            ..Default::default()
-        },
+        multisample: Default::default(),
         multiview: None,
         cache: None,
     });
@@ -101,7 +98,7 @@ pub fn post_pipeline(device: &Device, texture: TextureFormat) -> (RenderPipeline
                 binding: 1,
                 visibility: ShaderStages::FRAGMENT,
                 ty: BindingType::Texture {
-                    sample_type: TextureSampleType::Float { filterable: false },
+                    sample_type: TextureSampleType::Float { filterable: true },
                     view_dimension: TextureViewDimension::D2,
                     multisampled: false,
                 },
@@ -111,9 +108,9 @@ pub fn post_pipeline(device: &Device, texture: TextureFormat) -> (RenderPipeline
                 binding: 2,
                 visibility: ShaderStages::FRAGMENT,
                 ty: BindingType::Texture {
-                    sample_type: TextureSampleType::Float { filterable: false },
+                    sample_type: TextureSampleType::Float { filterable: true },
                     view_dimension: TextureViewDimension::D2,
-                    multisampled: true,
+                    multisampled: false,
                 },
                 count: None,
             },
@@ -123,14 +120,14 @@ pub fn post_pipeline(device: &Device, texture: TextureFormat) -> (RenderPipeline
                 ty: BindingType::Texture {
                     sample_type: TextureSampleType::Depth,
                     view_dimension: TextureViewDimension::D2,
-                    multisampled: true,
+                    multisampled: false,
                 },
                 count: None,
             },
             BindGroupLayoutEntry {
                 binding: 4,
                 visibility: ShaderStages::FRAGMENT,
-                ty: BindingType::Sampler(SamplerBindingType::NonFiltering),
+                ty: BindingType::Sampler(SamplerBindingType::Filtering),
                 count: None,
             },
         ],
@@ -157,7 +154,7 @@ pub fn post_pipeline(device: &Device, texture: TextureFormat) -> (RenderPipeline
             compilation_options: Default::default(),
             targets: &[Some(ColorTargetState {
                 format: texture,
-                blend: Some(BlendState::ALPHA_BLENDING),
+                blend: Some(BlendState::PREMULTIPLIED_ALPHA_BLENDING),
                 write_mask: ColorWrites::all(),
             })],
         }),

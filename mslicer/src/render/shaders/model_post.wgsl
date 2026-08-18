@@ -1,7 +1,7 @@
 @group(0) @binding(0) var<uniform> ctx: Context;
 @group(0) @binding(1) var texture: texture_2d<f32>;
-@group(0) @binding(2) var world: texture_multisampled_2d<f32>;
-@group(0) @binding(3) var depth: texture_depth_multisampled_2d;
+@group(0) @binding(2) var world: texture_2d<f32>;
+@group(0) @binding(3) var depth: texture_depth_2d;
 @group(0) @binding(4) var texture_sampler: sampler;
 
 struct Context {
@@ -33,7 +33,7 @@ fn frag(in: VertexOutput) -> FragmentOutput {
     let color = textureSample(texture, texture_sampler, uv);
     let depth = sample_depth(uv);
 
-    if ctx.samples == 0 { return FragmentOutput(vec4(color.rgb, color.w), depth); }
+    if ctx.samples == 0 || color.a == 0.0 { return FragmentOutput(color, depth); }
 
     let world_pos = sample_world(uv);
     let world_normal = screen_normal(world_pos);

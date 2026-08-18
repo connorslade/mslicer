@@ -458,7 +458,7 @@ fn exposure_remapping(
             plot.points(
                 Points::new("", vec![p1, p2, p3, p4])
                     .shape(MarkerShape::Circle)
-                    .radius(5.0)
+                    .radius(5.0_f32)
                     .color(Color32::GRAY),
             );
         });

@@ -13,7 +13,7 @@ use wgpu::{
 
 use crate::{
     app::App,
-    render::{Gcx, consts::NONFILTERING_SAMPLER},
+    render::{Gcx, consts::FILTERING_SAMPLER},
 };
 
 mod bindings;
@@ -37,7 +37,6 @@ pub struct ModelPipeline {
 
 struct MultiStage {
     target: TextureView,
-    resolved_target: TextureView,
     depth_target: TextureView,
     world_target: TextureView,
 
@@ -68,7 +67,7 @@ impl ModelPipeline {
         let (render_pipeline, bind_group_layout) = pipeline::pipeline(device, texture);
         let (post_render_pipeline, post_group_layout) = pipeline::post_pipeline(device, texture);
 
-        let sampler = device.create_sampler(&NONFILTERING_SAMPLER);
+        let sampler = device.create_sampler(&FILTERING_SAMPLER);
 
         let post_uniform = device.create_buffer(&BufferDescriptor {
             label: None,
@@ -148,7 +147,7 @@ impl ModelPipeline {
             color_attachments: &[
                 Some(RenderPassColorAttachment {
                     view: &multi.target,
-                    resolve_target: Some(&multi.resolved_target),
+                    resolve_target: None,
                     ops: Operations {
                         load: LoadOp::Clear(Color::TRANSPARENT),
                         store: StoreOp::Store,
