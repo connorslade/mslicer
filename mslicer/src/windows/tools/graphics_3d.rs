@@ -132,11 +132,11 @@ impl Graphics3D {
                 );
                 progress.add_complete(1);
 
-                Layer {
-                    data: runs,
-                    height: config.default_height(i as u32),
-                    exposure: config.exposure_config(i as u32).into_owned(),
-                }
+                Layer::new(
+                    runs,
+                    config.default_height(i as u32),
+                    config.exposure_config(i as u32).into_owned(),
+                )
             })
             .collect()
     }

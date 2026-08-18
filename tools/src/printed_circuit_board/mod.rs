@@ -83,16 +83,13 @@ impl PrintedCircuitBoard {
             runs.iter_mut().for_each(|run| run.value = 255 - run.value);
         }
 
-        vec![Layer {
-            data: runs,
-            height: config.default_height(0),
-            exposure: ExposureConfig {
-                exposure_time: self.exposure_time,
-                exposure_delay: Seconds::new(0.0),
-                pwm: 255,
-                ..config.exposure_config(0).into_owned()
-            },
-        }]
+        let exposure = ExposureConfig {
+            exposure_time: self.exposure_time,
+            exposure_delay: Seconds::new(0.0),
+            pwm: 255,
+            ..config.exposure_config(0).into_owned()
+        };
+        vec![Layer::new(runs, config.default_height(0), exposure)]
     }
 
     pub fn load(&mut self, path: &Path) {

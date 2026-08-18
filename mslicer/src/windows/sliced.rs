@@ -5,14 +5,15 @@ use std::{f32, fs::File, io::Write, mem, sync::Arc};
 use const_format::concatcp;
 use egui::{
     Align, Align2, Button, CollapsingHeader, Color32, ComboBox, Context, DragValue, FontId,
-    FontSelection, Frame, Grid, Id, ImageSource, Layout, ProgressBar, Rect, RichText, Sense,
-    SidePanel, Slider, StrokeKind, Style, Ui, Vec2, Widget, load::SizedTexture, panel::Side,
+    FontSelection, Frame, Grid, Id, ImageSource, Layout, ProgressBar, Rect, RichText, ScrollArea,
+    Sense, SidePanel, Slider, StrokeKind, Style, Ui, Vec2, Widget, load::SizedTexture, panel::Side,
     style::HandleShape, text::LayoutJob, vec2,
 };
 use egui_phosphor::regular::{
-    ARROW_U_UP_RIGHT, CARET_DOWN, CARET_LEFT, CARET_RIGHT, CARET_UP, CLOCK, CORNERS_IN, CROSSHAIR,
-    CUBE_TRANSPARENT, DROP, FLOPPY_DISK_BACK, PAPER_PLANE_TILT, SIDEBAR, VECTOR_TWO,
+    CARET_DOWN, CARET_LEFT, CARET_RIGHT, CARET_UP, CLOCK, CORNERS_IN, CROSSHAIR, CUBE_TRANSPARENT,
+    DROP, FLOPPY_DISK_BACK, PAPER_PLANE_TILT, SIDEBAR,
 };
+use egui_plot::{Line, Plot};
 use egui_wgpu::Callback;
 use image::RgbaImage;
 use nalgebra::Vector2;
@@ -20,7 +21,10 @@ use nalgebra::Vector2;
 use crate::{
     app::{
         App,
-        config::sliced::{SlicePreviewCoordinateSpace, SlicePreviewView, SlicedConfig},
+        config::{
+            Config,
+            sliced::{SlicePreviewCoordinateSpace, SlicePreviewView, SlicedConfig},
+        },
         slice_operation::{
             GenericSliceData, GenericSliceResult, ISLAND_COLOR, RasterSliceResult, SliceOperation,
             SliceResult,
@@ -28,7 +32,12 @@ use crate::{
     },
     render::slice_preview::SlicePreviewRenderCallback,
     task::{FileDialog, IslandDetection, ReconstructMesh, SaveResult},
-    ui::{components::collapsing_toggle, management::LazyText, popup::Popup, state::UiState},
+    ui::{
+        components::{collapsing_toggle, grid},
+        management::LazyText,
+        popup::Popup,
+        state::UiState,
+    },
     windows::slice_config::exposure_config,
 };
 use common::{
@@ -47,6 +56,7 @@ const FILENAME_POPUP_TEXT: &str =
     "To ensure the file name is unique, some extra random characters will be added on the end.";
 const DETECT_ISLANDS_DESC: &str =
     "Will color disconnected chunks of voxels red in the slice preview.";
+const SURFACE_AREA_DESC: &str = "Surface area in cm² of each layer. Layers with higher areas will adhere more to the FEP potentially causing print failures.";
 
 pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
     if let Some(slice_operation) = &app.slice_operation {
@@ -72,6 +82,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
                 ui.with_layout(Layout::default().with_cross_align(Align::Max), |ui| {
                     ui.horizontal(|ui| {
                         sidebar_button(&mut app.config.sliced, ui);
+                        ui.separator();
 
                         let enabled =
                             app.remote_print.is_initialized() && format == SliceMode::Raster;
@@ -175,7 +186,16 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
             SidePanel::new(Side::Right, "sidebar")
                 .resizable(false)
                 .show_animated_inside(ui, app.config.sliced.sidebar, |ui| {
-                    sidebar(slice_operation, result, &mut app.state, ui, ctx)
+                    ScrollArea::vertical().show(ui, |ui| {
+                        sidebar(
+                            slice_operation,
+                            result,
+                            &mut app.state,
+                            &mut app.config,
+                            ui,
+                            ctx,
+                        );
+                    })
                 });
 
             match &mut result.inner {
@@ -198,36 +218,6 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
                                 state.preview_offset = Vector2::zeros();
                                 state.preview_scale = 1.0;
                             }
-
-                            ui.separator();
-                            let sliced = &mut app.config.sliced;
-                            ComboBox::from_id_salt("coordinate_space")
-                                .selected_text(format!(
-                                    "{VECTOR_TWO} {}",
-                                    sliced.coordinate_space.name()
-                                ))
-                                .show_ui(ui, |ui| {
-                                    for mode in SlicePreviewCoordinateSpace::ALL {
-                                        ui.selectable_value(
-                                            &mut sliced.coordinate_space,
-                                            *mode,
-                                            mode.name(),
-                                        );
-                                    }
-                                });
-
-                            ComboBox::from_id_salt("view")
-                                .selected_text(format!("{ARROW_U_UP_RIGHT} {}", sliced.view.name()))
-                                .show_ui(ui, |ui| {
-                                    for view in SlicePreviewView::ALL {
-                                        ui.selectable_value(&mut sliced.view, *view, view.name());
-                                    }
-                                });
-
-                            DragValue::new(&mut sliced.multisample)
-                                .range(1..=64)
-                                .suffix("× AA")
-                                .ui(ui);
 
                             ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                                 let duration = human_duration(raster.print_time.convert());
@@ -526,44 +516,88 @@ fn sidebar(
     operation: &SliceOperation,
     result: &mut SliceResult,
     state: &mut UiState,
+    config: &mut Config,
     ui: &mut Ui,
     ctx: &Context,
 ) {
-    CollapsingHeader::new("Preview Image").show(ui, |ui| {
-        let mut previews = operation.previews.lock();
-        let count = previews.len();
-        let img = &mut state.preview_image;
+    CollapsingHeader::new("Preview Image")
+        .default_open(true)
+        .show(ui, |ui| {
+            let mut previews = operation.previews.lock();
+            let count = previews.len();
+            let img = &mut state.preview_image;
 
-        ui.horizontal(|ui| {
-            *img -= ui.add_enabled(*img > 1, Button::new(CARET_LEFT)).clicked() as u8;
-            DragValue::new(img)
-                .range(1..=count)
-                .custom_formatter(|n, _| format!("{n}/{count}"))
-                .ui(ui);
-            *img += ui
-                .add_enabled(*img < count as u8, Button::new(CARET_RIGHT))
-                .clicked() as u8;
+            ui.horizontal(|ui| {
+                *img -= ui.add_enabled(*img > 1, Button::new(CARET_LEFT)).clicked() as u8;
+                DragValue::new(img)
+                    .range(1..=count)
+                    .custom_formatter(|n, _| format!("{n}/{count}"))
+                    .ui(ui);
+                *img += ui
+                    .add_enabled(*img < count as u8, Button::new(CARET_RIGHT))
+                    .clicked() as u8;
+            });
+
+            let (image, texture) = &mut previews[*img as usize - 1];
+            let (width, height) = (image.width(), image.height());
+
+            let available = ui.available_width();
+            let size = vec2(available, available / width as f32 * height as f32);
+            let texture = SizedTexture::new(texture.get(ctx, image), size);
+
+            ui.add_space(4.0);
+            ui.image(ImageSource::Texture(texture))
+                .on_hover_text(LazyText::new(move || format!("{width}×{height}")))
         });
 
-        let (image, texture) = &mut previews[*img as usize - 1];
-        let (width, height) = (image.width(), image.height());
+    ui.collapsing("Slice Preview", |ui| {
+        let sliced = &mut config.sliced;
+        grid("slice_preview").show(ui, |ui| {
+            ui.label("Coordinate Space");
+            ComboBox::from_id_salt("coordinate_space")
+                .selected_text(sliced.coordinate_space.name())
+                .show_ui(ui, |ui| {
+                    for mode in SlicePreviewCoordinateSpace::ALL {
+                        ui.selectable_value(&mut sliced.coordinate_space, *mode, mode.name());
+                    }
+                });
+            ui.end_row();
 
-        let available = ui.available_width();
-        let size = vec2(available, available / width as f32 * height as f32);
-        let texture = SizedTexture::new(texture.get(ctx, image), size);
+            ui.label("View Direction");
+            ComboBox::from_id_salt("view")
+                .selected_text(sliced.view.name())
+                .show_ui(ui, |ui| {
+                    for view in SlicePreviewView::ALL {
+                        ui.selectable_value(&mut sliced.view, *view, view.name());
+                    }
+                });
+            ui.end_row();
 
-        ui.add_space(4.0);
-        ui.image(ImageSource::Texture(texture))
-            .on_hover_text(LazyText::new(move || format!("{width}×{height}")))
+            ui.label("Anti-Aliasing");
+            ui.horizontal(|ui| {
+                DragValue::new(&mut sliced.multisample)
+                    .range(1..=64)
+                    .suffix("×")
+                    .ui(ui);
+                ui.take_available_width();
+            });
+            ui.end_row();
+        });
     });
 
-    ui.collapsing("Normal Layers", |ui| {
-        exposure_config(ui, &mut result.config.exposure_config);
-    });
+    ui.add_space(8.0);
+    ui.heading("Exposure");
+    CollapsingHeader::new("Normal Layers")
+        .default_open(true)
+        .show(ui, |ui| {
+            exposure_config(ui, &mut result.config.exposure_config);
+        });
 
-    ui.collapsing("First Layers", |ui| {
-        exposure_config(ui, &mut result.config.first_exposure_config);
-    });
+    CollapsingHeader::new("First Layers")
+        .default_open(true)
+        .show(ui, |ui| {
+            exposure_config(ui, &mut result.config.first_exposure_config);
+        });
 
     collapsing_toggle(
         "Current Layer Override",
@@ -573,4 +607,34 @@ fn sidebar(
         },
         ui,
     );
+
+    ui.add_space(8.0);
+    ui.heading("Analysis");
+    CollapsingHeader::new("Surface Area")
+        .default_open(true)
+        .show(ui, |ui| {
+            ui.label(SURFACE_AREA_DESC);
+            ui.add_space(8.0);
+
+            Plot::new("surface_area")
+                .width(ui.available_width())
+                .allow_drag(false)
+                .allow_zoom(false)
+                .allow_scroll(false)
+                .allow_boxed_zoom(false)
+                .view_aspect(3.0)
+                .show(ui, |plot| {
+                    let px_area = result.config.pixel_area();
+                    let layers = &result.inner.as_raster().unwrap().layers;
+                    let series = layers
+                        .iter()
+                        .enumerate()
+                        .map(|(x, layer)| {
+                            let area = layer.area as f32 * px_area;
+                            [x as f64, area.get::<Centimeter>() as f64]
+                        })
+                        .collect::<Vec<_>>();
+                    plot.add(Line::new("", series).color(Color32::WHITE));
+                });
+        });
 }

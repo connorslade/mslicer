@@ -65,8 +65,25 @@ pub struct SliceInfo {
 
 pub struct Layer {
     pub data: Vec<Run>,
+    pub area: u64,
     pub height: Milimeters,
     pub exposure: ExposureConfig,
+}
+
+impl Layer {
+    pub fn new(data: Vec<Run>, height: Milimeters, exposure: ExposureConfig) -> Self {
+        let area = data
+            .iter()
+            .filter(|x| x.value > 0)
+            .fold(0, |acc, run| acc + run.length);
+
+        Self {
+            data,
+            area,
+            height,
+            exposure,
+        }
+    }
 }
 
 pub type Polygon = Vec<Vector2<f32>>;

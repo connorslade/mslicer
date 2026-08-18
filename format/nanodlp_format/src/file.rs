@@ -205,10 +205,14 @@ impl File {
     }
 
     pub fn into_layers(&self) -> impl Iterator<Item = common::slice::Layer> {
-        self.layers.iter().map(|layer| common::slice::Layer {
-            data: LayerDecoder::new(layer).runs().collect(),
-            height: self.profile.depth.convert(),
-            exposure: ExposureConfig::default(),
+        self.layers.iter().map(|layer| {
+            let data = LayerDecoder::new(layer).runs().collect();
+
+            common::slice::Layer::new(
+                data,
+                self.profile.depth.convert(),
+                ExposureConfig::default(),
+            )
         })
     }
 }

@@ -112,19 +112,18 @@ impl Layer {
     }
 
     pub fn into_layer(&self) -> common::slice::Layer {
-        common::slice::Layer {
-            data: LayerDecoder::new(&self.data).collect(),
-            height: self.layer_position_z,
-            exposure: ExposureConfig {
-                exposure_time: self.layer_exposure_time,
-                exposure_delay: self.after_retract_time,
-                pwm: self.light_pwm,
-                lift_distance: self.lift_distance,
-                lift_speed: self.lift_speed.convert(),
-                retract_distance: self.retract_distance,
-                retract_speed: self.retract_speed.convert(),
-            },
-        }
+        let data = LayerDecoder::new(&self.data).collect();
+        let exposure = ExposureConfig {
+            exposure_time: self.layer_exposure_time,
+            exposure_delay: self.after_retract_time,
+            pwm: self.light_pwm,
+            lift_distance: self.lift_distance,
+            lift_speed: self.lift_speed.convert(),
+            retract_distance: self.retract_distance,
+            retract_speed: self.retract_speed.convert(),
+        };
+
+        common::slice::Layer::new(data, self.layer_position_z, exposure)
     }
 }
 

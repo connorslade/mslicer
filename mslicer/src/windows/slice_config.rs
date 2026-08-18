@@ -170,10 +170,9 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
         exposure_config(ui, &mut slice_config.first_exposure_config);
     });
 
-    ui.add_space(16.0);
+    ui.add_space(8.0);
     ui.heading("Post Processing");
 
-    ui.add_space(8.0);
     ui.collapsing("Exposure Remapping", |ui| {
         exposure_remapping(
             &mut slice_config.exposure_remap,

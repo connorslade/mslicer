@@ -44,7 +44,7 @@ impl Panels {
     }
 
     pub fn reset_ui(&mut self) {
-        self.dock_state = DockState::new(vec![Tab::Viewport]);
+        self.dock_state = DockState::new(vec![Tab::Viewport, Tab::Sliced]);
         let surface = self.dock_state.main_surface_mut();
         default_dock_layout(surface);
     }

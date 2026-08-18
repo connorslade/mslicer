@@ -28,8 +28,8 @@ impl SlicePreviewCoordinateSpace {
 
     pub fn name(&self) -> &str {
         match self {
-            Self::ScreenSpace => "Screen Space",
-            Self::WorldSpace => "World Space",
+            Self::ScreenSpace => "Screen",
+            Self::WorldSpace => "World",
         }
     }
 }

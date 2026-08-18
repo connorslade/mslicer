@@ -19,6 +19,7 @@
 - Sliced window sidebar
   - Allow changing exposure settings after slicing or to previously sliced files
   - View preview images
+  - Show layer surface area plot
 - Update config format
 - Ambient occlusion in renderer
 - Optional automatic update checking

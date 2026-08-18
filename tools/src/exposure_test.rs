@@ -91,10 +91,12 @@ impl ExposureTest {
             .chain(repeat_n(body, layers as usize))
             .chain(iter::once(top))
             .enumerate()
-            .map(|(layer, data)| Layer {
-                data,
-                height: config.default_height(layer as u32),
-                exposure: config.exposure_config(layer as u32).into_owned(),
+            .map(|(layer, data)| {
+                Layer::new(
+                    data,
+                    config.default_height(layer as u32),
+                    config.exposure_config(layer as u32).into_owned(),
+                )
             })
             .collect()
     }
