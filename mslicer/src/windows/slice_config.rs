@@ -187,6 +187,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
         "Variable Layer Height",
         post_processing.variable_layer_height.enabled,
         |ui| variable_layer_height(&mut post_processing.variable_layer_height, ui),
+        false,
         ui,
     );
 
@@ -194,6 +195,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
         "Elephant Foot Fixer",
         post_processing.elephant_foot_fixer.enabled,
         |ui| elephant_foot_fixer(&mut post_processing.elephant_foot_fixer, ui),
+        false,
         ui,
     );
 }
@@ -248,7 +250,8 @@ fn printer_presets(ui: &mut Ui, config: &mut Config, state: &mut UiState) {
     }
 }
 
-pub fn exposure_config(ui: &mut Ui, config: &mut ExposureConfig) {
+pub fn exposure_config(ui: &mut Ui, config: &mut ExposureConfig) -> bool {
+    let mut changed = false;
     TableBuilder::new(ui)
         .striped(true)
         .column(Column::exact(80.0))
@@ -261,11 +264,12 @@ pub fn exposure_config(ui: &mut Ui, config: &mut ExposureConfig) {
             });
 
             row.col(|ui| {
-                DragValue::new(config.exposure_time.raw_mut())
+                changed |= DragValue::new(config.exposure_time.raw_mut())
                     .suffix(" s")
                     .speed(0.1)
                     .range(0.0..=f32::MAX)
-                    .ui(ui);
+                    .ui(ui)
+                    .changed();
             });
 
             row.col(|ui| {
@@ -275,15 +279,20 @@ pub fn exposure_config(ui: &mut Ui, config: &mut ExposureConfig) {
             row.col(|ui| {
                 ui.horizontal(|ui| {
                     let mut pwm = config.pwm as f32 / 2.55;
-                    DragValue::new(&mut pwm).max_decimals(0).suffix('%').ui(ui);
+                    changed |= DragValue::new(&mut pwm)
+                        .max_decimals(0)
+                        .suffix('%')
+                        .ui(ui)
+                        .changed();
                     config.pwm = (pwm * 2.55).round() as u8;
 
                     ui.label(TIMER).on_hover_text("Exposure delay");
-                    DragValue::new(config.exposure_delay.raw_mut())
+                    changed |= DragValue::new(config.exposure_delay.raw_mut())
                         .suffix(" s")
                         .speed(0.1)
                         .range(0.0..=f32::MAX)
-                        .ui(ui);
+                        .ui(ui)
+                        .changed();
                 });
             });
         })
@@ -294,11 +303,12 @@ pub fn exposure_config(ui: &mut Ui, config: &mut ExposureConfig) {
                 });
 
                 row.col(|ui| {
-                    DragValue::new(config.lift_distance.raw_mut())
+                    changed |= DragValue::new(config.lift_distance.raw_mut())
                         .suffix(" mm")
                         .speed(0.1)
                         .range(0.0..=f32::MAX)
-                        .ui(ui);
+                        .ui(ui)
+                        .changed();
                 });
 
                 row.col(|ui| {
@@ -307,11 +317,12 @@ pub fn exposure_config(ui: &mut Ui, config: &mut ExposureConfig) {
 
                 row.col(|ui| {
                     config.lift_speed.with::<Milimeter, Minute>(|val| {
-                        DragValue::new(val)
+                        changed |= DragValue::new(val)
                             .suffix(" mm/min")
                             .speed(0.1)
                             .range(0.0..=f32::MAX)
-                            .ui(ui);
+                            .ui(ui)
+                            .changed();
                     });
                 });
             });
@@ -322,11 +333,12 @@ pub fn exposure_config(ui: &mut Ui, config: &mut ExposureConfig) {
                 });
 
                 row.col(|ui| {
-                    DragValue::new(config.retract_distance.raw_mut())
+                    changed |= DragValue::new(config.retract_distance.raw_mut())
                         .suffix(" mm")
                         .speed(0.1)
                         .range(0.0..=f32::MAX)
-                        .ui(ui);
+                        .ui(ui)
+                        .changed();
                 });
 
                 row.col(|ui| {
@@ -335,15 +347,18 @@ pub fn exposure_config(ui: &mut Ui, config: &mut ExposureConfig) {
 
                 row.col(|ui| {
                     config.retract_speed.with::<Milimeter, Minute>(|val| {
-                        DragValue::new(val)
+                        changed |= DragValue::new(val)
                             .suffix(" mm/min")
                             .speed(0.1)
                             .range(0.0..=f32::MAX)
-                            .ui(ui);
+                            .ui(ui)
+                            .changed();
                     });
                 });
             });
         });
+
+    changed
 }
 
 fn edit_presets(app: &mut PopupApp, ui: &mut Ui) -> bool {

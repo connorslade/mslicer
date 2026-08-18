@@ -1,7 +1,8 @@
 use std::{hash::Hash, mem};
 
 use egui::{
-    Align, Color32, DragValue, FontId, Grid, Layout, Response, Separator, Ui, emath::Numeric,
+    Align, CollapsingHeader, Color32, DragValue, FontId, Grid, Layout, Response, Separator, Ui,
+    emath::Numeric,
 };
 
 use crate::{
@@ -151,11 +152,14 @@ pub fn collapsing_toggle(
     title: &str,
     mut toggle: bool,
     content: impl FnOnce(&mut Ui),
+    default: bool,
     ui: &mut Ui,
 ) -> bool {
     ui.with_layout(Layout::right_to_left(Align::Min), |ui| {
         ui.checkbox(&mut toggle, "");
-        ui.collapsing(title, |ui| content(ui));
+        CollapsingHeader::new(title)
+            .default_open(default)
+            .show(ui, |ui| content(ui));
     });
     toggle
 }

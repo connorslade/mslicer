@@ -18,7 +18,7 @@ pub struct IslandDetection {
 impl IslandDetection {
     pub fn new(
         resolution: Vector2<u32>,
-        layers: Arc<Vec<Layer>>,
+        layers: Vec<Layer>,
         annotations: Arc<Annotations>,
     ) -> Self {
         let progress = Progress::new();

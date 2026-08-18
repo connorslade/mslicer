@@ -20,6 +20,7 @@
   - Allow changing exposure settings after slicing or to previously sliced files
   - View preview images
   - Show layer surface area plot
+  - Edit exposure config
 - Update config format
 - Ambient occlusion in renderer
 - Optional automatic update checking

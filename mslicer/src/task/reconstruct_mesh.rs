@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use clone_macro::clone;
 use common::{
     progress::Progress,
@@ -16,7 +14,7 @@ pub struct ReconstructMesh {
 }
 
 impl ReconstructMesh {
-    pub fn new(config: SliceConfig, result: Arc<Vec<Layer>>) -> Self {
+    pub fn new(config: SliceConfig, result: Vec<Layer>) -> Self {
         let progress = Progress::new();
         let handle = TaskThread::spawn(clone!([progress], move || {
             marching_cubes(&progress, &config, &result)

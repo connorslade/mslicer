@@ -66,7 +66,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
             let format = app.project.slice_config.mode;
 
             if mem::take(&mut result.fresh) {
-                app.state.slice_preview_layer = 0;
+                app.state.slice_preview_layer = 1;
                 app.state.last_preview_layer = 0;
                 app.state.preview_offset = Vector2::zeros();
                 app.state.preview_scale = 1.0;
@@ -587,24 +587,59 @@ fn sidebar(
 
     ui.add_space(8.0);
     ui.heading("Exposure");
+
+    let mut exposure_changed = false;
+    CollapsingHeader::new("Config")
+        .default_open(true)
+        .show(ui, |ui| {
+            grid("exposure").show(ui, |ui| {
+                ui.label("First Layers");
+                exposure_changed |= DragValue::new(&mut result.config.first_layers)
+                    .ui(ui)
+                    .changed();
+                ui.end_row();
+
+                ui.label("Transition Layers");
+                ui.horizontal(|ui| {
+                    exposure_changed |= DragValue::new(&mut result.config.transition_layers)
+                        .ui(ui)
+                        .changed();
+                    ui.take_available_width();
+                });
+                ui.end_row();
+            });
+        });
+
     CollapsingHeader::new("Normal Layers")
         .default_open(true)
         .show(ui, |ui| {
-            exposure_config(ui, &mut result.config.exposure_config);
+            exposure_changed |= exposure_config(ui, &mut result.config.exposure_config);
         });
 
     CollapsingHeader::new("First Layers")
         .default_open(true)
         .show(ui, |ui| {
-            exposure_config(ui, &mut result.config.first_exposure_config);
+            exposure_changed |= exposure_config(ui, &mut result.config.first_exposure_config);
         });
 
-    collapsing_toggle(
+    let raster = result.inner.as_raster_mut().unwrap();
+    if exposure_changed {
+        raster.print_time = result.config.print_time(raster.layers.len() as u32);
+        for (i, layer) in raster.layers.iter_mut().enumerate() {
+            layer.exposure = result.config.exposure_config(i as u32).into_owned();
+        }
+    }
+
+    let layer = &mut raster.layers[state.slice_preview_layer - 1];
+    layer.unique_exposure = collapsing_toggle(
         "Current Layer Override",
-        false,
+        layer.unique_exposure,
         |ui| {
-            ui.label("todo");
+            ui.add_enabled_ui(layer.unique_exposure, |ui| {
+                exposure_config(ui, &mut layer.exposure);
+            });
         },
+        true,
         ui,
     );
 

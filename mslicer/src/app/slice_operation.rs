@@ -53,12 +53,12 @@ pub enum GenericSliceResult {
 
 #[derive(Clone)]
 pub enum GenericSliceData {
-    Raster { data: Arc<Vec<Layer>>, voxels: u64 },
+    Raster { data: Vec<Layer>, voxels: u64 },
     Vector { data: Arc<Vec<VectorLayer>> },
 }
 
 pub struct RasterSliceResult {
-    pub layers: Arc<Vec<Layer>>,
+    pub layers: Vec<Layer>,
     pub annotations: Arc<Annotations>,
     pub detected_islands: bool,
 
@@ -143,7 +143,7 @@ impl SliceOperationInner {
             volume: (voxels as f32 * config.voxel_volume()).convert(),
             print_time: config.print_time(layers.len() as u32),
 
-            layers: Arc::new(layers),
+            layers,
             annotations: Arc::new(Annotations::default()),
             detected_islands: false,
         };
@@ -250,6 +250,13 @@ impl SliceResult {
 
 impl GenericSliceResult {
     pub fn as_raster(&self) -> Option<&RasterSliceResult> {
+        match self {
+            GenericSliceResult::Raster(raster) => Some(raster),
+            _ => None,
+        }
+    }
+
+    pub fn as_raster_mut(&mut self) -> Option<&mut RasterSliceResult> {
         match self {
             GenericSliceResult::Raster(raster) => Some(raster),
             _ => None,

@@ -1,4 +1,4 @@
-use std::{mem, time::Instant};
+use std::{mem, sync::Arc, time::Instant};
 
 use common::{
     container::{Image, rle},
@@ -52,7 +52,7 @@ impl ElephantFootFixer {
             .take(config.first_layers as usize)
             .par_bridge()
             .for_each(|layer| {
-                let inner = rle::decode_vec(&layer.data);
+                let inner = rle::decode_vec(&*layer.data);
                 let mut image = GrayImage::from_raw(width, height, inner).unwrap();
 
                 let erode = imageproc::morphology::grayscale_erode(&image, &mask);
@@ -63,7 +63,7 @@ impl ElephantFootFixer {
                 }
 
                 let image = Image::from_raw(config.platform_resolution.cast(), image.into_raw());
-                layer.data = image.runs().collect();
+                layer.data = Arc::new(image.runs().collect());
             });
 
         progress.set_finished();

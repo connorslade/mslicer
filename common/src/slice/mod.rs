@@ -1,5 +1,7 @@
 //! Simplified configuration for slicing a model.
 
+use std::sync::Arc;
+
 use image::RgbaImage;
 use nalgebra::{Vector2, Vector3};
 
@@ -63,10 +65,14 @@ pub struct SliceInfo {
     pub bottom_layers: u32,
 }
 
+#[derive(Clone)]
 pub struct Layer {
-    pub data: Vec<Run>,
+    pub data: Arc<Vec<Run>>,
     pub area: u64,
     pub height: Milimeters,
+
+    /// If this exposure is not derived directly from the slice config.
+    pub unique_exposure: bool,
     pub exposure: ExposureConfig,
 }
 
@@ -78,9 +84,11 @@ impl Layer {
             .fold(0, |acc, run| acc + run.length);
 
         Self {
-            data,
+            data: Arc::new(data),
             area,
             height,
+
+            unique_exposure: false,
             exposure,
         }
     }
