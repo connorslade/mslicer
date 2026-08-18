@@ -13,7 +13,7 @@ use egui_phosphor::regular::{
     CARET_DOWN, CARET_LEFT, CARET_RIGHT, CARET_UP, CLOCK, CORNERS_IN, CROSSHAIR, CUBE_TRANSPARENT,
     DROP, FLOPPY_DISK_BACK, PAPER_PLANE_TILT, SIDEBAR,
 };
-use egui_plot::{Line, Plot};
+use egui_plot::{Line, LineStyle, Plot, VLine};
 use egui_wgpu::Callback;
 use image::RgbaImage;
 use nalgebra::Vector2;
@@ -670,6 +670,11 @@ fn sidebar(
                         })
                         .collect::<Vec<_>>();
                     plot.add(Line::new("", series).color(Color32::WHITE));
+                    plot.add(
+                        VLine::new("", (state.slice_preview_layer - 1) as f32)
+                            .color(Color32::RED)
+                            .style(LineStyle::Dashed { length: 4.0 }),
+                    );
                 });
         });
 }
