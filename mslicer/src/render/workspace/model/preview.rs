@@ -51,8 +51,9 @@ impl ModelPipeline {
 
     fn upload_preview_uniforms(&mut self, gcx: &Gcx, app: &mut App, camera: &Camera) {
         let view_projection = camera.view_projection_matrix(Projection::Perspective, 1.0);
-        self.bind_groups.clear();
-        for model in app.project.models.iter_mut() {
+
+        self.allocate_bindings(gcx, app.project.models.len());
+        for (model, bindings) in app.project.models.iter_mut().zip(self.bindings.iter()) {
             model.get_buffers(&gcx.device);
 
             let model_transform = *model.mesh.transformation_matrix();
@@ -65,7 +66,7 @@ impl ModelPipeline {
                 render_style: RenderStyle::Rendered as u32,
                 overhang_angle: 0.0,
             };
-            self.bind_groups.push(self.bind_group(gcx, uniforms));
+            bindings.upload(gcx, &uniforms);
         }
     }
 }

@@ -1,5 +1,3 @@
-use std::env;
-
 use egui::IconData;
 
 pub mod arguments;

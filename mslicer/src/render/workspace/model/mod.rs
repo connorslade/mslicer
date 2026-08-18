@@ -13,7 +13,7 @@ use wgpu::{
 
 use crate::{
     app::App,
-    render::{Gcx, consts::FILTERING_SAMPLER},
+    render::{Gcx, consts::FILTERING_SAMPLER, workspace::model::bindings::ModelBindings},
 };
 
 mod bindings;
@@ -32,7 +32,7 @@ pub struct ModelPipeline {
     post_index_buffer: Buffer,
     sampler: Sampler,
 
-    bind_groups: Vec<BindGroup>,
+    bindings: Vec<ModelBindings>,
 }
 
 struct MultiStage {
@@ -93,7 +93,18 @@ impl ModelPipeline {
             sampler,
             multi_stage: None,
 
-            bind_groups: Vec::new(),
+            bindings: Vec::new(),
+        }
+    }
+
+    fn allocate_bindings(&mut self, gcx: &Gcx, count: usize) {
+        while self.bindings.len() < count {
+            let bindings = ModelBindings::create(gcx, &self.bind_group_layout);
+            self.bindings.push(bindings);
+        }
+
+        while self.bindings.len() > count {
+            self.bindings.pop();
         }
     }
 
@@ -109,8 +120,8 @@ impl ModelPipeline {
             .map(|x| x.to_radians())
             .unwrap_or(f32::from_bits(u32::MAX));
 
-        self.bind_groups.clear();
-        for model in app.project.models.iter_mut() {
+        self.allocate_bindings(gcx, app.project.models.len());
+        for (model, bindings) in app.project.models.iter_mut().zip(self.bindings.iter()) {
             model.get_buffers(&gcx.device);
 
             let model_transform = *model.mesh.transformation_matrix();
@@ -123,7 +134,7 @@ impl ModelPipeline {
                 render_style: app.config.render.style as u32,
                 overhang_angle,
             };
-            self.bind_groups.push(self.bind_group(gcx, uniforms));
+            bindings.upload(gcx, &uniforms);
         }
 
         let ao = &app.config.render.ambient_occlusion;
@@ -183,7 +194,7 @@ impl ModelPipeline {
             .map(|(idx, _)| idx);
 
         for idx in indexes {
-            render_pass.set_bind_group(0, &self.bind_groups[idx], &[]);
+            render_pass.set_bind_group(0, &self.bindings[idx].bind_group, &[]);
 
             let model = &app.project.models[idx];
             let buffers = model.try_get_buffers().unwrap();
