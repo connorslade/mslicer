@@ -36,6 +36,8 @@ pub struct Config {
 
     pub recent_projects: Vec<PathBuf>,
     pub printers: Vec<PrinterProperties>,
+    #[cfg(windows)]
+    pub portable: bool,
 }
 
 impl Config {
@@ -99,6 +101,8 @@ impl Default for Config {
                 [11_520, 5_120],
                 [218.88, 122.904, 260.0],
             )],
+            #[cfg(windows)]
+            portable: false,
         }
     }
 }

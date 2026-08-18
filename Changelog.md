@@ -12,7 +12,7 @@
   - Allow placing supports manually
 - Add anti-aliasing to slice preview
 - Reduce output file size (Reported by Jens Holländer)
-- Remote Print: Support SDCP V3.0.0 for newer printers
+- Remote Print now supports SDCP V3.0.0 for newer printers
 - Allow loading previously sliced files for inspection
 - Convert sliced files back into meshes
 - Rename 'Slice Operation' window to 'Sliced'
@@ -26,6 +26,8 @@
 - Add basis vector gizmo
 - Support opening into projects, sliced files, and meshes
 - Tweak Spacenav controls
+- Register file associations
+- Windows installer
 
 ## v0.8.0 &mdash; June 30th, 2026
 

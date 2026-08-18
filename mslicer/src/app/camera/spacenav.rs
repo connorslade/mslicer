@@ -1,3 +1,5 @@
+#![allow(unused)]
+
 use std::io::Read;
 #[cfg(unix)]
 use std::os::unix::net::UnixStream;

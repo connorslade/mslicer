@@ -24,14 +24,11 @@ mod windows;
 use app::{App, config::Config};
 
 use crate::{
-    system::{icon, open_arguments},
+    system::{arguments::Args, icon},
     task::update_check_if_scheduled,
 };
 
 fn main() -> Result<()> {
-    #[cfg(windows)]
-    crate::system::windows::install();
-
     // Don't print panics on threads that are handled by the task system.
     let old_panic = panic::take_hook();
     panic::set_hook(Box::new(move |panic| {
@@ -59,8 +56,17 @@ fn main() -> Result<()> {
         .init();
     info!("Starting mslicer v{VERSION}");
 
-    let config = Config::load_or_default(&config_dir);
+    let args = Args::parse();
+    #[allow(unused_mut)]
+    let mut config = Config::load_or_default(&config_dir);
     let max_buffer_size = config.render.max_buffer_size;
+
+    #[cfg(windows)]
+    crate::system::windows::check_install(&mut config, &args)?;
+    #[cfg(not(windows))]
+    if args.install {
+        tracing::warn!("--install has no effect on non-windows platforms, ignoring.")
+    }
 
     eframe::run_native(
         "mslicer",
@@ -101,7 +107,7 @@ fn main() -> Result<()> {
 
             let mut app = App::new(render::init_wgpu(cc), config_dir, config, collector);
             update_check_if_scheduled(&mut app);
-            open_arguments(&mut app);
+            args.open.start(&mut app);
 
             Ok(Box::new(app))
         }),

@@ -7,6 +7,8 @@ use egui::{
 use egui_phosphor::regular::{CARDS, FILE_TEXT, GIT_DIFF, HAMMER, HOURGLASS, STACK};
 use std::{collections::HashMap, f32::consts::TAU, fs::File};
 
+#[cfg(windows)]
+use crate::system::windows::launch_install;
 use crate::{
     app::App,
     include_asset,
@@ -104,6 +106,13 @@ pub fn ui(app: &mut App, ctx: &Context) {
                     });
 
                     labeled_separator(ui, "Misc");
+                    #[cfg(windows)]
+                    if app.config.portable && ui.button("Install").clicked() {
+                        app.config.portable = false;
+                        let _ = app.config.save(&app.config_dir);
+                        launch_install().unwrap();
+                    }
+
                     menu_button((ui, app, ctx), SHORTCUTS[6], "Quit");
                 });
 

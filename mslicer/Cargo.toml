@@ -47,5 +47,8 @@ tracing.workspace = true
 ureq.workspace = true
 wgpu.workspace = true
 
+[target.'cfg(windows)'.dependencies]
+windows-registry.workspace = true
+
 [target.'cfg(windows)'.build-dependencies]
 winres.workspace = true
