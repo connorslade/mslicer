@@ -38,11 +38,18 @@ pub fn plane_triangle_intersection(
     };
 
     // And as you can see my aversion to else blocks now includes if blocks...
-    // Anyway here we just check each line segment of the face is intersecting,
-    // if it is we push the intersection to the out vec.
-    (a_pos ^ b_pos).then(|| push_intersection(a, b, v0.xy(), v1.xy()));
-    (b_pos ^ c_pos).then(|| push_intersection(b, c, v1.xy(), v2.xy()));
-    (c_pos ^ a_pos).then(|| push_intersection(c, a, v2.xy(), v0.xy()));
+    // Anyway here we check each line segment of the face is intersecting, if it
+    // is we push the intersection to the out vec. Note that the cases of A→B
+    // and B→A need to be handled separately due to floating point rounding so
+    // that two segments that should be attached have bit-exact float positions.
+    (a_pos && !b_pos).then(|| push_intersection(a, b, v0.xy(), v1.xy()));
+    (!a_pos && b_pos).then(|| push_intersection(b, a, v1.xy(), v0.xy()));
+
+    (b_pos && !c_pos).then(|| push_intersection(b, c, v1.xy(), v2.xy()));
+    (!b_pos && c_pos).then(|| push_intersection(c, b, v2.xy(), v1.xy()));
+
+    (c_pos && !a_pos).then(|| push_intersection(c, a, v2.xy(), v0.xy()));
+    (!c_pos && a_pos).then(|| push_intersection(a, c, v0.xy(), v2.xy()));
 
     (n == 2).then_some(out)
 }

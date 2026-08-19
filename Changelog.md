@@ -30,6 +30,7 @@
 - Tweak Spacenav controls
 - Register file associations
 - Windows installer
+- More robust slicing!
 
 ## v0.8.0 &mdash; June 30th, 2026
 
