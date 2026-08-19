@@ -130,26 +130,26 @@ impl SlicePreviewPipeline {
         if let Some((layer, annotations)) = &resources.new_preview {
             self.layer.write(gcx, layer);
             self.annotations.write(gcx, annotations);
-        }
 
-        self.bind_group = Some(gcx.device.create_bind_group(&BindGroupDescriptor {
-            label: None,
-            layout: &self.bind_group_layout,
-            entries: &[
-                BindGroupEntry {
-                    binding: 0,
-                    resource: self.uniform_buffer.as_entire_binding(),
-                },
-                BindGroupEntry {
-                    binding: 1,
-                    resource: self.layer.as_entire_binding(),
-                },
-                BindGroupEntry {
-                    binding: 2,
-                    resource: self.annotations.as_entire_binding(),
-                },
-            ],
-        }));
+            self.bind_group = Some(gcx.device.create_bind_group(&BindGroupDescriptor {
+                label: None,
+                layout: &self.bind_group_layout,
+                entries: &[
+                    BindGroupEntry {
+                        binding: 0,
+                        resource: self.uniform_buffer.as_entire_binding(),
+                    },
+                    BindGroupEntry {
+                        binding: 1,
+                        resource: self.layer.as_entire_binding(),
+                    },
+                    BindGroupEntry {
+                        binding: 2,
+                        resource: self.annotations.as_entire_binding(),
+                    },
+                ],
+            }));
+        }
 
         let mut buffer = UniformBuffer::new(Vec::new());
         buffer
@@ -167,10 +167,12 @@ impl SlicePreviewPipeline {
     }
 
     pub fn paint(&self, render_pass: &mut RenderPass) {
-        render_pass.set_pipeline(&self.render_pipeline);
-        render_pass.set_bind_group(0, self.bind_group.as_ref().unwrap(), &[]);
+        if let Some(bind_group) = &self.bind_group {
+            render_pass.set_pipeline(&self.render_pipeline);
+            render_pass.set_bind_group(0, bind_group, &[]);
 
-        render_pass.set_index_buffer(self.index_buffer.slice(..), IndexFormat::Uint32);
-        render_pass.draw_indexed(0..3, 0, 0..1);
+            render_pass.set_index_buffer(self.index_buffer.slice(..), IndexFormat::Uint32);
+            render_pass.draw_indexed(0..3, 0, 0..1);
+        }
     }
 }
