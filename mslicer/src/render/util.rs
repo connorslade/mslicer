@@ -49,20 +49,23 @@ impl ResizingBuffer {
     }
 
     pub fn write(&mut self, gcx: &Gcx, data: &[u8]) {
-        if data.len() as u64 > self.inner.size() {
-            self.inner = gcx.device.create_buffer(&BufferDescriptor {
-                label: None,
-                size: (data.len() as u64).next_power_of_two(),
-                usage: self.inner.usage(),
-                mapped_at_creation: false,
-            });
-        }
-
+        self.resize(gcx, data.len() as u64);
         gcx.queue.write_buffer(&self.inner, 0, data);
     }
 
     pub fn write_slice<A: NoUninit>(&mut self, gcx: &Gcx, data: &[A]) {
         self.write(gcx, bytemuck::cast_slice(data));
+    }
+
+    pub fn resize(&mut self, gcx: &Gcx, size: u64) {
+        if size > self.inner.size() {
+            self.inner = gcx.device.create_buffer(&BufferDescriptor {
+                label: None,
+                size: size.next_power_of_two(),
+                usage: self.inner.usage(),
+                mapped_at_creation: false,
+            });
+        }
     }
 }
 

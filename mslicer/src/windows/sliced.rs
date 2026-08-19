@@ -41,7 +41,6 @@ use crate::{
     windows::slice_config::exposure_config,
 };
 use common::{
-    container::rle,
     misc::human_duration,
     progress::Progress,
     serde::DynamicSerializer,
@@ -315,16 +314,12 @@ fn slice_preview(
             || result.annotations.take_updated()
         {
             state.last_preview_layer = state.preview_layer;
-            let size = (width * height) as usize;
 
-            let mut layer = vec![0u8; size];
             let layer_idx = state.preview_layer - 1;
-            rle::decode_into(result.layers[layer_idx].data.iter(), &mut layer);
+            let layer = result.layers[layer_idx].data.clone();
+            let annotations = result.annotations.lock().get_layer(layer_idx);
 
-            let mut layer_annotations = vec![0u8; size];
-            (result.annotations.lock()).decode_layer(layer_idx, &mut layer_annotations);
-
-            Some((layer, layer_annotations))
+            Some((layer, annotations))
         } else {
             None
         };

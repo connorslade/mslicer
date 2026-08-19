@@ -3,8 +3,9 @@ use nalgebra::Vector2;
 use wgpu::{
     BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayout, BindGroupLayoutDescriptor,
     BindGroupLayoutEntry, Buffer, BufferDescriptor, BufferUsages, ColorTargetState, ColorWrites,
-    Device, FragmentState, IndexFormat, MultisampleState, PipelineLayoutDescriptor, PrimitiveState,
-    RenderPass, RenderPipeline, RenderPipelineDescriptor, TextureFormat, VertexState,
+    CommandEncoder, Device, FragmentState, IndexFormat, MultisampleState, PipelineLayoutDescriptor,
+    PrimitiveState, RenderPass, RenderPipeline, RenderPipelineDescriptor, TextureFormat,
+    VertexState,
     util::{BufferInitDescriptor, DeviceExt},
 };
 
@@ -16,21 +17,24 @@ use crate::{
             BASE_UNIFORM_DESCRIPTOR, DEPTH_STENCIL_STATE, STORAGE_BIND_GROUP_LAYOUT_ENTRY,
             UNIFORM_BIND_GROUP_LAYOUT_ENTRY,
         },
-        slice_preview::SlicePreviewRenderCallback,
-        util::ResizingBuffer,
+        slice_preview::{
+            SlicePreviewRenderCallback,
+            decompress::{DecompressPass, DecompressedBuffer},
+        },
     },
 };
 
 pub struct SlicePreviewPipeline {
-    render_pipeline: RenderPipeline,
+    pipeline: RenderPipeline,
     bind_group_layout: BindGroupLayout,
     bind_group: Option<BindGroup>,
 
     index_buffer: Buffer,
     uniform_buffer: Buffer,
 
-    layer: ResizingBuffer,
-    annotations: ResizingBuffer,
+    decompress: DecompressPass,
+    layer: DecompressedBuffer,
+    annotations: DecompressedBuffer,
 }
 
 #[derive(ShaderType)]
@@ -71,7 +75,7 @@ impl SlicePreviewPipeline {
             push_constant_ranges: &[],
         });
 
-        let render_pipeline = device.create_render_pipeline(&RenderPipelineDescriptor {
+        let pipeline = device.create_render_pipeline(&RenderPipelineDescriptor {
             label: None,
             layout: Some(&pipeline_layout),
             vertex: VertexState {
@@ -106,30 +110,31 @@ impl SlicePreviewPipeline {
             usage: BufferUsages::INDEX | BufferUsages::COPY_DST,
         });
 
-        let layer =
-            ResizingBuffer::new_sized(device, BufferUsages::STORAGE | BufferUsages::COPY_DST, 4);
-        let annotations =
-            ResizingBuffer::new_sized(device, BufferUsages::STORAGE | BufferUsages::COPY_DST, 4);
-
         Self {
-            render_pipeline,
+            pipeline,
             bind_group_layout,
             bind_group: None,
 
             index_buffer,
             uniform_buffer,
 
-            layer,
-            annotations,
+            decompress: DecompressPass::new(device),
+            layer: DecompressedBuffer::new(device),
+            annotations: DecompressedBuffer::new(device),
         }
     }
 }
 
 impl SlicePreviewPipeline {
-    pub fn prepare(&mut self, gcx: &Gcx, resources: &SlicePreviewRenderCallback) {
+    pub fn prepare(
+        &mut self,
+        gcx: &Gcx,
+        encoder: &mut CommandEncoder,
+        resources: &SlicePreviewRenderCallback,
+    ) {
         if let Some((layer, annotations)) = &resources.new_preview {
-            self.layer.write(gcx, layer);
-            self.annotations.write(gcx, annotations);
+            (self.decompress).decompress(gcx, encoder, &mut self.layer, layer);
+            (self.decompress).decompress(gcx, encoder, &mut self.annotations, annotations);
 
             self.bind_group = Some(gcx.device.create_bind_group(&BindGroupDescriptor {
                 label: None,
@@ -168,7 +173,7 @@ impl SlicePreviewPipeline {
 
     pub fn paint(&self, render_pass: &mut RenderPass) {
         if let Some(bind_group) = &self.bind_group {
-            render_pass.set_pipeline(&self.render_pipeline);
+            render_pass.set_pipeline(&self.pipeline);
             render_pass.set_bind_group(0, bind_group, &[]);
 
             render_pass.set_index_buffer(self.index_buffer.slice(..), IndexFormat::Uint32);

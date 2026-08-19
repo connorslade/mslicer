@@ -1,8 +1,12 @@
+use std::sync::Arc;
+
+use common::container::Run;
 use egui::PaintCallbackInfo;
 use egui_wgpu::{CallbackResources, CallbackTrait, ScreenDescriptor};
 use nalgebra::Vector2;
 use wgpu::{CommandBuffer, CommandEncoder, Device, Queue, RenderPass, TextureFormat};
 
+mod decompress;
 mod pipeline;
 pub use pipeline::SlicePreviewPipeline;
 
@@ -20,7 +24,7 @@ pub struct SlicePreviewRenderCallback {
     pub pixel_aspect: f32,
     pub multisample: u32,
 
-    pub new_preview: Option<(Vec<u8>, Vec<u8>)>,
+    pub new_preview: Option<(Arc<Vec<Run>>, Vec<Run>)>,
 }
 
 impl CallbackTrait for SlicePreviewRenderCallback {
@@ -29,7 +33,7 @@ impl CallbackTrait for SlicePreviewRenderCallback {
         device: &Device,
         queue: &Queue,
         _screen_descriptor: &ScreenDescriptor,
-        _encoder: &mut CommandEncoder,
+        encoder: &mut CommandEncoder,
         resources: &mut CallbackResources,
     ) -> Vec<CommandBuffer> {
         let resources = resources.get_mut::<SlicePreviewRenderResources>().unwrap();
@@ -39,7 +43,9 @@ impl CallbackTrait for SlicePreviewRenderCallback {
             texture: TextureFormat::R8Unorm, // random format bc its not actually used in this renderer
         };
 
-        resources.slice_preview_pipeline.prepare(&gcx, self);
+        resources
+            .slice_preview_pipeline
+            .prepare(&gcx, encoder, self);
 
         Vec::new()
     }

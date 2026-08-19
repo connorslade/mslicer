@@ -32,6 +32,7 @@
 - Windows installer
 - More robust slicing!
 - Fix crash when slicing to different resolutions in the same session
+- Lag free slice preview scrubbing (layer data is decompressed on the gpu)
 
 ## v0.8.0 &mdash; June 30th, 2026
 

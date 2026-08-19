@@ -1,5 +1,6 @@
 use std::{
     collections::HashMap,
+    mem,
     ops::Deref,
     sync::{
         Arc,
@@ -199,17 +200,12 @@ impl<'a> LockedAnnotations<'a> {
         }
     }
 
-    pub fn decode_layer(&self, layer: usize, buffer: &mut [u8]) {
+    pub fn get_layer(&self, layer: usize) -> Vec<Run> {
         let Some(layer) = self.layers.get(&layer) else {
-            return;
+            return Vec::new();
         };
 
-        let mut pos = 0;
-        for run in layer.iter() {
-            let len = run.length as usize;
-            buffer[pos..(pos + len)].fill(run.value as u8);
-            pos += len;
-        }
+        unsafe { mem::transmute::<Vec<Run<Annotation>>, Vec<Run>>(layer.clone()) }
     }
 
     pub fn insert_layer(&mut self, annotation: Annotation, layer: usize, runs: &[u64]) {
