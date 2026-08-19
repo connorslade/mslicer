@@ -80,17 +80,23 @@ impl DecompressPass {
         buffer: &mut DecompressedBuffer,
         runs: &[Run],
     ) {
-        // todo: limit run length to avoid the dispatch from being bottle necked
-        // by a single invocation
         let mut data = Vec::new();
         let mut i = 0_u32;
+
         for run in runs {
             if run.value > 0 {
-                data.push(i);
-                data.push(run.length as u32);
-                data.push(run.value as u32);
+                let mut remaining = run.length;
+                while remaining > 0 {
+                    let take = remaining.min(0x2000);
+                    remaining -= take;
+
+                    data.push(i);
+                    data.push((take as u32) << 8 | run.value as u32);
+                    i += take as u32;
+                }
+            } else {
+                i += run.length as u32;
             }
-            i += run.length as u32;
         }
 
         buffer.compressed.write_slice(gcx, &data);
@@ -117,7 +123,7 @@ impl DecompressPass {
             timestamp_writes: None,
         });
 
-        let run_count = data.len() / 3;
+        let run_count = data.len() / 2;
         compute_pass.set_pipeline(&self.pipeline);
         compute_pass.set_bind_group(0, &bind_group, &[]);
         compute_pass.set_push_constants(0, bytemuck::cast_slice(&[run_count as u32]));
