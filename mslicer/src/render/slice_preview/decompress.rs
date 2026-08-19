@@ -80,6 +80,8 @@ impl DecompressPass {
         buffer: &mut DecompressedBuffer,
         runs: &[Run],
     ) {
+        // todo: limit run length to avoid the dispatch from being bottle necked
+        // by a single invocation
         let mut data = Vec::new();
         let mut i = 0_u32;
         for run in runs {
