@@ -66,7 +66,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
             let format = app.project.slice_config.mode;
 
             if mem::take(&mut result.fresh) {
-                app.state.slice_preview_layer = 1;
+                app.state.preview_layer = 1;
                 app.state.last_preview_layer = 0;
                 app.state.preview_offset = Vector2::zeros();
                 app.state.preview_scale = 1.0;
@@ -204,14 +204,14 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
                         let state = &mut app.state;
                         ui.horizontal(|ui| {
                             let layer_digits = state.layer_count.1 as usize;
-                            DragValue::new(&mut state.slice_preview_layer)
+                            DragValue::new(&mut state.preview_layer)
                                 .range(1..=state.layer_count.0)
                                 .custom_formatter(|n, _| {
                                     format!("{:0>layer_digits$}/{}", n, state.layer_count.0)
                                 })
                                 .ui(ui);
-                            state.slice_preview_layer += ui.button(CARET_UP).clicked() as usize;
-                            state.slice_preview_layer -= ui.button(CARET_DOWN).clicked() as usize;
+                            state.preview_layer += ui.button(CARET_UP).clicked() as usize;
+                            state.preview_layer -= ui.button(CARET_DOWN).clicked() as usize;
 
                             ui.separator();
                             if ui.button(concatcp!(CORNERS_IN, " Reset View")).clicked() {
@@ -302,15 +302,15 @@ fn slice_preview(
         let available_size = ui.available_size() - Vec2::new(5.0, 5.0);
         let [width, height] = *platform.as_ref();
 
-        state.slice_preview_layer = state.slice_preview_layer.clamp(1, state.layer_count.0);
-        let new_preview = if state.last_preview_layer != state.slice_preview_layer
+        state.preview_layer = state.preview_layer.clamp(1, state.layer_count.0);
+        let new_preview = if state.last_preview_layer != state.preview_layer
             || result.annotations.take_updated()
         {
-            state.last_preview_layer = state.slice_preview_layer;
+            state.last_preview_layer = state.preview_layer;
             let size = (width * height) as usize;
 
             let mut layer = vec![0u8; size];
-            let layer_idx = state.slice_preview_layer - 1;
+            let layer_idx = state.preview_layer - 1;
             rle::decode_into(result.layers[layer_idx].data.iter(), &mut layer);
 
             let mut layer_annotations = vec![0u8; size];
@@ -379,7 +379,7 @@ fn layer_slider(state: &mut UiState, ui: &mut egui::Ui, result: &mut RasterSlice
     ui.spacing_mut().slider_width = ui.available_size().y;
 
     let layer_count = state.layer_count.0;
-    let slider = Slider::new(&mut state.slice_preview_layer, 1..=layer_count)
+    let slider = Slider::new(&mut state.preview_layer, 1..=layer_count)
         .vertical()
         .handle_shape(HandleShape::Rect { aspect_ratio: 1.0 })
         .show_value(false)
@@ -394,7 +394,7 @@ fn layer_slider(state: &mut UiState, ui: &mut egui::Ui, result: &mut RasterSlice
     let height = slider.rect.height() - 2.0 * handle_r;
     let pos = |t: f32| slider.rect.center_bottom() - Vec2::Y * (handle_r + height * t);
 
-    let slider_t = (state.slice_preview_layer - 1) as f32 / (layer_count - 1) as f32;
+    let slider_t = (state.preview_layer - 1) as f32 / (layer_count - 1) as f32;
     let handle_inner_r = handle_r - visuals.fg_stroke.width;
     let handle_t = (handle_inner_r + visuals.expansion) / height;
 
@@ -630,7 +630,7 @@ fn sidebar(
         }
     }
 
-    let layer = &mut raster.layers[state.slice_preview_layer - 1];
+    let layer = &mut raster.layers[state.preview_layer - 1];
     layer.unique_exposure = collapsing_toggle(
         "Current Layer Override",
         layer.unique_exposure,
@@ -671,7 +671,7 @@ fn sidebar(
                         .collect::<Vec<_>>();
                     plot.add(Line::new("", series).color(Color32::WHITE));
                     plot.add(
-                        VLine::new("", (state.slice_preview_layer - 1) as f32)
+                        VLine::new("", (state.preview_layer - 1) as f32)
                             .color(Color32::RED)
                             .style(LineStyle::Dashed { length: 4.0 }),
                     );

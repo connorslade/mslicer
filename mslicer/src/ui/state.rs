@@ -37,7 +37,7 @@ pub struct UiState {
     pub shared_webhook: Arc<SharedPrintCompletion>,
 
     // slice preview
-    pub slice_preview_layer: usize,
+    pub preview_layer: usize,
     pub last_preview_layer: usize,
     pub preview_offset: Vector2<f32>,
     pub preview_scale: f32,
