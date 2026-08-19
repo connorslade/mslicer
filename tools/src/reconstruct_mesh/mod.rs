@@ -14,9 +14,15 @@ mod table;
 use slicer::mesh::Mesh;
 use tracing::info;
 
-pub fn marching_cubes(progress: &Progress, config: &SliceConfig, result: &[Layer]) -> Mesh {
+pub fn marching_cubes(
+    progress: &Progress,
+    config: &SliceConfig,
+    result: &[Layer],
+    subsample: u8,
+) -> Mesh {
     let start = Instant::now();
-    let (vertices, faces) = marching_cubes::marching_cubes(progress, 0.5, config, result, 5);
+    let (vertices, faces) =
+        marching_cubes::marching_cubes(progress, 0.5, config, result, subsample);
     info!("Reconstructed mesh in {:?}", start.elapsed());
     Mesh::new(vertices, faces)
 }

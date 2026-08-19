@@ -169,15 +169,23 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
                             slice_preview
                         });
 
-                        if ui
-                            .button(concatcp!(CUBE_TRANSPARENT, " Reconstruct Mesh"))
-                            .clicked()
-                            && let GenericSliceResult::Raster(raster) = &mut result.inner
-                        {
-                            app.tasks.add(ReconstructMesh::new(
-                                result.config.clone(),
-                                raster.layers.clone(),
-                            ));
+                        if let GenericSliceResult::Raster(raster) = &mut result.inner {
+                            ui.menu_button(
+                                concatcp!(CUBE_TRANSPARENT, " Reconstruct Mesh"),
+                                |ui| {
+                                    for (name, subsample) in
+                                        [("Corse", 20), ("Fine", 10), ("Exact", 1)]
+                                    {
+                                        if ui.button(format!("{name} ({subsample})")).clicked() {
+                                            app.tasks.add(ReconstructMesh::new(
+                                                result.config.clone(),
+                                                raster.layers.clone(),
+                                                subsample,
+                                            ));
+                                        }
+                                    }
+                                },
+                            );
                         }
                     })
                 });

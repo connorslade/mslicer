@@ -1,10 +1,12 @@
 use egui::PaintCallbackInfo;
 use egui_wgpu::{CallbackResources, CallbackTrait, ScreenDescriptor};
 use nalgebra::Vector2;
-use wgpu::{CommandBuffer, CommandEncoder, Device, Queue, RenderPass};
+use wgpu::{CommandBuffer, CommandEncoder, Device, Queue, RenderPass, TextureFormat};
 
 mod pipeline;
 pub use pipeline::SlicePreviewPipeline;
+
+use crate::render::Gcx;
 
 pub struct SlicePreviewRenderResources {
     pub slice_preview_pipeline: SlicePreviewPipeline,
@@ -31,10 +33,13 @@ impl CallbackTrait for SlicePreviewRenderCallback {
         resources: &mut CallbackResources,
     ) -> Vec<CommandBuffer> {
         let resources = resources.get_mut::<SlicePreviewRenderResources>().unwrap();
+        let gcx = Gcx {
+            device: device.clone(),
+            queue: queue.clone(),
+            texture: TextureFormat::R8Unorm, // random format bc its not actually used in this renderer
+        };
 
-        resources
-            .slice_preview_pipeline
-            .prepare(device, queue, self);
+        resources.slice_preview_pipeline.prepare(&gcx, self);
 
         Vec::new()
     }

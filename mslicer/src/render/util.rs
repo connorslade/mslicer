@@ -37,6 +37,17 @@ impl ResizingBuffer {
         }
     }
 
+    pub fn new_sized(device: &Device, usage: BufferUsages, size: u64) -> Self {
+        Self {
+            inner: device.create_buffer(&BufferDescriptor {
+                label: None,
+                size,
+                usage: usage | BufferUsages::COPY_DST,
+                mapped_at_creation: false,
+            }),
+        }
+    }
+
     pub fn write(&mut self, gcx: &Gcx, data: &[u8]) {
         if data.len() as u64 > self.inner.size() {
             self.inner = gcx.device.create_buffer(&BufferDescriptor {

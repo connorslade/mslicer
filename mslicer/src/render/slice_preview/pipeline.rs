@@ -2,22 +2,22 @@ use encase::{ShaderSize, ShaderType, UniformBuffer};
 use nalgebra::Vector2;
 use wgpu::{
     BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayout, BindGroupLayoutDescriptor,
-    BindGroupLayoutEntry, Buffer, BufferDescriptor, BufferUsages, COPY_BUFFER_ALIGNMENT,
-    ColorTargetState, ColorWrites, Device, FragmentState, IndexFormat, MultisampleState,
-    PipelineLayoutDescriptor, PrimitiveState, Queue, RenderPass, RenderPipeline,
-    RenderPipelineDescriptor, TextureFormat, VertexState,
+    BindGroupLayoutEntry, Buffer, BufferDescriptor, BufferUsages, ColorTargetState, ColorWrites,
+    Device, FragmentState, IndexFormat, MultisampleState, PipelineLayoutDescriptor, PrimitiveState,
+    RenderPass, RenderPipeline, RenderPipelineDescriptor, TextureFormat, VertexState,
     util::{BufferInitDescriptor, DeviceExt},
 };
 
 use crate::{
     include_shader,
     render::{
-        VERTEX_BUFFER_LAYOUT,
+        Gcx, VERTEX_BUFFER_LAYOUT,
         consts::{
             BASE_UNIFORM_DESCRIPTOR, DEPTH_STENCIL_STATE, STORAGE_BIND_GROUP_LAYOUT_ENTRY,
             UNIFORM_BIND_GROUP_LAYOUT_ENTRY,
         },
         slice_preview::SlicePreviewRenderCallback,
+        util::ResizingBuffer,
     },
 };
 
@@ -28,12 +28,9 @@ pub struct SlicePreviewPipeline {
 
     index_buffer: Buffer,
     uniform_buffer: Buffer,
-    slice_buffer: Option<SliceBuffers>,
-}
 
-struct SliceBuffers {
-    layer: Buffer,
-    annotations: Buffer,
+    layer: ResizingBuffer,
+    annotations: ResizingBuffer,
 }
 
 #[derive(ShaderType)]
@@ -109,6 +106,11 @@ impl SlicePreviewPipeline {
             usage: BufferUsages::INDEX | BufferUsages::COPY_DST,
         });
 
+        let layer =
+            ResizingBuffer::new_sized(device, BufferUsages::STORAGE | BufferUsages::COPY_DST, 4);
+        let annotations =
+            ResizingBuffer::new_sized(device, BufferUsages::STORAGE | BufferUsages::COPY_DST, 4);
+
         Self {
             render_pipeline,
             bind_group_layout,
@@ -117,42 +119,20 @@ impl SlicePreviewPipeline {
             index_buffer,
             uniform_buffer,
 
-            slice_buffer: None,
+            layer,
+            annotations,
         }
     }
 }
 
 impl SlicePreviewPipeline {
-    pub fn prepare(
-        &mut self,
-        device: &Device,
-        queue: &Queue,
-        resources: &SlicePreviewRenderCallback,
-    ) {
-        let slice_buffer = self.slice_buffer.get_or_insert_with(|| {
-            let size = resources.dimensions.x as u64 * resources.dimensions.y as u64;
-            let desc = BufferDescriptor {
-                label: None,
-                size: size.next_multiple_of(COPY_BUFFER_ALIGNMENT),
-                usage: BufferUsages::STORAGE | BufferUsages::COPY_DST,
-                mapped_at_creation: false,
-            };
-
-            SliceBuffers {
-                layer: device.create_buffer(&desc),
-                annotations: device.create_buffer(&BufferDescriptor {
-                    // size: size.div_ceil(2).next_multiple_of(COPY_BUFFER_ALIGNMENT),
-                    ..desc
-                }),
-            }
-        });
-
+    pub fn prepare(&mut self, gcx: &Gcx, resources: &SlicePreviewRenderCallback) {
         if let Some((layer, annotations)) = &resources.new_preview {
-            queue.write_buffer(&slice_buffer.layer, 0, layer);
-            queue.write_buffer(&slice_buffer.annotations, 0, annotations);
+            self.layer.write(gcx, layer);
+            self.annotations.write(gcx, annotations);
         }
 
-        self.bind_group = Some(device.create_bind_group(&BindGroupDescriptor {
+        self.bind_group = Some(gcx.device.create_bind_group(&BindGroupDescriptor {
             label: None,
             layout: &self.bind_group_layout,
             entries: &[
@@ -162,11 +142,11 @@ impl SlicePreviewPipeline {
                 },
                 BindGroupEntry {
                     binding: 1,
-                    resource: slice_buffer.layer.as_entire_binding(),
+                    resource: self.layer.as_entire_binding(),
                 },
                 BindGroupEntry {
                     binding: 2,
-                    resource: slice_buffer.annotations.as_entire_binding(),
+                    resource: self.annotations.as_entire_binding(),
                 },
             ],
         }));
@@ -182,7 +162,8 @@ impl SlicePreviewPipeline {
                 multisample: resources.multisample,
             })
             .unwrap();
-        queue.write_buffer(&self.uniform_buffer, 0, &buffer.into_inner());
+        gcx.queue
+            .write_buffer(&self.uniform_buffer, 0, &buffer.into_inner());
     }
 
     pub fn paint(&self, render_pass: &mut RenderPass) {

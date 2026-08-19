@@ -31,6 +31,7 @@
 - Register file associations
 - Windows installer
 - More robust slicing!
+- Fix crash when slicing to different resolutions in the same session
 
 ## v0.8.0 &mdash; June 30th, 2026
 

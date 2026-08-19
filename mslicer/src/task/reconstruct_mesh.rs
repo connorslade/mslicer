@@ -14,10 +14,10 @@ pub struct ReconstructMesh {
 }
 
 impl ReconstructMesh {
-    pub fn new(config: SliceConfig, result: Vec<Layer>) -> Self {
+    pub fn new(config: SliceConfig, result: Vec<Layer>, subsample: u8) -> Self {
         let progress = Progress::new();
         let handle = TaskThread::spawn(clone!([progress], move || {
-            marching_cubes(&progress, &config, &result)
+            marching_cubes(&progress, &config, &result, subsample)
         }));
 
         Self { progress, handle }
