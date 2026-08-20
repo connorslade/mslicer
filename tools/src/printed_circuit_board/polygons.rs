@@ -1,9 +1,9 @@
 use std::f64::consts::TAU;
 
 use nalgebra::Vector2;
-use svgwriter::{
-    Data, Graphic,
-    tags::{Path, TagWithPresentationAttributes as _},
+use svg::{
+    Document,
+    node::element::{Path, path::Data},
 };
 
 use crate::misc::bounds::Bounds2D;
@@ -118,29 +118,24 @@ impl Polygons {
     pub fn svg(&self) -> String {
         let size = self.bounds.size();
 
-        let mut svg = Graphic::new();
-        svg.set_width(size.x as i32);
-        svg.set_height(size.y as i32);
-        svg.set_view_box(format!(
-            "{} {} {} {}",
-            self.bounds.min.x, self.bounds.min.y, size.x, size.y
-        ));
+        let view_box = (self.bounds.min.x, self.bounds.min.y, size.x, size.y);
+        let mut svg = Document::new()
+            .set("viewBox", view_box)
+            .set("width", size.x as u32)
+            .set("height", size.y as i32);
 
         for poly in self.polygons.iter() {
-            let mut data = Data::new();
-            data.move_to(poly[0].x, poly[0].y);
+            let mut data = Data::new().move_to((poly[0].x, poly[0].y));
             for point in poly.iter().skip(1) {
-                data.line_to(point.x, point.y);
+                data = data.line_to((point.x, point.y));
             }
-            data.close();
 
-            svg.push(
-                Path::new()
-                    .with_d(data)
-                    .with_fill("#000000")
-                    .with_stroke("#000000")
-                    .with_stroke_width(0.01),
-            );
+            let path = Path::new()
+                .set("d", data.close())
+                .set("fill", "#000000")
+                .set("stroke", "#000000")
+                .set("stroke-width", 0.01);
+            svg = svg.add(path);
         }
 
         svg.to_string()

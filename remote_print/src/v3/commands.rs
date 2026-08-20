@@ -16,7 +16,7 @@ pub fn send_command(socket: &mut WebSocket<TcpStream>, mainboard_id: &str, cmd: 
         data: CommandData {
             cmd: cmd.cmd(),
             data: cmd.data(),
-            request_id: hex::encode(rng().random::<[u8; 8]>()),
+            request_id: format!("{:X}", rng().random::<u64>()),
             mainboard_id: mainboard_id.to_owned(),
             time_stamp: epoch(),
             from: 0,

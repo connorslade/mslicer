@@ -4610,7 +4610,6 @@ dependencies = [
  "chrono",
  "clone-macro",
  "common",
- "hex",
  "md5",
  "parking_lot",
  "rand 0.10.2",
@@ -5181,17 +5180,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "94afda9cd163c04f6bee8b4bf2501c91548deae308373c436f36aeff3cf3c4a3"
 
 [[package]]
-name = "svgwriter"
-version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9648da525587ec048131373019f8d676340db88443bb8d3782de2a137c3d9e36"
-dependencies = [
- "indexmap",
- "itoa",
- "paste",
-]
-
-[[package]]
 name = "syn"
 version = "2.0.106"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5485,7 +5473,7 @@ dependencies = [
  "parking_lot",
  "rand 0.10.2",
  "slicer",
- "svgwriter",
+ "svg",
  "tracing",
 ]
 
