@@ -24,6 +24,7 @@ use crate::{
 const COMMAND_SHIFT: Modifiers = Modifiers::COMMAND.plus(Modifiers::SHIFT);
 
 const IMPORT_MODEL_SHORTCUT: KeyboardShortcut = KeyboardShortcut::new(Modifiers::COMMAND, Key::I);
+const IMPORT_SLICED_SHORTCUT: KeyboardShortcut = KeyboardShortcut::new(COMMAND_SHIFT, Key::I);
 const LOAD_TEAPOT_SHORTCUT: KeyboardShortcut = KeyboardShortcut::new(Modifiers::COMMAND, Key::T);
 const SAVE_PROJECT_SHORTCUT: KeyboardShortcut = KeyboardShortcut::new(Modifiers::COMMAND, Key::S);
 const SAVE_AS_PROJECT_SHORTCUT: KeyboardShortcut = KeyboardShortcut::new(COMMAND_SHIFT, Key::S);
@@ -39,6 +40,7 @@ const SELECT_NONE_SHORTCUT: KeyboardShortcut = KeyboardShortcut::new(COMMAND_SHI
 
 type ShortcutCallback = fn(&mut App, &Context);
 const SHORTCUTS: &[(KeyboardShortcut, ShortcutCallback)] = &[
+    (IMPORT_SLICED_SHORTCUT, |app, _ctx| load_sliced(app)),
     (IMPORT_MODEL_SHORTCUT, |app, _ctx| import_model(app)),
     (LOAD_TEAPOT_SHORTCUT, |app, _ctx| import_teapot(app)),
     (NEW_PROJECT_SHORTCUT, |app, _ctx| new(app)),
@@ -56,8 +58,10 @@ const SHORTCUTS: &[(KeyboardShortcut, ShortcutCallback)] = &[
 
 pub fn ui(app: &mut App, ctx: &Context) {
     for (shortcut, callback) in SHORTCUTS {
-        ctx.input_mut(|x| x.consume_shortcut(shortcut))
-            .then(|| callback(app, ctx));
+        if ctx.input_mut(|x| x.consume_shortcut(shortcut)) {
+            callback(app, ctx);
+            break;
+        }
     }
 
     TopBottomPanel::top("top_panel")
@@ -75,15 +79,13 @@ pub fn ui(app: &mut App, ctx: &Context) {
                     ui.set_width(150.0);
 
                     labeled_separator(ui, "Import");
-                    menu_button((ui, app, ctx), SHORTCUTS[0], "Load Mesh");
-                    menu_button((ui, app, ctx), SHORTCUTS[1], "Utah Teapot");
-                    ui.button("Load Sliced File")
-                        .clicked()
-                        .then(|| load_sliced(app));
+                    menu_button((ui, app, ctx), SHORTCUTS[1], "Load Mesh");
+                    menu_button((ui, app, ctx), SHORTCUTS[2], "Utah Teapot");
+                    menu_button((ui, app, ctx), SHORTCUTS[0], "Load Sliced");
 
                     labeled_separator(ui, "Project");
-                    menu_button((ui, app, ctx), SHORTCUTS[2], "New");
-                    menu_button((ui, app, ctx), SHORTCUTS[3], "Open");
+                    menu_button((ui, app, ctx), SHORTCUTS[3], "New");
+                    menu_button((ui, app, ctx), SHORTCUTS[4], "Open");
                     ui.add_enabled_ui(!app.config.recent_projects.is_empty(), |ui| {
                         ui.menu_button("Recent", |ui| {
                             let mut load = None;
@@ -100,9 +102,9 @@ pub fn ui(app: &mut App, ctx: &Context) {
                             }
                         });
                     });
-                    menu_button((ui, app, ctx), SHORTCUTS[4], "Save");
+                    menu_button((ui, app, ctx), SHORTCUTS[5], "Save");
                     ui.add_enabled_ui(app.project.path.is_some(), |ui| {
-                        menu_button((ui, app, ctx), SHORTCUTS[5], "Save As")
+                        menu_button((ui, app, ctx), SHORTCUTS[6], "Save As")
                     });
 
                     labeled_separator(ui, "Misc");
@@ -113,7 +115,7 @@ pub fn ui(app: &mut App, ctx: &Context) {
                         launch_install().unwrap();
                     }
 
-                    menu_button((ui, app, ctx), SHORTCUTS[6], "Quit");
+                    menu_button((ui, app, ctx), SHORTCUTS[7], "Quit");
                 });
 
                 ui.menu_button(concatcp!(GIT_DIFF, " Edit"), |ui| {
@@ -121,23 +123,23 @@ pub fn ui(app: &mut App, ctx: &Context) {
 
                     labeled_separator(ui, "History");
                     ui.add_enabled_ui(app.history.can_undo(), |ui| {
-                        menu_button((ui, app, ctx), SHORTCUTS[7], "Undo")
+                        menu_button((ui, app, ctx), SHORTCUTS[8], "Undo")
                     });
                     ui.add_enabled_ui(app.history.can_redo(), |ui| {
-                        menu_button((ui, app, ctx), SHORTCUTS[8], "Redo");
+                        menu_button((ui, app, ctx), SHORTCUTS[9], "Redo");
                     });
 
                     labeled_separator(ui, "Selections");
-                    menu_button((ui, app, ctx), SHORTCUTS[11], "Select Models");
+                    menu_button((ui, app, ctx), SHORTCUTS[12], "Select Models");
                     ui.add_enabled_ui(app.state.selected.has_any(), |ui| {
-                        menu_button((ui, app, ctx), SHORTCUTS[12], "Deselect");
+                        menu_button((ui, app, ctx), SHORTCUTS[13], "Deselect");
                     });
                 });
 
                 ui.menu_button(concatcp!(HAMMER, " Tools"), |ui| {
                     ui.set_width(150.0);
                     labeled_separator(ui, "Auto Layout");
-                    menu_button((ui, app, ctx), SHORTCUTS[10], "Quick Layout");
+                    menu_button((ui, app, ctx), SHORTCUTS[11], "Quick Layout");
                     ui.button("Advanced Layout")
                         .clicked()
                         .then(|| tools::auto_layout::open(app));

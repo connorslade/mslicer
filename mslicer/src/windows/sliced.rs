@@ -553,77 +553,73 @@ fn sidebar(
                 .on_hover_text(LazyText::new(move || format!("{width}×{height}")))
         });
 
-    ui.collapsing("Slice Preview", |ui| {
-        let sliced = &mut config.sliced;
-        grid("slice_preview").show(ui, |ui| {
-            ui.label("Coordinate Space");
-            ComboBox::from_id_salt("coordinate_space")
-                .selected_text(sliced.coordinate_space.name())
-                .show_ui(ui, |ui| {
-                    for mode in SlicePreviewCoordinateSpace::ALL {
-                        ui.selectable_value(&mut sliced.coordinate_space, *mode, mode.name());
-                    }
-                });
-            ui.end_row();
-
-            ui.label("View Direction");
-            ComboBox::from_id_salt("view")
-                .selected_text(sliced.view.name())
-                .show_ui(ui, |ui| {
-                    for view in SlicePreviewView::ALL {
-                        ui.selectable_value(&mut sliced.view, *view, view.name());
-                    }
-                });
-            ui.end_row();
-
-            ui.label("Anti-Aliasing");
-            ui.horizontal(|ui| {
-                DragValue::new(&mut sliced.multisample)
-                    .range(1..=64)
-                    .suffix("×")
-                    .ui(ui);
-                ui.take_available_width();
-            });
-            ui.end_row();
-        });
-    });
-
-    ui.add_space(8.0);
-    ui.heading("Exposure");
-
-    let mut exposure_changed = false;
-    CollapsingHeader::new("Config")
+    CollapsingHeader::new("Slice Preview")
         .default_open(true)
         .show(ui, |ui| {
-            grid("exposure").show(ui, |ui| {
-                ui.label("First Layers");
-                exposure_changed |= DragValue::new(&mut result.config.first_layers)
-                    .ui(ui)
-                    .changed();
+            let sliced = &mut config.sliced;
+            grid("slice_preview").show(ui, |ui| {
+                ui.label("Coordinate Space");
+                ComboBox::from_id_salt("coordinate_space")
+                    .selected_text(sliced.coordinate_space.name())
+                    .show_ui(ui, |ui| {
+                        for mode in SlicePreviewCoordinateSpace::ALL {
+                            ui.selectable_value(&mut sliced.coordinate_space, *mode, mode.name());
+                        }
+                    });
                 ui.end_row();
 
-                ui.label("Transition Layers");
+                ui.label("View Direction");
+                ComboBox::from_id_salt("view")
+                    .selected_text(sliced.view.name())
+                    .show_ui(ui, |ui| {
+                        for view in SlicePreviewView::ALL {
+                            ui.selectable_value(&mut sliced.view, *view, view.name());
+                        }
+                    });
+                ui.end_row();
+
+                ui.label("Anti-Aliasing");
                 ui.horizontal(|ui| {
-                    exposure_changed |= DragValue::new(&mut result.config.transition_layers)
-                        .ui(ui)
-                        .changed();
+                    DragValue::new(&mut sliced.multisample)
+                        .range(1..=64)
+                        .suffix("×")
+                        .ui(ui);
                     ui.take_available_width();
                 });
                 ui.end_row();
             });
         });
 
-    CollapsingHeader::new("Normal Layers")
-        .default_open(true)
-        .show(ui, |ui| {
-            exposure_changed |= exposure_config(ui, &mut result.config.exposure_config);
-        });
+    ui.add_space(8.0);
+    ui.heading("Exposure");
 
-    CollapsingHeader::new("First Layers")
-        .default_open(true)
-        .show(ui, |ui| {
-            exposure_changed |= exposure_config(ui, &mut result.config.first_exposure_config);
+    let mut exposure_changed = false;
+    CollapsingHeader::new("Config").show(ui, |ui| {
+        grid("exposure").show(ui, |ui| {
+            ui.label("First Layers");
+            exposure_changed |= DragValue::new(&mut result.config.first_layers)
+                .ui(ui)
+                .changed();
+            ui.end_row();
+
+            ui.label("Transition Layers");
+            ui.horizontal(|ui| {
+                exposure_changed |= DragValue::new(&mut result.config.transition_layers)
+                    .ui(ui)
+                    .changed();
+                ui.take_available_width();
+            });
+            ui.end_row();
         });
+    });
+
+    CollapsingHeader::new("Normal Layers").show(ui, |ui| {
+        exposure_changed |= exposure_config(ui, &mut result.config.exposure_config);
+    });
+
+    CollapsingHeader::new("First Layers").show(ui, |ui| {
+        exposure_changed |= exposure_config(ui, &mut result.config.first_exposure_config);
+    });
 
     let raster = result.inner.as_raster_mut().unwrap();
     if exposure_changed {
