@@ -309,21 +309,6 @@ fn slice_preview(
         let available_size = ui.available_size() - Vec2::new(5.0, 5.0);
         let [width, height] = *platform.as_ref();
 
-        state.preview_layer = state.preview_layer.clamp(1, state.layer_count.0);
-        let new_preview = if state.last_preview_layer != state.preview_layer
-            || result.annotations.take_updated()
-        {
-            state.last_preview_layer = state.preview_layer;
-
-            let layer_idx = state.preview_layer - 1;
-            let layer = result.layers[layer_idx].data.clone();
-            let annotations = result.annotations.lock().get_layer(layer_idx);
-
-            Some((layer, annotations))
-        } else {
-            None
-        };
-
         Frame::canvas(ui.style())
             .fill(ui.style().visuals.panel_fill)
             .show(ui, |ui| {
@@ -360,6 +345,22 @@ fn slice_preview(
 
                 let mut scale = Vector2::repeat(state.preview_scale.powi(2));
                 flip.then(|| scale.y *= -1.0);
+
+                state.preview_layer = state.preview_layer.clamp(1, state.layer_count.0);
+                let new_preview = if ui.is_rect_visible(rect)
+                    && (state.last_preview_layer != state.preview_layer
+                        || result.annotations.take_updated())
+                {
+                    state.last_preview_layer = state.preview_layer;
+
+                    let layer_idx = state.preview_layer - 1;
+                    let layer = result.layers[layer_idx].data.clone();
+                    let annotations = result.annotations.lock().get_layer(layer_idx);
+
+                    Some((layer, annotations))
+                } else {
+                    None
+                };
 
                 let callback = Callback::new_paint_callback(
                     rect,
