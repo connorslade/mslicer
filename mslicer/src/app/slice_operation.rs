@@ -35,7 +35,12 @@ pub struct SliceOperationInner {
     pub progress: Progress,
     pub post_processing_progress: CombinedProgress<2>,
     pub result: Mutex<Option<SliceResult>>,
-    pub previews: Mutex<Vec<(Arc<RgbaImage>, LazyTextureId)>>,
+    pub previews: Mutex<Option<PreviewImage>>,
+}
+
+pub struct PreviewImage {
+    pub image: Arc<RgbaImage>,
+    pub texture: LazyTextureId,
 }
 
 pub struct SliceResult {
@@ -100,7 +105,7 @@ impl SliceOperation {
                 progress: slice,
                 post_processing_progress: post_process,
                 result: Mutex::new(None),
-                previews: Mutex::new(Vec::new()),
+                previews: Mutex::new(Default::default()),
             }),
         }
     }
@@ -108,19 +113,18 @@ impl SliceOperation {
 
 impl SliceOperationInner {
     pub fn needs_previews(&self) -> bool {
-        self.previews.lock().is_empty()
+        self.previews.lock().is_none()
     }
 
     pub fn add_preview(&self, image: RgbaImage) {
-        self.previews
-            .lock()
-            .push((Arc::new(image), LazyTextureId::empty()));
+        *self.previews.lock() = Some(PreviewImage {
+            image: Arc::new(image),
+            texture: LazyTextureId::empty(),
+        });
     }
 
-    // todo: this should be deprecates since many file formats support multiple
-    // preview images with potentially different aspect rations.
-    pub fn first_preview(&self) -> Arc<RgbaImage> {
-        self.previews.lock()[0].0.clone()
+    pub fn preview(&self) -> Arc<RgbaImage> {
+        self.previews.lock().as_ref().unwrap().image.clone()
     }
 
     pub fn add_raster_result(&self, config: SliceConfig, layers: Vec<Layer>) {

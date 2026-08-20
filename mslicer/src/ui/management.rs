@@ -53,6 +53,6 @@ fn upload_texture_egui(ctx: &Context, image: &RgbaImage) -> TextureId {
     ctx.tex_manager().write().alloc(
         "Preview Image".into(),
         ImageData::Color(Arc::new(image)),
-        TextureOptions::NEAREST,
+        TextureOptions::LINEAR,
     )
 }

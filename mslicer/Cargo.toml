@@ -10,6 +10,7 @@ remote_print.workspace = true
 slicer.workspace = true
 tools.workspace = true
 
+ab_glyph.workspace = true
 anyhow.workspace = true
 bitflags.workspace = true
 bytemuck.workspace = true
@@ -27,7 +28,9 @@ egui_extras.workspace = true
 egui_plot.workspace = true
 egui_tracing.workspace = true
 encase.workspace = true
+epaint_default_fonts.workspace = true
 image.workspace = true
+imageproc.workspace = true
 itertools.workspace = true
 markdown.workspace = true
 nalgebra.workspace = true

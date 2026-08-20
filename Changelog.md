@@ -18,7 +18,7 @@
 - Rename 'Slice Operation' window to 'Sliced'
 - Sliced window sidebar
   - Allow changing exposure settings after slicing or to previously sliced files
-  - View preview images
+  - View and edit preview images
   - Show layer surface area plot
   - Edit exposure config
 - Update config format

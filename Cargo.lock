@@ -3252,6 +3252,7 @@ dependencies = [
 name = "mslicer"
 version = "0.8.0"
 dependencies = [
+ "ab_glyph",
  "anyhow",
  "bitflags 2.9.4",
  "bytemuck",
@@ -3270,7 +3271,9 @@ dependencies = [
  "egui_plot",
  "egui_tracing",
  "encase",
+ "epaint_default_fonts",
  "image",
+ "imageproc",
  "itertools 0.14.0",
  "markdown",
  "mesh_format",

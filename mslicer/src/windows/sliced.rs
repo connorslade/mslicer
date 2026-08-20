@@ -1,6 +1,12 @@
 // todo: split this into multiple files
 
-use std::{f32, fs::File, io::Write, mem, sync::Arc};
+use std::{
+    f32,
+    fs::File,
+    io::{BufReader, Write},
+    mem,
+    sync::Arc,
+};
 
 use const_format::concatcp;
 use egui::{
@@ -10,12 +16,13 @@ use egui::{
     style::HandleShape, text::LayoutJob, vec2,
 };
 use egui_phosphor::regular::{
-    CARET_DOWN, CARET_LEFT, CARET_RIGHT, CARET_UP, CLOCK, CORNERS_IN, CROSSHAIR, CUBE_TRANSPARENT,
-    DROP, FLOPPY_DISK_BACK, PAPER_PLANE_TILT, SIDEBAR,
+    CAMERA, CARET_DOWN, CARET_UP, CLOCK, CORNERS_IN, CROSSHAIR, CUBE_TRANSPARENT, DROP,
+    FLOPPY_DISK_BACK, PAPER_PLANE_TILT, SIDEBAR, SWAP, TEXT_AA,
 };
 use egui_plot::{Line, LineStyle, Plot, VLine};
 use egui_wgpu::Callback;
-use image::RgbaImage;
+use epaint_default_fonts::UBUNTU_LIGHT;
+use image::{ImageFormat, Rgba, RgbaImage, imageops::FilterType};
 use nalgebra::Vector2;
 
 use crate::{
@@ -26,22 +33,22 @@ use crate::{
             sliced::{SlicePreviewCoordinateSpace, SlicePreviewView, SlicedConfig},
         },
         slice_operation::{
-            GenericSliceData, GenericSliceResult, ISLAND_COLOR, RasterSliceResult, SliceOperation,
-            SliceResult,
+            GenericSliceData, GenericSliceResult, ISLAND_COLOR, PreviewImage, RasterSliceResult,
+            SliceOperation, SliceResult,
         },
     },
     render::slice_preview::SlicePreviewRenderCallback,
-    task::{FileDialog, IslandDetection, ReconstructMesh, SaveResult},
+    task::{FileDialog, IslandDetection, ReconstructMesh, SaveResult, TaskManager},
     ui::{
         components::{collapsing_toggle, grid},
-        management::LazyText,
-        popup::Popup,
+        management::{LazyText, LazyTextureId},
+        popup::{Popup, PopupManager},
         state::UiState,
     },
     windows::slice_config::exposure_config,
 };
 use common::{
-    misc::human_duration,
+    misc::{IMAGE_FORMATS, human_duration},
     progress::Progress,
     serde::DynamicSerializer,
     slice::{
@@ -69,7 +76,6 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
                 app.state.last_preview_layer = 0;
                 app.state.preview_offset = Vector2::zeros();
                 app.state.preview_scale = 1.0;
-                app.state.preview_image = 1;
 
                 let layers = result.inner.layers();
                 app.state.layer_count = (layers, layers.to_string().len() as u8);
@@ -105,7 +111,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
                                     if ui.button(layout_job).clicked() {
                                         let file = result.slice_data().file(
                                             &result.config,
-                                            &slice_operation.first_preview(),
+                                            &slice_operation.preview(),
                                             RasterFormat::Ctb.into(),
                                         );
 
@@ -136,7 +142,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
                                 {
                                     app.tasks.add(save_file(
                                         result.config.clone(),
-                                        slice_operation.first_preview(),
+                                        slice_operation.preview(),
                                         format,
                                         result.slice_data(),
                                     ));
@@ -199,6 +205,8 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
                             result,
                             &mut app.state,
                             &mut app.config,
+                            &mut app.tasks,
+                            &mut app.popup,
                             ui,
                             ctx,
                         );
@@ -516,11 +524,14 @@ fn sidebar_button(sliced: &mut SlicedConfig, ui: &mut Ui) {
     );
 }
 
+// todo: do smth abt these args sob
 fn sidebar(
     operation: &SliceOperation,
     result: &mut SliceResult,
     state: &mut UiState,
     config: &mut Config,
+    tasks: &mut TaskManager,
+    popups: &mut PopupManager,
     ui: &mut Ui,
     ctx: &Context,
 ) {
@@ -528,26 +539,91 @@ fn sidebar(
         .default_open(true)
         .show(ui, |ui| {
             let mut previews = operation.previews.lock();
-            let count = previews.len();
-            let img = &mut state.preview_image;
+            let preview = previews.as_mut().unwrap();
+            let mut reset_preview = false;
 
+            ui.add_space(4.0);
             ui.horizontal(|ui| {
-                *img -= ui.add_enabled(*img > 1, Button::new(CARET_LEFT)).clicked() as u8;
-                DragValue::new(img)
-                    .range(1..=count)
-                    .custom_formatter(|n, _| format!("{n}/{count}"))
-                    .ui(ui);
-                *img += ui
-                    .add_enabled(*img < count as u8, Button::new(CARET_RIGHT))
-                    .clicked() as u8;
+                reset_preview = ui.button(concatcp!(CAMERA, " Retake")).clicked();
+
+                if ui.button(concatcp!(SWAP, " Replace")).clicked() {
+                    let task =
+                        FileDialog::pick_file(("Image", &IMAGE_FORMATS), |app, path, _tasks| {
+                            let format = ImageFormat::from_path(path).unwrap();
+                            let file = BufReader::new(File::open(path).unwrap());
+                            let mut image = image::load(file, format).unwrap();
+
+                            if image.width() > 512 || image.height() > 512 {
+                                image = image.resize(512, 512, FilterType::Triangle);
+                            }
+
+                            if let Some(operation) = app.slice_operation.as_mut() {
+                                operation.add_preview(image.to_rgba8());
+                            }
+                        });
+                    tasks.add(task);
+                }
+
+                if ui.button(concatcp!(TEXT_AA, " Add Text")).clicked() {
+                    let mut text = String::default();
+                    let mut size = 10.0;
+                    popups.open(Popup::new("Add Text", move |app, ui| {
+                        grid("text").show(ui, |ui| {
+                            ui.label("Text");
+                            ui.text_edit_singleline(&mut text);
+                            ui.end_row();
+
+                            ui.label("Size");
+                            ui.horizontal(|ui| {
+                                DragValue::new(&mut size).suffix("%").ui(ui);
+                                ui.take_available_width();
+                            });
+                            ui.end_row();
+                        });
+
+                        let mut close = false;
+                        ui.centered_and_justified(|ui| {
+                            if ui.button("Composite").clicked() {
+                                if let Some(slice_operation) = app.slice_operation.as_mut()
+                                    && let Some(image) = slice_operation.previews.lock().as_mut()
+                                {
+                                    // todo: dont keep re-parsing
+                                    let font =
+                                        ab_glyph::FontRef::try_from_slice(UBUNTU_LIGHT).unwrap();
+                                    let size = image.image.height() as f32 * size / 100.0;
+                                    let color = Rgba([255, 255, 255, 255]);
+                                    let new = imageproc::drawing::draw_text(
+                                        &*image.image,
+                                        color,
+                                        0,
+                                        0,
+                                        size,
+                                        &font,
+                                        &text,
+                                    );
+
+                                    *image = PreviewImage {
+                                        image: Arc::new(new),
+                                        texture: LazyTextureId::empty(),
+                                    };
+                                }
+
+                                close = true;
+                            }
+                        });
+
+                        close
+                    }));
+                }
             });
 
-            let (image, texture) = &mut previews[*img as usize - 1];
-            let (width, height) = (image.width(), image.height());
-
             let available = ui.available_width();
+            let (width, height) = (preview.image.width(), preview.image.height());
+
             let size = vec2(available, available / width as f32 * height as f32);
-            let texture = SizedTexture::new(texture.get(ctx, image), size);
+            let texture = SizedTexture::new(preview.texture.get(ctx, &preview.image), size);
+
+            reset_preview.then(|| previews.take());
 
             ui.add_space(4.0);
             ui.image(ImageSource::Texture(texture))

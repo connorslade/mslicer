@@ -7,6 +7,11 @@ use rand::{RngExt, distr::Alphanumeric};
 
 use crate::units::Miliseconds;
 
+pub const IMAGE_FORMATS: [&str; 23] = [
+    "avif", "jpg", "jpeg", "jfif", "png", "apng", "gif", "webp", "tif", "tiff", "tga", "dds",
+    "bmp", "ico", "hdr", "exr", "pbm", "pam", "ppm", "pgm", "ff", "qoi", "pcx",
+];
+
 pub fn human_duration(duration: Miliseconds) -> String {
     let ms = duration.raw();
     if ms < 1000.0 {
