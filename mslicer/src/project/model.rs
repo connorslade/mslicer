@@ -1,4 +1,4 @@
-use std::{f32::consts::TAU, sync::Arc};
+use std::{f32::consts::TAU, path::PathBuf, sync::Arc};
 
 use bitflags::bitflags;
 use common::{
@@ -25,6 +25,7 @@ pub struct Model {
     pub mesh: Mesh,
     pub bvh: Option<Arc<Bvh>>,
     pub half_edge: Option<Arc<HalfEdgeMesh>>,
+    pub supports: Supports,
     base_volume: CubicMilimeters,
 
     pub unit: MeshUnit,
@@ -33,9 +34,10 @@ pub struct Model {
     pub hidden: bool,
     pub ui: ModelUi,
 
+    // Not serialized
     pub warnings: MeshWarnings,
     buffers: Option<RenderedMeshBuffers>,
-    pub supports: Supports,
+    pub file: Option<PathBuf>,
 }
 
 #[derive(Clone)]
@@ -76,6 +78,7 @@ impl Model {
             base_volume: mesh_volume(&mesh),
             bvh: None,
             half_edge: None,
+            supports: Supports::default(),
             mesh,
 
             unit: MeshUnit::Millimeters,
@@ -86,7 +89,7 @@ impl Model {
 
             warnings: MeshWarnings::empty(),
             buffers: None,
-            supports: Supports::default(),
+            file: None,
         }
     }
 
@@ -125,6 +128,11 @@ impl Model {
         self
     }
 
+    pub fn width_file(mut self, path: Option<PathBuf>) -> Self {
+        self.file = path;
+        self
+    }
+
     pub fn with_random_color(mut self) -> Self {
         self.randomize_color();
         self
@@ -150,6 +158,26 @@ impl Model {
         }
 
         self.buffers.as_ref().unwrap()
+    }
+
+    pub fn replace_mesh(&mut self, mesh: Mesh, file: PathBuf, platform: &Vector3<Milimeters>) {
+        let (position, scale, rotation) = (
+            self.mesh.position(),
+            self.mesh.scale(),
+            self.mesh.rotation(),
+        );
+        self.mesh = mesh;
+        self.mesh.set_position_unchecked(position);
+        self.mesh.set_scale_unchecked(scale);
+        self.mesh.set_rotation_unchecked(rotation);
+        self.mesh.update_transformation_matrix();
+
+        self.file = Some(file);
+        self.warnings = MeshWarnings::empty();
+        self.bvh = None;
+        self.half_edge = None;
+        self.buffers = None;
+        self.update_oob(platform);
     }
 }
 
@@ -263,6 +291,7 @@ impl Clone for Model {
             mesh: self.mesh.clone(),
             bvh: self.bvh.clone(),
             half_edge: self.half_edge.clone(),
+            supports: Supports::default(),
             base_volume: self.base_volume,
 
             unit: self.unit,
@@ -274,7 +303,7 @@ impl Clone for Model {
 
             warnings: self.warnings,
             buffers: None,
-            supports: Supports::default(),
+            file: None,
         }
     }
 }

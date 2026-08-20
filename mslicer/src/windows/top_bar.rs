@@ -1,3 +1,6 @@
+use std::collections::HashMap;
+use std::f32::consts::TAU;
+
 use const_format::concatcp;
 use egui::{
     Align, Align2, Button, Context, FontId, Frame, Grid, Id, Key, KeyboardShortcut, Layout,
@@ -5,7 +8,6 @@ use egui::{
     vec2,
 };
 use egui_phosphor::regular::{CARDS, FILE_TEXT, GIT_DIFF, HAMMER, HOURGLASS, STACK};
-use std::{collections::HashMap, f32::consts::TAU, fs::File};
 
 #[cfg(windows)]
 use crate::system::windows::launch_install;
@@ -280,8 +282,8 @@ fn import_model(app: &mut App) {
                 let ext = path.extension();
                 let format = ext.unwrap_or_default().to_string_lossy();
 
-                let file = File::open(path).unwrap();
-                tasks.push(Box::new(MeshLoad::file(file, name, format.into())));
+                let task = MeshLoad::file(path.to_path_buf(), name, format.into()).unwrap();
+                tasks.push(Box::new(task));
             }
         },
     ));

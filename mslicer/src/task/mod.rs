@@ -19,6 +19,7 @@ mod mesh_load;
 mod mesh_manifold;
 mod project;
 mod reconstruct_mesh;
+mod reload_model;
 mod remote_print;
 mod save_result;
 mod split_bodies;
@@ -35,6 +36,7 @@ pub use self::{
     mesh_manifold::MeshManifold,
     project::{ProjectLoad, ProjectSave},
     reconstruct_mesh::ReconstructMesh,
+    reload_model::ReloadModel,
     remote_print::{PrinterConnect, PrinterScan},
     save_result::SaveResult,
     split_bodies::SplitBodies,

@@ -10,8 +10,8 @@ use egui::{
     TextEdit, Ui, UiBuilder, Widget, text::CCursorRange, vec2,
 };
 use egui_phosphor::regular::{
-    ARROW_LINE_DOWN, COPY, CURSOR_TEXT, DICE_THREE, EYE, EYE_SLASH, FOLDER_DASHED, INFO,
-    LINK_BREAK, LINK_SIMPLE, SUBTRACT_SQUARE, TRASH, WARNING,
+    ARROW_LINE_DOWN, ARROWS_COUNTER_CLOCKWISE, COPY, CURSOR_TEXT, DICE_THREE, EYE, EYE_SLASH,
+    FOLDER_DASHED, INFO, LINK_BREAK, LINK_SIMPLE, SUBTRACT_SQUARE, SWAP, TRASH, WARNING,
 };
 use nalgebra::Vector3;
 
@@ -21,7 +21,7 @@ use crate::{
         Collection, RenameState,
         model::{MeshUnit, MeshWarnings},
     },
-    task::SplitBodies,
+    task::{FileDialog, ReloadModel, SplitBodies},
     ui::components::{
         being_edited, grid, history_tracked_model, vec3_dragger, vec3_dragger_proportional,
     },
@@ -176,6 +176,26 @@ pub fn model_properties(app: &mut App, ui: &mut Ui, ctx: &Context, action: &mut 
             SPLIT_SHORTCUT,
         ) {
             app.tasks.add(SplitBodies::new(model));
+        }
+
+        if ui.button(concatcp!(SWAP, " Replace")).clicked() {
+            let (id, name) = (model.id, model.name.clone());
+            app.tasks.add(FileDialog::pick_file(
+                ("Mesh", &["stl", "obj"]),
+                move |_app, path, tasks| {
+                    let task = ReloadModel::new(id, name, path.to_path_buf());
+                    tasks.push(Box::new(task));
+                },
+            ));
+        }
+
+        if let Some(file) = &model.file
+            && ui
+                .button(concatcp!(ARROWS_COUNTER_CLOCKWISE, " Reload"))
+                .clicked()
+        {
+            let task = ReloadModel::new(model.id, model.name.clone(), file.clone());
+            app.tasks.add(task);
         }
     });
 

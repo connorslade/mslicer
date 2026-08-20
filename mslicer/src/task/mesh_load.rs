@@ -1,5 +1,6 @@
-use std::{fs::File, io::BufReader, mem};
+use std::{fs::File, io::BufReader, mem, path::PathBuf};
 
+use anyhow::Result;
 use clone_macro::clone;
 use common::{
     progress::Progress,
@@ -21,21 +22,27 @@ use crate::{
 pub struct MeshLoad {
     progress: Progress,
     join: TaskThread<Mesh>,
+
     name: String,
+    file: Option<PathBuf>,
 }
 
 impl MeshLoad {
-    pub fn file(file: File, name: String, format: String) -> Self {
+    pub fn file(path: PathBuf, name: String, format: String) -> Result<Self> {
+        let file = File::open(&path)?;
         let des = ReaderDeserializer::new(BufReader::new(file));
+
         let progress = Progress::new();
-        Self {
+        Ok(Self {
             join: TaskThread::spawn(clone!([progress], move || {
                 let mesh = load_mesh(des, &format, progress).unwrap();
                 Mesh::new(mesh.verts, mesh.faces)
             })),
             progress,
+
             name,
-        }
+            file: Some(path),
+        })
     }
 
     pub fn buffer(buffer: &'static [u8], name: String, format: String) -> Self {
@@ -47,7 +54,9 @@ impl MeshLoad {
                 Mesh::new(mesh.verts, mesh.faces)
             })),
             progress,
+
             name,
+            file: None,
         }
     }
 
@@ -55,7 +64,9 @@ impl MeshLoad {
         Self {
             progress: Progress::already_complete(),
             join: TaskThread::spawn(|| mesh),
+
             name,
+            file: None,
         }
     }
 }
@@ -71,6 +82,7 @@ impl Task for MeshLoad {
 
             let mut model = Model::from_mesh(mesh)
                 .with_name(mem::take(&mut self.name))
+                .width_file(self.file.take())
                 .with_random_color();
             model.update_oob(&app.project.slice_config.platform_size);
             let result = PollResult::complete()

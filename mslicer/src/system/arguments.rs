@@ -1,6 +1,5 @@
 use std::{
     env,
-    fs::File,
     path::{Path, PathBuf},
 };
 
@@ -66,9 +65,8 @@ impl OpenInto {
         }
 
         for (ext, path) in self.models {
-            let file = File::open(&path).unwrap();
             let name = path.file_name().unwrap().to_string_lossy().into_owned();
-            app.tasks.add(MeshLoad::file(file, name, ext));
+            app.tasks.add(MeshLoad::file(path, name, ext).unwrap());
         }
     }
 }
