@@ -13,5 +13,5 @@ fn frag(in: VertexOutput) -> FragmentOutput {
     let color = textureSample(texture, texture_sampler, uv);
     let depth = textureSample(depth, texture_sampler, uv);
 
-    return FragmentOutput(color, depth);
+    return FragmentOutput(color, select(depth, 1.0, depth == 0.0));
 }
