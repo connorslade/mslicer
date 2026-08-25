@@ -33,35 +33,18 @@ impl ModelPipeline {
         size: Vector2<u32>,
         camera: Camera,
     ) -> TextureView {
-        self.upload_preview_uniforms(gcx, app, &camera);
-
         // Switch out the multi stage state just for this operation
         let mut old = self.multi_stage.take();
         self.size_textures(gcx, size);
+
+        self.base.prepare_preview(gcx, app, &camera);
+        self.lighting.prepare(gcx, app, Some(&camera));
         self.render(encoder, app);
+
         mem::swap(&mut self.multi_stage, &mut old);
+        self.recreate_bind_groups(gcx);
 
         old.unwrap().target_a
-    }
-
-    fn upload_preview_uniforms(&mut self, gcx: &Gcx, app: &mut App, camera: &Camera) {
-        // let view_projection = camera.view_projection_matrix(Projection::Perspective, 1.0);
-
-        // self.allocate_bindings(gcx, app.project.models.len());
-        // for (model, bindings) in app.project.models.iter_mut().zip(self.bindings.iter()) {
-        //     model.get_buffers(&gcx.device);
-
-        //     let model_transform = *model.mesh.transformation_matrix();
-        //     let uniforms = BaseUniforms {
-        //         transform: view_projection * model_transform,
-        //         model_transform,
-        //         build_volume: Vector3::repeat(f32::MAX),
-        //         model_color: model.color.to_srgb().into(),
-        //         render_style: RenderStyle::Rendered as u32,
-        //         overhang_angle: 0.0,
-        //     };
-        //     bindings.upload(gcx, &uniforms);
-        // }
     }
 }
 

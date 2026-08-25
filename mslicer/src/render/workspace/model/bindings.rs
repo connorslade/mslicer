@@ -7,7 +7,7 @@ use crate::render::{
 };
 
 impl ModelPipeline {
-    pub(super) fn size_textures(&mut self, gcx: &Gcx, size: Vector2<u32>) -> bool {
+    pub fn size_textures(&mut self, gcx: &Gcx, size: Vector2<u32>) {
         let extent = Extent3d {
             width: size.x,
             height: size.y,
@@ -17,7 +17,7 @@ impl ModelPipeline {
         if let Some(multi_stage) = &self.multi_stage
             && multi_stage.target_a.texture().size() == extent
         {
-            return false;
+            return;
         }
 
         let target_desc = TextureDescriptor {
@@ -101,6 +101,17 @@ impl ModelPipeline {
             normal_target: normal_target_view,
             world_target: world_target_view,
         });
-        true
+        self.recreate_bind_groups(gcx);
+    }
+
+    pub fn recreate_bind_groups(&mut self, gcx: &Gcx) {
+        let multi = self.multi_stage.as_ref().unwrap();
+        let sampler = &self.sampler;
+
+        self.ssao.recreate_bind_group(gcx, multi, sampler);
+        self.blur.recreate_bind_group(gcx, multi, sampler);
+        self.lighting.recreate_bind_group(gcx, multi, sampler);
+        self.fxaa.recreate_bind_group(gcx, multi, sampler);
+        self.composite.recreate_bind_group(gcx, multi, sampler);
     }
 }

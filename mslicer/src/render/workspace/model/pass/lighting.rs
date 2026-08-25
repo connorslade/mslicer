@@ -11,7 +11,7 @@ use wgpu::{
 };
 
 use crate::{
-    app::App,
+    app::{App, camera::Camera},
     include_shader,
     render::{Gcx, workspace::model::MultiStage},
 };
@@ -136,12 +136,14 @@ impl LightingPass {
         }
     }
 
-    pub fn prepare(&mut self, gcx: &Gcx, app: &mut App) {
+    pub fn prepare(&mut self, gcx: &Gcx, app: &mut App, camera: Option<&Camera>) {
         let mut buffer = UniformBuffer::new(Vec::new());
 
         let ao = app.config.render.ambient_occlusion.enabled;
+        let camera = camera.unwrap_or(&app.camera);
+
         let uniform = Uniforms {
-            camera_position: app.camera.position(app.camera.distance),
+            camera_position: camera.position(camera.distance),
             flags: ao as u32,
         };
 

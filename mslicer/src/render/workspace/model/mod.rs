@@ -94,20 +94,10 @@ impl ModelPipeline {
         self.base.prepare(gcx, app);
         self.ssao.prepare(gcx, app);
         self.blur.prepare(gcx, app);
-        self.lighting.prepare(gcx, app);
+        self.lighting.prepare(gcx, app, None);
         self.fxaa.prepare(gcx, app);
 
-        if self.size_textures(gcx, screen.size_in_pixels.into()) {
-            let multi = self.multi_stage.as_ref().unwrap();
-            let sampler = &self.sampler;
-
-            self.ssao.recreate_bind_group(gcx, multi, sampler);
-            self.blur.recreate_bind_group(gcx, multi, sampler);
-            self.lighting.recreate_bind_group(gcx, multi, sampler);
-            self.fxaa.recreate_bind_group(gcx, multi, sampler);
-            self.composite.recreate_bind_group(gcx, multi, sampler);
-        }
-
+        self.size_textures(gcx, screen.size_in_pixels.into());
         self.render(encoder, app);
     }
 

@@ -13,8 +13,13 @@ use wgpu::{
 };
 
 use crate::{
-    app::App,
+    app::{
+        App,
+        camera::Camera,
+        config::render::{Projection, RenderStyle},
+    },
     include_shader,
+    project::model::Model,
     render::{Gcx, VERTEX_BUFFER_LAYOUT, util::ResizingBuffer, workspace::model::MultiStage},
 };
 
@@ -128,8 +133,43 @@ impl BasePass {
         }
     }
 
+    fn write_uniforms(
+        &mut self,
+        gcx: &Gcx,
+        app: &mut App,
+        mut callback: impl FnMut(&Gcx, &mut Model) -> Uniforms,
+    ) {
+        self.offsets.clear();
+
+        let mut buffer = DynamicUniformBuffer::new(Vec::new());
+        for model in app.project.models.iter_mut().filter(|x| !x.hidden) {
+            model.get_buffers(&gcx.device);
+
+            let offset = buffer.write(&callback(gcx, model));
+            self.offsets.push(offset.unwrap() as u32);
+        }
+
+        if self.uniform.write(gcx, &buffer.into_inner()) {
+            let bind_group = gcx.device.create_bind_group(&BindGroupDescriptor {
+                label: None,
+                layout: &self.group_layout,
+                entries: &[BindGroupEntry {
+                    binding: 0,
+                    resource: BindingResource::Buffer(BufferBinding {
+                        buffer: &self.uniform,
+                        offset: 0,
+                        size: Some(Uniforms::SHADER_SIZE),
+                    }),
+                }],
+            });
+
+            self.bind_group.replace(bind_group);
+        }
+    }
+
     pub fn prepare(&mut self, gcx: &Gcx, app: &mut App) {
         let view_projection = app.view_projection();
+        let render_style = app.config.render.style as u32;
         let build_volume = (app.project.slice_config)
             .platform_size
             .map(|x| x.get::<Milimeter>());
@@ -140,39 +180,36 @@ impl BasePass {
             .map(|x| x.to_radians())
             .unwrap_or(f32::from_bits(u32::MAX));
 
-        let mut buffer = DynamicUniformBuffer::new(Vec::new());
-        self.offsets.clear();
-
-        for model in app.project.models.iter_mut().filter(|x| !x.hidden) {
+        self.write_uniforms(gcx, app, |gcx, model| {
             model.get_buffers(&gcx.device);
-
             let model_transform = *model.mesh.transformation_matrix();
-            let offset = buffer.write(&Uniforms {
+
+            Uniforms {
                 transform: view_projection * model_transform,
                 model_transform,
                 build_volume,
                 model_color: model.color.to_srgb().into(),
-                render_style: app.config.render.style as u32,
+                render_style,
                 overhang_angle,
-            });
-            self.offsets.push(offset.unwrap() as u32);
-        }
+            }
+        });
+    }
 
-        if self.uniform.write(gcx, &buffer.into_inner()) {
-            self.bind_group
-                .replace(gcx.device.create_bind_group(&BindGroupDescriptor {
-                    label: None,
-                    layout: &self.group_layout,
-                    entries: &[BindGroupEntry {
-                        binding: 0,
-                        resource: BindingResource::Buffer(BufferBinding {
-                            buffer: &self.uniform,
-                            offset: 0,
-                            size: Some(Uniforms::SHADER_SIZE),
-                        }),
-                    }],
-                }));
-        }
+    pub fn prepare_preview(&mut self, gcx: &Gcx, app: &mut App, camera: &Camera) {
+        let view_projection = camera.view_projection_matrix(Projection::Perspective, 1.0);
+        self.write_uniforms(gcx, app, |gcx, model| {
+            model.get_buffers(&gcx.device);
+            let model_transform = *model.mesh.transformation_matrix();
+
+            Uniforms {
+                transform: view_projection * model_transform,
+                model_transform,
+                build_volume: Vector3::repeat(f32::MAX),
+                model_color: model.color.to_srgb().into(),
+                render_style: RenderStyle::Rendered as u32,
+                overhang_angle: 0.0,
+            }
+        });
     }
 
     pub fn paint(&self, encoder: &mut CommandEncoder, multi: &MultiStage, app: &mut App) {
