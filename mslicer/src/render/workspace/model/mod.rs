@@ -10,8 +10,8 @@ use crate::{
         Gcx,
         consts::NONFILTERING_SAMPLER,
         workspace::model::pass::{
-            base::BasePass, blur::BlurPass, composite::CompositePass, lighting::LightingPass,
-            ssao::SsaoPass,
+            base::BasePass, blur::BlurPass, composite::CompositePass, fxaa::FxaaPass,
+            lighting::LightingPass, ssao::SsaoPass,
         },
     },
 };
@@ -27,6 +27,7 @@ pub struct ModelPipeline {
     ssao: SsaoPass,
     blur: BlurPass,
     lighting: LightingPass,
+    fxaa: FxaaPass,
     composite: CompositePass,
 
     post_index_buffer: Buffer,
@@ -62,6 +63,7 @@ impl ModelPipeline {
             ssao: SsaoPass::create(device),
             blur: BlurPass::create(device),
             lighting: LightingPass::create(device, texture),
+            fxaa: FxaaPass::create(device, texture),
             composite: CompositePass::create(device, texture),
 
             post_index_buffer,
@@ -77,6 +79,7 @@ impl ModelPipeline {
         self.ssao.paint(encoder, multi, index);
         self.blur.paint(encoder, multi, index);
         self.lighting.paint(encoder, multi, index);
+        self.fxaa.paint(encoder, multi, index);
     }
 
     pub fn prepare(
@@ -90,6 +93,7 @@ impl ModelPipeline {
         self.ssao.prepare(gcx, app);
         self.blur.prepare(gcx, app);
         self.lighting.prepare(gcx, app);
+        self.fxaa.prepare(gcx, app);
 
         if self.size_textures(gcx, screen.size_in_pixels.into()) {
             let multi = self.multi_stage.as_ref().unwrap();
@@ -98,6 +102,7 @@ impl ModelPipeline {
             self.ssao.recreate_bind_group(gcx, multi, sampler);
             self.blur.recreate_bind_group(gcx, multi, sampler);
             self.lighting.recreate_bind_group(gcx, multi, sampler);
+            self.fxaa.recreate_bind_group(gcx, multi, sampler);
             self.composite.recreate_bind_group(gcx, multi, sampler);
         }
 

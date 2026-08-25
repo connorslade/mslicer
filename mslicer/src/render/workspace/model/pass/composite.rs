@@ -108,7 +108,7 @@ impl CompositePass {
                 entries: &[
                     BindGroupEntry {
                         binding: 0,
-                        resource: BindingResource::TextureView(&multi.target_b),
+                        resource: BindingResource::TextureView(&multi.target_a),
                     },
                     BindGroupEntry {
                         binding: 1,
