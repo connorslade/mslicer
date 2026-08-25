@@ -8,7 +8,7 @@ use crate::{
     app::App,
     render::{
         Gcx,
-        consts::FILTERING_SAMPLER,
+        consts::NONFILTERING_SAMPLER,
         workspace::model::pass::{
             base::BasePass, composite::CompositePass, lighting::LightingPass, ssao::SsaoPass,
         },
@@ -35,13 +35,14 @@ struct MultiStage {
     target_a: TextureView,
     target_b: TextureView,
     depth_target: TextureView,
+    normal_target: TextureView,
     world_target: TextureView,
     occlusion_target: TextureView,
 }
 
 impl ModelPipeline {
     pub fn new(device: &Device, texture: TextureFormat) -> Self {
-        let sampler = device.create_sampler(&FILTERING_SAMPLER);
+        let sampler = device.create_sampler(&NONFILTERING_SAMPLER);
 
         let post_index_buffer = device.create_buffer_init(&BufferInitDescriptor {
             label: None,

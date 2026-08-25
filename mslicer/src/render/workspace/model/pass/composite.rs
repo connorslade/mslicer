@@ -52,7 +52,7 @@ impl CompositePass {
                 BindGroupLayoutEntry {
                     binding: 2,
                     visibility: ShaderStages::FRAGMENT,
-                    ty: BindingType::Sampler(SamplerBindingType::Filtering),
+                    ty: BindingType::Sampler(SamplerBindingType::NonFiltering),
                     count: None,
                 },
             ],

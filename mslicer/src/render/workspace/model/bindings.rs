@@ -47,13 +47,24 @@ impl ModelPipeline {
             view_formats: &[],
         });
 
-        let world_target = gcx.device.create_texture(&TextureDescriptor {
+        let normal_target = gcx.device.create_texture(&TextureDescriptor {
             label: None,
             size: extent,
             mip_level_count: 1,
             sample_count: 1,
             dimension: TextureDimension::D2,
             format: TextureFormat::Rgba16Float,
+            usage: TextureUsages::RENDER_ATTACHMENT | TextureUsages::TEXTURE_BINDING,
+            view_formats: &[],
+        });
+
+        let world_target = gcx.device.create_texture(&TextureDescriptor {
+            label: None,
+            size: extent,
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: TextureDimension::D2,
+            format: TextureFormat::Rgba32Float,
             usage: TextureUsages::RENDER_ATTACHMENT | TextureUsages::TEXTURE_BINDING,
             view_formats: &[],
         });
@@ -72,6 +83,7 @@ impl ModelPipeline {
         let target_a_view = target_a.create_view(&Default::default());
         let target_b_view = target_b.create_view(&Default::default());
         let depth_target_view = depth_target.create_view(&Default::default());
+        let normal_target_view = normal_target.create_view(&Default::default());
         let world_target_view = world_target.create_view(&Default::default());
         let occlusion_target_view = occlusion_target.create_view(&Default::default());
 
@@ -79,6 +91,7 @@ impl ModelPipeline {
             target_a: target_a_view,
             target_b: target_b_view,
             depth_target: depth_target_view,
+            normal_target: normal_target_view,
             world_target: world_target_view,
             occlusion_target: occlusion_target_view,
         });

@@ -1,14 +1,15 @@
 use common::units::Milimeter;
-use encase::{DynamicUniformBuffer, ShaderType};
+use encase::{DynamicUniformBuffer, ShaderSize, ShaderType};
 use nalgebra::{Matrix4, Vector3};
 use wgpu::{
     BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayout, BindGroupLayoutDescriptor,
-    BindGroupLayoutEntry, BindingType, BlendState, BufferBindingType, BufferUsages, Color,
-    ColorTargetState, ColorWrites, CommandEncoder, CompareFunction, DepthBiasState,
-    DepthStencilState, Device, FragmentState, IndexFormat, LoadOp, Operations,
-    PipelineLayoutDescriptor, RenderPassColorAttachment, RenderPassDepthStencilAttachment,
-    RenderPassDescriptor, RenderPipeline, RenderPipelineDescriptor, ShaderStages, StencilFaceState,
-    StencilState, StoreOp, TextureFormat, VertexState,
+    BindGroupLayoutEntry, BindingResource, BindingType, BlendState, BufferBinding,
+    BufferBindingType, BufferUsages, Color, ColorTargetState, ColorWrites, CommandEncoder,
+    CompareFunction, DepthBiasState, DepthStencilState, Device, FragmentState, IndexFormat, LoadOp,
+    Operations, PipelineLayoutDescriptor, RenderPassColorAttachment,
+    RenderPassDepthStencilAttachment, RenderPassDescriptor, RenderPipeline,
+    RenderPipelineDescriptor, ShaderStages, StencilFaceState, StencilState, StoreOp, TextureFormat,
+    VertexState,
 };
 
 use crate::{
@@ -49,7 +50,7 @@ impl BasePass {
                 ty: BindingType::Buffer {
                     ty: BufferBindingType::Uniform,
                     has_dynamic_offset: true,
-                    min_binding_size: None,
+                    min_binding_size: Some(Uniforms::SHADER_SIZE),
                 },
                 count: None,
             }],
@@ -79,10 +80,16 @@ impl BasePass {
                         blend: Some(BlendState::ALPHA_BLENDING),
                         write_mask: ColorWrites::all(),
                     }),
-                    // world space
+                    // normals
                     Some(ColorTargetState {
                         format: TextureFormat::Rgba16Float,
-                        blend: Some(BlendState::REPLACE),
+                        blend: None,
+                        write_mask: ColorWrites::all(),
+                    }),
+                    // world space
+                    Some(ColorTargetState {
+                        format: TextureFormat::Rgba32Float,
+                        blend: None,
                         write_mask: ColorWrites::all(),
                     }),
                 ],
@@ -158,7 +165,11 @@ impl BasePass {
                     layout: &self.group_layout,
                     entries: &[BindGroupEntry {
                         binding: 0,
-                        resource: self.uniform.as_entire_binding(),
+                        resource: BindingResource::Buffer(BufferBinding {
+                            buffer: &self.uniform,
+                            offset: 0,
+                            size: Some(Uniforms::SHADER_SIZE),
+                        }),
                     }],
                 }));
         }
@@ -174,6 +185,15 @@ impl BasePass {
             color_attachments: &[
                 Some(RenderPassColorAttachment {
                     view: &multi.target_a,
+                    resolve_target: None,
+                    ops: Operations {
+                        load: LoadOp::Clear(Color::TRANSPARENT),
+                        store: StoreOp::Store,
+                    },
+                    depth_slice: None,
+                }),
+                Some(RenderPassColorAttachment {
+                    view: &multi.normal_target,
                     resolve_target: None,
                     ops: Operations {
                         load: LoadOp::Clear(Color::TRANSPARENT),

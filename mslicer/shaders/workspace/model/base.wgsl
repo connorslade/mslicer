@@ -29,7 +29,8 @@ struct VertexOutput {
 
 struct FragmentOutput {
     @location(0) color: vec4f,
-    @location(1) world: vec4f,
+    @location(1) normal: vec4f,
+    @location(2) world: vec4f,
 }
 
 @vertex
@@ -49,7 +50,8 @@ fn frag(
     let normal = screen_normal(in.world_position);
     return FragmentOutput(
         render(is_front, in, normal),
-        vec4f(in.world_position, 0.0)
+        vec4(normal, 0.0),
+        vec4(in.world_position, 0.0)
     );
 }
 

@@ -57,7 +57,7 @@ impl SsaoPass {
                     binding: 1,
                     visibility: ShaderStages::FRAGMENT,
                     ty: BindingType::Texture {
-                        sample_type: TextureSampleType::Float { filterable: true },
+                        sample_type: TextureSampleType::Float { filterable: false },
                         view_dimension: TextureViewDimension::D2,
                         multisampled: false,
                     },
@@ -76,7 +76,7 @@ impl SsaoPass {
                 BindGroupLayoutEntry {
                     binding: 3,
                     visibility: ShaderStages::FRAGMENT,
-                    ty: BindingType::Sampler(SamplerBindingType::Filtering),
+                    ty: BindingType::Sampler(SamplerBindingType::NonFiltering),
                     count: None,
                 },
             ],

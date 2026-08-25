@@ -63,7 +63,7 @@ impl LightingPass {
                     binding: 2,
                     visibility: ShaderStages::FRAGMENT,
                     ty: BindingType::Texture {
-                        sample_type: TextureSampleType::Float { filterable: true },
+                        sample_type: TextureSampleType::Float { filterable: false },
                         view_dimension: TextureViewDimension::D2,
                         multisampled: false,
                     },
@@ -82,7 +82,7 @@ impl LightingPass {
                 BindGroupLayoutEntry {
                     binding: 4,
                     visibility: ShaderStages::FRAGMENT,
-                    ty: BindingType::Sampler(SamplerBindingType::Filtering),
+                    ty: BindingType::Sampler(SamplerBindingType::NonFiltering),
                     count: None,
                 },
             ],
@@ -163,7 +163,7 @@ impl LightingPass {
                     },
                     BindGroupEntry {
                         binding: 2,
-                        resource: BindingResource::TextureView(&multi.world_target),
+                        resource: BindingResource::TextureView(&multi.normal_target),
                     },
                     BindGroupEntry {
                         binding: 3,
