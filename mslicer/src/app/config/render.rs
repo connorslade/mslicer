@@ -21,8 +21,15 @@ pub struct RenderConfig {
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct AmbientOcclusion {
+    pub enabled: bool,
     pub samples: u32,
     pub range: f32,
+    pub bias: f32,
+
+    pub blur_radius: u32,
+    pub blur_spatial: f32,
+    pub blur_depth: f32,
+    pub blur_normal: f32,
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -71,8 +78,15 @@ impl Default for RenderConfig {
 impl Default for AmbientOcclusion {
     fn default() -> Self {
         Self {
+            enabled: true,
             samples: 0,
             range: 1.0,
+            bias: 0.1,
+
+            blur_radius: 3,
+            blur_spatial: 1.5,
+            blur_depth: 0.1,
+            blur_normal: 0.1,
         }
     }
 }

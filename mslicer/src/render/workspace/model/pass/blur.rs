@@ -141,15 +141,16 @@ impl BlurPass {
         }
     }
 
-    pub fn prepare(&mut self, gcx: &Gcx, _app: &mut App) {
+    pub fn prepare(&mut self, gcx: &Gcx, app: &mut App) {
         let mut buffer = UniformBuffer::new(Vec::new());
 
+        let ao = &app.config.render.ambient_occlusion;
         let uniform = Uniforms {
             resolution: self.resolution,
-            radius: 3,
-            sigma_spatial: 1.5,
-            sigma_depth: 0.1,
-            sigma_normal: 0.1,
+            radius: ao.blur_radius,
+            sigma_spatial: ao.blur_spatial,
+            sigma_depth: ao.blur_depth,
+            sigma_normal: ao.blur_normal,
         };
 
         buffer.write(&uniform).unwrap();

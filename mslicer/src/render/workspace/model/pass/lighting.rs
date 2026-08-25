@@ -26,6 +26,7 @@ pub struct LightingPass {
 #[derive(ShaderType)]
 struct Uniforms {
     camera_position: Vector3<f32>,
+    flags: u32,
 }
 
 impl LightingPass {
@@ -138,8 +139,10 @@ impl LightingPass {
     pub fn prepare(&mut self, gcx: &Gcx, app: &mut App) {
         let mut buffer = UniformBuffer::new(Vec::new());
 
+        let ao = app.config.render.ambient_occlusion.enabled;
         let uniform = Uniforms {
             camera_position: app.camera.position(app.camera.distance),
+            flags: ao as u32,
         };
 
         buffer.write(&uniform).unwrap();

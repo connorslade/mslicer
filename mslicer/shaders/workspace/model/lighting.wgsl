@@ -5,7 +5,8 @@
 @group(0) @binding(4) var texture_sampler: sampler;
 
 struct Context {
-    camera_position: vec3f
+    camera_position: vec3f,
+    flags: u32
 }
 
 @fragment
@@ -17,5 +18,6 @@ fn frag(in: VertexOutput) -> @location(0) vec4f {
     let intensity = blinn_phong(normal, normalize(ctx.camera_position));
     let occlusion = textureSample(occlusion, texture_sampler, uv).r;
 
-    return vec4(color.rgb * intensity * occlusion, color.w);
+    let ao = select(1.0, occlusion, (ctx.flags & 1) != 0);
+    return vec4(color.rgb * intensity * ao, color.w);
 }

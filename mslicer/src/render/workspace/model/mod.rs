@@ -76,8 +76,10 @@ impl ModelPipeline {
         let index = &self.post_index_buffer;
 
         self.base.paint(encoder, multi, app);
-        self.ssao.paint(encoder, multi, index);
-        self.blur.paint(encoder, multi, index);
+        if app.config.render.ambient_occlusion.enabled {
+            self.ssao.paint(encoder, multi, index);
+            self.blur.paint(encoder, multi, index);
+        }
         self.lighting.paint(encoder, multi, index);
         self.fxaa.paint(encoder, multi, index);
     }

@@ -137,7 +137,7 @@ impl SsaoPass {
             view: view_projection,
             samples: ao.samples,
             range: ao.range,
-            bias: 0.01,
+            bias: ao.bias,
         };
 
         buffer.write(&uniform).unwrap();

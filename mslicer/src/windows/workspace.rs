@@ -12,7 +12,7 @@ use crate::{
             ui::UpdateCheckFrequency,
         },
     },
-    ui::components::{dragger, vec2_dragger, vec3_dragger},
+    ui::components::{collapsing_toggle, dragger, grid, vec2_dragger, vec3_dragger},
 };
 
 const BASIS_TIP: &str = "Set size to 0px to disable.";
@@ -58,6 +58,16 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                 });
             ui.end_row();
 
+            ui.label("Check for Updates");
+            ComboBox::from_id_salt("update_frequency")
+                .selected_text(app.config.ui.update_check.name())
+                .show_ui(ui, |ui| {
+                    for freq in UpdateCheckFrequency::ALL {
+                        ui.selectable_value(&mut app.config.ui.update_check, freq, freq.name());
+                    }
+                });
+            ui.end_row();
+
             ui.horizontal(|ui| {
                 ui.label("Render Style");
                 ui.label(INFO)
@@ -86,15 +96,6 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                 });
             ui.end_row();
 
-            ui.label("Ambient Occlusion");
-            ui.horizontal(|ui| {
-                DragValue::new(&mut app.config.render.ambient_occlusion.samples)
-                    .suffix("×")
-                    .ui(ui);
-                DragValue::new(&mut app.config.render.ambient_occlusion.range).ui(ui);
-            });
-            ui.end_row();
-
             ui.label("Grid Size");
             ui.horizontal(|ui| {
                 dragger(ui, "", &mut app.config.render.grid_size, |x| {
@@ -113,20 +114,53 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                 .suffix(" px")
                 .ui(ui);
             ui.end_row();
-
-            ui.label("Check for Updates");
-            ComboBox::from_id_salt("update_frequency")
-                .selected_text(app.config.ui.update_check.name())
-                .show_ui(ui, |ui| {
-                    for freq in UpdateCheckFrequency::ALL {
-                        ui.selectable_value(&mut app.config.ui.update_check, freq, freq.name());
-                    }
-                });
         });
 
     ui.add_space(8.0);
     ui.checkbox(&mut app.config.render.normals, "Show Normals");
     ui.add_space(8.0);
+
+    let ao = &mut app.config.render.ambient_occlusion;
+    ao.enabled = collapsing_toggle(
+        "Ambient Occlusion ",
+        ao.enabled,
+        |ui| {
+            grid("ao").show(ui, |ui| {
+                ui.label("Samples");
+                DragValue::new(&mut ao.samples).ui(ui);
+                ui.end_row();
+
+                ui.label("Range");
+                DragValue::new(&mut ao.range).ui(ui);
+                ui.end_row();
+
+                ui.label("Bias");
+                DragValue::new(&mut ao.bias).ui(ui);
+                ui.end_row();
+
+                ui.label("Blur Radius");
+                DragValue::new(&mut ao.blur_radius).ui(ui);
+                ui.end_row();
+
+                ui.label("Blur Spatial");
+                DragValue::new(&mut ao.blur_spatial).ui(ui);
+                ui.end_row();
+
+                ui.label("Blur Depth");
+                DragValue::new(&mut ao.blur_depth).ui(ui);
+                ui.end_row();
+
+                ui.label("Blur Normal");
+                ui.horizontal(|ui| {
+                    DragValue::new(&mut ao.blur_normal).ui(ui);
+                    ui.take_available_width();
+                });
+                ui.end_row();
+            });
+        },
+        false,
+        ui,
+    );
 
     ui.collapsing("Camera", |ui| {
         if ui
