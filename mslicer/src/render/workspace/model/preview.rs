@@ -15,14 +15,9 @@ use wgpu::{
 };
 
 use crate::{
-    app::{
-        App,
-        camera::Camera,
-        config::render::{Projection, RenderStyle},
-    },
+    app::{App, camera::Camera},
     render::{
         Gcx,
-        workspace::model::ModelUniforms,
         workspace::{WorkspaceRenderResources, model::ModelPipeline},
     },
 };
@@ -46,28 +41,27 @@ impl ModelPipeline {
         self.render(encoder, app);
         mem::swap(&mut self.multi_stage, &mut old);
 
-        old.unwrap().target
+        old.unwrap().target_a
     }
 
     fn upload_preview_uniforms(&mut self, gcx: &Gcx, app: &mut App, camera: &Camera) {
-        let view_projection = camera.view_projection_matrix(Projection::Perspective, 1.0);
+        // let view_projection = camera.view_projection_matrix(Projection::Perspective, 1.0);
 
-        self.allocate_bindings(gcx, app.project.models.len());
-        for (model, bindings) in app.project.models.iter_mut().zip(self.bindings.iter()) {
-            model.get_buffers(&gcx.device);
+        // self.allocate_bindings(gcx, app.project.models.len());
+        // for (model, bindings) in app.project.models.iter_mut().zip(self.bindings.iter()) {
+        //     model.get_buffers(&gcx.device);
 
-            let model_transform = *model.mesh.transformation_matrix();
-            let uniforms = ModelUniforms {
-                transform: view_projection * model_transform,
-                model_transform,
-                build_volume: Vector3::repeat(f32::MAX),
-                model_color: model.color.to_srgb().into(),
-                camera_position: camera.position(camera.distance),
-                render_style: RenderStyle::Rendered as u32,
-                overhang_angle: 0.0,
-            };
-            bindings.upload(gcx, &uniforms);
-        }
+        //     let model_transform = *model.mesh.transformation_matrix();
+        //     let uniforms = BaseUniforms {
+        //         transform: view_projection * model_transform,
+        //         model_transform,
+        //         build_volume: Vector3::repeat(f32::MAX),
+        //         model_color: model.color.to_srgb().into(),
+        //         render_style: RenderStyle::Rendered as u32,
+        //         overhang_angle: 0.0,
+        //     };
+        //     bindings.upload(gcx, &uniforms);
+        // }
     }
 }
 

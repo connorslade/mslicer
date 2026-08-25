@@ -1,23 +1,13 @@
-use encase::{ShaderSize, UniformBuffer};
 use nalgebra::Vector2;
-use wgpu::{
-    BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayout, BindingResource, Buffer,
-    BufferDescriptor, BufferUsages, Extent3d, TextureDescriptor, TextureDimension, TextureFormat,
-    TextureUsages,
-};
+use wgpu::{Extent3d, TextureDescriptor, TextureDimension, TextureFormat, TextureUsages};
 
 use crate::render::{
     Gcx,
-    workspace::model::{ModelPipeline, ModelUniforms, MultiStage},
+    workspace::model::{ModelPipeline, MultiStage},
 };
 
-pub struct ModelBindings {
-    pub uniform: Buffer,
-    pub bind_group: BindGroup,
-}
-
 impl ModelPipeline {
-    pub(super) fn size_textures(&mut self, gcx: &Gcx, size: Vector2<u32>) {
+    pub(super) fn size_textures(&mut self, gcx: &Gcx, size: Vector2<u32>) -> bool {
         let extent = Extent3d {
             width: size.x,
             height: size.y,
@@ -25,12 +15,12 @@ impl ModelPipeline {
         };
 
         if let Some(multi_stage) = &self.multi_stage
-            && multi_stage.target.texture().size() == extent
+            && multi_stage.target_a.texture().size() == extent
         {
-            return;
+            return false;
         }
 
-        let target = gcx.device.create_texture(&TextureDescriptor {
+        let target_desc = TextureDescriptor {
             label: None,
             size: extent,
             mip_level_count: 1,
@@ -41,7 +31,10 @@ impl ModelPipeline {
                 | TextureUsages::TEXTURE_BINDING
                 | TextureUsages::COPY_SRC,
             view_formats: &[],
-        });
+        };
+
+        let target_a = gcx.device.create_texture(&target_desc);
+        let target_b = gcx.device.create_texture(&target_desc);
 
         let depth_target = gcx.device.create_texture(&TextureDescriptor {
             label: None,
@@ -65,73 +58,30 @@ impl ModelPipeline {
             view_formats: &[],
         });
 
-        let target_view = target.create_view(&Default::default());
+        let occlusion_target = gcx.device.create_texture(&TextureDescriptor {
+            label: None,
+            size: extent,
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: TextureDimension::D2,
+            format: TextureFormat::R16Float,
+            usage: TextureUsages::RENDER_ATTACHMENT | TextureUsages::TEXTURE_BINDING,
+            view_formats: &[],
+        });
+
+        let target_a_view = target_a.create_view(&Default::default());
+        let target_b_view = target_b.create_view(&Default::default());
         let depth_target_view = depth_target.create_view(&Default::default());
         let world_target_view = world_target.create_view(&Default::default());
-
-        let post_bind_group = gcx.device.create_bind_group(&BindGroupDescriptor {
-            label: None,
-            layout: &self.post_group_layout,
-            entries: &[
-                BindGroupEntry {
-                    binding: 0,
-                    resource: self.post_uniform.as_entire_binding(),
-                },
-                BindGroupEntry {
-                    binding: 1,
-                    resource: BindingResource::TextureView(&target_view),
-                },
-                BindGroupEntry {
-                    binding: 2,
-                    resource: BindingResource::TextureView(&world_target_view),
-                },
-                BindGroupEntry {
-                    binding: 3,
-                    resource: BindingResource::TextureView(&depth_target_view),
-                },
-                BindGroupEntry {
-                    binding: 4,
-                    resource: BindingResource::Sampler(&self.sampler),
-                },
-            ],
-        });
+        let occlusion_target_view = occlusion_target.create_view(&Default::default());
 
         self.multi_stage = Some(MultiStage {
-            target: target_view,
+            target_a: target_a_view,
+            target_b: target_b_view,
             depth_target: depth_target_view,
             world_target: world_target_view,
-            post_bind_group,
+            occlusion_target: occlusion_target_view,
         });
-    }
-}
-
-impl ModelBindings {
-    pub fn create(gcx: &Gcx, layout: &BindGroupLayout) -> Self {
-        let uniform = gcx.device.create_buffer(&BufferDescriptor {
-            label: None,
-            size: ModelUniforms::SHADER_SIZE.get(),
-            usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
-            mapped_at_creation: false,
-        });
-
-        let bind_group = gcx.device.create_bind_group(&BindGroupDescriptor {
-            label: None,
-            layout,
-            entries: &[BindGroupEntry {
-                binding: 0,
-                resource: uniform.as_entire_binding(),
-            }],
-        });
-
-        Self {
-            uniform,
-            bind_group,
-        }
-    }
-
-    pub fn upload(&self, gcx: &Gcx, uniforms: &ModelUniforms) {
-        let mut data = UniformBuffer::new(Vec::new());
-        data.write(&uniforms).unwrap();
-        gcx.queue.write_buffer(&self.uniform, 0, &data.into_inner());
+        true
     }
 }

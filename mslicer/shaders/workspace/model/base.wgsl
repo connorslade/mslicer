@@ -12,7 +12,6 @@ struct Context {
     model_transform: mat4x4f,
     build_volume: vec3f,
     model_color: vec3f,
-    camera_position: vec3f,
     render_style: u32,
     overhang_angle: f32
 }
@@ -55,16 +54,13 @@ fn frag(
 }
 
 fn render(is_front: bool, in: VertexOutput, normal: vec3f) -> vec4f {
-    let view_dir = normalize(context.camera_position - in.world_position);
-    let intensity = blinn_phong(normal, normalize(context.camera_position));
-
     switch context.render_style {
         case STYLE_NORMAL: {
-            return vec4f((normal * 0.5 + 0.5) * intensity, 1.0);
+            return vec4f(normal * 0.5 + 0.5, 1.0);
         }
         case STYLE_RANDOM: {
             seed = in.vertex_index;
-            return vec4f(vec3f(rand(), rand(), rand()) * intensity, 1.0);
+            return vec4f(vec3f(rand(), rand(), rand()), 1.0);
         }
         case STYLE_RENDERED: {
             var color = context.model_color;
@@ -75,7 +71,7 @@ fn render(is_front: bool, in: VertexOutput, normal: vec3f) -> vec4f {
             color = select(vec3f(.5), color, is_front);
             color = select(color, OOB_COLOR, outside_build_volume(in.world_position));
 
-            return vec4f(intensity * color, 1.0);
+            return vec4f(color, 1.0);
         }
         default: {
             return vec4f();

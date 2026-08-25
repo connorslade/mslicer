@@ -29,7 +29,7 @@ struct Context {
 }
 
 struct VertexOutput {
-    @builtin(position) camera_position: vec4f,
+    @builtin(position) frag_coord: vec4f,
     @location(0) position: vec2f,
 }
 

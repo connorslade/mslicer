@@ -15,7 +15,7 @@ macro_rules! include_shader {
         wgpu::ShaderModuleDescriptor {
             label: None,
             source: wgpu::ShaderSource::Wgsl(concat!(
-                $(include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/src/render/shaders/", $shader))),*
+                $(include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/shaders/", $shader))),*
             ).into()),
         }
     };
@@ -48,16 +48,17 @@ impl ResizingBuffer {
         }
     }
 
-    pub fn write(&mut self, gcx: &Gcx, data: &[u8]) {
-        self.resize(gcx, data.len() as u64);
+    pub fn write(&mut self, gcx: &Gcx, data: &[u8]) -> bool {
+        let resized = self.resize(gcx, data.len() as u64);
         gcx.queue.write_buffer(&self.inner, 0, data);
+        resized
     }
 
-    pub fn write_slice<A: NoUninit>(&mut self, gcx: &Gcx, data: &[A]) {
-        self.write(gcx, bytemuck::cast_slice(data));
+    pub fn write_slice<A: NoUninit>(&mut self, gcx: &Gcx, data: &[A]) -> bool {
+        self.write(gcx, bytemuck::cast_slice(data))
     }
 
-    pub fn resize(&mut self, gcx: &Gcx, size: u64) {
+    pub fn resize(&mut self, gcx: &Gcx, size: u64) -> bool {
         if size > self.inner.size() {
             self.inner = gcx.device.create_buffer(&BufferDescriptor {
                 label: None,
@@ -65,7 +66,10 @@ impl ResizingBuffer {
                 usage: self.inner.usage(),
                 mapped_at_creation: false,
             });
+            return true;
         }
+
+        false
     }
 }
 
