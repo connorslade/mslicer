@@ -167,7 +167,7 @@ impl LightingPass {
                     },
                     BindGroupEntry {
                         binding: 3,
-                        resource: BindingResource::TextureView(&multi.occlusion_target),
+                        resource: BindingResource::TextureView(&multi.occlusion_target_b),
                     },
                     BindGroupEntry {
                         binding: 4,

@@ -10,7 +10,8 @@ use crate::{
         Gcx,
         consts::NONFILTERING_SAMPLER,
         workspace::model::pass::{
-            base::BasePass, composite::CompositePass, lighting::LightingPass, ssao::SsaoPass,
+            base::BasePass, blur::BlurPass, composite::CompositePass, lighting::LightingPass,
+            ssao::SsaoPass,
         },
     },
 };
@@ -24,6 +25,7 @@ pub struct ModelPipeline {
     multi_stage: Option<MultiStage>,
     base: BasePass,
     ssao: SsaoPass,
+    blur: BlurPass,
     lighting: LightingPass,
     composite: CompositePass,
 
@@ -34,10 +36,14 @@ pub struct ModelPipeline {
 struct MultiStage {
     target_a: TextureView,
     target_b: TextureView,
+
+    occlusion_target_a: TextureView,
+    occlusion_target_b: TextureView,
+
+    // g buffer
     depth_target: TextureView,
     normal_target: TextureView,
     world_target: TextureView,
-    occlusion_target: TextureView,
 }
 
 impl ModelPipeline {
@@ -54,6 +60,7 @@ impl ModelPipeline {
             multi_stage: None,
             base: BasePass::create(device, texture),
             ssao: SsaoPass::create(device),
+            blur: BlurPass::create(device),
             lighting: LightingPass::create(device, texture),
             composite: CompositePass::create(device, texture),
 
@@ -64,9 +71,12 @@ impl ModelPipeline {
 
     fn render(&mut self, encoder: &mut CommandEncoder, app: &mut App) {
         let multi = self.multi_stage.as_ref().unwrap();
+        let index = &self.post_index_buffer;
+
         self.base.paint(encoder, multi, app);
-        self.ssao.paint(encoder, multi, &self.post_index_buffer);
-        self.lighting.paint(encoder, multi, &self.post_index_buffer);
+        self.ssao.paint(encoder, multi, index);
+        self.blur.paint(encoder, multi, index);
+        self.lighting.paint(encoder, multi, index);
     }
 
     pub fn prepare(
@@ -78,6 +88,7 @@ impl ModelPipeline {
     ) {
         self.base.prepare(gcx, app);
         self.ssao.prepare(gcx, app);
+        self.blur.prepare(gcx, app);
         self.lighting.prepare(gcx, app);
 
         if self.size_textures(gcx, screen.size_in_pixels.into()) {
@@ -85,6 +96,7 @@ impl ModelPipeline {
             let sampler = &self.sampler;
 
             self.ssao.recreate_bind_group(gcx, multi, sampler);
+            self.blur.recreate_bind_group(gcx, multi, sampler);
             self.lighting.recreate_bind_group(gcx, multi, sampler);
             self.composite.recreate_bind_group(gcx, multi, sampler);
         }

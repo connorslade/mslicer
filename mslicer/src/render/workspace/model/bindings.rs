@@ -69,7 +69,7 @@ impl ModelPipeline {
             view_formats: &[],
         });
 
-        let occlusion_target = gcx.device.create_texture(&TextureDescriptor {
+        let occlusion_desc = TextureDescriptor {
             label: None,
             size: extent,
             mip_level_count: 1,
@@ -78,22 +78,28 @@ impl ModelPipeline {
             format: TextureFormat::R16Float,
             usage: TextureUsages::RENDER_ATTACHMENT | TextureUsages::TEXTURE_BINDING,
             view_formats: &[],
-        });
+        };
+        let occlusion_target_a = gcx.device.create_texture(&occlusion_desc);
+        let occlusion_target_b = gcx.device.create_texture(&occlusion_desc);
 
         let target_a_view = target_a.create_view(&Default::default());
         let target_b_view = target_b.create_view(&Default::default());
+        let occlusion_target_a_view = occlusion_target_a.create_view(&Default::default());
+        let occlusion_target_b_view = occlusion_target_b.create_view(&Default::default());
         let depth_target_view = depth_target.create_view(&Default::default());
         let normal_target_view = normal_target.create_view(&Default::default());
         let world_target_view = world_target.create_view(&Default::default());
-        let occlusion_target_view = occlusion_target.create_view(&Default::default());
 
         self.multi_stage = Some(MultiStage {
             target_a: target_a_view,
             target_b: target_b_view,
+
+            occlusion_target_a: occlusion_target_a_view,
+            occlusion_target_b: occlusion_target_b_view,
+
             depth_target: depth_target_view,
             normal_target: normal_target_view,
             world_target: world_target_view,
-            occlusion_target: occlusion_target_view,
         });
         true
     }

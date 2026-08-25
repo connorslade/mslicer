@@ -1,5 +1,5 @@
 use encase::{ShaderSize, ShaderType, UniformBuffer};
-use nalgebra::Matrix4;
+use nalgebra::Vector2;
 use wgpu::{
     BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayout, BindGroupLayoutDescriptor,
     BindGroupLayoutEntry, BindingResource, BindingType, Buffer, BufferBindingType,
@@ -16,24 +16,27 @@ use crate::{
     render::{Gcx, workspace::model::MultiStage},
 };
 
-pub struct SsaoPass {
+pub struct BlurPass {
     pipeline: RenderPipeline,
     group_layout: BindGroupLayout,
     uniform: Buffer,
     bind_group: Option<BindGroup>,
+    resolution: Vector2<u32>,
 }
 
 #[derive(ShaderType)]
 struct Uniforms {
-    view: Matrix4<f32>,
-    samples: u32,
-    range: f32,
+    resolution: Vector2<u32>,
+    radius: u32,
+    sigma_spatial: f32,
+    sigma_depth: f32,
+    sigma_normal: f32,
 }
 
-impl SsaoPass {
+impl BlurPass {
     pub fn create(device: &Device) -> Self {
         let shader = device.create_shader_module(include_shader!(
-            "workspace/model/ssao.wgsl",
+            "workspace/model/blur.wgsl",
             "workspace/model/post.wgsl",
             "common.wgsl"
         ));
@@ -43,7 +46,7 @@ impl SsaoPass {
             entries: &[
                 BindGroupLayoutEntry {
                     binding: 0,
-                    visibility: ShaderStages::VERTEX.union(ShaderStages::FRAGMENT),
+                    visibility: ShaderStages::FRAGMENT,
                     ty: BindingType::Buffer {
                         ty: BufferBindingType::Uniform,
                         has_dynamic_offset: false,
@@ -55,7 +58,7 @@ impl SsaoPass {
                     binding: 1,
                     visibility: ShaderStages::FRAGMENT,
                     ty: BindingType::Texture {
-                        sample_type: TextureSampleType::Float { filterable: false },
+                        sample_type: TextureSampleType::Float { filterable: true },
                         view_dimension: TextureViewDimension::D2,
                         multisampled: false,
                     },
@@ -73,6 +76,16 @@ impl SsaoPass {
                 },
                 BindGroupLayoutEntry {
                     binding: 3,
+                    visibility: ShaderStages::FRAGMENT,
+                    ty: BindingType::Texture {
+                        sample_type: TextureSampleType::Float { filterable: true },
+                        view_dimension: TextureViewDimension::D2,
+                        multisampled: false,
+                    },
+                    count: None,
+                },
+                BindGroupLayoutEntry {
+                    binding: 4,
                     visibility: ShaderStages::FRAGMENT,
                     ty: BindingType::Sampler(SamplerBindingType::NonFiltering),
                     count: None,
@@ -124,18 +137,19 @@ impl SsaoPass {
             group_layout,
             uniform,
             bind_group: None,
+            resolution: Vector2::zeros(),
         }
     }
 
-    pub fn prepare(&mut self, gcx: &Gcx, app: &mut App) {
+    pub fn prepare(&mut self, gcx: &Gcx, _app: &mut App) {
         let mut buffer = UniformBuffer::new(Vec::new());
 
-        let view_projection = app.view_projection();
-        let ao = &app.config.render.ambient_occlusion;
         let uniform = Uniforms {
-            view: view_projection,
-            samples: ao.samples,
-            range: ao.range,
+            resolution: self.resolution,
+            radius: 3,
+            sigma_spatial: 1.5,
+            sigma_depth: 0.1,
+            sigma_normal: 0.1,
         };
 
         buffer.write(&uniform).unwrap();
@@ -144,6 +158,9 @@ impl SsaoPass {
     }
 
     pub fn recreate_bind_group(&mut self, gcx: &Gcx, multi: &MultiStage, sampler: &Sampler) {
+        let size = multi.target_a.texture().size();
+        self.resolution = Vector2::new(size.width, size.height);
+
         self.bind_group
             .replace(gcx.device.create_bind_group(&BindGroupDescriptor {
                 label: None,
@@ -155,7 +172,7 @@ impl SsaoPass {
                     },
                     BindGroupEntry {
                         binding: 1,
-                        resource: BindingResource::TextureView(&multi.world_target),
+                        resource: BindingResource::TextureView(&multi.normal_target),
                     },
                     BindGroupEntry {
                         binding: 2,
@@ -163,6 +180,10 @@ impl SsaoPass {
                     },
                     BindGroupEntry {
                         binding: 3,
+                        resource: BindingResource::TextureView(&multi.occlusion_target_a),
+                    },
+                    BindGroupEntry {
+                        binding: 4,
                         resource: BindingResource::Sampler(sampler),
                     },
                 ],
@@ -177,7 +198,7 @@ impl SsaoPass {
         let mut render_pass = encoder.begin_render_pass(&RenderPassDescriptor {
             label: None,
             color_attachments: &[Some(RenderPassColorAttachment {
-                view: &multi.occlusion_target_a,
+                view: &multi.occlusion_target_b,
                 resolve_target: None,
                 ops: Operations {
                     load: LoadOp::Clear(Color::TRANSPARENT),
