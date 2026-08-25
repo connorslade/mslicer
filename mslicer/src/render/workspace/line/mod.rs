@@ -125,7 +125,7 @@ impl LineDispatch {
 
 impl LinePipeline {
     pub fn new(device: &Device, texture: TextureFormat) -> Self {
-        let shader = device.create_shader_module(include_shader!("line.wgsl"));
+        let shader = device.create_shader_module(include_shader!("workspace/line.wgsl"));
 
         let uniform_buffer = device.create_buffer(&BufferDescriptor {
             size: LineUniforms::SHADER_SIZE.get(),

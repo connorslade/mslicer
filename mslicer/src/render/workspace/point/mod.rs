@@ -117,7 +117,7 @@ impl PointDispatch {
 
 impl PointPipeline {
     pub fn new(device: &Device, texture: TextureFormat) -> Self {
-        let shader = device.create_shader_module(include_shader!("point.wgsl"));
+        let shader = device.create_shader_module(include_shader!("workspace/point.wgsl"));
 
         let uniform_buffer = device.create_buffer(&BufferDescriptor {
             size: PointUniforms::SHADER_SIZE.get(),

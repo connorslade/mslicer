@@ -15,7 +15,10 @@ use crate::{
 };
 
 pub fn pipeline(device: &Device, texture: TextureFormat) -> (RenderPipeline, BindGroupLayout) {
-    let shader = device.create_shader_module(include_shader!("model.wgsl", "common.wgsl"));
+    let shader = device.create_shader_module(include_shader!(
+        "workspace/model/g_buffer.wgsl",
+        "common.wgsl"
+    ));
 
     let bind_group_layout = device.create_bind_group_layout(&BASE_BIND_GROUP_LAYOUT_DESCRIPTOR);
     let pipeline_layout = device.create_pipeline_layout(&PipelineLayoutDescriptor {
@@ -79,7 +82,7 @@ pub fn pipeline(device: &Device, texture: TextureFormat) -> (RenderPipeline, Bin
 
 pub fn post_pipeline(device: &Device, texture: TextureFormat) -> (RenderPipeline, BindGroupLayout) {
     let post_shader =
-        device.create_shader_module(include_shader!("model_post.wgsl", "common.wgsl"));
+        device.create_shader_module(include_shader!("workspace/model/ssao.wgsl", "common.wgsl"));
 
     let post_group_layout = device.create_bind_group_layout(&BindGroupLayoutDescriptor {
         label: None,

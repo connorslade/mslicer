@@ -44,7 +44,8 @@ struct BasisUniforms {
 
 impl BasisPipeline {
     pub fn new(device: &Device, texture: TextureFormat) -> Self {
-        let shader = device.create_shader_module(include_shader!("basis.wgsl", "common.wgsl"));
+        let shader =
+            device.create_shader_module(include_shader!("interface/basis.wgsl", "common.wgsl"));
 
         let uniform_buffer = device.create_buffer(&BufferDescriptor {
             size: BasisUniforms::SHADER_SIZE.get(),

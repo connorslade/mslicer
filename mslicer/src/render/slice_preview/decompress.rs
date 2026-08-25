@@ -24,7 +24,7 @@ pub struct DecompressedBuffer {
 
 impl DecompressPass {
     pub fn new(device: &Device) -> Self {
-        let shader = &device.create_shader_module(include_shader!("decompress.wgsl"));
+        let shader = &device.create_shader_module(include_shader!("slice_preview/decompress.wgsl"));
 
         let bind_group_layout = &device.create_bind_group_layout(&BindGroupLayoutDescriptor {
             label: None,

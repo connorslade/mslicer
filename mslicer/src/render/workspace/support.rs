@@ -37,7 +37,8 @@ struct SupportUniforms {
 
 impl SupportPipeline {
     pub fn new(device: &Device, texture: TextureFormat) -> Self {
-        let shader = device.create_shader_module(include_shader!("support.wgsl", "common.wgsl"));
+        let shader =
+            device.create_shader_module(include_shader!("workspace/support.wgsl", "common.wgsl"));
 
         let uniform_buffer = device.create_buffer(&BufferDescriptor {
             size: SupportUniforms::SHADER_SIZE.get(),
