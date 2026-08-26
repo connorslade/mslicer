@@ -38,7 +38,10 @@ impl ModelPipeline {
         self.size_textures(gcx, size);
 
         self.base.prepare_preview(gcx, app, &camera);
+        self.ssao.prepare(gcx, app, Some(&camera));
+        self.blur.prepare(gcx, app, size);
         self.lighting.prepare(gcx, app, Some(&camera));
+        self.fxaa.prepare(gcx, app, size);
         self.render(encoder, app);
 
         mem::swap(&mut self.multi_stage, &mut old);

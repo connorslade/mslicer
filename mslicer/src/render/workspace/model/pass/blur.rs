@@ -21,7 +21,6 @@ pub struct BlurPass {
     group_layout: BindGroupLayout,
     uniform: Buffer,
     bind_group: Option<BindGroup>,
-    resolution: Vector2<u32>,
 }
 
 #[derive(ShaderType)]
@@ -137,16 +136,15 @@ impl BlurPass {
             group_layout,
             uniform,
             bind_group: None,
-            resolution: Vector2::zeros(),
         }
     }
 
-    pub fn prepare(&mut self, gcx: &Gcx, app: &mut App) {
+    pub fn prepare(&mut self, gcx: &Gcx, app: &mut App, resolution: Vector2<u32>) {
         let mut buffer = UniformBuffer::new(Vec::new());
 
         let ao = &app.config.render.ambient_occlusion;
         let uniform = Uniforms {
-            resolution: self.resolution,
+            resolution,
             radius: ao.blur_radius,
             sigma_spatial: ao.blur_spatial,
             sigma_depth: ao.blur_depth,
@@ -159,9 +157,6 @@ impl BlurPass {
     }
 
     pub fn recreate_bind_group(&mut self, gcx: &Gcx, multi: &MultiStage, sampler: &Sampler) {
-        let size = multi.target_a.texture().size();
-        self.resolution = Vector2::new(size.width, size.height);
-
         self.bind_group
             .replace(gcx.device.create_bind_group(&BindGroupDescriptor {
                 label: None,

@@ -115,12 +115,10 @@ impl FxaaPass {
         }
     }
 
-    pub fn prepare(&mut self, gcx: &Gcx, _app: &mut App) {
+    pub fn prepare(&mut self, gcx: &Gcx, _app: &mut App, resolution: Vector2<u32>) {
         let mut buffer = UniformBuffer::new(Vec::new());
 
-        let uniform = Uniforms {
-            resolution: Vector2::zeros(),
-        };
+        let uniform = Uniforms { resolution };
 
         buffer.write(&uniform).unwrap();
         gcx.queue

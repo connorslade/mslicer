@@ -11,7 +11,7 @@ use wgpu::{
 };
 
 use crate::{
-    app::App,
+    app::{App, camera::Camera, config::render::Projection},
     include_shader,
     render::{Gcx, workspace::model::MultiStage},
 };
@@ -128,10 +128,14 @@ impl SsaoPass {
         }
     }
 
-    pub fn prepare(&mut self, gcx: &Gcx, app: &mut App) {
+    pub fn prepare(&mut self, gcx: &Gcx, app: &mut App, camera: Option<&Camera>) {
         let mut buffer = UniformBuffer::new(Vec::new());
 
-        let view_projection = app.view_projection();
+        let view_projection = match camera {
+            Some(c) => c.view_projection_matrix(Projection::Perspective, 1.0),
+            None => app.view_projection(),
+        };
+
         let ao = &app.config.render.ambient_occlusion;
         let uniform = Uniforms {
             view: view_projection,

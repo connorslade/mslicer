@@ -91,11 +91,13 @@ impl ModelPipeline {
         encoder: &mut CommandEncoder,
         app: &mut App,
     ) {
+        let size = screen.size_in_pixels.into();
+
         self.base.prepare(gcx, app);
-        self.ssao.prepare(gcx, app);
-        self.blur.prepare(gcx, app);
+        self.ssao.prepare(gcx, app, None);
+        self.blur.prepare(gcx, app, size);
         self.lighting.prepare(gcx, app, None);
-        self.fxaa.prepare(gcx, app);
+        self.fxaa.prepare(gcx, app, size);
 
         self.size_textures(gcx, screen.size_in_pixels.into());
         self.render(encoder, app);
