@@ -4,6 +4,7 @@ use std::{
 };
 
 use chrono::Utc;
+use egui::{Button, Grid, RichText, Widget, vec2};
 use serde::Deserialize;
 
 use crate::{
@@ -14,6 +15,7 @@ use crate::{
 };
 
 pub const VERSION_MANIFEST: &str = "https://mslicer.com/version.json";
+pub const CHANGELOG: &str = "https://mslicer.com/docs/changelog";
 
 pub struct UpdateCheck {
     handle: TaskThread<CheckResult>,
@@ -43,7 +45,7 @@ impl UpdateCheck {
             let manifest =
                 serde_json::from_reader::<_, Manifest>(response.into_body().into_reader()).unwrap();
 
-            if semver_cmp("current", &manifest.version) == Some(Ordering::Less) {
+            if semver_cmp(VERSION, &manifest.version) == Some(Ordering::Less) {
                 CheckResult::Outdated(manifest)
             } else {
                 CheckResult::UpToDate
@@ -58,14 +60,38 @@ impl Task for UpdateCheck {
     fn poll(&mut self, app: &mut TaskApp) -> PollResult {
         self.handle.poll_ignore_err().into_poll_result(|result| {
             if let CheckResult::Outdated(manifest) = result {
-                app.popup.open(Popup::simple(
-                    "Update Available",
-                    PopupIcon::Info,
-                    format!(
-                        "mslicer update available! v{VERSION} → v{}. Released {}.",
-                        manifest.version, manifest.release_date
-                    ),
-                ));
+                app.popup
+                    .open(Popup::new("Update Available", move |_app, ui| {
+                        Grid::new(ui.id().with("grid"))
+                            .num_columns(2)
+                            .show(ui, |ui| {
+                                let icon = PopupIcon::Info;
+                                ui.label(
+                                    RichText::new(icon.as_char()).size(30.0).color(icon.color()),
+                                );
+                                ui.horizontal_wrapped(|ui| {
+                                    ui.spacing_mut().item_spacing.x = 0.0;
+                                    ui.label("There is a mslicer update available! ");
+                                    ui.code(format!("v{}", manifest.version));
+                                    ui.label(format!(" was released {}. ", manifest.release_date));
+                                    ui.label("View the changelog ");
+                                    ui.hyperlink_to("here", CHANGELOG);
+                                    ui.label(".");
+                                });
+                                ui.end_row();
+                            });
+                        ui.add_space(5.0);
+
+                        let mut close = false;
+                        ui.vertical_centered(|ui| {
+                            close = Button::new("Close")
+                                .min_size(vec2(ui.available_width(), 0.0))
+                                .ui(ui)
+                                .clicked();
+                        });
+
+                        close
+                    }));
             }
 
             app.config.ui.last_update_check = Some(Utc::now());
