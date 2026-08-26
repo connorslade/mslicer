@@ -22,7 +22,8 @@
   - Show layer surface area plot
   - Edit exposure config
 - Update config format
-- Ambient occlusion in renderer
+- Rewrite model rendering pipeline
+  - Added ambient occlusion
 - Optional automatic update checking
 - Allow selecting what units your mesh uses
 - Add basis vector gizmo

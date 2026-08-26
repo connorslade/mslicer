@@ -78,7 +78,7 @@ impl Default for RenderConfig {
 impl Default for AmbientOcclusion {
     fn default() -> Self {
         Self {
-            enabled: true,
+            enabled: false,
             samples: 0,
             range: 1.0,
             bias: 0.1,

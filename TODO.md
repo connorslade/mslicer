@@ -1,7 +1,7 @@
 # Todo
 
-- [ ] Verify slicer on more models
-  - [ ] Systematic testing to fix bad slicing / polygon filling
+- [x] Verify slicer on more models
+  - [x] Systematic testing to fix bad slicing / polygon filling
 - [x] Preprocess mesh to remove self-intersections?
 - [x] Separate each surface from a mesh before slicing to fix the self intersection problem?
 - [x] Integrate remote send into ui
@@ -100,14 +100,14 @@
 - [ ] Put all models in the same segments1d to improve slicing times with supports?
 - [x] Island detection
 - [x] Require `.mslicer` extension when saving
-- [ ] Alignment tools
-- [ ] Tools for working with lots of models
+- [x] Alignment tools
+- [x] Tools for working with lots of models
 - [x] Bounds checking in slice preview
-- [ ] Allow loading .goo files to use with the preview and remote send
+- [x] Allow loading .goo files to use with the preview and remote send
   - [ ] Allow manually editing the pixels
 - [x] Recompute normals by default...
 - [x] Don't show normals for hidden models
-- [ ] Fix low overall fps when scrubbing through layers, upload async?
+- [x] Fix low overall fps when scrubbing through layers, upload async?
 - [x] Show little breaks between pixels at high scales
 - [x] Slice preview zoom around cursor position
 - [ ] Multiple workspaces per project
@@ -121,7 +121,7 @@
   - [ ] Support routing
   - [ ] Manual support visualization
 - [x] Overhaul save format
-- [ ] Add more printer configs
+- [x] Add more printer configs
 - [x] Antialiasing without post-processing?
   - [x] Explore 3D post processing (mentioned in #7)
 - [ ] Reference count BVH and half_edge meshes
