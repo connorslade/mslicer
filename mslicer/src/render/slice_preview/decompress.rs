@@ -62,7 +62,7 @@ impl DecompressPass {
         });
 
         let pipeline = device.create_compute_pipeline(&ComputePipelineDescriptor {
-            label: None,
+            label: Some("Slice Preview Decompress"),
             layout: Some(&pipeline_layout),
             module: shader,
             entry_point: None,
@@ -119,7 +119,7 @@ impl DecompressPass {
 
         encoder.clear_buffer(&buffer.uncompressed, 0, None);
         let mut compute_pass = encoder.begin_compute_pass(&ComputePassDescriptor {
-            label: None,
+            label: Some("Slice Preview Decompress"),
             timestamp_writes: None,
         });
 

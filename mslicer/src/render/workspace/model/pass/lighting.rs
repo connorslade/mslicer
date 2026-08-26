@@ -96,7 +96,7 @@ impl LightingPass {
         });
 
         let pipeline = device.create_render_pipeline(&RenderPipelineDescriptor {
-            label: None,
+            label: Some("Lighting"),
             layout: Some(&pipeline_layout),
             vertex: VertexState {
                 module: &shader,
@@ -188,7 +188,7 @@ impl LightingPass {
         };
 
         let mut render_pass = encoder.begin_render_pass(&RenderPassDescriptor {
-            label: None,
+            label: Some("Lighting"),
             color_attachments: &[Some(RenderPassColorAttachment {
                 view: &multi.target_b,
                 resolve_target: None,

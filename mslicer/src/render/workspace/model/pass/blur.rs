@@ -100,7 +100,7 @@ impl BlurPass {
         });
 
         let pipeline = device.create_render_pipeline(&RenderPipelineDescriptor {
-            label: None,
+            label: Some("SSAO Blur"),
             layout: Some(&pipeline_layout),
             vertex: VertexState {
                 module: &shader,
@@ -197,7 +197,7 @@ impl BlurPass {
         };
 
         let mut render_pass = encoder.begin_render_pass(&RenderPassDescriptor {
-            label: None,
+            label: Some("SSAO Blur"),
             color_attachments: &[Some(RenderPassColorAttachment {
                 view: &multi.occlusion_target_b,
                 resolve_target: None,

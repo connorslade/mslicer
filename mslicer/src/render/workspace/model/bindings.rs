@@ -21,7 +21,7 @@ impl ModelPipeline {
         }
 
         let target_desc = TextureDescriptor {
-            label: None,
+            label: Some("Color"),
             size: extent,
             mip_level_count: 1,
             sample_count: 1,
@@ -37,7 +37,7 @@ impl ModelPipeline {
         let target_b = gcx.device.create_texture(&target_desc);
 
         let depth_target = gcx.device.create_texture(&TextureDescriptor {
-            label: None,
+            label: Some("Depth"),
             size: extent,
             mip_level_count: 1,
             sample_count: 1,
@@ -48,7 +48,7 @@ impl ModelPipeline {
         });
 
         let normal_target = gcx.device.create_texture(&TextureDescriptor {
-            label: None,
+            label: Some("Normal"),
             size: extent,
             mip_level_count: 1,
             sample_count: 1,
@@ -59,7 +59,7 @@ impl ModelPipeline {
         });
 
         let world_target = gcx.device.create_texture(&TextureDescriptor {
-            label: None,
+            label: Some("World"),
             size: extent,
             mip_level_count: 1,
             sample_count: 1,
@@ -70,7 +70,7 @@ impl ModelPipeline {
         });
 
         let occlusion_desc = TextureDescriptor {
-            label: None,
+            label: Some("Occlusion"),
             size: extent,
             mip_level_count: 1,
             sample_count: 1,

@@ -88,7 +88,7 @@ impl SsaoPass {
         });
 
         let pipeline = device.create_render_pipeline(&RenderPipelineDescriptor {
-            label: None,
+            label: Some("SSAO"),
             layout: Some(&pipeline_layout),
             vertex: VertexState {
                 module: &shader,
@@ -177,7 +177,7 @@ impl SsaoPass {
         };
 
         let mut render_pass = encoder.begin_render_pass(&RenderPassDescriptor {
-            label: None,
+            label: Some("SSAO"),
             color_attachments: &[Some(RenderPassColorAttachment {
                 view: &multi.occlusion_target_a,
                 resolve_target: None,

@@ -58,7 +58,7 @@ impl SupportPipeline {
         });
 
         let render_pipeline = device.create_render_pipeline(&RenderPipelineDescriptor {
-            label: None,
+            label: Some("Supports"),
             layout: Some(&pipeline_layout),
             vertex: VertexState {
                 module: &shader,

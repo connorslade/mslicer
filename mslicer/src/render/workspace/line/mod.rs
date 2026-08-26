@@ -145,7 +145,7 @@ impl LinePipeline {
         });
 
         let render_pipeline = device.create_render_pipeline(&RenderPipelineDescriptor {
-            label: None,
+            label: Some("Line"),
             layout: Some(&pipeline_layout),
             vertex: VertexState {
                 module: &shader,

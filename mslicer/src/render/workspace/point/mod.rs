@@ -137,7 +137,7 @@ impl PointPipeline {
         });
 
         let render_pipeline = device.create_render_pipeline(&RenderPipelineDescriptor {
-            label: None,
+            label: Some("Points"),
             layout: Some(&pipeline_layout),
             vertex: VertexState {
                 module: &shader,

@@ -76,7 +76,7 @@ impl SlicePreviewPipeline {
         });
 
         let pipeline = device.create_render_pipeline(&RenderPipelineDescriptor {
-            label: None,
+            label: Some("Slice Preview"),
             layout: Some(&pipeline_layout),
             vertex: VertexState {
                 module: &shader,

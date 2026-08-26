@@ -67,7 +67,7 @@ impl BasePass {
         });
 
         let pipeline = device.create_render_pipeline(&RenderPipelineDescriptor {
-            label: None,
+            label: Some("Model"),
             layout: Some(&pipeline_layout),
             vertex: VertexState {
                 module: &shader,
@@ -218,7 +218,7 @@ impl BasePass {
         };
 
         let mut render_pass = encoder.begin_render_pass(&RenderPassDescriptor {
-            label: None,
+            label: Some("Model"),
             color_attachments: &[
                 Some(RenderPassColorAttachment {
                     view: &multi.target_a,

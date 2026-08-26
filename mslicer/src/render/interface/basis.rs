@@ -65,7 +65,7 @@ impl BasisPipeline {
         });
 
         let render_pipeline = device.create_render_pipeline(&RenderPipelineDescriptor {
-            label: None,
+            label: Some("Basis"),
             layout: Some(&pipeline_layout),
             vertex: VertexState {
                 module: &shader,
