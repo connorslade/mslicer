@@ -35,6 +35,43 @@
 	</screenshots>
 
 	<releases>
+        <release version="0.9.0" date="2026-08-26">
+            <description>
+     			<ul>
+                    <li>PCB Tool: Pre and post flip offsets</li>
+                    <li>Toy rasterizer (3d renderer) for some reason /shrug</li>
+                    <li>Variable layer height (#23)</li>
+                    <li>Side panel keeps constant width when resizing the viewport</li>
+                    <li>Add lots more printer presets for Elegoo and Phrozen printers</li>
+                    <li>Support generation progress (Prune auto-generated supports and allow placing supports manually)</li>
+                    <li>Add anti-aliasing to slice preview</li>
+                    <li>Reduce output file size (Reported by Jens Holländer)</li>
+                    <li>Remote Print now supports SDCP V3.0.0 for newer printers</li>
+                    <li>Allow loading previously sliced files for inspection</li>
+                    <li>Convert sliced files back into meshes</li>
+                    <li>Rename 'Slice Operation' window to 'Sliced'</li>
+                    <li>Sliced window sidebar</li>
+                    <li>Allow changing exposure settings after slicing or to previously sliced files</li>
+                    <li>View and edit preview images</li>
+                    <li>Show layer surface area plot</li>
+                    <li>Edit exposure config after slicing</li>
+                    <li>Update config format</li>
+                    <li>Rewrite model rendering pipeline</li>
+                    <li>Added ambient occlusion</li>
+                    <li>Optional automatic update checking</li>
+                    <li>Allow selecting what units your mesh uses</li>
+                    <li>Add basis vector gizmo</li>
+                    <li>Support opening into projects, sliced files, and meshes</li>
+                    <li>Tweak Spacenav controls</li>
+                    <li>Register file associations</li>
+                    <li>Windows installer</li>
+                    <li>More robust slicing!</li>
+                    <li>Fix crash when slicing to different resolutions in the same session</li>
+                    <li>Lag free slice preview scrubbing (layer data is decompressed on the gpu)</li>
+                    <li>Add buttons to reload or replace a model</li>
+                </ul>
+            </description>
+        </release>
         <release version="0.8.0" date="2026-06-30">
             <description>
      			<ul>
