@@ -47,6 +47,7 @@ pub struct SliceResult {
     pub config: SliceConfig,
     pub elapsed: Duration,
     pub fresh: bool,
+    pub sliced: bool,
 
     pub variable_layer_height: bool,
     pub inner: GenericSliceResult,
@@ -157,6 +158,7 @@ impl SliceOperationInner {
             config,
             elapsed,
             fresh: true,
+            sliced: true,
 
             variable_layer_height,
             inner: raster.into(),
@@ -171,10 +173,15 @@ impl SliceOperationInner {
             config,
             elapsed,
             fresh: true,
+            sliced: true,
 
             variable_layer_height: false,
             inner: VectorSliceResult { layers }.into(),
         });
+    }
+
+    pub fn set_loaded(&self) {
+        self.result().as_mut().unwrap().sliced = false;
     }
 
     pub fn result(&self) -> MutexGuard<'_, Option<SliceResult>> {

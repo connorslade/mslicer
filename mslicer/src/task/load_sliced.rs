@@ -44,6 +44,8 @@ impl Task for LoadSliced {
 
                 operation.add_raster_result(config, layers);
                 image.into_iter().for_each(|x| operation.add_preview(x));
+                operation.set_loaded();
+
                 app.slice_operation.replace(operation);
                 app.panels.focus_tab(Tab::Sliced, SLICE_PREVIEW_SIZE);
 

@@ -82,7 +82,11 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
             }
 
             ui.horizontal(|ui| {
-                ui.label(format!("Slicing completed in {}!", result.completion()));
+                ui.label(format!(
+                    "{} completed in {}!",
+                    ["Loading", "Slicing"][result.sliced as usize],
+                    result.completion()
+                ));
 
                 ui.with_layout(Layout::default().with_cross_align(Align::Max), |ui| {
                     ui.horizontal(|ui| {
