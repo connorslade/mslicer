@@ -2,16 +2,15 @@
 
 A high-performance, open-source slicer for MSLA resin printers.
 Supports the following output formats: Chitu (.ctb), Elegoo (.goo), NanoDLP (.nanodlp), and Vector (.svg).
-You can read more about the development of this project on its [project page].
 Often 20× to 120× faster than competing slicers, see the [benchmark results].
 
 ![][hero-image]
 
 ## Installation
 
-You can download stable builds for Linux or Windows from the GitHub [Releases] page.
+You can download stable builds for Linux, Windows, or MacOS from the GitHub [Releases] page.
 Stable Linux builds are also available on [Flathub][flathub] and [Nixpkgs][nixpkgs].
-You can find the latest development builds for Windows, Linux, and Mac OS on [Github Actions][actions-success], just open the latest workflow run and download the correct artifact for your system.
+You can find the latest development builds on [Github Actions][actions-success], just open the latest workflow run and download the correct artifact for your system.
 
 [![][flathub-badge]][flathub]
 [![][nixpkgs-badge]][nixpkgs]
@@ -28,6 +27,7 @@ cargo b -r -p mslicer
 
 Here is a demo video showing mslicer being used to slice and print [Treefrog] by [Morena Protti].
 The video is also hosted on YouTube ([here][demo-yt]) if the one below doesn't play.
+Note that this video is a little dated now (two years old).
 
 <https://github.com/user-attachments/assets/3dfae18c-ffa2-4cc8-a322-ad2d5b38d31f>
 
@@ -46,9 +46,8 @@ The video is also hosted on YouTube ([here][demo-yt]) if the one below doesn't p
 [actions-badge]: https://github.com/connorslade/mslicer/actions/workflows/build.yml/badge.svg
 [download-badge]: https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fconnorcode.com%2Fapi%2Fdownloads%3Fgithub%3Dconnorslade%252Fmslicer%26flathub%3Dcom.connorcode.mslicer&query=%24%5B%27total-human%27%5D&label=downloads&color=limegreen;
 
-[hero-image]: https://github.com/user-attachments/assets/af719967-14e5-4fb3-923d-e63ce450151c
+[hero-image]: https://github.com/user-attachments/assets/9ff93c8e-8f08-4a18-aede-b483ebd420eb
 [demo-yt]: https://youtu.be/_Xu0jFAEYLc
-[project page]: https://connorcode.com/projects/mslicer
 [benchmark results]: https://mslicer.com/docs/benchmark
 
 [flathub-badge]: https://flathub.org/api/badge?svg&locale=en
