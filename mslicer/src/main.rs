@@ -83,7 +83,9 @@ fn main() -> Result<()> {
                 wgpu_setup: WgpuSetup::CreateNew(WgpuSetupCreateNew {
                     device_descriptor: Arc::new(move |_adapter| DeviceDescriptor {
                         label: None,
-                        required_features: Features::POLYGON_MODE_LINE | Features::PUSH_CONSTANTS,
+                        required_features: Features::POLYGON_MODE_LINE
+                            | Features::PUSH_CONSTANTS
+                            | Features::SHADER_PRIMITIVE_INDEX,
                         required_limits: Limits {
                             max_buffer_size,
                             max_push_constant_size: 4,

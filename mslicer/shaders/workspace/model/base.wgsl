@@ -16,15 +16,9 @@ struct Context {
     overhang_angle: f32
 }
 
-struct VertexInput {
-    @builtin(vertex_index) index: u32,
-    @location(0) position: vec4f
-}
-
 struct VertexOutput {
     @builtin(position) position: vec4f,
     @location(1) world_position: vec3f,
-    @location(2) vertex_index: u32
 }
 
 struct FragmentOutput {
@@ -34,34 +28,34 @@ struct FragmentOutput {
 }
 
 @vertex
-fn vert(in: VertexInput) -> VertexOutput {
+fn vert(@location(0) position: vec4f) -> VertexOutput {
     return VertexOutput(
-        context.transform * in.position,
-        (context.model_transform * in.position).xyz,
-        in.index
+        context.transform * position,
+        (context.model_transform * position).xyz,
     );
 }
 
 @fragment
 fn frag(
    @builtin(front_facing) is_front: bool,
+   @builtin(primitive_index) index: u32,
    in: VertexOutput
 ) -> FragmentOutput {
     let normal = screen_normal(in.world_position);
     return FragmentOutput(
-        render(is_front, in, normal),
+        render(is_front, in, index, normal),
         vec4(normal, 0.0),
         vec4(in.world_position, 0.0)
     );
 }
 
-fn render(is_front: bool, in: VertexOutput, normal: vec3f) -> vec4f {
+fn render(is_front: bool, in: VertexOutput, index: u32, normal: vec3f) -> vec4f {
     switch context.render_style {
         case STYLE_NORMAL: {
             return vec4f(normal * 0.5 + 0.5, 1.0);
         }
         case STYLE_RANDOM: {
-            seed = in.vertex_index;
+            seed = index;
             return vec4f(vec3f(rand(), rand(), rand()), 1.0);
         }
         case STYLE_RENDERED: {
