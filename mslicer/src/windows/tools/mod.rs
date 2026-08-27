@@ -1,9 +1,7 @@
 use tools::{
-    auto_layout::AutoLayoutAnnealing, exposure_test::ExposureTest,
+    auto_layout::AutoLayoutAnnealing, exposure_test::ExposureTest, graphics_3d::Graphics3D,
     internal_exposure_test::InternalExposureTest, printed_circuit_board::PrintedCircuitBoard,
 };
-
-use crate::windows::tools::graphics_3d::Graphics3D;
 
 pub mod auto_layout;
 pub mod exposure_test;
@@ -23,7 +21,7 @@ pub struct Tools {
 // i couldn't get lifetimes working to do this with a function... so
 #[macro_export]
 macro_rules! generator_tool {
-    ($app:expr, $tool:expr) => {{
+    ($app:expr, $tool:expr $(, $extra:expr)* $(,)?) => {{
         use clone_macro::clone;
         use image::RgbaImage;
 
@@ -40,7 +38,7 @@ macro_rules! generator_tool {
         tool.slice_config(&mut config);
 
         std::thread::spawn(clone!([operation], move || {
-            let layers = tool.generate(&config, &operation.progress);
+            let layers = tool.generate(&config, &operation.progress $(, $extra)*);
             operation.add_raster_result(config, layers);
         }));
         $app.slice_operation.replace(operation);

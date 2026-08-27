@@ -1,9 +1,55 @@
-use common::slice::{Layer, SliceConfig};
+use common::{
+    progress::Progress,
+    slice::{Layer, SliceConfig},
+};
 use nalgebra::{Matrix4, Vector2, Vector3};
 use slicer::{
     mesh::Mesh,
     slicer::raster::{self, Segment},
 };
+
+#[derive(Clone)]
+pub struct Graphics3D {
+    pub meshes: Vec<Mesh>,
+    pub angles: u32,
+}
+
+impl Default for Graphics3D {
+    fn default() -> Self {
+        Self {
+            meshes: Vec::new(),
+            angles: 30,
+        }
+    }
+}
+
+impl Graphics3D {
+    pub fn slice_config(&self, _config: &mut SliceConfig) {}
+
+    pub fn generate(
+        &self,
+        config: &SliceConfig,
+        progress: &Progress,
+        camera: impl Fn(f32, u32) -> (Matrix4<f32>, Vector3<f32>),
+    ) -> Vec<Layer> {
+        let n = self.angles.max(1);
+        progress.set_total(n as u64);
+
+        let platform_size = config.platform_size.map(|x| x.raw());
+        let aspect = platform_size.x / platform_size.y;
+
+        (0..n)
+            .map(|i| {
+                let (view_projection, light) = camera(aspect, i);
+
+                let layer = render(config, self.meshes.iter(), view_projection, light, i);
+                progress.add_complete(1);
+
+                layer
+            })
+            .collect()
+    }
+}
 
 pub fn render<'a>(
     config: &SliceConfig,
