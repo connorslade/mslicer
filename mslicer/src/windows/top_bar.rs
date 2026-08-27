@@ -3,9 +3,8 @@ use std::f32::consts::TAU;
 
 use const_format::concatcp;
 use egui::{
-    Align, Align2, Button, Context, FontId, Frame, Grid, Id, Key, KeyboardShortcut, Layout,
-    Modifiers, PopupAnchor, ProgressBar, Stroke, StrokeKind, TopBottomPanel, Ui, ViewportCommand,
-    vec2,
+    Align, Align2, Button, Context, FontId, Frame, Grid, Id, Layout, PopupAnchor, ProgressBar,
+    Stroke, StrokeKind, TopBottomPanel, Ui, vec2,
 };
 use egui_phosphor::regular::{CARDS, FILE_TEXT, GIT_DIFF, HAMMER, HOURGLASS, STACK};
 
@@ -13,58 +12,17 @@ use egui_phosphor::regular::{CARDS, FILE_TEXT, GIT_DIFF, HAMMER, HOURGLASS, STAC
 use crate::system::windows::launch_install;
 use crate::{
     app::App,
-    include_asset,
-    project::{Collection, Project},
-    task::{AutoLayout, FileDialog, LoadSliced, MeshLoad, MultiFileDialog, ProjectLoad},
-    ui::{components::labeled_separator, popup::Popup},
+    project::Collection,
+    task::ProjectLoad,
+    ui::{components::labeled_separator, shortcuts, shortcuts::Shortcut},
     windows::{
         Tab,
         tools::{self, graphics_3d},
     },
 };
 
-const COMMAND_SHIFT: Modifiers = Modifiers::COMMAND.plus(Modifiers::SHIFT);
-
-const IMPORT_MODEL_SHORTCUT: KeyboardShortcut = KeyboardShortcut::new(Modifiers::COMMAND, Key::I);
-const IMPORT_SLICED_SHORTCUT: KeyboardShortcut = KeyboardShortcut::new(COMMAND_SHIFT, Key::I);
-const LOAD_TEAPOT_SHORTCUT: KeyboardShortcut = KeyboardShortcut::new(Modifiers::COMMAND, Key::T);
-const SAVE_PROJECT_SHORTCUT: KeyboardShortcut = KeyboardShortcut::new(Modifiers::COMMAND, Key::S);
-const SAVE_AS_PROJECT_SHORTCUT: KeyboardShortcut = KeyboardShortcut::new(COMMAND_SHIFT, Key::S);
-const NEW_PROJECT_SHORTCUT: KeyboardShortcut = KeyboardShortcut::new(Modifiers::COMMAND, Key::N);
-const LOAD_PROJECT_SHORTCUT: KeyboardShortcut = KeyboardShortcut::new(Modifiers::COMMAND, Key::O);
-const QUIT_SHORTCUT: KeyboardShortcut = KeyboardShortcut::new(Modifiers::COMMAND, Key::Q);
-const SLICE_SHORTCUT: KeyboardShortcut = KeyboardShortcut::new(Modifiers::COMMAND, Key::R);
-const UNDO_SHORTCUT: KeyboardShortcut = KeyboardShortcut::new(Modifiers::COMMAND, Key::Z);
-const REDO_SHORTCUT: KeyboardShortcut = KeyboardShortcut::new(Modifiers::COMMAND, Key::Y);
-const LAYOUT_SHORTCUT: KeyboardShortcut = KeyboardShortcut::new(Modifiers::COMMAND, Key::L);
-const SELECT_ALL_SHORTCUT: KeyboardShortcut = KeyboardShortcut::new(Modifiers::COMMAND, Key::A);
-const SELECT_NONE_SHORTCUT: KeyboardShortcut = KeyboardShortcut::new(COMMAND_SHIFT, Key::D);
-
-type ShortcutCallback = fn(&mut App, &Context);
-const SHORTCUTS: &[(KeyboardShortcut, ShortcutCallback)] = &[
-    (IMPORT_SLICED_SHORTCUT, |app, _ctx| load_sliced(app)),
-    (IMPORT_MODEL_SHORTCUT, |app, _ctx| import_model(app)),
-    (LOAD_TEAPOT_SHORTCUT, |app, _ctx| import_teapot(app)),
-    (NEW_PROJECT_SHORTCUT, |app, _ctx| new(app)),
-    (LOAD_PROJECT_SHORTCUT, |app, _ctx| load(app)),
-    (SAVE_PROJECT_SHORTCUT, |app, _ctx| save(app)),
-    (SAVE_AS_PROJECT_SHORTCUT, |app, _ctx| save_as(app)),
-    (QUIT_SHORTCUT, |_app, ctx| quit(ctx)),
-    (UNDO_SHORTCUT, |app, _| app.history().undo()),
-    (REDO_SHORTCUT, |app, _| app.history().redo()),
-    (SLICE_SHORTCUT, |app, _ctx| app.slice()),
-    (LAYOUT_SHORTCUT, |app, _ctx| quick_layout(app)),
-    (SELECT_ALL_SHORTCUT, |app, _ctx| select_all(app)),
-    (SELECT_NONE_SHORTCUT, |app, _ctx| app.state.selected.clear()),
-];
-
 pub fn ui(app: &mut App, ctx: &Context) {
-    for (shortcut, callback) in SHORTCUTS {
-        if ctx.input_mut(|x| x.consume_shortcut(shortcut)) {
-            callback(app, ctx);
-            break;
-        }
-    }
+    shortcuts::handle(app, ctx);
 
     TopBottomPanel::top("top_panel")
         .frame(Frame::side_top_panel(&ctx.style()).inner_margin(4))
@@ -81,13 +39,25 @@ pub fn ui(app: &mut App, ctx: &Context) {
                     ui.set_width(150.0);
 
                     labeled_separator(ui, "Import");
-                    menu_button((ui, app, ctx), SHORTCUTS[1], "Load Mesh");
-                    menu_button((ui, app, ctx), SHORTCUTS[2], "Utah Teapot");
-                    menu_button((ui, app, ctx), SHORTCUTS[0], "Load Sliced");
+                    menu_button(
+                        (ui, app, ctx),
+                        &shortcuts::IMPORT_MODEL_SHORTCUT,
+                        "Load Mesh",
+                    );
+                    menu_button(
+                        (ui, app, ctx),
+                        &shortcuts::LOAD_TEAPOT_SHORTCUT,
+                        "Utah Teapot",
+                    );
+                    menu_button(
+                        (ui, app, ctx),
+                        &shortcuts::IMPORT_SLICED_SHORTCUT,
+                        "Load Sliced",
+                    );
 
                     labeled_separator(ui, "Project");
-                    menu_button((ui, app, ctx), SHORTCUTS[3], "New");
-                    menu_button((ui, app, ctx), SHORTCUTS[4], "Open");
+                    menu_button((ui, app, ctx), &shortcuts::NEW_PROJECT_SHORTCUT, "New");
+                    menu_button((ui, app, ctx), &shortcuts::LOAD_PROJECT_SHORTCUT, "Open");
                     ui.add_enabled_ui(!app.config.recent_projects.is_empty(), |ui| {
                         ui.menu_button("Recent", |ui| {
                             let mut load = None;
@@ -104,9 +74,13 @@ pub fn ui(app: &mut App, ctx: &Context) {
                             }
                         });
                     });
-                    menu_button((ui, app, ctx), SHORTCUTS[5], "Save");
+                    menu_button((ui, app, ctx), &shortcuts::SAVE_PROJECT_SHORTCUT, "Save");
                     ui.add_enabled_ui(app.project.path.is_some(), |ui| {
-                        menu_button((ui, app, ctx), SHORTCUTS[6], "Save As")
+                        menu_button(
+                            (ui, app, ctx),
+                            &shortcuts::SAVE_AS_PROJECT_SHORTCUT,
+                            "Save As",
+                        )
                     });
 
                     labeled_separator(ui, "Misc");
@@ -117,7 +91,7 @@ pub fn ui(app: &mut App, ctx: &Context) {
                         launch_install().unwrap();
                     }
 
-                    menu_button((ui, app, ctx), SHORTCUTS[7], "Quit");
+                    menu_button((ui, app, ctx), &shortcuts::QUIT_SHORTCUT, "Quit");
                 });
 
                 ui.menu_button(concatcp!(GIT_DIFF, " Edit"), |ui| {
@@ -125,23 +99,27 @@ pub fn ui(app: &mut App, ctx: &Context) {
 
                     labeled_separator(ui, "History");
                     ui.add_enabled_ui(app.history.can_undo(), |ui| {
-                        menu_button((ui, app, ctx), SHORTCUTS[8], "Undo")
+                        menu_button((ui, app, ctx), &shortcuts::UNDO_SHORTCUT, "Undo")
                     });
                     ui.add_enabled_ui(app.history.can_redo(), |ui| {
-                        menu_button((ui, app, ctx), SHORTCUTS[9], "Redo");
+                        menu_button((ui, app, ctx), &shortcuts::REDO_SHORTCUT, "Redo");
                     });
 
                     labeled_separator(ui, "Selections");
-                    menu_button((ui, app, ctx), SHORTCUTS[12], "Select Models");
+                    menu_button(
+                        (ui, app, ctx),
+                        &shortcuts::SELECT_ALL_SHORTCUT,
+                        "Select Models",
+                    );
                     ui.add_enabled_ui(app.state.selected.has_any(), |ui| {
-                        menu_button((ui, app, ctx), SHORTCUTS[13], "Deselect");
+                        menu_button((ui, app, ctx), &shortcuts::SELECT_NONE_SHORTCUT, "Deselect");
                     });
                 });
 
                 ui.menu_button(concatcp!(HAMMER, " Tools"), |ui| {
                     ui.set_width(150.0);
                     labeled_separator(ui, "Auto Layout");
-                    menu_button((ui, app, ctx), SHORTCUTS[11], "Quick Layout");
+                    menu_button((ui, app, ctx), &shortcuts::LAYOUT_SHORTCUT, "Quick Layout");
                     ui.button("Advanced Layout")
                         .clicked()
                         .then(|| tools::auto_layout::open(app));
@@ -183,7 +161,7 @@ pub fn ui(app: &mut App, ctx: &Context) {
                 ui.add_enabled_ui(!app.is_slicing(), |ui| {
                     let slice_button = ui.add(
                         Button::new(concatcp!(STACK, " Slice"))
-                            .shortcut_text(ctx.format_shortcut(&SLICE_SHORTCUT)),
+                            .shortcut_text(ctx.format_shortcut(&shortcuts::SLICE_SHORTCUT)),
                     );
                     slice_button.clicked().then(|| app.slice());
                 });
@@ -261,97 +239,12 @@ fn tasks_button(app: &mut App, ctx: &Context, ui: &mut Ui) {
         });
 }
 
-fn menu_button(
-    (ui, app, ctx): (&mut Ui, &mut App, &Context),
-    (shortcut, callback): (KeyboardShortcut, ShortcutCallback),
-    text: &str,
-) {
-    let button = Button::new(text).shortcut_text(ctx.format_shortcut(&shortcut));
+fn menu_button((ui, app, ctx): (&mut Ui, &mut App, &Context), shortcut: &Shortcut, text: &str) {
+    let button = Button::new(text).shortcut_text(ctx.format_shortcut(shortcut));
     if ui.add(button).clicked() {
-        callback(app, ctx);
+        (shortcut.callback)(app, ctx);
         ui.close();
     }
-}
-
-fn import_model(app: &mut App) {
-    app.tasks.add(MultiFileDialog::pick_files(
-        ("Mesh", &["stl", "obj"]),
-        |_app, paths, tasks| {
-            for path in paths {
-                let name = path.file_name().unwrap().to_str().unwrap().to_string();
-                let ext = path.extension();
-                let format = ext.unwrap_or_default().to_string_lossy();
-
-                let task = MeshLoad::file(path.to_path_buf(), name, format.into()).unwrap();
-                tasks.push(Box::new(task));
-            }
-        },
-    ));
-}
-
-fn import_teapot(app: &mut App) {
-    app.tasks.add(MeshLoad::buffer(
-        include_asset!("teapot.stl"),
-        "Utah Teapot".into(),
-        "stl".into(),
-    ));
-}
-
-fn new(app: &mut App) {
-    if !app.project.models.is_empty() {
-        app.popup.open(Popup::new("Modified File", |app, ui| {
-            ui.add_space(8.0);
-            if app.project.path.is_some() {
-                ui.label("Do you want to save the changes made to this project?");
-            } else {
-                ui.label("Do you want to save this project?");
-            }
-            ui.add_space(8.0);
-
-            let mut close = false;
-            ui.columns(2, |ui| {
-                ui[0].centered_and_justified(|ui| {
-                    if ui.button("Don't Save").clicked() {
-                        app.project.reset(&app.config.default_slice_config);
-                        close = true;
-                    }
-                });
-                ui[1].centered_and_justified(|ui| {
-                    if ui.button("Save").clicked() {
-                        app.tasks.add_boxed(app.project.save());
-                    }
-                });
-            });
-
-            close
-        }));
-    }
-}
-
-fn save(app: &mut App) {
-    let task = app.project.save();
-    app.tasks().add_boxed(task);
-}
-
-fn save_as(app: &mut App) {
-    let task = app.project.save_as();
-    app.tasks().add(task);
-}
-
-fn load(app: &mut App) {
-    app.tasks.add(Project::load());
-}
-
-fn quit(ctx: &Context) {
-    ctx.send_viewport_cmd(ViewportCommand::Close)
-}
-
-fn quick_layout(app: &mut App) {
-    app.tasks.add(AutoLayout::new(
-        &app.project.slice_config,
-        &app.project.models,
-        (2.0, 10.0),
-    ));
 }
 
 fn collect_instances(app: &mut App) {
@@ -372,18 +265,4 @@ fn collect_instances(app: &mut App) {
         }
         app.project.collections.push(collection);
     }
-}
-
-fn select_all(app: &mut App) {
-    app.state.selected.clear();
-    for model in app.project.models.iter() {
-        app.state.selected.select_model(model.id);
-    }
-}
-
-fn load_sliced(app: &mut App) {
-    app.tasks.add(FileDialog::pick_file(
-        ("Sliced Model", &["goo", "ctb", "nanodlp"]),
-        |_app, file, tasks| tasks.push(Box::new(LoadSliced::new(file.to_path_buf()))),
-    ));
 }
