@@ -1,13 +1,16 @@
 use nalgebra::Vector2;
 use wgpu::{Extent3d, TextureDescriptor, TextureDimension, TextureFormat, TextureUsages};
 
-use crate::render::{
-    Gcx,
-    workspace::model::{ModelPipeline, MultiStage},
+use crate::{
+    app::App,
+    render::{
+        Gcx,
+        workspace::model::{ModelPipeline, MultiStage},
+    },
 };
 
 impl ModelPipeline {
-    pub fn size_textures(&mut self, gcx: &Gcx, size: Vector2<u32>) {
+    pub fn size_textures(&mut self, gcx: &Gcx, app: &App, size: Vector2<u32>) {
         let extent = Extent3d {
             width: size.x,
             height: size.y,
@@ -69,9 +72,16 @@ impl ModelPipeline {
             view_formats: &[],
         });
 
+        let size = (size.cast::<f32>() * app.config.render.ambient_occlusion.scale)
+            .map(|x| x.ceil() as u32);
+        let occlusion_extent = Extent3d {
+            width: size.x,
+            height: size.y,
+            depth_or_array_layers: 1,
+        };
         let occlusion_desc = TextureDescriptor {
             label: Some("Occlusion"),
-            size: extent,
+            size: occlusion_extent,
             mip_level_count: 1,
             sample_count: 1,
             dimension: TextureDimension::D2,

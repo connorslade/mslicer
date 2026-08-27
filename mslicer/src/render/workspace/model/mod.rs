@@ -99,7 +99,7 @@ impl ModelPipeline {
         self.lighting.prepare(gcx, app, None);
         self.fxaa.prepare(gcx, app, size);
 
-        self.size_textures(gcx, screen.size_in_pixels.into());
+        self.size_textures(gcx, app, screen.size_in_pixels.into());
         self.render(encoder, app);
     }
 

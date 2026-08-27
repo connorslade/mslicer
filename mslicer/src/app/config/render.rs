@@ -22,6 +22,7 @@ pub struct RenderConfig {
 #[serde(default)]
 pub struct AmbientOcclusion {
     pub enabled: bool,
+    pub scale: f32,
     pub samples: u32,
     pub range: f32,
     pub bias: f32,
@@ -79,6 +80,7 @@ impl Default for AmbientOcclusion {
     fn default() -> Self {
         Self {
             enabled: false,
+            scale: 1.0,
             samples: 0,
             range: 1.0,
             bias: 0.1,

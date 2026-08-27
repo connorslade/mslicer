@@ -35,7 +35,7 @@ impl ModelPipeline {
     ) -> TextureView {
         // Switch out the multi stage state just for this operation
         let mut old = self.multi_stage.take();
-        self.size_textures(gcx, size);
+        self.size_textures(gcx, app, size);
 
         self.base.prepare_preview(gcx, app, &camera);
         self.ssao.prepare(gcx, app, Some(&camera));

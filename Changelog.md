@@ -6,6 +6,7 @@
 - Fix ⌘+A selecting all models when editing a text box
 - Improve ambient occlusion calculations and config
 - Fix triangle render style (sometimes neighboring faces would be colored the same)
+- Allow reducing ambient occlusion render resolution
 
 ## v0.9.0 &mdash; August 26th, 2026
 

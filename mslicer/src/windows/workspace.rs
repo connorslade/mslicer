@@ -16,6 +16,8 @@ use crate::{
 };
 
 const BASIS_TIP: &str = "Set size to 0px to disable.";
+const SSAO_DESC: &str = "Ambient occlusion (SSAO) simulates how ambient light gets blocked in convex areas, making the rendering a little more realistic.";
+const SSAO_SCALE_TIP: &str = "Calculate ambient occlusion at a lower resolution to get better performance at the cost of quality.";
 const SPACENAV_CONNECTED: &str = "Connected to Spacenav.";
 const SPACENAV_UNCONNECTED: &str =
     "Failed to connect to Spacenav. Make sure the daemon is running and reconnect.";
@@ -125,10 +127,17 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
         "Ambient Occlusion",
         ao.enabled,
         |ui| {
-            ui.label("Ambient occlusion (SSAO) simulates how ambient light gets blocked in convex areas, making the rendering a little more realistic.");
+            ui.label(SSAO_DESC);
             ui.add_space(4.0);
 
             grid("ao").show(ui, |ui| {
+                ui.horizontal(|ui| {
+                    ui.label("Scale");
+                    ui.label(INFO).on_hover_text(SSAO_SCALE_TIP);
+                });
+                DragValue::new(&mut ao.scale).range(0.1..=1.0).ui(ui);
+                ui.end_row();
+
                 ui.label("Samples");
                 DragValue::new(&mut ao.samples).ui(ui);
                 ui.end_row();
