@@ -122,40 +122,63 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
 
     let ao = &mut app.config.render.ambient_occlusion;
     ao.enabled = collapsing_toggle(
-        "Ambient Occlusion ",
+        "Ambient Occlusion",
         ao.enabled,
         |ui| {
+            ui.label("Ambient occlusion (SSAO) simulates how ambient light gets blocked in convex areas, making the rendering a little more realistic.");
+            ui.add_space(4.0);
+
             grid("ao").show(ui, |ui| {
                 ui.label("Samples");
                 DragValue::new(&mut ao.samples).ui(ui);
                 ui.end_row();
 
                 ui.label("Range");
-                DragValue::new(&mut ao.range).ui(ui);
+                DragValue::new(&mut ao.range)
+                    .range(0.0..=f32::MAX)
+                    .speed(0.1)
+                    .ui(ui);
                 ui.end_row();
 
                 ui.label("Bias");
-                DragValue::new(&mut ao.bias).ui(ui);
-                ui.end_row();
-
-                ui.label("Blur Radius");
-                DragValue::new(&mut ao.blur_radius).ui(ui);
-                ui.end_row();
-
-                ui.label("Blur Spatial");
-                DragValue::new(&mut ao.blur_spatial).ui(ui);
-                ui.end_row();
-
-                ui.label("Blur Depth");
-                DragValue::new(&mut ao.blur_depth).ui(ui);
-                ui.end_row();
-
-                ui.label("Blur Normal");
                 ui.horizontal(|ui| {
-                    DragValue::new(&mut ao.blur_normal).ui(ui);
+                    DragValue::new(&mut ao.bias)
+                        .range(0.0..=1.0)
+                        .speed(0.001)
+                        .ui(ui);
                     ui.take_available_width();
                 });
                 ui.end_row();
+            });
+
+            ui.visuals_mut().collapsing_header_frame = false;
+            ui.collapsing("Blur", |ui| {
+                grid("ao_blur").show(ui, |ui| {
+                    ui.label("Radius");
+                    DragValue::new(&mut ao.blur_radius).range(0..=16).ui(ui);
+                    ui.end_row();
+
+                    ui.label("Spatial");
+                    DragValue::new(&mut ao.blur_spatial)
+                        .range(0.01..=f32::MAX)
+                        .ui(ui);
+                    ui.end_row();
+
+                    ui.label("Depth");
+                    DragValue::new(&mut ao.blur_depth)
+                        .range(0.01..=f32::MAX)
+                        .ui(ui);
+                    ui.end_row();
+
+                    ui.label("Normal");
+                    ui.horizontal(|ui| {
+                        DragValue::new(&mut ao.blur_normal)
+                            .range(0.01..=f32::MAX)
+                            .ui(ui);
+                        ui.take_available_width();
+                    });
+                    ui.end_row();
+                });
             });
         },
         false,

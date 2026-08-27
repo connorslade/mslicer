@@ -4,6 +4,7 @@
 
 - Fix preview image GPU memory leak
 - Fix ⌘+A selecting all models when editing a text box
+- Improve ambient occlusion calculations and config
 
 ## v0.9.0 &mdash; August 26th, 2026
 

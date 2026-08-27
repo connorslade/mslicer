@@ -7,6 +7,7 @@ struct Context {
     view: mat4x4f, // world space to clip space
     samples: u32,
     range: f32,
+    bias: f32,
 }
 
 @fragment
@@ -24,14 +25,16 @@ fn frag(in: VertexOutput) -> @location(0) f32 {
 
     var occluded = 0u;
     for (var i = 0u; i < ctx.samples; i++) {
-        let offset = vec3(rand(), rand(), rand()) * 2.0 - vec3(1.0);
+        var offset = vec3(rand(), rand(), rand()) * 2.0 - vec3(1.0);
+        offset *= sign(dot(offset, world_normal));
         let pos = world_pos + offset * ctx.range;
 
         let clip = ctx.view * vec4(pos, 1.0);
-        let uv = clip_to_uv(clip.xy / clip.w);
+        let sample_uv = clip_to_uv(clip.xy / clip.w);
+        let sample_depth = clip.z / clip.w;
 
-        occluded += u32(textureSample(depth, texture_sampler, uv) < this_depth);
+        occluded += u32(textureSample(depth, texture_sampler, sample_uv) < sample_depth - ctx.bias);
     }
 
-    return (1.0 - f32(occluded) / f32(ctx.samples - 1)) * 1.5;
+    return (1.0 - f32(occluded) / f32(ctx.samples));
 }
