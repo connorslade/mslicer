@@ -12,7 +12,6 @@
   - Allow placing supports manually
 - Add anti-aliasing to slice preview
 - Reduce output file size (Reported by Jens Holländer)
-- Remote Print now supports SDCP V3.0.0 for newer printers
 - Allow loading previously sliced files for inspection
 - Convert sliced files back into meshes
 - Rename 'Slice Operation' window to 'Sliced'

@@ -46,7 +46,6 @@
                     <li>Support generation progress (Prune auto-generated supports and allow placing supports manually)</li>
                     <li>Add anti-aliasing to slice preview</li>
                     <li>Reduce output file size (Reported by Jens Holländer)</li>
-                    <li>Remote Print now supports SDCP V3.0.0 for newer printers</li>
                     <li>Allow loading previously sliced files for inspection</li>
                     <li>Convert sliced files back into meshes</li>
                     <li>Rename 'Slice Operation' window to 'Sliced'</li>
