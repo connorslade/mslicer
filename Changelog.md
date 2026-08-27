@@ -1,5 +1,9 @@
 # Changelog
 
+## v?.?.? &mdash; Coming Soon™
+
+- Fix preview image GPU memory leak
+
 ## v0.9.0 &mdash; August 26th, 2026
 
 - PCB Tool: Pre and post flip offsets

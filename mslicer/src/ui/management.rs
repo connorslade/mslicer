@@ -4,7 +4,13 @@ use egui::{Color32, ColorImage, Context, ImageData, TextureId, TextureOptions, W
 use image::RgbaImage;
 
 pub struct LazyTextureId {
-    inner: Option<TextureId>,
+    inner: Option<LazyTextureIdInner>,
+}
+
+struct LazyTextureIdInner {
+    // egui's Context is internally reference counted
+    ctx: Context,
+    texture: TextureId,
 }
 
 pub struct LazyText {
@@ -17,13 +23,24 @@ impl LazyTextureId {
     }
 
     pub fn get(&mut self, ctx: &Context, image: &RgbaImage) -> TextureId {
-        if let Some(id) = self.inner {
-            return id;
+        if let Some(LazyTextureIdInner { texture, .. }) = &self.inner {
+            return *texture;
         }
 
         let id = upload_texture_egui(ctx, image);
-        self.inner = Some(id);
+        self.inner = Some(LazyTextureIdInner {
+            ctx: ctx.clone(),
+            texture: id,
+        });
         id
+    }
+}
+
+impl Drop for LazyTextureId {
+    fn drop(&mut self) {
+        if let Some(LazyTextureIdInner { ctx, texture }) = self.inner.take() {
+            ctx.tex_manager().write().free(texture);
+        }
     }
 }
 
@@ -41,7 +58,6 @@ impl From<LazyText> for WidgetText {
     }
 }
 
-// todo: dealloc when slice operation is overwritten!!
 fn upload_texture_egui(ctx: &Context, image: &RgbaImage) -> TextureId {
     let image = ColorImage::new(
         [image.width(), image.height()].map(|x| x as usize),
