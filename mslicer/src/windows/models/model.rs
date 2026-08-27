@@ -261,7 +261,10 @@ pub fn model_properties(app: &mut App, ui: &mut Ui, ctx: &Context, action: &mut 
                 ui.horizontal(|ui| {
                     let editing = Popup::is_id_open(ctx, ui.auto_id_with("popup"));
                     let original_color = model.color;
-                    ui.color_edit_button_rgb(model.color.as_slice_mut());
+                    let mut color = model.color;
+                    ui.color_edit_button_rgb(color.as_slice_mut())
+                        .changed()
+                        .then(|| model.color = color);
                     history_tracked_model(
                         (editing, ui, &mut app.history),
                         (id, || ModelAction::Color(original_color)),

@@ -7,6 +7,7 @@
 - Improve ambient occlusion calculations and config
 - Fix triangle render style (sometimes neighboring faces would be colored the same)
 - Allow reducing ambient occlusion render resolution
+- Fix model color changing slightly when opened in the model panel
 
 ## v0.9.0 &mdash; August 26th, 2026
 
