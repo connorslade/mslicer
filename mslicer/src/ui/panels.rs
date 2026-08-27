@@ -76,13 +76,14 @@ impl Panels {
         };
 
         let previous_width = split.rect.width();
+        let min_size = 325.0 / window_width;
         let change = previous_width / window_width;
         split.fraction = if node.is_left() {
             1.0 - (1.0 - split.fraction) * change
         } else {
             split.fraction * change
         }
-        .clamp(0.0, 1.0);
+        .clamp(min_size, 1.0);
     }
 }
 
