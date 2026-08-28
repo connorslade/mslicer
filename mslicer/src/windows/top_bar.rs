@@ -105,6 +105,31 @@ pub fn ui(app: &mut App, ctx: &Context) {
                         menu_button((ui, app, ctx), &shortcuts::REDO_SHORTCUT, "Redo");
                     });
 
+                    ui.add_enabled_ui(app.history.can_undo() || app.history.can_redo(), |ui| {
+                        ui.button("Clear").clicked().then(|| app.history.clear());
+                    });
+
+                    ui.add_enabled_ui(app.history.can_undo(), |ui| {
+                        ui.menu_button("Actions", |ui| {
+                            let mut undo_to = None;
+                            for (i, action) in app.history.history.iter().enumerate() {
+                                let desc = action.description();
+
+                                let mut button = ui.button(desc.name);
+                                if let Some(extra) = desc.extra {
+                                    button = button.on_hover_text(extra);
+                                }
+
+                                button.clicked().then(|| undo_to = Some(i));
+                            }
+
+                            if let Some(index) = undo_to {
+                                ui.close();
+                                app.history().undo_to(index);
+                            }
+                        });
+                    });
+
                     labeled_separator(ui, "Selections");
                     menu_button(
                         (ui, app, ctx),

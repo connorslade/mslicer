@@ -1,4 +1,4 @@
-use std::{collections::VecDeque, mem};
+use std::{borrow::Cow, collections::VecDeque, mem};
 
 use common::{
     color::LinearRgb,
@@ -25,6 +25,11 @@ const MAX_HISTORY: usize = 0x80; // random number i picked
 pub struct History {
     pub history: VecDeque<Action>,
     future: VecDeque<Action>,
+}
+
+pub struct ActionDescription {
+    pub name: Cow<'static, str>,
+    pub extra: Option<Cow<'static, str>>,
 }
 
 app_ref_type!(History, history);
@@ -83,6 +88,11 @@ pub enum ModelAction {
 }
 
 impl History {
+    pub fn clear(&mut self) {
+        self.future.clear();
+        self.history.clear();
+    }
+
     pub fn can_undo(&self) -> bool {
         !self.history.is_empty()
     }
@@ -128,94 +138,162 @@ impl<'a> HistoryRef<'a> {
             self.history.push_back(redo);
         }
     }
+
+    /// Undoes the action at `index` (as indexed by `History::history`,
+    /// oldest first) along with everything performed after it.
+    pub fn undo_to(&mut self, index: usize) {
+        while self.history.len() > index {
+            self.undo();
+        }
+    }
+}
+
+impl ActionDescription {
+    pub fn new(name: &'static str) -> Self {
+        Self {
+            name: Cow::Borrowed(name),
+            extra: None,
+        }
+    }
+
+    pub fn with_extra(self, extra: impl Into<Cow<'static, str>>) -> Self {
+        Self {
+            extra: Some(extra.into()),
+            ..self
+        }
+    }
 }
 
 impl Action {
+    pub fn description(&self) -> ActionDescription {
+        match self {
+            Self::Model { action, .. } => action.description(),
+            Self::SliceConfig(action) => action.description(),
+            Self::ModelAdded { .. } => ActionDescription::new("Loaded Model"),
+            Self::ModelRemoved { model, .. } => {
+                ActionDescription::new("Removed Model").with_extra(model.name.clone())
+            }
+            Self::CollectionAdded { .. } => ActionDescription::new("Created Collection"),
+            Self::CollectionRemoved { collection, .. } => {
+                ActionDescription::new("Removed Collection").with_extra(collection.name.clone())
+            }
+        }
+    }
+
     pub fn undo(self, app: &mut App) -> Option<Action> {
         match self {
-            Action::Model { id, action } => action
+            Self::Model { id, action } => action
                 .undo(app, id)
-                .map(|action| Action::Model { id, action }),
-            Action::ModelAdded { id } => {
+                .map(|action| Self::Model { id, action }),
+            Self::ModelAdded { id } => {
                 let index = app.project.models.iter().position(|x| x.id == id)?;
                 let model = Box::new(app.project.models.remove(index));
-                Some(Action::ModelRemoved { index, model })
+                Some(Self::ModelRemoved { index, model })
             }
-            Action::ModelRemoved { index, model } => {
+            Self::ModelRemoved { index, model } => {
                 let id = model.id;
                 let index = index.min(app.project.models.len());
                 app.project.models.insert(index, *model);
-                Some(Action::ModelAdded { id })
+                Some(Self::ModelAdded { id })
             }
-            Action::CollectionAdded { id } => {
+            Self::CollectionAdded { id } => {
                 let index = app.project.collections.iter().position(|x| x.id == id)?;
                 let collection = app.project.collections.remove(index);
-                Some(Action::CollectionRemoved { index, collection })
+                Some(Self::CollectionRemoved { index, collection })
             }
-            Action::CollectionRemoved { index, collection } => {
+            Self::CollectionRemoved { index, collection } => {
                 let id = collection.id;
                 let index = index.min(app.project.collections.len());
                 app.project.collections.insert(index, collection);
-                Some(Action::CollectionAdded { id })
+                Some(Self::CollectionAdded { id })
             }
-            Action::SliceConfig(action) => action.undo(app).map(Action::SliceConfig),
+            Self::SliceConfig(action) => action.undo(app).map(Action::SliceConfig),
         }
     }
 }
 
 impl SliceConfigAction {
+    pub fn description(&self) -> ActionDescription {
+        match self {
+            Self::Mode(_) => ActionDescription::new("Changed Slice Mode"),
+            Self::PlatformResolution(_) => ActionDescription::new("Changed Platform Resolution"),
+            Self::PlatformSize(_) => ActionDescription::new("Changed Platform Size"),
+            Self::SliceHeight(_) => ActionDescription::new("Changed Slice Height"),
+            Self::Supersample(_) => ActionDescription::new("Changed Anti Aliasing"),
+            Self::FirstLayers(_) => ActionDescription::new("Changed First Layers"),
+            Self::TransitionLayers(_) => ActionDescription::new("Changed Transition Layers"),
+            Self::NormalExposure(_) => ActionDescription::new("Changed Normal Layer Exposure"),
+            Self::FirstExposure(_) => ActionDescription::new("Changed First Layer Exposure"),
+            Self::ExposureRemap(_) => ActionDescription::new("Changed Exposure Remapping"),
+            Self::VariableLayerHeight(_) => ActionDescription::new("Changed Variable Layer Height"),
+            Self::ElephantFootFixer(_) => ActionDescription::new("Changed Elephant Foot Fixer"),
+        }
+    }
+
     pub fn undo(self, app: &mut App) -> Option<SliceConfigAction> {
         let slice_config = &mut app.project.slice_config;
         let post_processing = &mut app.project.post_processing;
 
         Some(match self {
-            SliceConfigAction::Mode(mode) => {
-                SliceConfigAction::Mode(mem::replace(&mut slice_config.mode, mode))
+            Self::Mode(mode) => Self::Mode(mem::replace(&mut slice_config.mode, mode)),
+            Self::PlatformResolution(resolution) => Self::PlatformResolution(mem::replace(
+                &mut slice_config.platform_resolution,
+                resolution,
+            )),
+            Self::PlatformSize(size) => {
+                Self::PlatformSize(mem::replace(&mut slice_config.platform_size, size))
             }
-            SliceConfigAction::PlatformResolution(resolution) => {
-                SliceConfigAction::PlatformResolution(mem::replace(
-                    &mut slice_config.platform_resolution,
-                    resolution,
-                ))
+            Self::SliceHeight(height) => {
+                Self::SliceHeight(mem::replace(&mut slice_config.slice_height, height))
             }
-            SliceConfigAction::PlatformSize(size) => {
-                SliceConfigAction::PlatformSize(mem::replace(&mut slice_config.platform_size, size))
+            Self::Supersample(supersample) => {
+                Self::Supersample(mem::replace(&mut slice_config.supersample, supersample))
             }
-            SliceConfigAction::SliceHeight(height) => {
-                SliceConfigAction::SliceHeight(mem::replace(&mut slice_config.slice_height, height))
+            Self::FirstLayers(layers) => {
+                Self::FirstLayers(mem::replace(&mut slice_config.first_layers, layers))
             }
-            SliceConfigAction::Supersample(supersample) => SliceConfigAction::Supersample(
-                mem::replace(&mut slice_config.supersample, supersample),
-            ),
-            SliceConfigAction::FirstLayers(layers) => {
-                SliceConfigAction::FirstLayers(mem::replace(&mut slice_config.first_layers, layers))
+            Self::TransitionLayers(layers) => {
+                Self::TransitionLayers(mem::replace(&mut slice_config.transition_layers, layers))
             }
-            SliceConfigAction::TransitionLayers(layers) => SliceConfigAction::TransitionLayers(
-                mem::replace(&mut slice_config.transition_layers, layers),
-            ),
-            SliceConfigAction::NormalExposure(config) => SliceConfigAction::NormalExposure(
-                mem::replace(&mut slice_config.exposure_config, config),
-            ),
-            SliceConfigAction::FirstExposure(config) => SliceConfigAction::FirstExposure(
-                mem::replace(&mut slice_config.first_exposure_config, config),
-            ),
-            SliceConfigAction::ExposureRemap(remap) => SliceConfigAction::ExposureRemap(
-                mem::replace(&mut slice_config.exposure_remap, remap),
-            ),
-            SliceConfigAction::VariableLayerHeight(value) => {
-                SliceConfigAction::VariableLayerHeight(mem::replace(
-                    &mut post_processing.variable_layer_height,
-                    value,
-                ))
+            Self::NormalExposure(config) => {
+                Self::NormalExposure(mem::replace(&mut slice_config.exposure_config, config))
             }
-            SliceConfigAction::ElephantFootFixer(value) => SliceConfigAction::ElephantFootFixer(
-                mem::replace(&mut post_processing.elephant_foot_fixer, value),
-            ),
+            Self::FirstExposure(config) => Self::FirstExposure(mem::replace(
+                &mut slice_config.first_exposure_config,
+                config,
+            )),
+            Self::ExposureRemap(remap) => {
+                Self::ExposureRemap(mem::replace(&mut slice_config.exposure_remap, remap))
+            }
+            Self::VariableLayerHeight(value) => Self::VariableLayerHeight(mem::replace(
+                &mut post_processing.variable_layer_height,
+                value,
+            )),
+            Self::ElephantFootFixer(value) => Self::ElephantFootFixer(mem::replace(
+                &mut post_processing.elephant_foot_fixer,
+                value,
+            )),
         })
     }
 }
 
 impl ModelAction {
+    pub fn description(&self) -> ActionDescription {
+        match self {
+            Self::Name(name) => ActionDescription::new("Renamed Model").with_extra(name.clone()),
+            Self::Color(_) => ActionDescription::new("Changed Model Color"),
+            Self::Hidden(hide) => {
+                ActionDescription::new(if *hide { "Showed Model" } else { "Hid Model" })
+            }
+            Self::Position(_) => ActionDescription::new("Moved Model"),
+            Self::Scale(_) => ActionDescription::new("Scaled Model"),
+            Self::Rotation(_) => ActionDescription::new("Rotated Model"),
+            Self::RelativeExposure(_) => ActionDescription::new("Changed Model Exposure"),
+            Self::Collection(_) => ActionDescription::new("Changed Model Collection"),
+            Self::Move(..) => ActionDescription::new("Moved Model"),
+        }
+    }
+
     /// Undoes the model action on the specified model, returning an action to
     /// revert the undo (redo) if the model was found.
     pub fn undo(self, app: &mut App, model_id: ModelId) -> Option<ModelAction> {
@@ -223,37 +301,37 @@ impl ModelAction {
         let platform_size = &app.project.slice_config.platform_size;
 
         Some(match self {
-            ModelAction::Name(name) => ModelAction::Name(mem::replace(&mut model.name, name)),
-            ModelAction::Color(color) => ModelAction::Color(mem::replace(&mut model.color, color)),
-            ModelAction::Hidden(hide) => ModelAction::Hidden(mem::replace(&mut model.hidden, hide)),
-            ModelAction::Position(matrix) => {
+            Self::Name(name) => Self::Name(mem::replace(&mut model.name, name)),
+            Self::Color(color) => Self::Color(mem::replace(&mut model.color, color)),
+            Self::Hidden(hide) => Self::Hidden(mem::replace(&mut model.hidden, hide)),
+            Self::Position(matrix) => {
                 let old = model.mesh.position();
                 model.set_position(platform_size, matrix);
-                ModelAction::Position(old)
+                Self::Position(old)
             }
-            ModelAction::Scale(matrix) => {
+            Self::Scale(matrix) => {
                 let old = model.mesh.scale();
                 model.set_scale(platform_size, matrix);
-                ModelAction::Scale(old)
+                Self::Scale(old)
             }
-            ModelAction::Rotation(matrix) => {
+            Self::Rotation(matrix) => {
                 let old = model.mesh.rotation();
                 model.set_rotation(platform_size, matrix);
-                ModelAction::Rotation(old)
+                Self::Rotation(old)
             }
-            ModelAction::RelativeExposure(exposure) => {
-                ModelAction::RelativeExposure(mem::replace(&mut model.exposure, exposure))
+            Self::RelativeExposure(exposure) => {
+                Self::RelativeExposure(mem::replace(&mut model.exposure, exposure))
             }
-            ModelAction::Collection(collection) => {
-                ModelAction::Collection(mem::replace(&mut model.collection, collection))
+            Self::Collection(collection) => {
+                Self::Collection(mem::replace(&mut model.collection, collection))
             }
-            ModelAction::Move(index, collection) => {
+            Self::Move(index, collection) => {
                 let current_index = app.project.models.iter().position(|x| x.id == model_id)?;
                 let mut model = app.project.models.remove(current_index);
                 let old_collection = mem::replace(&mut model.collection, collection);
                 let index = index.min(app.project.models.len());
                 app.project.models.insert(index, model);
-                return Some(ModelAction::Move(current_index, old_collection));
+                return Some(Self::Move(current_index, old_collection));
             }
         })
     }
