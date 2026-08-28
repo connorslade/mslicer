@@ -1,6 +1,6 @@
 # Changelog
 
-## v?.?.? &mdash; Coming Soon™
+## v0.9.1 &mdash; August 28th, 2026
 
 - Fix preview image GPU memory leak
 - Fix ⌘+A selecting all models when editing a text box
@@ -8,6 +8,8 @@
 - Fix triangle render style (sometimes neighboring faces would be colored the same)
 - Allow reducing ambient occlusion render resolution
 - Fix model color changing slightly when opened in the model panel
+- Fix crash from config directory not being created
+- Better ambient occlusion defaults
 
 ## v0.9.0 &mdash; August 26th, 2026
 

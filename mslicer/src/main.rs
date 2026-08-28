@@ -1,8 +1,14 @@
 #![windows_subsystem = "windows"]
 
-use std::{env, fs::File, panic, sync::Arc, thread};
+use std::{
+    env,
+    fs::{self, File},
+    panic,
+    sync::Arc,
+    thread,
+};
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use eframe::NativeOptions;
 use egui::{FontDefinitions, Vec2, ViewportBuilder};
 use egui_wgpu::{WgpuConfiguration, WgpuSetup, WgpuSetupCreateNew};
@@ -45,7 +51,9 @@ fn main() -> Result<()> {
     let collector = egui_tracing::EventCollector::new();
 
     let config_dir = dirs::config_dir().unwrap().join("mslicer");
-    let log_file = File::create(config_dir.join("mslicer.log")).unwrap();
+    fs::create_dir_all(&config_dir).context("Creating config dir")?;
+
+    let log_file = File::create(config_dir.join("mslicer.log")).context("Opening log file")?;
     let file_layer = layer().with_writer(log_file);
 
     tracing_subscriber::registry()

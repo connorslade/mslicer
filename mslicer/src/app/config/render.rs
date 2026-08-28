@@ -81,9 +81,9 @@ impl Default for AmbientOcclusion {
         Self {
             enabled: false,
             scale: 1.0,
-            samples: 0,
-            range: 1.0,
-            bias: 0.1,
+            samples: 50,
+            range: 0.5,
+            bias: 0.0,
 
             blur_radius: 3,
             blur_spatial: 1.5,
