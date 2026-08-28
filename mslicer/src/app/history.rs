@@ -24,7 +24,7 @@ const MAX_HISTORY: usize = 0x80; // random number i picked
 #[derive(Default)]
 pub struct History {
     pub history: VecDeque<Action>,
-    future: VecDeque<Action>,
+    pub future: VecDeque<Action>,
 }
 
 pub struct ActionDescription {
@@ -139,11 +139,15 @@ impl<'a> HistoryRef<'a> {
         }
     }
 
-    /// Undoes the action at `index` (as indexed by `History::history`,
-    /// oldest first) along with everything performed after it.
     pub fn undo_to(&mut self, index: usize) {
         while self.history.len() > index {
             self.undo();
+        }
+    }
+
+    pub fn redo_to(&mut self, index: usize) {
+        while self.future.len() > index {
+            self.redo();
         }
     }
 }

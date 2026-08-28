@@ -107,27 +107,7 @@ pub fn ui(app: &mut App, ctx: &Context) {
 
                     ui.add_enabled_ui(app.history.can_undo() || app.history.can_redo(), |ui| {
                         ui.button("Clear").clicked().then(|| app.history.clear());
-                    });
-
-                    ui.add_enabled_ui(app.history.can_undo(), |ui| {
-                        ui.menu_button("Actions", |ui| {
-                            let mut undo_to = None;
-                            for (i, action) in app.history.history.iter().enumerate() {
-                                let desc = action.description();
-
-                                let mut button = ui.button(desc.name);
-                                if let Some(extra) = desc.extra {
-                                    button = button.on_hover_text(extra);
-                                }
-
-                                button.clicked().then(|| undo_to = Some(i));
-                            }
-
-                            if let Some(index) = undo_to {
-                                ui.close();
-                                app.history().undo_to(index);
-                            }
-                        });
+                        ui.menu_button("Actions", |ui| actions_menu(app, ui));
                     });
 
                     labeled_separator(ui, "Selections");
@@ -198,6 +178,46 @@ pub fn ui(app: &mut App, ctx: &Context) {
                 });
             });
         });
+}
+
+fn actions_menu(app: &mut App, ui: &mut Ui) {
+    ui.set_width(150.0);
+
+    let mut redo_to = None;
+    for (i, action) in app.history.future.iter().enumerate() {
+        let desc = action.description();
+
+        let mut button = ui.button(desc.name);
+        if let Some(extra) = desc.extra {
+            button = button.on_hover_text(extra);
+        }
+
+        button.clicked().then(|| redo_to = Some(i));
+    }
+
+    if let Some(index) = redo_to {
+        ui.close();
+        app.history().redo_to(index);
+    }
+
+    ui.separator();
+
+    let mut undo_to = None;
+    for (i, action) in app.history.history.iter().enumerate().rev() {
+        let desc = action.description();
+
+        let mut button = ui.button(desc.name);
+        if let Some(extra) = desc.extra {
+            button = button.on_hover_text(extra);
+        }
+
+        button.clicked().then(|| undo_to = Some(i));
+    }
+
+    if let Some(index) = undo_to {
+        ui.close();
+        app.history().undo_to(index);
+    }
 }
 
 fn tasks_button(app: &mut App, ctx: &Context, ui: &mut Ui) {
