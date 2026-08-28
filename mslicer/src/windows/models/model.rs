@@ -26,8 +26,8 @@ use crate::{
         being_edited, grid, history_tracked_model, vec3_dragger, vec3_dragger_proportional,
     },
     windows::models::{
-        ALIGN_SHORTCUT, Action, COLLECT_SHORTCUT, DELETE_SHORTCUT, DUPLICATE_SHORTCUT,
-        RENAME_SHORTCUT, SPLIT_SHORTCUT, shortcut,
+        ALIGN_SHORTCUT, COLLECT_SHORTCUT, DELETE_SHORTCUT, DUPLICATE_SHORTCUT, RENAME_SHORTCUT,
+        SPLIT_SHORTCUT, UiAction, shortcut,
     },
 };
 
@@ -128,7 +128,13 @@ pub fn model_entry(
     response
 }
 
-pub fn model_properties(app: &mut App, ui: &mut Ui, ctx: &Context, action: &mut Action, i: usize) {
+pub fn model_properties(
+    app: &mut App,
+    ui: &mut Ui,
+    ctx: &Context,
+    action: &mut UiAction,
+    i: usize,
+) {
     let model = &mut app.project.models[i];
 
     let platform = &app.project.slice_config.platform_size;
@@ -143,12 +149,12 @@ pub fn model_properties(app: &mut App, ui: &mut Ui, ctx: &Context, action: &mut 
         }
 
         if shortcut(ui.button(concatcp!(TRASH, " Delete")), DELETE_SHORTCUT) {
-            *action = Action::Remove(i);
+            *action = UiAction::Remove(i);
             app.state.selected.clear();
         }
 
         if shortcut(ui.button(concatcp!(COPY, " Duplicate")), DUPLICATE_SHORTCUT) {
-            *action = Action::Duplicate(i);
+            *action = UiAction::Duplicate(i);
         }
 
         if shortcut(

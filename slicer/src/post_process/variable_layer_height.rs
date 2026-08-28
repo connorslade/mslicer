@@ -7,7 +7,7 @@ use common::{
 };
 use tracing::info;
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub struct VariableLayerHeight {
     pub enabled: bool,
 

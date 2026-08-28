@@ -2,7 +2,7 @@ use std::{hash::Hash, mem};
 
 use egui::{
     Align, Button, CollapsingHeader, Color32, DragValue, FontId, Grid, Layout, Response, Separator,
-    Ui, emath::Numeric, vec2,
+    Ui, Widget, emath::Numeric, vec2,
 };
 
 use crate::{
@@ -46,9 +46,9 @@ pub fn vec2_dragger<Num: Numeric>(
 ) -> bool {
     let mut edit = false;
     ui.horizontal(|ui| {
-        edit |= being_edited(&ui.add(func(DragValue::new(&mut val[0]))));
+        (func(DragValue::new(&mut val[0])).ui(ui)).being_edited(&mut edit);
         ui.label("×");
-        edit |= being_edited(&ui.add(func(DragValue::new(&mut val[1]))));
+        (func(DragValue::new(&mut val[1])).ui(ui)).being_edited(&mut edit);
     });
     edit
 }
@@ -61,11 +61,11 @@ pub fn vec3_dragger<Num: Numeric>(
 ) -> bool {
     let mut edit = false;
     ui.horizontal(|ui| {
-        edit |= being_edited(&ui.add(func(DragValue::new(&mut val[0]))));
+        (func(DragValue::new(&mut val[0])).ui(ui)).being_edited(&mut edit);
         ui.label("×");
-        edit |= being_edited(&ui.add(func(DragValue::new(&mut val[1]))));
+        (func(DragValue::new(&mut val[1])).ui(ui)).being_edited(&mut edit);
         ui.label("×");
-        edit |= being_edited(&ui.add(func(DragValue::new(&mut val[2]))));
+        (func(DragValue::new(&mut val[2])).ui(ui)).being_edited(&mut edit);
     });
     edit
 }
@@ -80,11 +80,11 @@ pub fn vec3_dragger_proportional(
     ui.horizontal(|ui| {
         let (x, y, z) = (val[0], val[1], val[2]);
 
-        edit |= being_edited(&ui.add(func(DragValue::new(&mut val[0]))));
+        (func(DragValue::new(&mut val[0])).ui(ui)).being_edited(&mut edit);
         ui.label("×");
-        edit |= being_edited(&ui.add(func(DragValue::new(&mut val[1]))));
+        (func(DragValue::new(&mut val[1])).ui(ui)).being_edited(&mut edit);
         ui.label("×");
-        edit |= being_edited(&ui.add(func(DragValue::new(&mut val[2]))));
+        (func(DragValue::new(&mut val[2])).ui(ui)).being_edited(&mut edit);
 
         if x != val[0] {
             let diff = val[0] / x;
@@ -113,6 +113,17 @@ pub fn grid(id_salt: &str) -> Grid {
 /// Returns if the supplied widget response is being dragged or has focus.
 pub fn being_edited(response: &Response) -> bool {
     response.dragged() || response.has_focus()
+}
+
+pub trait BeingEditedExt {
+    fn being_edited(self, edited: &mut bool) -> Self;
+}
+
+impl BeingEditedExt for Response {
+    fn being_edited(self, edited: &mut bool) -> Self {
+        *edited |= self.dragged() || self.has_focus();
+        self
+    }
 }
 
 // todo: don't think the data stored through egui is ever being freed...

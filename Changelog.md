@@ -4,6 +4,7 @@
 
 - Allow ignoring updates to stop the notification on every launch
 - Update flatpak banding color
+- Track history state on more values
 
 ## v0.9.1 &mdash; August 28th, 2026
 

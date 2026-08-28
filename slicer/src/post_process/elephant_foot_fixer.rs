@@ -14,7 +14,7 @@ use rayon::iter::{ParallelBridge, ParallelIterator};
 use serde::{Deserialize, Serialize};
 use tracing::info;
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub struct ElephantFootFixer {
     pub enabled: bool,
     pub inset_distance: f32,

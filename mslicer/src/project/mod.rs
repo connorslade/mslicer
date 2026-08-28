@@ -131,3 +131,9 @@ impl PostProcessing {
 }
 
 id_type!(CollectionId, u32);
+
+impl PartialEq for Collection {
+    fn eq(&self, other: &Self) -> bool {
+        self.id == other.id
+    }
+}

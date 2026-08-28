@@ -18,9 +18,13 @@ use crate::{
     app::{
         App,
         config::{Config, printers::DEFAULT_PRINTERS},
+        history::SliceConfigAction,
     },
     ui::{
-        components::{collapsing_toggle, grid, vec2_dragger},
+        components::{
+            BeingEditedExt, being_edited, collapsing_toggle, grid, history_tracked_value,
+            vec2_dragger,
+        },
         popup::{Popup, PopupApp},
         state::{SelectedPrinter, UiState},
     },
@@ -53,6 +57,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     let slice_config = &mut app.project.slice_config;
     grid("slice_config").show(ui, |ui| {
         ui.label("Slice Mode");
+        let old_mode = slice_config.mode;
         let format = slice_config.mode;
         ComboBox::from_id_salt("slice_mode")
             .selected_text(format.name())
@@ -61,6 +66,9 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                     ui.selectable_value(&mut slice_config.mode, format, format.name());
                 }
             });
+        if slice_config.mode != old_mode {
+            app.history.track(SliceConfigAction::Mode(old_mode).into());
+        }
         ui.end_row();
 
         ui.label("Printer");
@@ -92,28 +100,59 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
         match app.state.selected_printer {
             SelectedPrinter::Project => {
                 ui.label("Platform Resolution");
-                vec2_dragger(ui, slice_config.platform_resolution.as_mut(), |x| x);
+                let old_resolution = slice_config.platform_resolution;
+                let editing = vec2_dragger(ui, slice_config.platform_resolution.as_mut(), |x| x);
+                history_tracked_value(
+                    (editing, ui, &mut app.history),
+                    ("platform_resolution", || {
+                        SliceConfigAction::PlatformResolution(old_resolution).into()
+                    }),
+                );
                 ui.end_row();
 
                 ui.label("Platform Size (mm)");
+                let mut editing = false;
                 ui.horizontal(|ui| {
-                    ui.add(DragValue::new(platform.x.raw_mut()));
+                    (DragValue::new(platform.x.raw_mut()).ui(ui)).being_edited(&mut editing);
                     ui.label("×");
-                    ui.add(DragValue::new(platform.y.raw_mut()));
+                    (DragValue::new(platform.y.raw_mut()).ui(ui)).being_edited(&mut editing);
                     ui.label("×");
-                    ui.add(DragValue::new(platform.z.raw_mut()));
+                    (DragValue::new(platform.z.raw_mut()).ui(ui)).being_edited(&mut editing);
                 });
+                history_tracked_value(
+                    (editing, ui, &mut app.history),
+                    ("platform_size", || {
+                        SliceConfigAction::PlatformSize(prev).into()
+                    }),
+                );
                 ui.end_row();
             }
             SelectedPrinter::Custom(idx) => {
                 let printer = &app.config.printers[idx];
+                let (old_resolution, old_size) = (slice_config.platform_resolution, *platform);
                 slice_config.platform_resolution = printer.resolution;
                 *platform = printer.size;
+                if slice_config.platform_resolution != old_resolution || *platform != old_size {
+                    app.history
+                        .track(SliceConfigAction::PlatformResolution(old_resolution).into());
+                    app.history
+                        .track(SliceConfigAction::PlatformSize(old_size).into());
+                }
             }
             SelectedPrinter::Preset(brand, model) => {
                 let printer = &DEFAULT_PRINTERS[brand].1[model];
+                let (old_resolution, old_size) = (slice_config.platform_resolution, *platform);
                 slice_config.platform_resolution = printer.resolution;
                 *platform = printer.size;
+
+                if slice_config.platform_resolution != old_resolution {
+                    app.history
+                        .track(SliceConfigAction::PlatformResolution(old_resolution).into());
+                }
+                if *platform != old_size {
+                    app.history
+                        .track(SliceConfigAction::PlatformSize(old_size).into());
+                }
             }
         }
 
@@ -124,12 +163,21 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
 
         ui.label("Slice Height");
         ui.horizontal(|ui| {
+            let old_slice_height = slice_config.slice_height;
+            let mut editing = false;
             slice_config.slice_height.with::<Mircometer>(|value| {
-                DragValue::new(value)
+                let response = DragValue::new(value)
                     .suffix(" μm")
                     .range(1.0..=f32::MAX)
                     .ui(ui);
+                editing = being_edited(&response);
             });
+            history_tracked_value(
+                (editing, ui, &mut app.history),
+                ("slice_height", || {
+                    SliceConfigAction::SliceHeight(old_slice_height).into()
+                }),
+            );
             ui.take_available_width();
         });
         ui.end_row();
@@ -139,35 +187,68 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
             ui.label(INFO).on_hover_text(ANTI_ALIAS_TOOLTIP);
         });
         ui.horizontal(|ui| {
-            DragValue::new(&mut slice_config.supersample)
+            let old_supersample = slice_config.supersample;
+            let response = DragValue::new(&mut slice_config.supersample)
                 .custom_formatter(|val, _| (val as u32).pow(3).to_string())
                 .custom_parser(|val| val.parse::<u32>().ok().map(|x| cbrt(x) as f64))
                 .suffix("×")
                 .speed(0.1)
                 .range(1..=16)
                 .ui(ui);
+            history_tracked_value(
+                (being_edited(&response), ui, &mut app.history),
+                ("supersample", || {
+                    SliceConfigAction::Supersample(old_supersample).into()
+                }),
+            );
         });
         ui.end_row();
 
         ui.label("First Layers");
-        DragValue::new(&mut slice_config.first_layers).ui(ui);
+        let old_first_layers = slice_config.first_layers;
+        let response = DragValue::new(&mut slice_config.first_layers).ui(ui);
+        history_tracked_value(
+            (being_edited(&response), ui, &mut app.history),
+            ("first_layers", || {
+                SliceConfigAction::FirstLayers(old_first_layers).into()
+            }),
+        );
         ui.end_row();
 
         ui.horizontal(|ui| {
             ui.label("Transition Layers");
             ui.label(INFO).on_hover_text(TRANSITION_LAYER_TOOLTIP);
         });
-        DragValue::new(&mut slice_config.transition_layers).ui(ui);
+        let old_transition_layers = slice_config.transition_layers;
+        let response = DragValue::new(&mut slice_config.transition_layers).ui(ui);
+        history_tracked_value(
+            (being_edited(&response), ui, &mut app.history),
+            ("transition_layers", || {
+                SliceConfigAction::TransitionLayers(old_transition_layers).into()
+            }),
+        );
         ui.end_row();
     });
 
     ui.add_space(8.0);
     ui.collapsing("Normal Layers", |ui| {
-        exposure_config(ui, &mut slice_config.exposure_config);
+        let editing = exposure_config(ui, &mut slice_config.exposure_config);
+        history_tracked_value(
+            (editing, ui, &mut app.history),
+            ("normal_exposure", || {
+                SliceConfigAction::NormalExposure(slice_config.exposure_config.clone()).into()
+            }),
+        );
     });
 
     ui.collapsing("First Layers", |ui| {
-        exposure_config(ui, &mut slice_config.first_exposure_config);
+        let editing = exposure_config(ui, &mut slice_config.first_exposure_config);
+        history_tracked_value(
+            (editing, ui, &mut app.history),
+            ("first_exposure", || {
+                SliceConfigAction::FirstExposure(slice_config.first_exposure_config.clone()).into()
+            }),
+        );
     });
 
     ui.add_space(8.0);
@@ -179,24 +260,57 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
             &mut app.state.selected_remap_point,
             ui,
         );
+        let editing = app.state.selected_remap_point.is_some();
+        history_tracked_value(
+            (editing, ui, &mut app.history),
+            ("exposure_remap", || {
+                SliceConfigAction::ExposureRemap(slice_config.exposure_remap.clone()).into()
+            }),
+        );
         ui.add_space(8.0);
     });
 
     let post_processing = &mut app.project.post_processing;
+
+    let old_variable_layer_height = post_processing.variable_layer_height.clone();
+    let mut editing = false;
     post_processing.variable_layer_height.enabled = collapsing_toggle(
         "Variable Layer Height",
-        post_processing.variable_layer_height.enabled,
-        |ui| variable_layer_height(&mut post_processing.variable_layer_height, ui),
+        old_variable_layer_height.enabled,
+        |ui| editing = variable_layer_height(&mut post_processing.variable_layer_height, ui),
         false,
         ui,
     );
+    if post_processing.variable_layer_height.enabled != old_variable_layer_height.enabled {
+        app.history
+            .track(SliceConfigAction::VariableLayerHeight(old_variable_layer_height).into());
+    }
+    history_tracked_value(
+        (editing, ui, &mut app.history),
+        ("variable_layer_height", || {
+            SliceConfigAction::VariableLayerHeight(post_processing.variable_layer_height.clone())
+                .into()
+        }),
+    );
 
+    let old_elephant_foot_fixer = post_processing.elephant_foot_fixer.clone();
+    let mut editing = false;
     post_processing.elephant_foot_fixer.enabled = collapsing_toggle(
         "Elephant Foot Fixer",
-        post_processing.elephant_foot_fixer.enabled,
-        |ui| elephant_foot_fixer(&mut post_processing.elephant_foot_fixer, ui),
+        old_elephant_foot_fixer.enabled,
+        |ui| editing = elephant_foot_fixer(&mut post_processing.elephant_foot_fixer, ui),
         false,
         ui,
+    );
+    if post_processing.elephant_foot_fixer.enabled != old_elephant_foot_fixer.enabled {
+        app.history
+            .track(SliceConfigAction::ElephantFootFixer(old_elephant_foot_fixer).into());
+    }
+    history_tracked_value(
+        (editing, ui, &mut app.history),
+        ("elephant_foot_fixer", || {
+            SliceConfigAction::ElephantFootFixer(post_processing.elephant_foot_fixer.clone()).into()
+        }),
     );
 }
 
@@ -251,7 +365,7 @@ fn printer_presets(ui: &mut Ui, config: &mut Config, state: &mut UiState) {
 }
 
 pub fn exposure_config(ui: &mut Ui, config: &mut ExposureConfig) -> bool {
-    let mut changed = false;
+    let mut editing = false;
     TableBuilder::new(ui)
         .striped(true)
         .column(Column::exact(80.0))
@@ -264,12 +378,12 @@ pub fn exposure_config(ui: &mut Ui, config: &mut ExposureConfig) -> bool {
             });
 
             row.col(|ui| {
-                changed |= DragValue::new(config.exposure_time.raw_mut())
+                DragValue::new(config.exposure_time.raw_mut())
                     .suffix(" s")
                     .speed(0.1)
                     .range(0.0..=f32::MAX)
                     .ui(ui)
-                    .changed();
+                    .being_edited(&mut editing);
             });
 
             row.col(|ui| {
@@ -279,20 +393,20 @@ pub fn exposure_config(ui: &mut Ui, config: &mut ExposureConfig) -> bool {
             row.col(|ui| {
                 ui.horizontal(|ui| {
                     let mut pwm = config.pwm as f32 / 2.55;
-                    changed |= DragValue::new(&mut pwm)
+                    DragValue::new(&mut pwm)
                         .max_decimals(0)
                         .suffix('%')
                         .ui(ui)
-                        .changed();
+                        .being_edited(&mut editing);
                     config.pwm = (pwm * 2.55).round() as u8;
 
                     ui.label(TIMER).on_hover_text("Exposure delay");
-                    changed |= DragValue::new(config.exposure_delay.raw_mut())
+                    DragValue::new(config.exposure_delay.raw_mut())
                         .suffix(" s")
                         .speed(0.1)
                         .range(0.0..=f32::MAX)
                         .ui(ui)
-                        .changed();
+                        .being_edited(&mut editing);
                 });
             });
         })
@@ -303,12 +417,12 @@ pub fn exposure_config(ui: &mut Ui, config: &mut ExposureConfig) -> bool {
                 });
 
                 row.col(|ui| {
-                    changed |= DragValue::new(config.lift_distance.raw_mut())
+                    DragValue::new(config.lift_distance.raw_mut())
                         .suffix(" mm")
                         .speed(0.1)
                         .range(0.0..=f32::MAX)
                         .ui(ui)
-                        .changed();
+                        .being_edited(&mut editing);
                 });
 
                 row.col(|ui| {
@@ -317,12 +431,12 @@ pub fn exposure_config(ui: &mut Ui, config: &mut ExposureConfig) -> bool {
 
                 row.col(|ui| {
                     config.lift_speed.with::<Milimeter, Minute>(|val| {
-                        changed |= DragValue::new(val)
+                        DragValue::new(val)
                             .suffix(" mm/min")
                             .speed(0.1)
                             .range(0.0..=f32::MAX)
                             .ui(ui)
-                            .changed();
+                            .being_edited(&mut editing);
                     });
                 });
             });
@@ -333,12 +447,12 @@ pub fn exposure_config(ui: &mut Ui, config: &mut ExposureConfig) -> bool {
                 });
 
                 row.col(|ui| {
-                    changed |= DragValue::new(config.retract_distance.raw_mut())
+                    DragValue::new(config.retract_distance.raw_mut())
                         .suffix(" mm")
                         .speed(0.1)
                         .range(0.0..=f32::MAX)
                         .ui(ui)
-                        .changed();
+                        .being_edited(&mut editing);
                 });
 
                 row.col(|ui| {
@@ -347,18 +461,18 @@ pub fn exposure_config(ui: &mut Ui, config: &mut ExposureConfig) -> bool {
 
                 row.col(|ui| {
                     config.retract_speed.with::<Milimeter, Minute>(|val| {
-                        changed |= DragValue::new(val)
+                        DragValue::new(val)
                             .suffix(" mm/min")
                             .speed(0.1)
                             .range(0.0..=f32::MAX)
                             .ui(ui)
-                            .changed();
+                            .being_edited(&mut editing);
                     });
                 });
             });
         });
 
-    changed
+    editing
 }
 
 fn edit_presets(app: &mut PopupApp, ui: &mut Ui) -> bool {
@@ -492,7 +606,7 @@ fn exposure_remapping(
     }
 }
 
-fn variable_layer_height(this: &mut VariableLayerHeight, ui: &mut Ui) {
+fn variable_layer_height(this: &mut VariableLayerHeight, ui: &mut Ui) -> bool {
     const VARIABLE_LAYER_HEIGHT_THRESHOLD_TOOLTIP: &str =
         "Maximum allowed average value deviation between layers (in value/mm²).";
 
@@ -500,26 +614,36 @@ fn variable_layer_height(this: &mut VariableLayerHeight, ui: &mut Ui) {
     ui.label("Note that with this post processor enabled you won't be able to save as NanoDLP.");
     ui.add_space(8.0);
 
+    let mut editing = false;
     grid("variable_layer_height").show(ui, |ui| {
         ui.horizontal(|ui| {
             ui.label("Threshold");
             ui.label(INFO)
                 .on_hover_text(VARIABLE_LAYER_HEIGHT_THRESHOLD_TOOLTIP);
         });
-        DragValue::new(&mut this.threshold).ui(ui);
+        DragValue::new(&mut this.threshold)
+            .ui(ui)
+            .being_edited(&mut editing);
         ui.end_row();
 
         ui.label("Max Layers");
-        DragValue::new(&mut this.max_layers).ui(ui);
+        DragValue::new(&mut this.max_layers)
+            .ui(ui)
+            .being_edited(&mut editing);
         ui.end_row();
 
         ui.label("Exposure");
-        DragValue::new(this.exposure.raw_mut()).suffix(" s").ui(ui);
+        DragValue::new(this.exposure.raw_mut())
+            .suffix(" s")
+            .ui(ui)
+            .being_edited(&mut editing);
         ui.end_row();
     });
+
+    editing
 }
 
-fn elephant_foot_fixer(this: &mut ElephantFootFixer, ui: &mut Ui) {
+fn elephant_foot_fixer(this: &mut ElephantFootFixer, ui: &mut Ui) -> bool {
     ui.label("Fixes the 'Elephant Foot' effect by exposing the edges of the bottom layers at a lower intensity. You may have to make a few test prints to find the right settings for your printer and resin.");
     ui.add_space(8.0);
 
@@ -528,6 +652,7 @@ fn elephant_foot_fixer(this: &mut ElephantFootFixer, ui: &mut Ui) {
     const INTENSITY_TIP: &str =
         "This percent will be multiplied by the pixel values of the edge pixels.";
 
+    let mut editing = false;
     Grid::new("elephant_foot_fixer")
         .num_columns(2)
         .spacing([40.0, 4.0])
@@ -542,7 +667,8 @@ fn elephant_foot_fixer(this: &mut ElephantFootFixer, ui: &mut Ui) {
                 DragValue::new(&mut this.inset_distance)
                     .speed(0.1)
                     .range(0.1..=f32::MAX)
-                    .ui(ui);
+                    .ui(ui)
+                    .being_edited(&mut editing);
                 ui.take_available_width();
             });
             ui.end_row();
@@ -552,12 +678,14 @@ fn elephant_foot_fixer(this: &mut ElephantFootFixer, ui: &mut Ui) {
                 ui.label(INFO).on_hover_text(INTENSITY_TIP);
             });
             ui.horizontal(|ui| {
-                ui.add(
-                    DragValue::new(&mut this.intensity_multiplier)
-                        .range(0.0..=100.0)
-                        .speed(1)
-                        .suffix("%"),
-                );
+                DragValue::new(&mut this.intensity_multiplier)
+                    .range(0.0..=100.0)
+                    .speed(1)
+                    .suffix("%")
+                    .ui(ui)
+                    .being_edited(&mut editing);
             });
         });
+
+    editing
 }

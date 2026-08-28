@@ -6,10 +6,12 @@ use egui::{
     TopBottomPanel, Ui, Vec2,
 };
 use egui_phosphor::regular::{COPY, CURSOR_TEXT, EYE, EYE_SLASH, FOLDER_DASHED, SELECTION, TRASH};
-use itertools::Itertools;
 
 use crate::{
-    app::App,
+    app::{
+        App,
+        history::{Action, ModelAction},
+    },
     project::{Collection, CollectionId},
     windows::models::{
         collection::{collection, collection_entry},
@@ -29,7 +31,7 @@ const SELECT_SHORTCUT: Key = Key::S;
 const ALIGN_SHORTCUT: Key = Key::A;
 const SPLIT_SHORTCUT: Key = Key::F;
 
-enum Action {
+enum UiAction {
     None,
     Remove(usize),
     Duplicate(usize),
@@ -56,21 +58,23 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
     if let Some(id) = app.state.selected.single_model()
         && let Some(model) = app.project.models.iter_mut().position(|x| x.id == id)
     {
-        let mut action = Action::None;
+        let mut action = UiAction::None;
         pannel.show_inside(ui, |ui| {
             ui.add_space(4.0);
             model_properties(app, ui, ctx, &mut action, model)
         });
 
         match action {
-            Action::Remove(i) => {
-                app.project.models.remove(i);
+            UiAction::Remove(i) => {
+                let model = Box::new(app.project.models.remove(i));
+                app.history.track(Action::ModelRemoved { index: i, model });
             }
-            Action::Duplicate(i) => {
+            UiAction::Duplicate(i) => {
                 let model = app.project.models[i].clone();
+                app.history.track(Action::ModelAdded { id: model.id });
                 app.project.models.push(model);
             }
-            Action::None => {}
+            UiAction::None => {}
         }
     } else if app.state.selected.has_models() {
         pannel.show_inside(ui, |ui| {
@@ -118,11 +122,15 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
                 if ctx.input(|i| i.pointer.any_released())
                     && let Some(dragged) = DragAndDrop::payload::<DraggedModel>(ctx)
                 {
+                    let old_collection = app.project.models[dragged.index].collection;
                     let model = app.project.models.remove(dragged.index);
                     let insert_pos = (app.project.models.iter())
                         .rposition(|m| m.collection == Some(coll_id))
                         .map(|i| i + 1)
                         .unwrap_or(app.project.models.len());
+
+                    app.history
+                        .track_model(model.id, ModelAction::Move(dragged.index, old_collection));
                     app.project.models.insert(insert_pos, model);
                     app.project.models[insert_pos].collection = Some(coll_id);
                 }
@@ -154,7 +162,11 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
                     };
 
                     let to = to.saturating_sub((dragged.index < to) as usize);
+                    let old_collection = app.project.models[dragged.index].collection;
                     let model = app.project.models.remove(dragged.index);
+
+                    app.history
+                        .track_model(model.id, ModelAction::Move(dragged.index, old_collection));
                     app.project.models.insert(to, model);
                     app.project.models[to].collection = target_collection;
                 }
@@ -177,9 +189,13 @@ fn shortcut(response: Response, key: Key) -> bool {
 fn selection_properties(app: &mut App, ui: &mut Ui) {
     ui.horizontal_wrapped(|ui| {
         if shortcut(ui.button(concatcp!(TRASH, " Delete")), DELETE_SHORTCUT) {
-            app.project
-                .models
-                .retain(|x| !app.state.selected.selected_models().contains(&x.id));
+            let selected = app.state.selected.selected_models().collect::<Vec<_>>();
+            for id in selected {
+                if let Some(index) = app.project.models.iter().position(|x| x.id == id) {
+                    let model = Box::new(app.project.models.remove(index));
+                    app.history.track(Action::ModelRemoved { index, model });
+                }
+            }
             app.state.selected.clear();
         }
 
@@ -188,18 +204,27 @@ fn selection_properties(app: &mut App, ui: &mut Ui) {
             COLLECT_SHORTCUT,
         ) {
             let collection = Collection::new_unnamed();
-            for id in app.state.selected.selected_models() {
-                if let Some(model) = app.project.models.iter_mut().find(|x| x.id == id) {
+
+            let selected = app.state.selected.selected_models().collect::<Vec<_>>();
+            for model_id in selected {
+                if let Some(model) = app.project.models.iter_mut().find(|x| x.id == model_id) {
+                    app.history
+                        .track_model(model_id, ModelAction::Collection(model.collection));
                     model.collection = Some(collection.id);
                 }
             }
+
+            app.history
+                .track(Action::CollectionAdded { id: collection.id });
             app.project.collections.push(collection);
         }
 
         if shortcut(ui.button(concatcp!(COPY, " Duplicate")), DUPLICATE_SHORTCUT) {
             for id in app.state.selected.selected_models() {
                 if let Some(model) = app.project.models.iter().find(|x| x.id == id) {
-                    app.project.models.push(model.clone());
+                    let new = model.clone();
+                    app.history.track(Action::ModelAdded { id: new.id });
+                    app.project.models.push(new);
                 }
             }
         }
@@ -218,10 +243,20 @@ fn collection_properties(app: &mut App, ui: &mut Ui, id: CollectionId) {
 
         if shortcut(ui.button(concatcp!(TRASH, " Delete")), DELETE_SHORTCUT) {
             app.state.selected.clear();
-            app.project.collections.retain(|x| x.id != id);
-            app.project.models.iter_mut().for_each(|m| {
-                (m.collection == Some(id)).then(|| m.collection = None);
-            });
+
+            for model in app.project.models.iter_mut() {
+                if model.collection == Some(id) {
+                    app.history
+                        .track_model(model.id, ModelAction::Collection(Some(id)));
+                    model.collection = None;
+                }
+            }
+
+            if let Some(index) = app.project.collections.iter().position(|x| x.id == id) {
+                let collection = app.project.collections.remove(index);
+                app.history
+                    .track(Action::CollectionRemoved { index, collection });
+            }
         }
 
         let hidden = (app.project.models.iter())

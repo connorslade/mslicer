@@ -317,6 +317,12 @@ impl Default for ModelUi {
     }
 }
 
+impl PartialEq for Model {
+    fn eq(&self, other: &Self) -> bool {
+        self.id == other.id
+    }
+}
+
 id_type!(ModelId, u32);
 
 // Reference: https://stackoverflow.com/a/13927691
