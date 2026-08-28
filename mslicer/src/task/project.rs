@@ -76,6 +76,7 @@ impl Task for ProjectLoad {
         (self.handle.poll(app, "Failed to Load Project")).into_poll_result(|project| {
             app.config.add_recent_project(self.path.to_path_buf());
             *app.project = project;
+            app.history.clear();
 
             let mut result = PollResult::complete();
             let count = app.project.models.len();

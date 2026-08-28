@@ -8,7 +8,10 @@ use egui_phosphor::regular::X;
 use remote_print::manager::RemotePrintManager;
 
 use crate::{
-    app::{camera::Camera, config::Config, is_slicing, slice_operation::SliceOperation},
+    app::{
+        camera::Camera, config::Config, history::History, is_slicing,
+        slice_operation::SliceOperation,
+    },
     app_ref_type,
     project::Project,
     task::TaskManager,
@@ -42,6 +45,7 @@ pub struct PopupApp<'a> {
     pub state: &'a mut UiState,
     pub config: &'a mut Config,
     pub project: &'a mut Project,
+    pub history: &'a mut History,
 }
 
 #[allow(dead_code)]
@@ -73,6 +77,7 @@ impl<'a> PopupManagerRef<'a> {
             state: &mut self.app.state,
             config: &mut self.app.config,
             project: &mut self.app.project,
+            history: &mut self.app.history,
         };
 
         while i < this.popups.len() {

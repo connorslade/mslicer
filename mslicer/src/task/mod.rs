@@ -4,7 +4,7 @@ use std::{
 };
 
 use crate::{
-    app::{config::Config, slice_operation::SliceOperation},
+    app::{config::Config, history::History, slice_operation::SliceOperation},
     app_ref_type,
     project::Project,
     ui::{panels::Panels, popup::PopupManager, state::UiState},
@@ -87,6 +87,7 @@ pub struct TaskApp<'a> {
     pub state: &'a mut UiState,
     pub config: &'a mut Config,
     pub project: &'a mut Project,
+    pub history: &'a mut History,
 }
 
 app_ref_type!(TaskManager, tasks);
@@ -147,6 +148,7 @@ impl<'a> TaskManagerRef<'a> {
             state: &mut self.app.state,
             config: &mut self.app.config,
             project: &mut self.app.project,
+            history: &mut self.app.history,
         };
 
         let mut i = 0;

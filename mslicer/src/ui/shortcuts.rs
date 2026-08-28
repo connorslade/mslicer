@@ -150,6 +150,7 @@ fn new(app: &mut App, _ctx: &Context) {
                 ui[0].centered_and_justified(|ui| {
                     if ui.button("Don't Save").clicked() {
                         app.project.reset(&app.config.default_slice_config);
+                        app.history.clear();
                         close = true;
                     }
                 });

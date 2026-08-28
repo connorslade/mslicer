@@ -12,6 +12,7 @@ use slicer::mesh::Mesh;
 use tracing::info;
 
 use crate::{
+    app::history::Action,
     project::model::Model,
     task::{
         MeshManifold, PollResult, Task, TaskApp, TaskStatus,
@@ -88,6 +89,7 @@ impl Task for MeshLoad {
             let result = PollResult::complete()
                 .with_task(MeshManifold::new(&model))
                 .with_task(BuildAccelerationStructures::new(&model));
+            app.history.track(Action::ModelAdded { id: model.id });
             app.project.models.push(model);
             result
         })
