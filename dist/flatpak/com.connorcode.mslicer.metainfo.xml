@@ -259,8 +259,8 @@
 	</categories>
 
 	<branding>
-		<color type="primary" scheme_preference="light">#99c1f1</color>
-		<color type="primary" scheme_preference="dark">#3584e4</color>
+		<color type="primary" scheme_preference="light">#f6d32d</color>
+		<color type="primary" scheme_preference="dark">#f6d32d</color>
 	</branding>
 
 	<provides>

@@ -3,6 +3,7 @@
 ## v?.?.? &mdash; Coming Soon™
 
 - Allow ignoring updates to stop the notification on every launch
+- Update flatpak banding color
 
 ## v0.9.1 &mdash; August 28th, 2026
 
