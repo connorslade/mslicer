@@ -1,17 +1,22 @@
 use std::{
+    cell::Cell,
     cmp::Ordering,
     env::consts::{ARCH, OS},
 };
 
 use chrono::Utc;
-use egui::{Button, Grid, RichText, Widget, vec2};
+use egui::{Grid, RichText};
 use serde::Deserialize;
+use tracing::info;
 
 use crate::{
     VERSION,
     app::{App, config::ui::UpdateCheckFrequency},
     task::{PollResult, Task, TaskApp, thread::TaskThread},
-    ui::popup::{Popup, PopupIcon},
+    ui::{
+        components::button_row,
+        popup::{Popup, PopupIcon},
+    },
 };
 
 pub const VERSION_MANIFEST: &str = "https://mslicer.com/version.json";
@@ -35,6 +40,8 @@ enum CheckResult {
 impl UpdateCheck {
     pub fn new(app: &App) -> Self {
         let check_freq = app.config.ui.update_check.name();
+        let ignore = app.config.ui.ignore_update.clone();
+
         let handle = TaskThread::spawn(move || {
             let response = ureq::get(VERSION_MANIFEST)
                 .header("Version", VERSION)
@@ -44,6 +51,13 @@ impl UpdateCheck {
                 .unwrap();
             let manifest =
                 serde_json::from_reader::<_, Manifest>(response.into_body().into_reader()).unwrap();
+
+            if let Some(ignore) = ignore
+                && ignore == manifest.version
+            {
+                info!("Update available, ignoring due to user preference.");
+                return CheckResult::UpToDate;
+            }
 
             if semver_cmp(VERSION, &manifest.version) == Some(Ordering::Less) {
                 CheckResult::Outdated(manifest)
@@ -61,7 +75,7 @@ impl Task for UpdateCheck {
         self.handle.poll_ignore_err().into_poll_result(|result| {
             if let CheckResult::Outdated(manifest) = result {
                 app.popup
-                    .open(Popup::new("Update Available", move |_app, ui| {
+                    .open(Popup::new("Update Available", move |app, ui| {
                         Grid::new(ui.id().with("grid"))
                             .num_columns(2)
                             .show(ui, |ui| {
@@ -82,15 +96,19 @@ impl Task for UpdateCheck {
                             });
                         ui.add_space(5.0);
 
-                        let mut close = false;
-                        ui.vertical_centered(|ui| {
-                            close = Button::new("Close")
-                                .min_size(vec2(ui.available_width(), 0.0))
-                                .ui(ui)
-                                .clicked();
-                        });
+                        let close = Cell::new(false);
+                        button_row(
+                            ui,
+                            [
+                                ("Close", &mut || close.set(true)),
+                                ("Don't Tell Me Again", &mut || {
+                                    app.config.ui.ignore_update = Some(manifest.version.clone());
+                                    close.set(true);
+                                }),
+                            ],
+                        );
 
-                        close
+                        close.get()
                     }));
             }
 

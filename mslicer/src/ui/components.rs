@@ -1,8 +1,8 @@
 use std::{hash::Hash, mem};
 
 use egui::{
-    Align, CollapsingHeader, Color32, DragValue, FontId, Grid, Layout, Response, Separator, Ui,
-    emath::Numeric,
+    Align, Button, CollapsingHeader, Color32, DragValue, FontId, Grid, Layout, Response, Separator,
+    Ui, emath::Numeric, vec2,
 };
 
 use crate::{
@@ -146,6 +146,23 @@ pub fn history_tracked_model(
             action: value(),
         }),
     );
+}
+
+pub fn button_row<const N: usize>(ui: &mut Ui, mut buttons: [(&str, &mut dyn FnMut()); N]) {
+    ui.horizontal(move |ui| {
+        let spacing = ui.style().spacing.item_spacing.x;
+        let count = buttons.len() as f32;
+        let size = vec2(
+            (ui.available_width() - spacing * (count - 1.0)) / count,
+            0.0,
+        );
+
+        for (label, callback) in buttons.iter_mut() {
+            if ui.add(Button::new(*label).min_size(size)).clicked() {
+                callback();
+            }
+        }
+    });
 }
 
 pub fn collapsing_toggle(

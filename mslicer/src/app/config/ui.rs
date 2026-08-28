@@ -15,6 +15,7 @@ pub struct UiConfig {
 
     pub update_check: UpdateCheckFrequency,
     pub last_update_check: Option<DateTime<Utc>>,
+    pub ignore_update: Option<String>,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -57,6 +58,7 @@ impl Default for UiConfig {
             tasks: true,
             update_check: UpdateCheckFrequency::EveryLaunch,
             last_update_check: None,
+            ignore_update: None,
         }
     }
 }

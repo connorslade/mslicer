@@ -1,10 +1,9 @@
 use egui::{
-    Button, Color32, Context, Id, Image, ImageSource, LayerId, Order, Widget, Window,
-    include_image, vec2,
+    Color32, Context, Id, Image, ImageSource, LayerId, Order, Widget, Window, include_image, vec2,
 };
 use egui_phosphor::regular::INFO;
 
-use crate::{VERSION, app::App};
+use crate::{VERSION, app::App, ui::components::button_row};
 
 const LOGO: ImageSource = include_image!("../../../dist/icon.png");
 const BACKGROUND_TINT: Color32 = Color32::from_rgba_premultiplied(0, 0, 0, 100);
@@ -60,23 +59,15 @@ pub fn ui(app: &mut App, ctx: &Context) {
             });
 
             ui.add_space(5.0);
-            ui.horizontal(|ui| {
-                let spacing = ui.style().spacing.item_spacing.x;
-                let size = vec2(ui.available_size().x - spacing, 0.0) / 2.0;
-
-                if Button::new("Continue").min_size(size).ui(ui).clicked() {
-                    app.config.ui.about = false;
-                }
-
-                if Button::new("Getting Started Guide")
-                    .min_size(size)
-                    .ui(ui)
-                    .clicked()
-                {
-                    let _ = open::that_detached(GETTING_STARTED_LINK);
-                    app.config.ui.about = false;
-                }
-            });
+            button_row(
+                ui,
+                [
+                    ("Continue", &mut || app.config.ui.about = false),
+                    ("Getting Started Guide", &mut || {
+                        let _ = open::that_detached(GETTING_STARTED_LINK);
+                    }),
+                ],
+            );
         });
 
     if ctx.input(|i| i.pointer.any_down())

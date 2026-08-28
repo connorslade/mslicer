@@ -1,5 +1,9 @@
 # Changelog
 
+## v?.?.? &mdash; Coming Soon™
+
+- Allow ignoring updates to stop the notification on every launch
+
 ## v0.9.1 &mdash; August 28th, 2026
 
 - Fix preview image GPU memory leak
