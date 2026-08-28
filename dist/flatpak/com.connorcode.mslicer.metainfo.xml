@@ -35,6 +35,20 @@
 	</screenshots>
 
 	<releases>
+	    <release version="0.9.1" date="2026-08-28">
+            <description>
+     			<ul>
+                    <li>Fix preview image GPU memory leak</li>
+                    <li>Fix ⌘+A selecting all models when editing a text box</li>
+                    <li>Improve ambient occlusion calculations and config</li>
+                    <li>Fix triangle render style (sometimes neighboring faces would be colored the same)</li>
+                    <li>Allow reducing ambient occlusion render resolution</li>
+                    <li>Fix model color changing slightly when opened in the model panel</li>
+                    <li>Fix crash from config directory not being created</li>
+                    <li>Better ambient occlusion defaults</li>
+                </ul>
+            </description>
+        </release>
         <release version="0.9.0" date="2026-08-26">
             <description>
      			<ul>
