@@ -33,6 +33,9 @@ pub enum Cmd {
     RefreshStatus,
     RefreshAttributes,
     StartPrinting { filename: String, start_layer: u32 },
+    PausePrinting,
+    StopPrinting,
+    ResumePrinting,
 }
 
 impl Cmd {
@@ -41,6 +44,9 @@ impl Cmd {
             Cmd::RefreshStatus => 0,
             Cmd::RefreshAttributes => 1,
             Cmd::StartPrinting { .. } => 128,
+            Cmd::PausePrinting => 129,
+            Cmd::StopPrinting => 130,
+            Cmd::ResumePrinting => 131,
         }
     }
 
@@ -55,6 +61,9 @@ impl Cmd {
                 "Filename": filename,
                 "StartLayer": start_layer
             }),
+            Cmd::PausePrinting => json!({}),
+            Cmd::StopPrinting => json!({}),
+            Cmd::ResumePrinting => json!({}),
         }
     }
 }

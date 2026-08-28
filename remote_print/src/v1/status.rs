@@ -76,7 +76,7 @@ pub enum CurrentStatus {
 }
 
 #[repr(u8)]
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize_repr, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize_repr, Serialize)]
 pub enum FileTransferStatus {
     None = 0,
     Done = 2,

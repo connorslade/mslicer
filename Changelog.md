@@ -17,6 +17,7 @@
 - Fix model color changing slightly when opened in the model panel
 - Fix crash from config directory not being created
 - Better ambient occlusion defaults
+- Remote Print now supports SDCP V3.0.0 for newer printers
 
 ## v0.9.1 &mdash; August 26th, 2026
 

@@ -8,9 +8,15 @@ use egui::{
     Align, CollapsingHeader, ComboBox, Context, DragValue, FontSelection, Layout, OutputCommand,
     ProgressBar, RichText, Separator, Spinner, Style, TextEdit, Ui, text::LayoutJob, vec2,
 };
-use egui_phosphor::regular::{COPY, NETWORK, PLUGS, PRINTER, STOP, TRASH_SIMPLE, UPLOAD_SIMPLE};
+use egui_phosphor::regular::{
+    COPY, NETWORK, PAUSE, PLAY, PLUGS, PRINTER, STOP, TRASH_SIMPLE, UPLOAD_SIMPLE,
+};
 use notify_rust::Notification;
-use remote_print::{manager::Client, shared::PrintInfoStatus, v1::status::FileTransferStatus};
+use remote_print::{
+    manager::{Client, ProtocolVersion},
+    shared::PrintInfoStatus,
+    v1::status::FileTransferStatus,
+};
 use rfd::FileDialog;
 use tracing::info;
 
@@ -32,6 +38,9 @@ enum Action {
     None,
     Remove(String),
     UploadFile { mainboard_id: String },
+    Pause(String),
+    Resume(String),
+    Stop(String),
 }
 
 pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
@@ -154,6 +163,24 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
                                 ))
                                 .desired_width(ui.available_width()),
                             );
+
+                            if client.protocol_version == ProtocolVersion::V3 {
+                                ui.horizontal(|ui| {
+                                    let paused = print_info.status == PrintInfoStatus::Paused;
+                                    if paused {
+                                        if ui.button(concatcp!(PLAY, " Resume")).clicked() {
+                                            action = Action::Resume(client.mainboard.clone());
+                                        }
+                                    } else if ui.button(concatcp!(PAUSE, " Pause")).clicked() {
+                                        action = Action::Pause(client.mainboard.clone());
+                                    }
+
+                                    if ui.button(concatcp!(STOP, " Stop")).clicked() {
+                                        action = Action::Stop(client.mainboard.clone());
+                                    }
+                                });
+                            }
+
                             ui.add_space(8.0);
                         }
 
@@ -270,6 +297,15 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
         match action {
             Action::Remove(c) => app.remote_print.remove_printer(&c).unwrap(),
             Action::UploadFile { mainboard_id } => upload_file(app, mainboard_id),
+            Action::Pause(c) => {
+                let _ = app.remote_print.pause_print(&c);
+            }
+            Action::Resume(c) => {
+                let _ = app.remote_print.resume_print(&c);
+            }
+            Action::Stop(c) => {
+                let _ = app.remote_print.stop_print(&c);
+            }
             Action::None => {}
         }
     }

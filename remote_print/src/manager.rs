@@ -14,9 +14,12 @@ use crate::{
     shared::{PrintInfo, Response, addr},
     v1::{
         self, RemotePrintV1,
-        status::{FileTransferInfo, FileTransferStatus, FullStatusData},
+        status::{FileTransferInfo, FullStatusData},
     },
-    v3::{self, RemotePrintV3, status::DiscoveryResponse},
+    v3::{
+        self, RemotePrintV3,
+        status::{DiscoveryResponse, ProxyDiscoveryResponse},
+    },
 };
 
 #[derive(Default)]
@@ -32,6 +35,7 @@ pub struct RemotePrintManagerInner {
     pub udp_port: u16,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ProtocolVersion {
     V1,
     V3,
@@ -41,6 +45,7 @@ pub struct Client {
     pub mainboard: String,
     pub name: String,
     pub last_update: i64,
+    pub protocol_version: ProtocolVersion,
 
     pub print_info: PrintInfo,
     pub transfer_info: FileTransferInfo,
@@ -98,6 +103,8 @@ impl RemotePrintManagerInner {
     pub fn protocol_version(&self, mainboard: &str) -> Option<ProtocolVersion> {
         if self.v1.clients().contains_key(mainboard) {
             Some(ProtocolVersion::V1)
+        } else if self.v3.clients().contains_key(mainboard) {
+            Some(ProtocolVersion::V3)
         } else {
             None
         }
@@ -135,6 +142,27 @@ impl RemotePrintManagerInner {
         }
     }
 
+    pub fn pause_print(&self, mainboard: &str) -> Result<()> {
+        match self.protocol_version(mainboard).unwrap() {
+            ProtocolVersion::V1 => unimplemented!(),
+            ProtocolVersion::V3 => self.v3.pause_print(mainboard),
+        }
+    }
+
+    pub fn resume_print(&self, mainboard: &str) -> Result<()> {
+        match self.protocol_version(mainboard).unwrap() {
+            ProtocolVersion::V1 => unimplemented!(),
+            ProtocolVersion::V3 => self.v3.resume_print(mainboard),
+        }
+    }
+
+    pub fn stop_print(&self, mainboard: &str) -> Result<()> {
+        match self.protocol_version(mainboard).unwrap() {
+            ProtocolVersion::V1 => unimplemented!(),
+            ProtocolVersion::V3 => self.v3.stop_print(mainboard),
+        }
+    }
+
     pub fn set_timeout(&self, timeout: Duration) -> Result<()> {
         self.udp.set_read_timeout(Some(timeout))?;
         Ok(())
@@ -146,6 +174,14 @@ impl RemotePrintManagerInner {
             self.v3.connect_printer(response)?;
         } else if let Ok(response) = serde_json::from_str::<Response<FullStatusData>>(received) {
             self.v1.connect_printer(&self.udp, response, address)?;
+        } else if let Ok(response) =
+            serde_json::from_str::<Response<ProxyDiscoveryResponse>>(received)
+        {
+            if response.data.attributes.mainboard_id == "proxy" {
+                info!("Found elegoo-homeassistant proxy with no printers.");
+            } else {
+                self.v3.connect_printer(response.into())?;
+            }
         } else {
             bail!("Received invalid response from printer.");
         }
@@ -195,6 +231,7 @@ impl Client {
             mainboard: client.attributes.mainboard_id.clone(),
             name: client.attributes.name.clone(),
             last_update: client.last_update.load(Ordering::Relaxed),
+            protocol_version: ProtocolVersion::V1,
             print_info: status.print_info.clone(),
             transfer_info: status.file_transfer_info.clone(),
         }
@@ -206,15 +243,9 @@ impl Client {
             mainboard: attributes.mainboard_id.clone(),
             name: attributes.name.clone(),
             last_update: client.last_update,
+            protocol_version: ProtocolVersion::V3,
             print_info: status.print_info.clone(),
-            // TODO ↓
-            transfer_info: FileTransferInfo {
-                status: FileTransferStatus::None,
-                download_offset: 0,
-                check_offset: 0,
-                file_total_size: 0,
-                filename: "".into(),
-            },
+            transfer_info: client.transfer_info.clone(),
         })
     }
 }
