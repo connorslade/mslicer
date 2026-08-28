@@ -139,6 +139,22 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
                     .show(ui, |ui| {
                         let print_info = &client.print_info;
                         let printing = print_info.status.is_printing();
+
+                        if client.protocol_version == ProtocolVersion::V3 {
+                            ui.horizontal(|ui| {
+                                let paused = print_info.status == PrintInfoStatus::Paused;
+                                if paused {
+                                    (ui.button(concatcp!(PLAY, " Resume")).clicked())
+                                        .then(|| action = Action::Resume(client.mainboard.clone()));
+                                } else if printing {
+                                    (ui.button(concatcp!(PAUSE, " Pause")).clicked())
+                                        .then(|| action = Action::Pause(client.mainboard.clone()));
+                                    (ui.button(concatcp!(STOP, " Stop")).clicked())
+                                        .then(|| action = Action::Stop(client.mainboard.clone()));
+                                }
+                            });
+                        }
+
                         if printing {
                             ui.horizontal(|ui| {
                                 ui.label("Printing");
@@ -163,23 +179,6 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
                                 ))
                                 .desired_width(ui.available_width()),
                             );
-
-                            if client.protocol_version == ProtocolVersion::V3 {
-                                ui.horizontal(|ui| {
-                                    let paused = print_info.status == PrintInfoStatus::Paused;
-                                    if paused {
-                                        if ui.button(concatcp!(PLAY, " Resume")).clicked() {
-                                            action = Action::Resume(client.mainboard.clone());
-                                        }
-                                    } else if ui.button(concatcp!(PAUSE, " Pause")).clicked() {
-                                        action = Action::Pause(client.mainboard.clone());
-                                    }
-
-                                    if ui.button(concatcp!(STOP, " Stop")).clicked() {
-                                        action = Action::Stop(client.mainboard.clone());
-                                    }
-                                });
-                            }
 
                             ui.add_space(8.0);
                         }
