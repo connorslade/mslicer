@@ -53,8 +53,8 @@ fn main() -> Result<()> {
     let config_dir = dirs::config_dir().unwrap().join("mslicer");
     fs::create_dir_all(&config_dir).context("Creating config dir")?;
 
-    let log_file = File::create(config_dir.join("mslicer.log")).context("Opening log file")?;
-    let file_layer = layer().with_writer(log_file);
+    let log_file = File::create(config_dir.join("latest.log")).context("Opening log file")?;
+    let file_layer = layer().with_writer(log_file).with_ansi(false);
 
     tracing_subscriber::registry()
         .with(filter)
