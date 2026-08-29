@@ -1,6 +1,6 @@
 # Changelog
 
-## v?.?.? &mdash; Coming Soon™
+## v0.9.2 &mdash; Coming Soon™
 
 - Allow ignoring updates to stop the notification on every launch
 - Update flatpak banding color
@@ -30,7 +30,7 @@
 - Fix crash from config directory not being created
 - Better ambient occlusion defaults
 
-## v0.9.1 &mdash; August 26th, 2026
+## v0.9.0 &mdash; August 26th, 2026
 
 - PCB Tool: Pre and post flip offsets
 - Toy rasterizer (3d renderer) for some reason /shrug
