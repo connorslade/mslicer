@@ -97,7 +97,12 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
                             app.remote_print.is_initialized() && format == SliceMode::Raster;
                         ui.add_enabled_ui(enabled, |ui| {
                             ui.menu_button(concatcp!(PAPER_PLANE_TILT, " Send to Printer"), |ui| {
-                                for client in app.remote_print.clients().iter() {
+                                ui.set_width(150.0);
+
+                                let clients = app.remote_print.clients();
+                                (clients.is_empty()).then(|| ui.label("No printers connected."));
+
+                                for client in clients.iter() {
                                     let mut layout_job = LayoutJob::default();
                                     RichText::new(format!("{} ", client.name)).append_to(
                                         &mut layout_job,

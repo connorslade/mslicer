@@ -1,4 +1,4 @@
-# mslicer [![Build][actions-badge]][actions] ![][download-badge]
+# mslicer [![Build][actions-badge]][actions] ![][download-badge] [![][release-badge]][releases]
 
 A high-performance, open-source slicer for MSLA resin printers.
 Supports the following output formats: Chitu (.ctb), Elegoo (.goo), NanoDLP (.nanodlp), and Vector (.svg).
@@ -45,8 +45,9 @@ Note that this video is a little dated now (two years old).
 
 [actions-badge]: https://github.com/connorslade/mslicer/actions/workflows/build.yml/badge.svg
 [download-badge]: https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fconnorcode.com%2Fapi%2Fdownloads%3Fgithub%3Dconnorslade%252Fmslicer%26flathub%3Dcom.connorcode.mslicer&query=%24%5B%27total-human%27%5D&label=downloads&color=limegreen;
+[release-badge]: https://img.shields.io/github/v/release/connorslade/mslicer
 
-[hero-image]: https://github.com/user-attachments/assets/9ff93c8e-8f08-4a18-aede-b483ebd420eb
+[hero-image]: https://github.com/user-attachments/assets/c862edbe-1e08-49e9-b0e2-6e21488977d5
 [demo-yt]: https://youtu.be/_Xu0jFAEYLc
 [benchmark results]: https://mslicer.com/docs/benchmark
 

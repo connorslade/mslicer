@@ -8,7 +8,7 @@
 - Show all history actions to undo to
 - Change tag naming scheme (0.1.0 → v0.1.0)
 - Remote Print now supports SDCP V3.0.0 for newer printers
-- Unify remote print status proxy to all versions
+- Unify remote print status proxy to all versions ([#36](https://github.com/connorslade/mslicer/issues/36))
 - Fix remote print initialize at startup
 - Fix http status proxy checkbox
 - Fix being unable to start new remote print after stopping one
@@ -20,6 +20,7 @@
 - Update flatpak description
 - Ask if you want to save your project when overwriting it (creating new project, loading a new project)
 - Only create mesh acceleration structures once per mesh, not per instance
+- Fix rendering of 'Send to Printer' menu
 
 ## v0.9.1 &mdash; August 28th, 2026
 
@@ -29,7 +30,7 @@
 - Fix triangle render style (sometimes neighboring faces would be colored the same)
 - Allow reducing ambient occlusion render resolution
 - Fix model color changing slightly when opened in the model panel
-- Fix crash from config directory not being created
+- Fix crash from config directory not being created ([#35](https://github.com/connorslade/mslicer/issues/35))
 - Better ambient occlusion defaults
 
 ## v0.9.0 &mdash; August 26th, 2026

@@ -52,14 +52,14 @@ impl UpdateCheck {
             let manifest =
                 serde_json::from_reader::<_, Manifest>(response.into_body().into_reader()).unwrap();
 
-            if let Some(ignore) = ignore
-                && ignore == manifest.version
-            {
-                info!("Update available, ignoring due to user preference.");
-                return CheckResult::UpToDate;
-            }
-
             if semver_cmp(VERSION, &manifest.version) == Some(Ordering::Less) {
+                if let Some(ignore) = ignore
+                    && ignore == manifest.version
+                {
+                    info!("Update available, ignoring due to user preference.");
+                    return CheckResult::UpToDate;
+                }
+
                 CheckResult::Outdated(manifest)
             } else {
                 CheckResult::UpToDate
