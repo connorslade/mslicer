@@ -16,15 +16,26 @@
 		<name>Connor Slade</name>
 	</developer>
 
-	<summary>MSLA slicer</summary>
+	<summary>High-performance, open-source resin slicer</summary>
 	<description>
-		<p>
-		    A high-performance, open-source slicer for MSLA resin printers.
-		    Compatible with printers that support any of the following file formats: Chitu (.ctb), Elegoo (.goo), or NanoDLP (.nanodlp).
-		</p>
+    <p>
+        Built with performance in mind, even complex high-resolution models stay fast to slice and preview.
+    </p>
+    <p>
+        Compatible with printers that support the Chitu (<code>.ctb</code>), Elegoo (<code>.goo</code>), or NanoDLP (<code>.nanodlp</code>) file formats.
+    </p>
+    <ul>
+        <li>Native 3D anti-aliasing</li>
+        <li>Automatic model layout</li>
+        <li>PCB exposure tool</li>
+        <li>Remote printer control for Chitu-based printers</li>
+        <li>Load sliced files for inspection, modification, or conversion</li>
+    </ul>
 	</description>
 	<keywords>
-		<keyword>3d printing</keyword>
+	    <keyword>3d printing</keyword>
+	    <keyword>slicer</keyword>
+		<keyword>resin</keyword>
 	</keywords>
 
 	<screenshots>
@@ -184,7 +195,7 @@
                     <li>Added task panel to view the progress of running async tasks</li>
                     <li>Run post processing operations asynchronously with their own progress bars</li>
                     <li>Added support for the NanoDLP format (.nanodlp)</li>
-                    <li>Allow setting/updating default slice config ([#5](https://github.com/connorslade/mslicer/issues/5))</li>
+                    <li>Allow setting/updating default slice config</li>
                     <li>Remember the file that was opened for future save operations</li>
                     <li>Track changes to settings for undo and redo (under edit in the top bar)</li>
                     <li>Use metric prefixes for slice config draggers</li>
@@ -218,7 +229,7 @@
                 </ul>
             </description>
         </release>
-	    <release version="0.2.1" date="2025-04-13">
+	    <release version="0.2.2" date="2025-06-14">
 			<description>
 			    <ul>
 					<li>Clamp grid size</li>

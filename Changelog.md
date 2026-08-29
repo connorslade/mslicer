@@ -16,6 +16,8 @@
 - Avoid showing noting under remote print printer
 - Remove ansi color codes from log file
 - Rename log file from `mslicer.log` to `latest.log`
+- Switch to full host filesystem access through flatpak. Needed because of an unfortunate change to xdg-desktop-portal.
+- Update flatpak description
 
 ## v0.9.1 &mdash; August 28th, 2026
 
