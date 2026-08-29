@@ -19,22 +19,24 @@ use serde::Serialize;
 use serde_json::json;
 use tracing::{error, trace};
 
-use crate::v1::{
-    mqtt_server::{Mqtt, MqttInner},
-    status::{self, Attributes},
+use crate::{
+    manager::{ProtocolVersion, RemotePrintManagerInner},
+    shared::PrintInfo,
+    v1::status::FileTransferInfo,
 };
 
+#[derive(Clone)]
 pub struct HttpServer {
     inner: Arc<HttpServerInner>,
 }
 
 pub struct HttpServerInner {
     files: Mutex<HashMap<String, Arc<Vec<u8>>>>,
+    manager: Arc<RemotePrintManagerInner>,
     listener: TcpListener,
 
     shutdown: Arc<AtomicBool>,
     proxy_enabled: AtomicBool,
-    mqtt_server: Arc<MqttInner>,
 }
 
 struct ServerEventLoop;
@@ -45,15 +47,15 @@ struct ArcReader {
 }
 
 impl HttpServer {
-    pub fn new(listener: TcpListener, mqtt_server: &Mqtt) -> Self {
+    pub fn new(listener: TcpListener, manager: Arc<RemotePrintManagerInner>) -> Self {
         Self {
             inner: Arc::new(HttpServerInner {
                 files: Mutex::new(HashMap::new()),
+                manager,
                 listener,
 
                 shutdown: Arc::new(AtomicBool::new(false)),
                 proxy_enabled: AtomicBool::new(false),
-                mqtt_server: mqtt_server.inner.clone(),
             }),
         }
     }
@@ -110,19 +112,23 @@ impl HttpServer {
             #[derive(Serialize)]
             struct Printer<'a> {
                 machine_id: &'a str,
-                attributes: &'a Attributes,
-                status: status::Status,
+                name: &'a str,
                 last_update: i64,
+                protocol_version: ProtocolVersion,
+                print_info: &'a PrintInfo,
+                transfer_info: &'a FileTransferInfo,
             }
 
-            let clients = state.mqtt_server.clients.read();
+            let clients = state.manager.clients();
             let clients = clients
                 .iter()
-                .map(|(machine_id, printer)| Printer {
-                    machine_id,
-                    attributes: &printer.attributes,
-                    status: printer.status.lock().clone(),
-                    last_update: printer.last_update.load(Ordering::Relaxed),
+                .map(|client| Printer {
+                    machine_id: &client.mainboard,
+                    name: &client.name,
+                    last_update: client.last_update,
+                    protocol_version: client.protocol_version,
+                    print_info: &client.print_info,
+                    transfer_info: &client.transfer_info,
                 })
                 .collect::<Vec<_>>();
 
@@ -133,6 +139,10 @@ impl HttpServer {
         thread::spawn(|| {
             server.run().unwrap();
         });
+    }
+
+    pub fn port(&self) -> u16 {
+        self.listener.local_addr().unwrap().port()
     }
 
     pub fn shutdown(&self) {

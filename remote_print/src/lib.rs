@@ -1,3 +1,4 @@
+mod http;
 pub mod manager;
 pub mod mqtt;
 pub mod shared;

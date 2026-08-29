@@ -6,6 +6,7 @@
 - Update flatpak banding color
 - Track history state on more values
 - Show all history actions to undo to
+- Change tag naming scheme (0.1.0 → v0.1.0)
 
 ## v0.9.1 &mdash; August 28th, 2026
 

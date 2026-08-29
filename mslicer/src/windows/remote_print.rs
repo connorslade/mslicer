@@ -409,10 +409,8 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
         let last_status_proxy = config.status_proxy;
         ui.checkbox(&mut config.status_proxy, "Enable HTTP status proxy");
 
-        if last_status_proxy != config.status_proxy {
-            // TODO: status proxy only works for v1 printers rn!
-            let http = &app.remote_print.v1.services().http;
-            http.set_proxy_enabled(config.status_proxy);
+        if app.remote_print.is_initialized() && last_status_proxy != config.status_proxy {
+            app.remote_print.http.set_proxy_enabled(config.status_proxy);
         }
 
         let last_timeout = config.timeout;

@@ -10,19 +10,18 @@ use parking_lot::{Mutex, RwLockReadGuard};
 use tracing::{info, warn};
 
 use crate::{
+    http::HttpServer,
     manager::Client,
     mqtt::MqttServer,
     shared::{Response, addr},
     v1::{
         commands::{DisconnectCommand, StartPrinting, UploadFile},
-        http_server::HttpServer,
         mqtt_server::{Mqtt, MqttClient},
         status::FullStatusData,
     },
 };
 
 pub mod commands;
-pub mod http_server;
 pub mod mqtt_server;
 pub mod status;
 
@@ -56,7 +55,8 @@ impl RemotePrintV1 {
 
     pub fn init(
         &mut self,
-        (p_mqqt, p_http): (u16, u16),
+        p_mqqt: u16,
+        http: HttpServer,
         print_completion: impl FnMut(&Client) + Send + Sync + 'static,
     ) -> Result<()> {
         assert!(self.services.is_none());
@@ -75,19 +75,12 @@ impl RemotePrintV1 {
         });
         MqttServer::new(mqtt.clone()).start_async(mqtt_listener)?;
 
-        let http_listener = TcpListener::bind(addr(p_http)).context("Failed to bind HTTP")?;
-        let http_port = http_listener.local_addr()?.port();
-        let http = HttpServer::new(http_listener, &mqtt);
-        http.start_async();
-
-        info!("Binds: {{ MQTT: {mqtt_port}, HTTP: {http_port} }}");
-
         self.services = Some(Arc::new(Services {
             mqtt,
+            http_port: http.port(),
             http,
 
             mqtt_port,
-            http_port,
         }));
         Ok(())
     }

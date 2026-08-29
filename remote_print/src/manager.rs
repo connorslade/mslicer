@@ -1,6 +1,6 @@
 use std::{
     io::ErrorKind,
-    net::{Ipv4Addr, SocketAddr, UdpSocket},
+    net::{Ipv4Addr, SocketAddr, TcpListener, UdpSocket},
     ops::Deref,
     sync::{Arc, atomic::Ordering},
     time::Duration,
@@ -8,9 +8,12 @@ use std::{
 
 use anyhow::{Context, Result, bail};
 use common::{misc::random_string, slice::format::RasterFormat};
+use serde::Serialize;
+use soon::Soon;
 use tracing::{info, trace};
 
 use crate::{
+    http::HttpServer,
     shared::{PrintInfo, Response, addr},
     v1::{
         self, RemotePrintV1,
@@ -28,14 +31,15 @@ pub struct RemotePrintManager {
 }
 
 pub struct RemotePrintManagerInner {
-    pub v1: RemotePrintV1,
+    pub v1: Soon<RemotePrintV1>,
     pub v3: RemotePrintV3,
 
+    pub http: Soon<HttpServer>,
     pub udp: UdpSocket,
     pub udp_port: u16,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 pub enum ProtocolVersion {
     V1,
     V3,
@@ -64,15 +68,27 @@ impl RemotePrintManager {
         udp.set_read_timeout(Some(timeout))?;
         udp.set_broadcast(true)?;
 
-        let mut v1 = RemotePrintV1::uninitialized();
-        v1.init((mqqt, http), print_completion)?;
-
-        self.inner = Some(Arc::new(RemotePrintManagerInner {
-            v1,
+        let inner = Arc::new(RemotePrintManagerInner {
+            v1: Soon::empty(),
             v3: RemotePrintV3::default(),
+
+            http: Soon::empty(),
             udp_port: udp.local_addr()?.port(),
             udp,
-        }));
+        });
+
+        let http_listener = TcpListener::bind(addr(http)).context("Failed to bind HTTP")?;
+        let http = HttpServer::new(http_listener, inner.clone());
+        http.start_async();
+
+        let mut v1 = RemotePrintV1::uninitialized();
+        v1.init(mqqt, http.clone(), print_completion)?;
+
+        // hope this is safe
+        inner.v1.replace(v1);
+        inner.http.replace(http);
+
+        self.inner = Some(inner);
         Ok(())
     }
 
@@ -87,7 +103,9 @@ impl RemotePrintManager {
     pub fn inner(&self) -> Option<Arc<RemotePrintManagerInner>> {
         self.inner.clone()
     }
+}
 
+impl RemotePrintManagerInner {
     // not ideal allocating every frame but its whatever...
     pub fn clients(&self) -> Vec<Client> {
         let v1_clients = self.v1.clients();
@@ -97,9 +115,7 @@ impl RemotePrintManager {
             .chain(v3_clients.values().flat_map(Client::from_v3))
             .collect()
     }
-}
 
-impl RemotePrintManagerInner {
     pub fn protocol_version(&self, mainboard: &str) -> Option<ProtocolVersion> {
         if self.v1.clients().contains_key(mainboard) {
             Some(ProtocolVersion::V1)
