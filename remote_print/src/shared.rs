@@ -50,7 +50,10 @@ pub enum PrintInfoStatus {
 
 impl PrintInfoStatus {
     pub fn is_printing(&self) -> bool {
-        !matches!(self, Self::None | Self::Complete | Self::Complete2)
+        !matches!(
+            self,
+            Self::None | Self::Complete | Self::Complete2 | Self::Stopped | Self::Canceled
+        )
     }
 }
 

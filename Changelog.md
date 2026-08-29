@@ -11,7 +11,7 @@
 - Unify remote print status proxy to all versions
 - Fix remote print initialize at startup
 - Fix http status proxy checkbox
-
+- Fix being unable to start new remote print after stopping one
 
 ## v0.9.1 &mdash; August 28th, 2026
 
