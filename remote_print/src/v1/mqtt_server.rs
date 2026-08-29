@@ -2,8 +2,8 @@ use std::{
     collections::HashMap,
     ops::Deref,
     sync::{
-        Arc, Weak,
         atomic::{AtomicBool, AtomicI64, AtomicU16, Ordering},
+        Arc, Weak,
     },
 };
 
@@ -15,7 +15,6 @@ use tracing::{info, trace, warn};
 
 use crate::{
     mqtt::{
-        ClientId, MqttHandler, MqttServer,
         packets::{
             connect::ConnectPacket,
             connect_ack::{ConnectAckFlags, ConnectAckPacket, ConnectReturnCode},
@@ -24,8 +23,9 @@ use crate::{
             subscribe::SubscribePacket,
             subscribe_ack::{SubscribeAckPacket, SubscribeReturnCode},
         },
+        ClientId, MqttHandler, MqttServer,
     },
-    shared::{Response, epoch},
+    shared::{epoch, Response},
     v1::{
         commands::{Command, CommandTrait, DisconnectCommand},
         status::{Attributes, FullStatusData, Status, StatusData},

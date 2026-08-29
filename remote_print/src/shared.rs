@@ -2,7 +2,6 @@ use std::net::{Ipv4Addr, SocketAddrV4};
 
 use anyhow::Result;
 use serde::{Deserialize, Deserializer, Serialize};
-use serde_repr::Deserialize_repr;
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "PascalCase")]
@@ -29,30 +28,53 @@ pub struct Resolution {
     pub y: u16,
 }
 
-#[repr(u8)]
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize_repr, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub enum PrintInfoStatus {
-    None = 0,
-    InitialLower = 1,
-    Lowering = 2,
-    Exposure = 3,
-    Retracting = 4,
-    Pausing = 5,
-    Paused = 6,
-    Stopping = 7,
-    Stopped = 8,
-    Complete2 = 9, // todo fix
-    CleckingFile = 10,
-    FinalRetract = 12,
-    Canceled = 13, // maybe?
-    Complete = 16,
+    None,
+    InitialLower,
+    Lowering,
+    Exposure,
+    Retracting,
+    Pausing,
+    Paused,
+    Stopping,
+    Stopped,
+    Complete,
+    CleckingFile,
+    FinalRetract,
+    Canceled, // maybe?
+    Unknown(u8),
+}
+
+impl<'de> Deserialize<'de> for PrintInfoStatus {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        Ok(match u8::deserialize(deserializer)? {
+            0 => Self::None,
+            1 => Self::InitialLower,
+            2 => Self::Lowering,
+            3 => Self::Exposure,
+            4 => Self::Retracting,
+            5 => Self::Pausing,
+            6 => Self::Paused,
+            7 => Self::Stopping,
+            8 | 14 => Self::Stopped, // 14 happens when the stop command is sent
+            9 | 16 => Self::Complete,
+            10 => Self::CleckingFile,
+            12 => Self::FinalRetract,
+            13 => Self::Canceled,
+            other => Self::Unknown(other),
+        })
+    }
 }
 
 impl PrintInfoStatus {
     pub fn is_printing(&self) -> bool {
         !matches!(
             self,
-            Self::None | Self::Complete | Self::Complete2 | Self::Stopped | Self::Canceled
+            Self::None | Self::Complete | Self::Stopped | Self::Canceled
         )
     }
 }

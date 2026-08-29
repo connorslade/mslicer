@@ -85,3 +85,10 @@ pub struct DisconnectCommand;
 impl CommandTrait for DisconnectCommand {
     const CMD: u16 = 64;
 }
+
+#[derive(Serialize)]
+pub struct StopPrinting;
+
+impl CommandTrait for StopPrinting {
+    const CMD: u16 = 130;
+}

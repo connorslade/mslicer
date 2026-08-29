@@ -139,22 +139,33 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
                     .default_open(true)
                     .show(ui, |ui| {
                         let print_info = &client.print_info;
+                        let file_transfer = &client.transfer_info;
                         let printing = print_info.status.is_printing();
 
-                        if client.protocol_version == ProtocolVersion::V3 {
-                            ui.horizontal(|ui| {
-                                let paused = print_info.status == PrintInfoStatus::Paused;
-                                if paused {
-                                    (ui.button(concatcp!(PLAY, " Resume")).clicked())
-                                        .then(|| action = Action::Resume(client.mainboard.clone()));
-                                } else if printing {
+                        ui.horizontal(|ui| {
+                            if file_transfer.status == FileTransferStatus::Done
+                                && !printing
+                                && ui.button(concatcp!(PRINTER, " Print")).clicked()
+                            {
+                                app.remote_print
+                                    .print(&client.mainboard, &file_transfer.filename)
+                                    .unwrap();
+                            }
+
+                            let paused = print_info.status == PrintInfoStatus::Paused;
+                            if paused {
+                                (ui.button(concatcp!(PLAY, " Resume")).clicked())
+                                    .then(|| action = Action::Resume(client.mainboard.clone()));
+                            } else if printing {
+                                if client.protocol_version == ProtocolVersion::V3 {
                                     (ui.button(concatcp!(PAUSE, " Pause")).clicked())
                                         .then(|| action = Action::Pause(client.mainboard.clone()));
-                                    (ui.button(concatcp!(STOP, " Stop")).clicked())
-                                        .then(|| action = Action::Stop(client.mainboard.clone()));
                                 }
-                            });
-                        }
+
+                                (ui.button(concatcp!(STOP, " Stop")).clicked())
+                                    .then(|| action = Action::Stop(client.mainboard.clone()));
+                            }
+                        });
 
                         if printing {
                             ui.horizontal(|ui| {
@@ -194,7 +205,6 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
                             });
                         }
 
-                        let file_transfer = &client.transfer_info;
                         if file_transfer.status == FileTransferStatus::None
                             && file_transfer.file_total_size != 0
                         {
@@ -221,11 +231,6 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
                                 ui.monospace(&file_transfer.filename);
                                 ui.label("is complete.");
                             });
-                            if ui.button(concatcp!(PRINTER, " Print")).clicked() {
-                                app.remote_print
-                                    .print(&client.mainboard, &file_transfer.filename)
-                                    .unwrap();
-                            }
                         }
                     });
             });

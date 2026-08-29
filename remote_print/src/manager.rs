@@ -160,21 +160,21 @@ impl RemotePrintManagerInner {
 
     pub fn pause_print(&self, mainboard: &str) -> Result<()> {
         match self.protocol_version(mainboard).unwrap() {
-            ProtocolVersion::V1 => unimplemented!(),
+            ProtocolVersion::V1 => unreachable!(),
             ProtocolVersion::V3 => self.v3.pause_print(mainboard),
         }
     }
 
     pub fn resume_print(&self, mainboard: &str) -> Result<()> {
         match self.protocol_version(mainboard).unwrap() {
-            ProtocolVersion::V1 => unimplemented!(),
+            ProtocolVersion::V1 => unreachable!(),
             ProtocolVersion::V3 => self.v3.resume_print(mainboard),
         }
     }
 
     pub fn stop_print(&self, mainboard: &str) -> Result<()> {
         match self.protocol_version(mainboard).unwrap() {
-            ProtocolVersion::V1 => unimplemented!(),
+            ProtocolVersion::V1 => self.v1.stop_print(mainboard),
             ProtocolVersion::V3 => self.v3.stop_print(mainboard),
         }
     }

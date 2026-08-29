@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use serde_repr::Deserialize_repr;
 
-use crate::shared::{PrintInfo, Resolution, parse_resolution};
+use crate::shared::{parse_resolution, PrintInfo, Resolution};
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "PascalCase")]

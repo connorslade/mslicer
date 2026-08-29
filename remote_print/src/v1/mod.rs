@@ -15,7 +15,7 @@ use crate::{
     mqtt::MqttServer,
     shared::{Response, addr},
     v1::{
-        commands::{DisconnectCommand, StartPrinting, UploadFile},
+        commands::{DisconnectCommand, StartPrinting, StopPrinting, UploadFile},
         mqtt_server::{Mqtt, MqttClient},
         status::FullStatusData,
     },
@@ -138,6 +138,10 @@ impl Services {
             start_layer: 0,
         };
         self.mqtt.send_command(mainboard, command)
+    }
+
+    pub fn stop_print(&self, mainboard: &str) -> Result<()> {
+        self.mqtt.send_command(mainboard, StopPrinting)
     }
 
     pub fn clients(&self) -> RwLockReadGuard<'_, HashMap<String, MqttClient>> {
