@@ -7,18 +7,17 @@ use std::{
 };
 
 use anyhow::{Context, Result, bail};
+use clone_macro::clone;
 use common::{misc::random_string, slice::format::RasterFormat};
+use parking_lot::Mutex;
 use serde::Serialize;
 use soon::Soon;
 use tracing::{info, trace};
 
 use crate::{
     http::HttpServer,
-    shared::{PrintInfo, Response, addr},
-    v1::{
-        self, RemotePrintV1,
-        status::{FileTransferInfo, FullStatusData},
-    },
+    shared::{FileTransferInfo, PrintInfo, Response, addr},
+    v1::{self, RemotePrintV1, status::FullStatusData},
     v3::{
         self, RemotePrintV3,
         status::{DiscoveryResponse, ProxyDiscoveryResponse},
@@ -68,9 +67,13 @@ impl RemotePrintManager {
         udp.set_read_timeout(Some(timeout))?;
         udp.set_broadcast(true)?;
 
+        let print_completion = Arc::new(Mutex::new(print_completion));
+
         let inner = Arc::new(RemotePrintManagerInner {
             v1: Soon::empty(),
-            v3: RemotePrintV3::default(),
+            v3: RemotePrintV3::new(clone!([print_completion], move |client: &Client| {
+                print_completion.lock()(client);
+            })),
 
             http: Soon::empty(),
             udp_port: udp.local_addr()?.port(),
@@ -82,7 +85,13 @@ impl RemotePrintManager {
         http.start_async();
 
         let mut v1 = RemotePrintV1::uninitialized();
-        v1.init(mqqt, http.clone(), print_completion)?;
+        v1.init(
+            mqqt,
+            http.clone(),
+            clone!([print_completion], move |client: &Client| {
+                print_completion.lock()(client);
+            }),
+        )?;
 
         // hope this is safe
         inner.v1.replace(v1);

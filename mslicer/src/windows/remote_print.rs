@@ -14,8 +14,7 @@ use egui_phosphor::regular::{
 use notify_rust::Notification;
 use remote_print::{
     manager::{Client, ProtocolVersion},
-    shared::PrintInfoStatus,
-    v1::status::FileTransferStatus,
+    shared::{FileTransferStatus, PrintInfoStatus},
 };
 use rfd::FileDialog;
 use tracing::info;

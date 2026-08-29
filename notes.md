@@ -30,9 +30,8 @@ This is just a place for me to remember and plan features I want to add and bugs
 
 ## Documentation
 
-- Update screenshots
 - Release notes for v0.9.1 and v0.9.2?
-- Remote Print HTTP Status Proxy: Update with new API format
 - Getting Started: Flesh out guide with more info if this is the only document people read
 - msla Format Icons: Note that mslicer flatpak will register the correct filetypes
 - Fix incorrect version page in sitemap
+- Update scriptable gist

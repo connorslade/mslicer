@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use serde_repr::Deserialize_repr;
 
-use crate::shared::{parse_resolution, PrintInfo, Resolution};
+use crate::shared::{FileTransferInfo, PrintInfo, Resolution, parse_resolution};
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "PascalCase")]
@@ -57,28 +57,10 @@ pub struct Status {
     pub file_transfer_info: FileTransferInfo,
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
-#[serde(rename_all = "PascalCase")]
-pub struct FileTransferInfo {
-    pub status: FileTransferStatus,
-    pub download_offset: u32,
-    pub check_offset: u32,
-    pub file_total_size: u32,
-    pub filename: String,
-}
-
 #[repr(u8)]
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize_repr, Serialize)]
 pub enum CurrentStatus {
     Ready = 0,
     Busy = 1,
     TransferringFile = 2,
-}
-
-#[repr(u8)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize_repr, Serialize)]
-pub enum FileTransferStatus {
-    None = 0,
-    Done = 2,
-    Error = 3,
 }

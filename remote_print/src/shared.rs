@@ -2,6 +2,7 @@ use std::net::{Ipv4Addr, SocketAddrV4};
 
 use anyhow::Result;
 use serde::{Deserialize, Deserializer, Serialize};
+use serde_repr::Deserialize_repr;
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "PascalCase")]
@@ -19,6 +20,16 @@ pub struct PrintInfo {
     pub current_ticks: u32,
     pub total_ticks: u32,
     pub error_number: u8,
+    pub filename: String,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+#[serde(rename_all = "PascalCase")]
+pub struct FileTransferInfo {
+    pub status: FileTransferStatus,
+    pub download_offset: u32,
+    pub check_offset: u32,
+    pub file_total_size: u32,
     pub filename: String,
 }
 
@@ -44,6 +55,14 @@ pub enum PrintInfoStatus {
     FinalRetract,
     Canceled, // maybe?
     Unknown(u8),
+}
+
+#[repr(u8)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize_repr, Serialize)]
+pub enum FileTransferStatus {
+    None = 0,
+    Done = 2,
+    Error = 3,
 }
 
 impl<'de> Deserialize<'de> for PrintInfoStatus {

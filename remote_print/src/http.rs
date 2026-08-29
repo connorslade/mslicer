@@ -21,8 +21,7 @@ use tracing::{error, trace};
 
 use crate::{
     manager::{ProtocolVersion, RemotePrintManagerInner},
-    shared::PrintInfo,
-    v1::status::FileTransferInfo,
+    shared::{FileTransferInfo, PrintInfo},
 };
 
 #[derive(Clone)]
@@ -110,6 +109,7 @@ impl HttpServer {
             trace!("Status requested by {}", ctx.req.address);
 
             #[derive(Serialize)]
+            #[serde(rename_all = "PascalCase")]
             struct Printer<'a> {
                 machine_id: &'a str,
                 name: &'a str,

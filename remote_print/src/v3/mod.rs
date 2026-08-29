@@ -1,6 +1,7 @@
 use std::{
     collections::HashMap,
     io::ErrorKind,
+    mem,
     net::{Ipv4Addr, SocketAddr, TcpStream},
     sync::{
         Arc,
@@ -19,8 +20,8 @@ use ureq::unversioned::multipart::{Form, Part};
 use uuid::Uuid;
 
 use crate::{
-    shared::{Response, epoch},
-    v1::status::{FileTransferInfo, FileTransferStatus},
+    manager,
+    shared::{FileTransferInfo, FileTransferStatus, Response, epoch},
     v3::{
         commands::{Cmd, send_command},
         status::{
@@ -33,9 +34,11 @@ use crate::{
 pub mod commands;
 pub mod status;
 
-#[derive(Default)]
+type PrintCompletion = Arc<Mutex<Box<dyn FnMut(&manager::Client) + Send>>>;
+
 pub struct RemotePrintV3 {
     clients: Arc<Mutex<HashMap<String, Client>>>,
+    print_completion: PrintCompletion,
 }
 
 pub struct Client {
@@ -47,9 +50,19 @@ pub struct Client {
     pub last_update: i64,
     pub pending_removal: bool,
     pub sender: Sender<Cmd>,
+    was_printing: bool,
 }
 
 impl RemotePrintV3 {
+    pub(crate) fn new(
+        print_completion: impl FnMut(&manager::Client) + Send + Sync + 'static,
+    ) -> Self {
+        Self {
+            clients: Arc::new(Mutex::new(HashMap::new())),
+            print_completion: Arc::new(Mutex::new(Box::new(print_completion))),
+        }
+    }
+
     pub(crate) fn connect_printer(&self, response: Response<DiscoveryResponse>) -> Result<()> {
         let machine_name = &response.data.machine_name;
         let mainboard_id = response.data.mainboard_id.clone();
@@ -89,93 +102,109 @@ impl RemotePrintV3 {
             .lock()
             .insert(mainboard_id.clone(), Client::new(ip, tx));
 
-        thread::spawn(clone!([{ self.clients } as clients], move || {
-            loop {
-                while let Ok(command) = rx.try_recv() {
-                    send_command(&mut socket, &mainboard_id, command);
-                }
-
-                {
-                    let mut clients = clients.lock();
-                    if clients
-                        .get(&mainboard_id)
-                        .map(|x| x.pending_removal)
-                        .unwrap_or_default()
-                    {
-                        clients.remove(&mainboard_id);
-                        socket.close(None).unwrap();
+        thread::spawn(clone!(
+            [{ self.clients } as clients, { self.print_completion }
+                as print_completion],
+            move || {
+                loop {
+                    while let Ok(command) = rx.try_recv() {
+                        send_command(&mut socket, &mainboard_id, command);
                     }
-                }
 
-                match socket.read() {
-                    Ok(message) => {
-                        let text = match message.to_text() {
-                            Ok(x) => x,
-                            Err(e) => {
-                                warn!("Failed to convert message to text: {e:?}");
+                    {
+                        let mut clients = clients.lock();
+                        if clients
+                            .get(&mainboard_id)
+                            .map(|x| x.pending_removal)
+                            .unwrap_or_default()
+                        {
+                            clients.remove(&mainboard_id);
+                            socket.close(None).unwrap();
+                        }
+                    }
+
+                    match socket.read() {
+                        Ok(message) => {
+                            let text = match message.to_text() {
+                                Ok(x) => x,
+                                Err(e) => {
+                                    warn!("Failed to convert message to text: {e:?}");
+                                    continue;
+                                }
+                            };
+
+                            trace!("text: {text:?}");
+
+                            // Ignore heartbeat msgs
+                            if matches!(text, "ping" | "pong") {
                                 continue;
                             }
-                        };
 
-                        trace!("text: {text:?}");
+                            if let Ok(message) = serde_json::from_str::<Message>(text) {
+                                trace!("message: {message:?}");
+                                let mut clients = clients.lock();
+                                let client = clients.get_mut(&mainboard_id).unwrap();
 
-                        // Ignore heartbeat msgs
-                        if matches!(text, "ping" | "pong") {
+                                if let Some(attributes) = message.attributes {
+                                    trace!("Got attributes");
+                                    client.attributes = Some(attributes);
+                                }
+
+                                if let Some(status) = message.status {
+                                    trace!("Got status");
+                                    let is_printing = status.print_info.status.is_printing();
+                                    client.status = Some(status);
+
+                                    if mem::replace(&mut client.was_printing, is_printing)
+                                        && !is_printing
+                                        && let Some(client) = manager::Client::from_v3(client)
+                                    {
+                                        print_completion.lock()(&client)
+                                    }
+                                }
+                            } else if let Ok(response) =
+                                serde_json::from_str::<ResponseMessage>(text)
+                            {
+                                let (cmd, ack) = (response.data.cmd, response.data.data.ack);
+                                if ack != 0 {
+                                    warn!(
+                                        "Printer `{mainboard_id}` rejected command {cmd} with {ack}"
+                                    );
+                                } else {
+                                    trace!("Printer `{mainboard_id}` acknowledged command {cmd}");
+                                }
+                            } else if let Ok(error) = serde_json::from_str::<ErrorMessage>(text) {
+                                warn!(
+                                    "Printer `{mainboard_id}` reported error {:?}",
+                                    error.data.data.error_code
+                                );
+                            } else if let Ok(notice) = serde_json::from_str::<NoticeMessage>(text) {
+                                info!(
+                                    "Printer `{mainboard_id}` notice (type {}): {:?}",
+                                    notice.data.data.notice_type, notice.data.data.message
+                                );
+                            } else {
+                                warn!("Failed to deserialize message: {text:?}");
+                            }
+
+                            if let Some(client) = clients.lock().get_mut(&mainboard_id) {
+                                client.last_update = epoch();
+                            }
+                        }
+                        Err(Error::Io(e))
+                            if matches!(e.kind(), ErrorKind::TimedOut | ErrorKind::WouldBlock) =>
+                        {
                             continue;
                         }
-
-                        if let Ok(message) = serde_json::from_str::<Message>(text) {
-                            trace!("message: {message:?}");
-                            let mut clients = clients.lock();
-                            let client = clients.get_mut(&mainboard_id).unwrap();
-
-                            if let Some(attributes) = message.attributes {
-                                trace!("Got attributes");
-                                client.attributes = Some(attributes);
-                            }
-
-                            if let Some(status) = message.status {
-                                trace!("Got status");
-                                client.status = Some(status);
-                            }
-                        } else if let Ok(response) = serde_json::from_str::<ResponseMessage>(text) {
-                            let (cmd, ack) = (response.data.cmd, response.data.data.ack);
-                            if ack != 0 {
-                                warn!("Printer `{mainboard_id}` rejected command {cmd} with {ack}");
-                            } else {
-                                trace!("Printer `{mainboard_id}` acknowledged command {cmd}");
-                            }
-                        } else if let Ok(error) = serde_json::from_str::<ErrorMessage>(text) {
-                            warn!(
-                                "Printer `{mainboard_id}` reported error {:?}",
-                                error.data.data.error_code
-                            );
-                        } else if let Ok(notice) = serde_json::from_str::<NoticeMessage>(text) {
-                            info!(
-                                "Printer `{mainboard_id}` notice (type {}): {:?}",
-                                notice.data.data.notice_type, notice.data.data.message
-                            );
-                        } else {
-                            warn!("Failed to deserialize message: {text:?}");
+                        Err(Error::ConnectionClosed) => {
+                            trace!("Connection to `{mainboard_id}` closed.");
+                            break;
                         }
-
-                        if let Some(client) = clients.lock().get_mut(&mainboard_id) {
-                            client.last_update = epoch();
-                        }
+                        Err(e) => warn!("Socket error for `{mainboard_id}`: {e:?}"),
                     }
-                    Err(Error::Io(e))
-                        if matches!(e.kind(), ErrorKind::TimedOut | ErrorKind::WouldBlock) =>
-                    {
-                        continue;
-                    }
-                    Err(Error::ConnectionClosed) => {
-                        trace!("Connection to `{mainboard_id}` closed.");
-                        break;
-                    }
-                    Err(e) => warn!("Socket error for `{mainboard_id}`: {e:?}"),
                 }
             }
-        }));
+        ));
 
         Ok(())
     }
@@ -310,6 +339,7 @@ impl Client {
             last_update: 0,
             pending_removal: false,
             sender,
+            was_printing: false,
         }
     }
 }
