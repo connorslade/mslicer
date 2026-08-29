@@ -61,8 +61,8 @@ impl RemotePrintV3 {
         }
 
         let ip = response.data.mainboard_ip.parse::<Ipv4Addr>().unwrap();
-        let stream = TcpStream::connect(SocketAddr::new(ip.into(), 3030))?;
-        stream.set_nonblocking(true)?;
+        let addr = SocketAddr::new(ip.into(), 3030);
+        let stream = TcpStream::connect_timeout(&addr, Duration::from_secs(5))?;
 
         // Needed for elegoo-homeassistant proxy support
         let url = if response.data.proxy {
@@ -70,7 +70,15 @@ impl RemotePrintV3 {
         } else {
             format!("ws://{ip}:3030/websocket")
         };
+
         let (mut socket, rsp) = tungstenite::client(url, stream)?;
+
+        // note that the socket must only be configured after the websocket
+        // handshake as tungstenite assumes blocking sockets. this was not fun
+        // to figure out :sob:
+        socket
+            .get_ref()
+            .set_read_timeout(Some(Duration::from_secs(1)))?;
         trace!("Websocket connected: {rsp:?}");
 
         let (tx, rx) = mpsc::channel();
@@ -83,7 +91,7 @@ impl RemotePrintV3 {
 
         thread::spawn(clone!([{ self.clients } as clients], move || {
             loop {
-                while let Ok(command) = rx.recv() {
+                while let Ok(command) = rx.try_recv() {
                     send_command(&mut socket, &mainboard_id, command);
                 }
 
@@ -166,8 +174,6 @@ impl RemotePrintV3 {
                     }
                     Err(e) => warn!("Socket error for `{mainboard_id}`: {e:?}"),
                 }
-
-                thread::sleep(Duration::from_secs(1));
             }
         }));
 
