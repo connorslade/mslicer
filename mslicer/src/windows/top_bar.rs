@@ -14,7 +14,7 @@ use crate::{
     app::App,
     project::Collection,
     task::ProjectLoad,
-    ui::{components::labeled_separator, shortcuts, shortcuts::Shortcut},
+    ui::{components::labeled_separator, popup::confirm_unsaved, shortcuts, shortcuts::Shortcut},
     windows::{
         Tab,
         tools::{self, graphics_3d},
@@ -70,7 +70,9 @@ pub fn ui(app: &mut App, ctx: &Context) {
                             }
 
                             if let Some(path) = load {
-                                app.tasks.add(ProjectLoad::new(path));
+                                confirm_unsaved(app, move |app| {
+                                    app.tasks.add(ProjectLoad::new(path.to_path_buf()))
+                                });
                             }
                         });
                     });

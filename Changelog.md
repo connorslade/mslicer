@@ -18,6 +18,7 @@
 - Rename log file from `mslicer.log` to `latest.log`
 - Switch to full host filesystem access through flatpak. Needed because of an unfortunate change to xdg-desktop-portal.
 - Update flatpak description
+- Ask if you want to save your project when overwriting it (creating new project, loading a new project)
 
 ## v0.9.1 &mdash; August 28th, 2026
 

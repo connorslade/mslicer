@@ -5,10 +5,8 @@ This is just a place for me to remember and plan features I want to add and bugs
 ## Bugs
 
 - fix auto-layout handling of rotated and scaled models
-- 'Do you want to save this project' popup when loading a project into a non-empty workspace
 - don't crash when interacting with remote print after the printer has disconnected
 - reference count BVH and half_edge meshes
-- auto reload annotations on current layer when island detection finishes
 
 ## Features
 

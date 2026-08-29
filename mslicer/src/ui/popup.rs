@@ -9,13 +9,13 @@ use remote_print::manager::RemotePrintManager;
 
 use crate::{
     app::{
-        camera::Camera, config::Config, history::History, is_slicing,
+        App, camera::Camera, config::Config, history::History, is_slicing,
         slice_operation::SliceOperation,
     },
     app_ref_type,
     project::Project,
     task::TaskManager,
-    ui::{panels::Panels, state::UiState},
+    ui::{components::button_row, panels::Panels, state::UiState},
 };
 
 type UiFunction = dyn FnMut(&mut PopupApp, &mut Ui) -> bool;
@@ -200,8 +200,60 @@ impl PopupIcon {
 }
 
 impl<'a> PopupApp<'a> {
+    // kinda annoying this has to be duplicated...
+    pub fn from_app(app: &'a mut App) -> Self {
+        Self {
+            panels: &mut app.panels,
+            tasks: &mut app.tasks,
+            remote_print: &mut app.remote_print,
+            slice_operation: &mut app.slice_operation,
+            camera: &mut app.camera,
+            state: &mut app.state,
+            config: &mut app.config,
+            project: &mut app.project,
+            history: &mut app.history,
+        }
+    }
+
     // i know, i know…
     pub fn is_slicing(&self) -> bool {
         is_slicing(self.slice_operation)
     }
+}
+
+pub fn confirm_unsaved(app: &mut App, mut callback: impl FnMut(&mut PopupApp) + 'static) {
+    if app.project.models.is_empty() {
+        callback(&mut PopupApp::from_app(app));
+        return;
+    }
+
+    app.popup
+        .open(Popup::new("Unsaved Changes", move |app, ui| {
+            ui.add_space(8.0);
+            ui.label(if app.project.path.is_some() {
+                "Do you want to save the changes made to this project?"
+            } else {
+                "Do you want to save this project?"
+            });
+            ui.add_space(8.0);
+
+            let (mut cancel, mut dont_save, mut save) = (false, false, false);
+            button_row(
+                ui,
+                [
+                    ("Cancel", &mut || cancel = true),
+                    ("Don't Save", &mut || dont_save = true),
+                    ("Save", &mut || save = true),
+                ],
+            );
+
+            if save {
+                app.tasks.add_boxed(app.project.save());
+                callback(app);
+            } else if dont_save {
+                callback(app);
+            }
+
+            cancel || dont_save || save
+        }));
 }

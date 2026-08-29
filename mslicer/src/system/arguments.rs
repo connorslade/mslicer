@@ -8,6 +8,7 @@ use tracing::warn;
 use crate::{
     app::App,
     task::{LoadSliced, MeshLoad, ProjectLoad},
+    ui::popup::confirm_unsaved,
 };
 
 pub struct Args {
@@ -57,7 +58,9 @@ impl OpenInto {
 
     pub fn start(self, app: &mut App) {
         if let Some(path) = self.project {
-            app.tasks.add(ProjectLoad::new(path));
+            confirm_unsaved(app, move |app| {
+                app.tasks.add(ProjectLoad::new(path.to_path_buf()))
+            });
         }
 
         if let Some(path) = self.sliced {

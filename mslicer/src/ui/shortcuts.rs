@@ -7,7 +7,7 @@ use crate::{
     include_asset,
     project::Project,
     task::{AutoLayout, FileDialog, LoadSliced, MeshLoad, MultiFileDialog},
-    ui::popup::Popup,
+    ui::popup::confirm_unsaved,
 };
 
 const COMMAND_SHIFT: Modifiers = Modifiers::COMMAND.plus(Modifiers::SHIFT);
@@ -135,35 +135,10 @@ fn import_teapot(app: &mut App, _ctx: &Context) {
 }
 
 fn new(app: &mut App, _ctx: &Context) {
-    if !app.project.models.is_empty() {
-        app.popup.open(Popup::new("Modified File", |app, ui| {
-            ui.add_space(8.0);
-            if app.project.path.is_some() {
-                ui.label("Do you want to save the changes made to this project?");
-            } else {
-                ui.label("Do you want to save this project?");
-            }
-            ui.add_space(8.0);
-
-            let mut close = false;
-            ui.columns(2, |ui| {
-                ui[0].centered_and_justified(|ui| {
-                    if ui.button("Don't Save").clicked() {
-                        app.project.reset(&app.config.default_slice_config);
-                        app.history.clear();
-                        close = true;
-                    }
-                });
-                ui[1].centered_and_justified(|ui| {
-                    if ui.button("Save").clicked() {
-                        app.tasks.add_boxed(app.project.save());
-                    }
-                });
-            });
-
-            close
-        }));
-    }
+    confirm_unsaved(app, |app| {
+        app.project.reset(&app.config.default_slice_config);
+        app.history.clear();
+    });
 }
 
 fn save(app: &mut App, _ctx: &Context) {
@@ -177,7 +152,7 @@ fn save_as(app: &mut App, _ctx: &Context) {
 }
 
 fn load(app: &mut App, _ctx: &Context) {
-    app.tasks.add(Project::load());
+    confirm_unsaved(app, |app| app.tasks.add(Project::load()));
 }
 
 fn quit(_app: &mut App, ctx: &Context) {
