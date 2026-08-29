@@ -6,7 +6,6 @@ This is just a place for me to remember and plan features I want to add and bugs
 
 - fix auto-layout handling of rotated and scaled models
 - don't crash when interacting with remote print after the printer has disconnected
-- reference count BVH and half_edge meshes
 
 ## Features
 

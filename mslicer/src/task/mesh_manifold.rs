@@ -1,13 +1,14 @@
 use clone_macro::clone;
 use common::progress::Progress;
+use slicer::mesh::MeshId;
 
 use crate::{
-    project::model::{MeshWarnings, Model, ModelId},
+    project::model::{MeshWarnings, Model},
     task::{PollResult, Task, TaskApp, TaskStatus, thread::TaskThread},
 };
 
 pub struct MeshManifold {
-    mesh: ModelId,
+    mesh_id: MeshId,
     progress: Progress,
     handle: TaskThread<bool>,
 }
@@ -20,7 +21,7 @@ impl MeshManifold {
         }));
 
         Self {
-            mesh: mesh.id,
+            mesh_id: mesh.mesh.mesh_id(),
             progress,
             handle,
         }
@@ -32,7 +33,12 @@ impl Task for MeshManifold {
         self.handle
             .poll(app, "Failed to Check Mesh Manifold")
             .into_poll_result(|result| {
-                if let Some(model) = app.project.models.iter_mut().find(|x| x.id == self.mesh) {
+                for model in app
+                    .project
+                    .models
+                    .iter_mut()
+                    .filter(|x| x.mesh.mesh_id() == self.mesh_id)
+                {
                     model.warnings.set(MeshWarnings::NonManifold, !result);
                 }
                 PollResult::complete()

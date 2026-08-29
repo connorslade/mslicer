@@ -2,15 +2,15 @@ use std::sync::Arc;
 
 use clone_macro::clone;
 use common::progress::Progress;
-use slicer::{geometry::bvh::Bvh, half_edge::HalfEdgeMesh};
+use slicer::{geometry::bvh::Bvh, half_edge::HalfEdgeMesh, mesh::MeshId};
 
 use crate::{
-    project::model::{Model, ModelId},
+    project::model::Model,
     task::{PollResult, Task, TaskApp, TaskStatus, thread::TaskThread},
 };
 
 pub struct BuildAccelerationStructures {
-    mesh: ModelId,
+    mesh_id: MeshId,
     name: String,
 
     progress: Progress,
@@ -22,7 +22,7 @@ impl BuildAccelerationStructures {
         let progress = Progress::new();
         let mesh = model.mesh.inner().clone();
         Self {
-            mesh: model.id,
+            mesh_id: model.mesh.mesh_id(),
             name: model.name.clone(),
             handle: TaskThread::spawn(clone!([progress], move || {
                 let bvh = Bvh::build(&mesh, progress);
@@ -38,9 +38,14 @@ impl Task for BuildAccelerationStructures {
     fn poll(&mut self, app: &mut TaskApp) -> PollResult {
         const FAILURE: &str = "Failed to Build Acceleration Structure";
         (self.handle.poll(app, FAILURE)).into_poll_result(|(bvh, half_edge)| {
-            if let Some(model) = app.project.models.iter_mut().find(|x| x.id == self.mesh) {
-                model.bvh = Some(bvh);
-                model.half_edge = Some(half_edge);
+            for model in app
+                .project
+                .models
+                .iter_mut()
+                .filter(|x| x.mesh.mesh_id() == self.mesh_id)
+            {
+                model.bvh = Some(bvh.clone());
+                model.half_edge = Some(half_edge.clone());
             }
             PollResult::complete()
         })

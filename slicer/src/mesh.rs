@@ -25,6 +25,9 @@ pub struct MeshInner {
     pub faces: Box<[[u32; 3]]>,
 }
 
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub struct MeshId(usize);
+
 impl Mesh {
     /// Creates a new mesh from the given vertices and faces. The
     /// transformations are all 0 by default.
@@ -53,8 +56,8 @@ impl Mesh {
         }
     }
 
-    pub fn mesh_id(&self) -> usize {
-        Arc::as_ptr(&self.inner) as usize
+    pub fn mesh_id(&self) -> MeshId {
+        MeshId::for_mesh_inner(&self.inner)
     }
 
     pub fn inner(&self) -> &Arc<MeshInner> {
@@ -226,6 +229,16 @@ impl Mesh {
     /// Gets the current rotation of the model.
     pub fn rotation(&self) -> Vector3<f32> {
         self.rotation
+    }
+}
+
+impl MeshId {
+    pub fn for_mesh_inner(mesh: &Arc<MeshInner>) -> Self {
+        Self(Arc::as_ptr(mesh) as usize)
+    }
+
+    pub fn inner(&self) -> usize {
+        self.0
     }
 }
 

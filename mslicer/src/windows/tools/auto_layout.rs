@@ -168,10 +168,10 @@ pub fn layout_cache(padding: f32, models: &[Model]) -> (LayoutCache, Vec<auto_la
     for model in models.iter().filter(|x| !x.hidden) {
         out.push(auto_layout::Model::new(
             model.id.raw(),
-            model.mesh.mesh_id(),
+            model.mesh.mesh_id().inner(), // todo: use mesh id in auto_layout
         ));
 
-        let entry = CacheEntry::new(model.mesh.mesh_id(), 0.0);
+        let entry = CacheEntry::new(model.mesh.mesh_id().inner(), 0.0);
         cache.populate_hull(entry, || {
             let rotation = model.mesh.rotation();
             let transform = Rotation3::from_euler_angles(rotation.x, rotation.y, 0.0);

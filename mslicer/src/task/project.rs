@@ -1,4 +1,5 @@
 use std::{
+    collections::HashSet,
     fs::File,
     io::{BufReader, BufWriter},
     path::{Path, PathBuf},
@@ -80,11 +81,16 @@ impl Task for ProjectLoad {
 
             let mut result = PollResult::complete();
             let count = app.project.models.len();
+            let mut seen_meshes = HashSet::new();
             for (i, model) in app.project.models.iter_mut().enumerate() {
                 model.update_oob(&app.project.slice_config.platform_size);
-                result = result
-                    .with_task(MeshManifold::new(model))
-                    .with_task(BuildAccelerationStructures::new(model));
+
+                // Only spawn these tasks one per mesh, not per instance
+                if seen_meshes.insert(model.mesh.mesh_id()) {
+                    result = result
+                        .with_task(MeshManifold::new(model))
+                        .with_task(BuildAccelerationStructures::new(model));
+                }
 
                 info!(
                     " {} Loaded model `{}` with {} faces",
