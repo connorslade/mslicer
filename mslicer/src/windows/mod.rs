@@ -18,7 +18,7 @@ use crate::{
 
 mod logs;
 mod models;
-mod remote_print;
+pub mod remote_print;
 mod slice_config;
 mod sliced;
 mod supports;

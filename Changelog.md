@@ -7,6 +7,11 @@
 - Track history state on more values
 - Show all history actions to undo to
 - Change tag naming scheme (0.1.0 → v0.1.0)
+- Remote Print now supports SDCP V3.0.0 for newer printers
+- Unify remote print status proxy to all versions
+- Fix remote print initialize at startup
+- Fix http status proxy checkbox
+
 
 ## v0.9.1 &mdash; August 28th, 2026
 
@@ -18,7 +23,6 @@
 - Fix model color changing slightly when opened in the model panel
 - Fix crash from config directory not being created
 - Better ambient occlusion defaults
-- Remote Print now supports SDCP V3.0.0 for newer printers
 
 ## v0.9.1 &mdash; August 26th, 2026
 

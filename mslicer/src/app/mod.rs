@@ -237,7 +237,10 @@ impl eframe::App for App {
             }
         });
 
-        // self.remote_print().tick(); TODO(remote-print)
+        if !self.remote_print.is_initialized() && self.config.remote_print.init_at_startup {
+            windows::remote_print::initialize(self);
+        }
+
         model::process_previews(self);
         drag_and_drop::update(self, ctx);
         windows::ui(self, ctx);

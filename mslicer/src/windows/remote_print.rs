@@ -43,6 +43,42 @@ enum Action {
     Stop(String),
 }
 
+pub(crate) fn initialize(app: &mut App) {
+    let config = &app.config.remote_print;
+    let sender = app.tasks.sender();
+    let timeout = Duration::from_secs_f32(config.timeout);
+    let status_proxy = config.status_proxy;
+    let ports = (config.udp_port, config.mqtt_port, config.http_port);
+    let callback = clone!(
+        [{ app.state.shared_webhook } as completion],
+        move |client: &Client| {
+            let print_info = &client.print_info;
+            if completion.alert {
+                Notification::new()
+                    .summary("Print Complete")
+                    .body(&format!(
+                        "Printer `{}` has finished printing `{}`.",
+                        client.name, print_info.filename
+                    ))
+                    .show()
+                    .unwrap();
+            }
+
+            let webhook = &completion.webhook;
+            if webhook.enabled {
+                let body = (webhook.body)
+                    .replace("%file%", &print_info.filename)
+                    .replace("%printer%", &client.name);
+                let task = Webhook::new(&webhook.url, body, webhook.content_type);
+                sender.send(Box::new(task)).unwrap();
+            }
+        }
+    );
+
+    app.remote_print.init(ports, timeout, callback).unwrap();
+    app.remote_print.http.set_proxy_enabled(status_proxy);
+}
+
 pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
     if !app.remote_print.is_initialized() {
         ui.heading("Initialization");
@@ -51,42 +87,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
 
         ui.vertical_centered(|ui| {
             if ui.button(concatcp!(NETWORK, " Initialize")).clicked() {
-                let config = &app.config.remote_print;
-                let sender = app.tasks.sender();
-                let timeout = Duration::from_secs_f32(config.timeout);
-                let callback = clone!(
-                    [{ app.state.shared_webhook } as completion],
-                    move |client: &Client| {
-                        let print_info = &client.print_info;
-                        if completion.alert {
-                            Notification::new()
-                                .summary("Print Complete")
-                                .body(&format!(
-                                    "Printer `{}` has finished printing `{}`.",
-                                    client.name, print_info.filename
-                                ))
-                                .show()
-                                .unwrap();
-                        }
-
-                        let webhook = &completion.webhook;
-                        if webhook.enabled {
-                            let body = (webhook.body)
-                                .replace("%file%", &print_info.filename)
-                                .replace("%printer%", &client.name);
-                            let task = Webhook::new(&webhook.url, body, webhook.content_type);
-                            sender.send(Box::new(task)).unwrap();
-                        }
-                    }
-                );
-
-                app.remote_print
-                    .init(
-                        (config.mqtt_port, config.udp_port, config.http_port),
-                        timeout,
-                        callback,
-                    )
-                    .unwrap();
+                initialize(app);
             }
         });
     } else {
