@@ -13,6 +13,7 @@
 - Fix http status proxy checkbox
 - Fix being unable to start new remote print after stopping one
 - Allow stopping prints through remote print V1
+- Avoid showing noting under remote print printer
 
 ## v0.9.1 &mdash; August 28th, 2026
 
