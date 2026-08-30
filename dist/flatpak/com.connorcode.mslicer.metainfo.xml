@@ -46,6 +46,33 @@
 	</screenshots>
 
 	<releases>
+        <release version="0.9.2" date="2026-08-30">
+            <description>
+     			<ul>
+                    <li>Allow ignoring updates to stop the notification on every launch</li>
+                    <li>Update flatpak banding color</li>
+                    <li>Track history state on more values</li>
+                    <li>Show all history actions to undo to</li>
+                    <li>Change tag naming scheme (0.1.0 → v0.1.0)</li>
+                    <li>Remote Print now supports SDCP V3.0.0 for newer printers</li>
+                    <li>Unify remote print status proxy to all versions</li>
+                    <li>Fix remote print initialize at startup</li>
+                    <li>Fix http status proxy checkbox</li>
+                    <li>Fix being unable to start new remote print after stopping one</li>
+                    <li>Allow stopping prints through remote print V1</li>
+                    <li>Avoid showing noting under remote print printer</li>
+                    <li>Remove ansi color codes from log file</li>
+                    <li>Rename log file from `mslicer.log` to `latest.log`</li>
+                    <li>Switch to full host filesystem access through flatpak. Needed because of an unfortunate change to xdg-desktop-portal.</li>
+                    <li>Update flatpak description</li>
+                    <li>Ask if you want to save your project when overwriting it (creating new project, loading a new project)</li>
+                    <li>Only create mesh acceleration structures once per mesh, not per instance</li>
+                    <li>Fix rendering of 'Send to Printer' menu</li>
+                    <li>Add 'Help' menu to toolbar (has links to website, source code, and bug tracker)</li>
+                    <li>Don't trigger model shortcuts when typing in a text field</li>
+                </ul>
+            </description>
+        </release>
 	    <release version="0.9.1" date="2026-08-28">
             <description>
      			<ul>

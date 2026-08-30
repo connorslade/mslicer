@@ -1,6 +1,6 @@
 # Changelog
 
-## v0.9.2 &mdash; Coming Soon™
+## v0.9.2 &mdash; August 30th, 2026
 
 - Allow ignoring updates to stop the notification on every launch
 - Update flatpak banding color
