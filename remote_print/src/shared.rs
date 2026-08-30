@@ -51,7 +51,6 @@ pub enum PrintInfoStatus {
     Stopping,
     Stopped,
     Complete,
-    CheckingFile,
     FinalRetract,
     Canceled, // maybe?
     Unknown(u8),
@@ -78,10 +77,9 @@ impl<'de> Deserialize<'de> for PrintInfoStatus {
             4 => Self::Retracting,
             5 => Self::Pausing,
             6 => Self::Paused,
-            7 => Self::Stopping,
+            7 | 10 => Self::Stopping,
             8 | 14 => Self::Stopped, // 14 happens when the stop command is sent
             9 | 16 => Self::Complete,
-            10 => Self::CheckingFile,
             12 => Self::FinalRetract,
             13 => Self::Canceled,
             other => Self::Unknown(other),

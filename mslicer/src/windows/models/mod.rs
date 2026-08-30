@@ -183,7 +183,9 @@ fn shortcut(response: Response, key: Key) -> bool {
     let response = response.on_hover_ui(|ui| {
         ui.label(format!("Shortcut: {}", key.symbol_or_name()));
     });
-    response.clicked() || response.ctx.input(|i| i.key_pressed(key))
+
+    response.clicked()
+        || (!response.ctx.wants_keyboard_input() && response.ctx.input(|i| i.key_pressed(key)))
 }
 
 fn selection_properties(app: &mut App, ui: &mut Ui) {

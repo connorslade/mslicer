@@ -29,10 +29,7 @@ mod util;
 mod windows;
 use app::{App, config::Config};
 
-use crate::{
-    system::{arguments::Args, icon},
-    task::update_check_if_scheduled,
-};
+use crate::system::{arguments::Args, icon};
 
 fn main() -> Result<()> {
     // Don't print panics on threads that are handled by the task system.
@@ -118,7 +115,7 @@ fn main() -> Result<()> {
             egui_extras::install_image_loaders(&cc.egui_ctx);
 
             let mut app = App::new(render::init_wgpu(cc), config_dir, config, collector);
-            update_check_if_scheduled(&mut app);
+            app.init();
             args.open.start(&mut app);
 
             Ok(Box::new(app))

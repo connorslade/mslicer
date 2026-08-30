@@ -20,7 +20,7 @@ use crate::{
     },
     project::{Project, model::ModelId},
     render::{Gcx, workspace::model},
-    task::TaskManager,
+    task::{TaskManager, update_check_if_scheduled},
     ui::{
         drag_and_drop,
         panels::Panels,
@@ -93,6 +93,14 @@ impl App {
                 slice_config,
                 ..Default::default()
             },
+        }
+    }
+
+    pub fn init(&mut self) {
+        update_check_if_scheduled(self);
+
+        if !self.remote_print.is_initialized() && self.config.remote_print.init_at_startup {
+            windows::remote_print::initialize(self);
         }
     }
 
@@ -228,7 +236,7 @@ impl eframe::App for App {
         self.popup().render(ctx);
         self.tasks().poll();
 
-        // only update the visuals if the theme has changed
+        // todo: only update the visuals if the theme has changed?
         ctx.set_visuals(Visuals {
             collapsing_header_frame: true,
             ..match self.config.ui.theme {
@@ -236,10 +244,6 @@ impl eframe::App for App {
                 Theme::Light => Visuals::light(),
             }
         });
-
-        if !self.remote_print.is_initialized() && self.config.remote_print.init_at_startup {
-            windows::remote_print::initialize(self);
-        }
 
         model::process_previews(self);
         drag_and_drop::update(self, ctx);

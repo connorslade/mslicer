@@ -26,7 +26,10 @@ This is just a place for me to remember and plan features I want to add and bugs
 - built-in mesh subdivision
 - optimize elephant foot post processing
 - allow manually editing the pixels in slice preview?
+- dont repaint every frame (or at least when unfocused)
+- speed up compilation
 
 ## Documentation
 
-- Getting Started: Flesh out guide with more info if this is the only document people read
+- getting started video guide? (i do need to update that video in the readme)
+- color internal and external links differently
