@@ -1,9 +1,10 @@
 use std::{hash::Hash, mem};
 
 use egui::{
-    Align, Button, CollapsingHeader, Color32, DragValue, FontId, Grid, Layout, Response, Separator,
-    Ui, Widget, emath::Numeric, vec2,
+    Align, Button, CollapsingHeader, Color32, DragValue, FontId, Grid, Layout, OpenUrl, Response,
+    RichText, Separator, Ui, Widget, emath::Numeric, vec2,
 };
+use egui_phosphor::regular::LINK;
 
 use crate::{
     app::history::{Action, History, ModelAction},
@@ -190,4 +191,13 @@ pub fn collapsing_toggle(
             .show(ui, |ui| content(ui));
     });
     toggle
+}
+
+pub fn link_button(ui: &mut Ui, text: &str, link: &str) {
+    if ui.button((RichText::new(LINK).weak(), " ", text)).clicked() {
+        ui.ctx().open_url(OpenUrl {
+            url: link.to_owned(),
+            new_tab: true, // doesn't matter
+        });
+    }
 }

@@ -21,6 +21,7 @@
 - Ask if you want to save your project when overwriting it (creating new project, loading a new project)
 - Only create mesh acceleration structures once per mesh, not per instance
 - Fix rendering of 'Send to Printer' menu
+- Add 'Help' menu to toolbar (has links to website, source code, and bug tracker)
 
 ## v0.9.1 &mdash; August 28th, 2026
 

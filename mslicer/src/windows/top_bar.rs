@@ -6,7 +6,7 @@ use egui::{
     Align, Align2, Button, Context, FontId, Frame, Grid, Id, Layout, PopupAnchor, ProgressBar,
     Stroke, StrokeKind, TopBottomPanel, Ui, vec2,
 };
-use egui_phosphor::regular::{CARDS, FILE_TEXT, GIT_DIFF, HAMMER, HOURGLASS, STACK};
+use egui_phosphor::regular::{CARDS, FILE_TEXT, GIT_DIFF, HAMMER, HOURGLASS, LIFEBUOY, STACK};
 
 #[cfg(windows)]
 use crate::system::windows::launch_install;
@@ -14,12 +14,20 @@ use crate::{
     app::App,
     project::Collection,
     task::ProjectLoad,
-    ui::{components::labeled_separator, popup::confirm_unsaved, shortcuts, shortcuts::Shortcut},
+    ui::{
+        components::{labeled_separator, link_button},
+        popup::confirm_unsaved,
+        shortcuts::{self, Shortcut},
+    },
     windows::{
         Tab,
         tools::{self, graphics_3d},
     },
 };
+
+const LINK_WEBSITE: &str = "https://mslicer.com";
+const LINK_SOURCE_CODE: &str = "https://github.com/connorslade/mslicer";
+const LINK_REPORT_BUG: &str = "https://github.com/connorslade/mslicer/issues/new";
 
 pub fn ui(app: &mut App, ctx: &Context) {
     shortcuts::handle(app, ctx);
@@ -154,7 +162,6 @@ pub fn ui(app: &mut App, ctx: &Context) {
                     ui.set_width(150.0);
 
                     labeled_separator(ui, "Actions");
-                    app.config.ui.about |= ui.button("About mslicer").clicked();
                     app.state.queue_reset_ui |= ui.button("Reset Interface").clicked();
 
                     labeled_separator(ui, "Windows");
@@ -163,6 +170,15 @@ pub fn ui(app: &mut App, ctx: &Context) {
                             ui.checkbox(open, tab.name());
                         });
                     }
+                });
+
+                ui.menu_button(concatcp!(LIFEBUOY, " Help"), |ui| {
+                    link_button(ui, "Website", LINK_WEBSITE);
+                    link_button(ui, "Source Code", LINK_SOURCE_CODE);
+                    link_button(ui, "Report Bug", LINK_REPORT_BUG);
+
+                    ui.separator();
+                    app.config.ui.about |= ui.button("About mslicer").clicked();
                 });
 
                 ui.add_enabled_ui(!app.is_slicing(), |ui| {
