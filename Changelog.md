@@ -4,6 +4,7 @@
 
 - Merge lift and retract distance settings.
   In practice they should always be the same and the setting was only supported by `.goo` files.
+- Fix auto-layout's previously incorrect handling of scaled and rotated models
 
 ## v0.9.2 &mdash; August 30th, 2026
 

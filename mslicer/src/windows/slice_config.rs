@@ -442,7 +442,7 @@ pub fn exposure_config(ui: &mut Ui, config: &mut ExposureConfig) -> bool {
                                 .ui(ui)
                                 .being_edited(&mut editing);
                         });
-                        ui.label(ARROW_LINE_UP);
+                        ui.label(ARROW_LINE_UP).on_hover_text("Lift speed");
                         ui.add_space(4.0);
                     });
 
@@ -455,7 +455,7 @@ pub fn exposure_config(ui: &mut Ui, config: &mut ExposureConfig) -> bool {
                                 .ui(ui)
                                 .being_edited(&mut editing);
                         });
-                        ui.label(ARROW_LINE_DOWN);
+                        ui.label(ARROW_LINE_DOWN).on_hover_text("Retract speed");
                     });
                 });
             });

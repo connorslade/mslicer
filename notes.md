@@ -28,6 +28,9 @@ This is just a place for me to remember and plan features I want to add and bugs
 - allow manually editing the pixels in slice preview?
 - dont repaint every frame (or at least when unfocused)
 - speed up compilation
+- improved auto layout
+  - optimize
+  - support concave NFPs?
 
 ## Documentation
 

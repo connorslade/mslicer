@@ -3,10 +3,12 @@ use std::{collections::HashMap, f32::consts::TAU, sync::Arc};
 use common::geometry::convex_hull;
 use itertools::Itertools;
 use nalgebra::{Rotation2, Vector2};
+use slicer::mesh::{Mesh, MeshId};
 
-use crate::misc::bounds::Bounds2D;
+use crate::{auto_layout::StaticTransformation, misc::bounds::Bounds2D};
 
 const OFFSET_PRECISION: usize = 6;
+const ROTATION_RESLUTION: f32 = 1.0_f32.to_radians();
 
 // todo: cache line friendly ordering!
 pub struct LayoutCache {
@@ -23,8 +25,10 @@ pub struct Hull {
 
 #[derive(Clone, Copy, Hash, PartialEq, Eq)]
 pub struct CacheEntry {
-    mesh: usize, // Mesh id, not model id!
-    rotation: u32,
+    pub(super) mesh: MeshId,
+    pub(super) transformation: StaticTransformation,
+
+    pub(super) rotation: u32,
 }
 
 impl Hull {
@@ -83,22 +87,31 @@ impl LayoutCache {
 }
 
 impl CacheEntry {
-    pub fn new(mesh: usize, rotation: f32) -> Self {
+    pub fn new(mesh: MeshId, transformation: StaticTransformation) -> Self {
         Self {
             mesh,
-            rotation: rotation.to_bits(),
+            transformation,
+            rotation: 0,
+        }
+    }
+
+    pub fn from_mesh(mesh: &Mesh) -> Self {
+        Self {
+            mesh: mesh.mesh_id(),
+            transformation: StaticTransformation::from_mesh(mesh),
+            rotation: 0,
         }
     }
 
     pub fn with_rotation(self, rotation: f32) -> Self {
         Self {
-            rotation: rotation.to_bits(),
+            rotation: (rotation / ROTATION_RESLUTION).round() as u32,
             ..self
         }
     }
 
     pub fn rotation(&self) -> f32 {
-        f32::from_bits(self.rotation)
+        self.rotation as f32 * ROTATION_RESLUTION
     }
 }
 

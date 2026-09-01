@@ -1,4 +1,5 @@
 use nalgebra::{Vector2, Vector3};
+use slicer::mesh::{Mesh, MeshId};
 
 use crate::misc::bounds::Bounds2D;
 
@@ -14,10 +15,19 @@ pub use self::{
 #[derive(Clone)]
 pub struct Model {
     model: u32,
-    mesh: usize,
+    mesh: MeshId,
+    transformation: StaticTransformation,
 
     position: Vector2<f32>,
     rotation: f32,
+}
+
+// Uses bit-exact comparisons for scale and rotation. Quantization might be
+// better. idk.
+#[derive(Clone, Copy, Hash, PartialEq, Eq)]
+pub struct StaticTransformation {
+    scale: [u32; 2],
+    rotation: [u32; 2],
 }
 
 #[derive(Clone)]
@@ -35,10 +45,11 @@ pub enum Objective {
 }
 
 impl Model {
-    pub fn new(model: u32, mesh: usize) -> Self {
+    pub fn from_mesh(mesh: &Mesh, model: u32) -> Self {
         Self {
             model,
-            mesh,
+            mesh: mesh.mesh_id(),
+            transformation: StaticTransformation::from_mesh(mesh),
 
             position: Vector2::zeros(),
             rotation: 0.0,
@@ -46,7 +57,18 @@ impl Model {
     }
 
     pub fn entry(&self) -> CacheEntry {
-        CacheEntry::new(self.mesh, self.rotation)
+        CacheEntry::new(self.mesh, self.transformation).with_rotation(self.rotation)
+    }
+}
+
+impl StaticTransformation {
+    pub fn from_mesh(mesh: &Mesh) -> Self {
+        let (scale, rotation) = (mesh.scale(), mesh.rotation());
+
+        Self {
+            scale: [scale.x.to_bits(), scale.y.to_bits()],
+            rotation: [rotation.x.to_bits(), rotation.y.to_bits()],
+        }
     }
 }
 

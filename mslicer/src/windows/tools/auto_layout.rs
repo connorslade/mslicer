@@ -5,8 +5,8 @@ use egui::{
     Button, CollapsingHeader, Color32, ComboBox, DragValue, Ui, Widget, emath::OrderedFloat, vec2,
 };
 use egui_plot::{Line, Plot};
-use nalgebra::{Rotation3, Vector2};
-use tools::auto_layout::{self, CacheEntry, Hull, LayoutCache, Objective, Placement, Rotation};
+use nalgebra::{Rotation3, Scale3, Vector2};
+use tools::auto_layout::{self, Hull, LayoutCache, Objective, Placement, Rotation};
 
 use crate::{
     app::App,
@@ -125,6 +125,7 @@ fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
                         let points = (history.iter())
                             .chain(iter::once(&last))
                             .map(|(x, y)| [*x as f64, y.log2() as f64])
+                            .filter(|p| p[1].is_finite())
                             .collect::<Vec<_>>();
                         plot.add(Line::new("", points).color(Color32::WHITE));
                     });
@@ -166,17 +167,18 @@ pub fn layout_cache(padding: f32, models: &[Model]) -> (LayoutCache, Vec<auto_la
     let mut cache = LayoutCache::new(padding);
 
     for model in models.iter().filter(|x| !x.hidden) {
-        out.push(auto_layout::Model::new(
-            model.id.raw(),
-            model.mesh.mesh_id().inner(), // todo: use mesh id in auto_layout
-        ));
+        let layout_model = auto_layout::Model::from_mesh(&model.mesh, model.id.raw());
+        let entry = layout_model.entry();
+        out.push(layout_model);
 
-        let entry = CacheEntry::new(model.mesh.mesh_id().inner(), 0.0);
         cache.populate_hull(entry, || {
-            let rotation = model.mesh.rotation();
-            let transform = Rotation3::from_euler_angles(rotation.x, rotation.y, 0.0);
+            let (rotation, scale) = (model.mesh.rotation(), model.mesh.scale());
+
+            let rotate = Rotation3::from_euler_angles(rotation.x, rotation.y, 0.0);
+            let scale = Scale3::new(scale.x, scale.y, 1.0);
+
             let points = (model.mesh.vertices().iter())
-                .map(|x| (transform * x).xy())
+                .map(|x| (scale * (rotate * x)).xy())
                 .collect::<Vec<_>>();
             Hull::new(convex_hull(&points))
         });

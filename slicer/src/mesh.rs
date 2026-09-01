@@ -25,6 +25,7 @@ pub struct MeshInner {
     pub faces: Box<[[u32; 3]]>,
 }
 
+// todo: mesh ids may not be unique through time (not sure if that could be a problem)
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct MeshId(usize);
 
@@ -235,10 +236,6 @@ impl Mesh {
 impl MeshId {
     pub fn for_mesh_inner(mesh: &Arc<MeshInner>) -> Self {
         Self(Arc::as_ptr(mesh) as usize)
-    }
-
-    pub fn inner(&self) -> usize {
-        self.0
     }
 }
 
