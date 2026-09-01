@@ -461,7 +461,6 @@ impl File {
                 pwm: self.light_pwm as u8,
                 lift_distance: self.lift_height,
                 lift_speed: self.lift_speed.convert(),
-                retract_distance: Milimeters::new(0.0),
                 retract_speed: self.retract_speed.convert(),
             },
             first_exposure_config: ExposureConfig {
@@ -470,7 +469,6 @@ impl File {
                 pwm: self.bottom_light_pwm as u8,
                 lift_distance: self.lift_height_2,
                 lift_speed: self.lift_speed_2.convert(),
-                retract_distance: Milimeters::new(0.0),
                 retract_speed: self.retract_speed_2.convert(),
             },
             first_layers: self.bottom_layer_count,

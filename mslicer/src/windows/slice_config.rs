@@ -4,7 +4,8 @@ use const_format::concatcp;
 use egui::{Color32, ComboBox, Context, DragValue, Grid, Ui, Widget, emath::OrderedFloat};
 use egui_extras::{Column, TableBuilder};
 use egui_phosphor::regular::{
-    ARROW_COUNTER_CLOCKWISE, INFO, NOTE_PENCIL, PENCIL, PLUS, TIMER, TRASH, WARNING,
+    ARROW_COUNTER_CLOCKWISE, ARROW_LINE_DOWN, ARROW_LINE_UP, INFO, NOTE_PENCIL, PENCIL, PLUS,
+    TIMER, TRASH, WARNING,
 };
 use egui_plot::{Line, MarkerShape, Plot, Points};
 use itertools::Itertools;
@@ -364,6 +365,7 @@ fn printer_presets(ui: &mut Ui, config: &mut Config, state: &mut UiState) {
     }
 }
 
+// todo: visually merge lift/retract settings (ARROW_LINE_UP / DOWN)
 pub fn exposure_config(ui: &mut Ui, config: &mut ExposureConfig) -> bool {
     let mut editing = false;
     TableBuilder::new(ui)
@@ -429,44 +431,31 @@ pub fn exposure_config(ui: &mut Ui, config: &mut ExposureConfig) -> bool {
                     ui.label("@");
                 });
 
+                // todo: needs refinement
                 row.col(|ui| {
-                    config.lift_speed.with::<Milimeter, Minute>(|val| {
-                        DragValue::new(val)
-                            .suffix(" mm/min")
-                            .speed(0.1)
-                            .range(0.0..=f32::MAX)
-                            .ui(ui)
-                            .being_edited(&mut editing);
+                    ui.horizontal(|ui| {
+                        config.lift_speed.with::<Milimeter, Minute>(|val| {
+                            DragValue::new(val)
+                                .suffix(" mm/min")
+                                .speed(0.1)
+                                .range(0.0..=f32::MAX)
+                                .ui(ui)
+                                .being_edited(&mut editing);
+                        });
+                        ui.label(ARROW_LINE_UP);
+                        ui.add_space(4.0);
                     });
-                });
-            });
 
-            body.row(16.0, |mut row| {
-                row.col(|ui| {
-                    ui.label("Retract");
-                });
-
-                row.col(|ui| {
-                    DragValue::new(config.retract_distance.raw_mut())
-                        .suffix(" mm")
-                        .speed(0.1)
-                        .range(0.0..=f32::MAX)
-                        .ui(ui)
-                        .being_edited(&mut editing);
-                });
-
-                row.col(|ui| {
-                    ui.label("@");
-                });
-
-                row.col(|ui| {
-                    config.retract_speed.with::<Milimeter, Minute>(|val| {
-                        DragValue::new(val)
-                            .suffix(" mm/min")
-                            .speed(0.1)
-                            .range(0.0..=f32::MAX)
-                            .ui(ui)
-                            .being_edited(&mut editing);
+                    ui.horizontal(|ui| {
+                        config.retract_speed.with::<Milimeter, Minute>(|val| {
+                            DragValue::new(val)
+                                .suffix(" mm/min")
+                                .speed(0.1)
+                                .range(0.0..=f32::MAX)
+                                .ui(ui)
+                                .being_edited(&mut editing);
+                        });
+                        ui.label(ARROW_LINE_DOWN);
                     });
                 });
             });

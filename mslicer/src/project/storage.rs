@@ -23,6 +23,10 @@ use slicer::{
 /// changes, even in development so anyone using the dev/prerelease versions
 /// don't ruin their projects.
 ///
+/// ## v13 (v?.?.?)
+/// Merge exposure config lift and retract distances. Since these values really
+/// should always be the same.
+///
 /// ## v12 (v0.9.0)
 /// Store mesh units.
 ///
@@ -58,7 +62,7 @@ use slicer::{
 /// ## v2 (v0.5.0)
 /// A complete rewrite using a custom serilizer/deserilizer because of the
 /// bincode drama...
-const VERSION: u16 = 12;
+const VERSION: u16 = 13;
 
 struct ModelInfo {
     mesh: u32,

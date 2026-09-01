@@ -119,7 +119,6 @@ impl Layer {
             pwm: self.light_pwm,
             lift_distance: self.lift_distance,
             lift_speed: self.lift_speed.convert(),
-            retract_distance: self.retract_distance,
             retract_speed: self.retract_speed.convert(),
         };
 

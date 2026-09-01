@@ -131,7 +131,6 @@ impl Args {
                 pwm: (self.exposure_pwm.clamp(0.0, 100.0) * 2.55) as u8,
                 lift_distance: Milimeters::new(self.lift_distance),
                 lift_speed: MilimetersPerMinute::new(self.lift_speed).convert(),
-                retract_distance: Milimeters::new(self.lift_distance),
                 retract_speed: MilimetersPerMinute::new(self.retract_speed).convert(),
             },
             first_exposure_config: ExposureConfig {
@@ -140,7 +139,6 @@ impl Args {
                 pwm: (self.first_exposure_pwm.clamp(0.0, 100.0) * 2.55) as u8,
                 lift_distance: Milimeters::new(self.first_lift_distance),
                 lift_speed: MilimetersPerMinute::new(self.first_lift_speed).convert(),
-                retract_distance: Milimeters::new(self.first_lift_distance),
                 retract_speed: MilimetersPerMinute::new(self.first_retract_speed).convert(),
             },
             first_layers: self.first_layers,

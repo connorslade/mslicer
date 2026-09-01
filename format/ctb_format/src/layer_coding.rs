@@ -121,7 +121,6 @@ impl EncodableLayer for LayerEncoder {
         exposure: &ExposureConfig,
         height: Milimeters,
     ) -> Self::Output {
-        // note that retract_distance is not used...
         Layer {
             position_z: height,
             exposure_time: exposure.exposure_time,

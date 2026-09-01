@@ -48,7 +48,7 @@ impl File {
                 light_pwm: config.exposure_config.pwm,
                 lift_distance: config.exposure_config.lift_distance,
                 lift_speed: config.exposure_config.lift_speed.convert(),
-                retract_distance: config.exposure_config.retract_distance,
+                retract_distance: config.exposure_config.lift_distance,
                 retract_speed: config.exposure_config.retract_speed.convert(),
 
                 bottom_exposure_time: config.first_exposure_config.exposure_time,
@@ -56,7 +56,7 @@ impl File {
                 bottom_light_pwm: config.first_exposure_config.pwm,
                 bottom_lift_distance: config.first_exposure_config.lift_distance,
                 bottom_lift_speed: config.first_exposure_config.lift_speed.convert(),
-                bottom_retract_distance: config.first_exposure_config.retract_distance,
+                bottom_retract_distance: config.first_exposure_config.lift_distance,
                 bottom_retract_speed: config.first_exposure_config.retract_speed.convert(),
 
                 file_time: SizedString::new(save_time.as_bytes()),

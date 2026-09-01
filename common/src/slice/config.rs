@@ -48,8 +48,6 @@ pub struct ExposureConfig {
 
     pub lift_distance: Milimeters,
     pub lift_speed: CentimetersPerSecond,
-
-    pub retract_distance: Milimeters,
     pub retract_speed: CentimetersPerSecond,
 }
 
@@ -98,11 +96,11 @@ impl SliceConfig {
 
         let layer_time = exp.exposure_time
             + exp.lift_distance / exp.lift_speed
-            + exp.retract_distance / exp.retract_speed
+            + exp.lift_distance / exp.retract_speed
             + exp.exposure_delay;
         let bottom_layer_time = fexp.exposure_time
             + fexp.lift_distance / fexp.lift_speed
-            + fexp.retract_distance / fexp.retract_speed
+            + fexp.lift_distance / fexp.retract_speed
             + fexp.exposure_delay;
 
         regular_layers as f32 * layer_time
@@ -210,7 +208,6 @@ impl ExposureConfig {
         ser.write_u8(self.pwm);
         ser.write_f32_be(self.lift_distance.raw());
         ser.write_f32_be(self.lift_speed.raw());
-        ser.write_f32_be(self.retract_distance.raw());
         ser.write_f32_be(self.retract_speed.raw());
     }
 
@@ -222,9 +219,10 @@ impl ExposureConfig {
 
             lift_distance: Milimeters::new(des.read_f32_be()),
             lift_speed: CentimetersPerSecond::new(des.read_f32_be()),
-
-            retract_distance: Milimeters::new(des.read_f32_be()),
-            retract_speed: CentimetersPerSecond::new(des.read_f32_be()),
+            retract_speed: {
+                (version < 13).then(|| des.advance_by(4));
+                CentimetersPerSecond::new(des.read_f32_be())
+            },
         }
     }
 
@@ -233,9 +231,9 @@ impl ExposureConfig {
             exposure_time: lerp(self.exposure_time, other.exposure_time, t),
             exposure_delay: lerp(self.exposure_delay, other.exposure_delay, t),
             pwm: lerp(self.pwm as f32, other.pwm as f32, t) as u8,
+
             lift_distance: lerp(self.lift_distance, other.lift_distance, t),
             lift_speed: lerp(self.lift_speed, other.lift_speed, t),
-            retract_distance: lerp(self.retract_distance, other.retract_distance, t),
             retract_speed: lerp(self.retract_speed, other.retract_speed, t),
         }
     }
@@ -284,8 +282,6 @@ impl Default for ExposureConfig {
 
             lift_distance: Milimeters::new(5.0),
             lift_speed: (Milimeters::new(330.0) / Minutes::new(1.0)).convert(),
-
-            retract_distance: Milimeters::new(5.0),
             retract_speed: (Milimeters::new(330.0) / Minutes::new(1.0)).convert(),
         }
     }

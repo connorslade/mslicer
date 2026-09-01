@@ -308,7 +308,6 @@ impl Header {
                 pwm: self.light_pwm,
                 lift_distance: self.lift_distance,
                 lift_speed: self.lift_speed.convert(),
-                retract_distance: self.retract_distance,
                 retract_speed: self.retract_speed.convert(),
             },
             first_exposure_config: ExposureConfig {
@@ -317,7 +316,6 @@ impl Header {
                 pwm: self.bottom_light_pwm,
                 lift_distance: self.bottom_lift_distance,
                 lift_speed: self.bottom_lift_speed.convert(),
-                retract_distance: self.bottom_retract_distance,
                 retract_speed: self.bottom_retract_speed.convert(),
             },
             first_layers: self.bottom_layers,

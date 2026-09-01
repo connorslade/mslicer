@@ -148,7 +148,6 @@ impl Layer {
             pwm: self.light_pwm as u8,
             lift_distance: self.lift_height,
             lift_speed: self.lift_speed.convert(),
-            retract_distance: Milimeters::new(0.0),
             retract_speed: self.retract_speed.convert(),
         };
         common::slice::Layer::new(data, self.position_z, exposure)

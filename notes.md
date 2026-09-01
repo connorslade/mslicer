@@ -33,3 +33,5 @@ This is just a place for me to remember and plan features I want to add and bugs
 
 - getting started video guide? (i do need to update that video in the readme)
 - color internal and external links differently
+- update getting started guide
+  - changed exposure config component
