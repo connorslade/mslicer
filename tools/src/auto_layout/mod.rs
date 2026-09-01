@@ -8,7 +8,7 @@ mod cache;
 mod nfp;
 pub use self::{
     annealing::{AutoLayoutAnnealing, Rotation},
-    cache::{CacheEntry, Hull, LayoutCache},
+    cache::{CacheEntry, Hull, LayoutCache, Nfp},
     nfp::AutoLayoutNfp,
 };
 

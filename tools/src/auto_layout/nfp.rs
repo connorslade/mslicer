@@ -83,7 +83,12 @@ impl<'a> AutoLayoutNfp<'a> {
                 let orbiting_entry = self.models[j].entry();
                 let nfp = self.cache.nfp(orbiting_entry, this_entry);
 
-                for (pa, pb) in nfp.iter().chain(iter::once(&nfp[0])).tuple_windows() {
+                for (pa, pb) in nfp
+                    .points
+                    .iter()
+                    .chain(iter::once(&nfp.points[0]))
+                    .tuple_windows()
+                {
                     let vector = pb - pa;
                     let n = (vector.magnitude() * self.segment_steps).ceil() as usize;
                     for k in 0..=n {
@@ -134,13 +139,22 @@ fn intersect_nfp(
     entry: CacheEntry,
 ) -> usize {
     let nfp = cache.nfp(orbiting.entry(), entry);
+    let local = start - orbiting.position;
+
+    if !nfp.bounds.contains(local) {
+        return 0;
+    }
 
     let mut count = 0;
-    for (a, b) in nfp.iter().chain(iter::once(&nfp[0])).tuple_windows() {
-        let (a, b) = (a + orbiting.position, b + orbiting.position);
-        if (a.y > start.y) ^ (b.y > start.y) {
-            let intersect_x = (b.x - a.x) * (start.y - a.y) / (b.y - a.y) + a.x;
-            count += (start.x < intersect_x) as usize;
+    for (a, b) in nfp
+        .points
+        .iter()
+        .chain(iter::once(&nfp.points[0]))
+        .tuple_windows()
+    {
+        if (a.y > local.y) ^ (b.y > local.y) {
+            let intersect_x = (b.x - a.x) * (local.y - a.y) / (b.y - a.y) + a.x;
+            count += (local.x < intersect_x) as usize;
         }
     }
 

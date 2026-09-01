@@ -13,13 +13,18 @@ const ROTATION_RESLUTION: f32 = 1.0_f32.to_radians();
 // todo: cache line friendly ordering!
 pub struct LayoutCache {
     hulls: HashMap<CacheEntry, Arc<Hull>>,
-    nfps: HashMap<(CacheEntry, CacheEntry), Arc<Vec<Vector2<f32>>>>,
+    nfps: HashMap<(CacheEntry, CacheEntry), Arc<Nfp>>,
 
     padding: f32,
 }
 
 pub struct Hull {
     pub hull: Vec<Vector2<f32>>,
+    pub bounds: Bounds2D,
+}
+
+pub struct Nfp {
+    pub points: Vec<Vector2<f32>>,
     pub bounds: Bounds2D,
 }
 
@@ -36,6 +41,15 @@ impl Hull {
         Self {
             bounds: Bounds2D::<f32>::new_containing(&hull),
             hull,
+        }
+    }
+}
+
+impl Nfp {
+    pub fn new(points: Vec<Vector2<f32>>) -> Self {
+        Self {
+            bounds: Bounds2D::<f32>::new_containing(&points),
+            points,
         }
     }
 }
@@ -72,14 +86,15 @@ impl LayoutCache {
         panic!("Hull not found!")
     }
 
-    pub fn nfp(&mut self, a: CacheEntry, b: CacheEntry) -> Arc<Vec<Vector2<f32>>> {
+    pub fn nfp(&mut self, a: CacheEntry, b: CacheEntry) -> Arc<Nfp> {
         if let Some(nfp) = self.nfps.get(&(a, b)) {
             return nfp.clone();
         }
 
         let (hull_a, hull_b) = (self.hull(&a), self.hull(&b));
-        let nfp = non_fitting_polygon(hull_a.hull.iter(), hull_b.hull.iter());
-        let nfp = Arc::new(offset(&nfp, self.padding, OFFSET_PRECISION));
+        let points = non_fitting_polygon(hull_a.hull.iter(), hull_b.hull.iter());
+        let points = offset(&points, self.padding, OFFSET_PRECISION);
+        let nfp = Arc::new(Nfp::new(points));
 
         self.nfps.insert((a, b), nfp.clone());
         nfp
