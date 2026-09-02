@@ -117,12 +117,14 @@ impl ModelPipeline {
 
     pub fn recreate_bind_groups(&mut self, gcx: &Gcx) {
         let multi = self.multi_stage.as_ref().unwrap();
+
         let sampler = &self.sampler;
+        let filtering_sampler = &self.filtering_sampler;
 
         self.ssao.recreate_bind_group(gcx, multi, sampler);
         self.blur.recreate_bind_group(gcx, multi, sampler);
         self.lighting.recreate_bind_group(gcx, multi, sampler);
-        self.fxaa.recreate_bind_group(gcx, multi, sampler);
+        self.fxaa.recreate_bind_group(gcx, multi, filtering_sampler);
         self.composite.recreate_bind_group(gcx, multi, sampler);
     }
 }

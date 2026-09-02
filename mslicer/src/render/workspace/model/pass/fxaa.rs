@@ -62,7 +62,7 @@ impl FxaaPass {
                 BindGroupLayoutEntry {
                     binding: 2,
                     visibility: ShaderStages::FRAGMENT,
-                    ty: BindingType::Sampler(SamplerBindingType::NonFiltering),
+                    ty: BindingType::Sampler(SamplerBindingType::Filtering),
                     count: None,
                 },
             ],
