@@ -77,7 +77,7 @@ impl PrintedCircuitBoard {
         let segments = self.screen_segments(config, polygons);
 
         let platform = config.platform_resolution;
-        let mut runs = raster::layer(config.supersample, platform, segments.into_iter());
+        let mut runs = raster::layer(config.supersample.xy, platform, segments.into_iter());
 
         if self.invert {
             runs.iter_mut().for_each(|run| run.value = 255 - run.value);
@@ -162,7 +162,7 @@ impl PrintedCircuitBoard {
         }
 
         polygons.translate_mut(self.post_offset.map(|x| x.get::<Milimeter>() as f64));
-        polygons.nonuniform_scale_mut(scale * config.supersample as f64); // screen space to pixel space
+        polygons.nonuniform_scale_mut(scale * config.supersample.xy as f64); // screen space to pixel space
 
         let mut out = Vec::new();
         for polygon in polygons.polygons.iter_mut() {

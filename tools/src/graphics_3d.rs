@@ -62,7 +62,7 @@ pub fn render<'a>(
     let mut min_depth = f32::INFINITY;
     let mut max_depth = f32::NEG_INFINITY;
 
-    let platform = config.platform_resolution * config.supersample as u32;
+    let platform = config.platform_resolution * config.supersample.xy as u32;
 
     for mesh in meshes {
         for (i, face) in mesh.faces().iter().enumerate() {
@@ -116,7 +116,7 @@ pub fn render<'a>(
     }
 
     let runs = raster::layer(
-        config.supersample,
+        config.supersample.xy,
         config.platform_resolution,
         segments.into_iter(),
     );

@@ -4,13 +4,13 @@ use const_format::concatcp;
 use egui::{Color32, ComboBox, Context, DragValue, Grid, Ui, Widget, emath::OrderedFloat};
 use egui_extras::{Column, TableBuilder};
 use egui_phosphor::regular::{
-    ARROW_COUNTER_CLOCKWISE, ARROW_LINE_DOWN, ARROW_LINE_UP, INFO, NOTE_PENCIL, PENCIL, PLUS,
-    TIMER, TRASH, WARNING,
+    ARROW_COUNTER_CLOCKWISE, ARROW_LINE_DOWN, ARROW_LINE_UP, INFO, LINK_BREAK, LINK_SIMPLE,
+    NOTE_PENCIL, PENCIL, PLUS, TIMER, TRASH, WARNING,
 };
 use egui_plot::{Line, MarkerShape, Plot, Points};
 use itertools::Itertools;
 use nalgebra::Vector2;
-use num_integer::cbrt;
+use num_integer::Roots;
 use slicer::post_process::{
     elephant_foot_fixer::ElephantFootFixer, variable_layer_height::VariableLayerHeight,
 };
@@ -31,12 +31,12 @@ use crate::{
     },
 };
 use common::{
-    slice::{ExposureConfig, ExposureRemap, SliceMode},
+    slice::{ExposureConfig, ExposureRemap, SliceMode, Supersample},
     units::{Milimeter, Minute, Mircometer},
 };
 
-const ANTI_ALIAS_TOOLTIP: &str = "Uses supersampling anti-aliasing (SSAA) to pick grayscale values that more accurately represent the actual model geometry. The actual value of this setting is the number of effective samples per voxel.";
-const TRANSITION_LAYER_TOOLTIP: &str = "Transition layers interpolate between the first exposure settings and the normal exposure settings.";
+const ANTI_ALIAS_TIP: &str = "Uses supersampling anti-aliasing (SSAA) to pick grayscale values that more accurately represent the actual model geometry. The actual value of this setting is the number of effective samples per voxel.";
+const TRANSITION_LAYER_TIP: &str = "Transition layers interpolate between the first exposure settings and the normal exposure settings.";
 
 pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     ui.heading("Slice Config");
@@ -185,23 +185,52 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
 
         ui.horizontal(|ui| {
             ui.label("Anti Aliasing");
-            ui.label(INFO).on_hover_text(ANTI_ALIAS_TOOLTIP);
+            ui.label(INFO).on_hover_text(ANTI_ALIAS_TIP);
         });
         ui.horizontal(|ui| {
             let old_supersample = slice_config.supersample;
-            let response = DragValue::new(&mut slice_config.supersample)
-                .custom_formatter(|val, _| (val as u32).pow(3).to_string())
-                .custom_parser(|val| val.parse::<u32>().ok().map(|x| cbrt(x) as f64))
-                .suffix("×")
-                .speed(0.1)
-                .range(1..=16)
-                .ui(ui);
+            let mut edit = false;
+
+            if app.state.anisotropic_aa {
+                // todo: make it more clear what each slicer does
+                DragValue::new(&mut slice_config.supersample.xy)
+                    .custom_formatter(|val, _| (val as u32).pow(2).to_string())
+                    .custom_parser(|val| val.parse::<u32>().ok().map(|x| x.sqrt() as f64))
+                    .suffix("×")
+                    .speed(0.1)
+                    .range(1..=16)
+                    .ui(ui)
+                    .being_edited(&mut edit);
+
+                DragValue::new(&mut slice_config.supersample.z)
+                    .suffix("×")
+                    .speed(0.1)
+                    .range(1..=16)
+                    .ui(ui)
+                    .being_edited(&mut edit);
+            } else {
+                let mut value = slice_config.supersample.xy;
+                DragValue::new(&mut value)
+                    .custom_formatter(|val, _| (val as u32).pow(3).to_string())
+                    .custom_parser(|val| val.parse::<u32>().ok().map(|x| x.cbrt() as f64))
+                    .suffix("×")
+                    .speed(0.1)
+                    .range(1..=16)
+                    .ui(ui)
+                    .being_edited(&mut edit);
+                slice_config.supersample = Supersample::splat(value);
+            }
+
             history_tracked_value(
-                (being_edited(&response), ui, &mut app.history),
+                (edit, ui, &mut app.history),
                 ("supersample", || {
                     SliceConfigAction::Supersample(old_supersample).into()
                 }),
             );
+
+            app.state.anisotropic_aa ^= ui
+                .button([LINK_SIMPLE, LINK_BREAK][app.state.anisotropic_aa as usize])
+                .clicked();
         });
         ui.end_row();
 
@@ -218,7 +247,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
 
         ui.horizontal(|ui| {
             ui.label("Transition Layers");
-            ui.label(INFO).on_hover_text(TRANSITION_LAYER_TOOLTIP);
+            ui.label(INFO).on_hover_text(TRANSITION_LAYER_TIP);
         });
         let old_transition_layers = slice_config.transition_layers;
         let response = DragValue::new(&mut slice_config.transition_layers).ui(ui);

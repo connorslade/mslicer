@@ -4,7 +4,6 @@ This is just a place for me to remember and plan features I want to add and bugs
 
 ## Bugs
 
-- fix auto-layout handling of rotated and scaled models
 - don't crash when interacting with remote print after the printer has disconnected (not confirmed after refactor)
 
 ## Features
@@ -19,18 +18,13 @@ This is just a place for me to remember and plan features I want to add and bugs
     - support placement tool instead of just a checkbox... or maybe a key to hold down while clicking
     - options to only generate some combination of point, edge, and face overhangs
     - transform supports with model
-- figure smth out for optimizing orientation
-- proper morphological aa
 - put all models in the same segments1d to improve slicing times with supports?
 - multiple workspaces per project
-- built-in mesh subdivision
 - optimize elephant foot post processing
 - allow manually editing the pixels in slice preview?
 - dont repaint every frame (or at least when unfocused)
 - speed up compilation
-- improved auto layout
-  - optimize
-  - support concave NFPs?
+- save old versions of config files when being overwritten (invalid config). or like just ignore the broken values.
 
 ## Documentation
 
@@ -38,3 +32,11 @@ This is just a place for me to remember and plan features I want to add and bugs
 - color internal and external links differently
 - update getting started guide
   - changed exposure config component
+
+## Maybe
+
+Features that would be cool, but are a bit out of scope for now.
+
+- figure smth out for optimizing orientation
+- improved auto layout supporting concave NFPs?
+- built-in mesh subdivision

@@ -8,6 +8,7 @@
 - Optimize auto layout (a bit) with NFP bounding box check
 - Added anti-aliasing configuration dropdown
 - Fix FXAA sampler
+- Alow changing XY and Z antialiasing separately
 
 ## v0.9.2 &mdash; August 30th, 2026
 

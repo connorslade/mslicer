@@ -78,6 +78,7 @@ impl Task for ProjectLoad {
             app.config.add_recent_project(self.path.to_path_buf());
             *app.project = project;
             app.history.clear();
+            app.state.anisotropic_aa = app.project.slice_config.supersample.is_anisotropic();
 
             let mut result = PollResult::complete();
             let count = app.project.models.len();

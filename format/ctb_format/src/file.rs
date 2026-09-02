@@ -450,7 +450,7 @@ impl File {
     pub fn into_slice_config(&self) -> SliceConfig {
         SliceConfig {
             mode: SliceMode::Raster,
-            supersample: 0,
+            supersample: Default::default(),
             exposure_remap: Default::default(),
             platform_resolution: self.resolution,
             platform_size: self.size,

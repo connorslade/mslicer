@@ -23,6 +23,10 @@ use slicer::{
 /// changes, even in development so anyone using the dev/prerelease versions
 /// don't ruin their projects.
 ///
+/// ## v14 (v?.?.?)
+/// Separate XY and Z supersample antialiasing parameters. You might not always
+/// want 3DAA or the (honestly slight) performance impact.
+///
 /// ## v13 (v?.?.?)
 /// Merge exposure config lift and retract distances. Since these values really
 /// should always be the same.
@@ -62,7 +66,7 @@ use slicer::{
 /// ## v2 (v0.5.0)
 /// A complete rewrite using a custom serilizer/deserilizer because of the
 /// bincode drama...
-const VERSION: u16 = 13;
+const VERSION: u16 = 14;
 
 struct ModelInfo {
     mesh: u32,

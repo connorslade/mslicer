@@ -18,7 +18,7 @@ use crate::{
 #[serde(default)]
 pub struct SliceConfig {
     pub mode: SliceMode,
-    pub supersample: u8,
+    pub supersample: Supersample,
     pub exposure_remap: ExposureRemap,
 
     pub platform_resolution: Vector2<u32>,
@@ -29,6 +29,12 @@ pub struct SliceConfig {
     pub first_exposure_config: ExposureConfig,
     pub first_layers: u32,
     pub transition_layers: u32,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+pub struct Supersample {
+    pub xy: u8,
+    pub z: u8,
 }
 
 #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
@@ -166,7 +172,7 @@ impl ExposureRemap {
 impl SliceConfig {
     pub fn serialize<T: Serializer>(&self, ser: &mut T) {
         self.mode.serialize(ser);
-        ser.write_u8(self.supersample);
+        self.supersample.serialize(ser);
         self.exposure_remap.serialize(ser);
         self.platform_resolution.serialize(ser);
         self.platform_size.map(|x| x.raw()).serialize(ser);
@@ -184,7 +190,11 @@ impl SliceConfig {
             } else {
                 SliceMode::deserialize(des)?
             },
-            supersample: if version < 5 { 1 } else { des.read_u8() },
+            supersample: match version {
+                ..5 => Default::default(),
+                5..14 => Supersample::splat(des.read_u8()),
+                _ => Supersample::deserialize(des),
+            },
             exposure_remap: if version < 8 {
                 Default::default()
             } else {
@@ -239,11 +249,36 @@ impl ExposureConfig {
     }
 }
 
+impl Supersample {
+    pub fn splat(value: u8) -> Self {
+        Self {
+            xy: value,
+            z: value,
+        }
+    }
+
+    pub fn is_anisotropic(&self) -> bool {
+        self.xy != self.z
+    }
+
+    pub fn serialize<T: Serializer>(&self, ser: &mut T) {
+        ser.write_u8(self.xy);
+        ser.write_u8(self.z);
+    }
+
+    pub fn deserialize<T: Deserializer>(des: &mut T) -> Self {
+        Self {
+            xy: des.read_u8(),
+            z: des.read_u8(),
+        }
+    }
+}
+
 impl Default for SliceConfig {
     fn default() -> Self {
         Self {
             mode: SliceMode::Raster,
-            supersample: 0,
+            supersample: Default::default(),
             exposure_remap: Default::default(),
 
             platform_resolution: Vector2::new(11_520, 5_120),
@@ -260,6 +295,12 @@ impl Default for SliceConfig {
             first_layers: 3,
             transition_layers: 10,
         }
+    }
+}
+
+impl Default for Supersample {
+    fn default() -> Self {
+        Self { xy: 1, z: 1 }
     }
 }
 

@@ -43,9 +43,9 @@ pub struct UiState {
     pub preview_scale: f32,
     pub layer_count: (usize, u8),
 
-    // tools
-    pub tools: Tools,
+    pub anisotropic_aa: bool,
 
+    pub tools: Tools,
     pub move_timeout: u32,
 }
 

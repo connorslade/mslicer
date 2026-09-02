@@ -192,7 +192,7 @@ impl File {
 
         SliceConfig {
             mode: SliceMode::Raster,
-            supersample: 0,
+            supersample: Default::default(),
             exposure_remap: Default::default(),
             platform_resolution: Vector2::new(self.options.p_width, self.options.p_height),
             platform_size,

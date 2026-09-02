@@ -3,7 +3,7 @@ use std::{any::Any, path::PathBuf, str::FromStr};
 use anyhow::{Context, Ok, Result};
 use clap::{ArgMatches, Parser};
 use common::{
-    slice::{ExposureConfig, SliceConfig, SliceMode},
+    slice::{ExposureConfig, SliceConfig, SliceMode, Supersample},
     units::{Milimeters, MilimetersPerMinute, Seconds},
 };
 use nalgebra::{ArrayStorage, Const, Matrix, Scalar, U1, Vector2, Vector3};
@@ -14,6 +14,7 @@ use num_integer::cbrt;
 pub struct Args {
     #[arg(long, default_value_t = 1)]
     /// Supersampling anti-aliasing (SSAA) factor.
+    // todo: allow configuring anisotropic AA
     pub supersample: u8,
     #[arg(long, default_value = "11520, 5120", value_parser = vector_value_parser::<u32, 2>, )]
     /// Resolution of the printer mask display in pixels.
@@ -120,7 +121,7 @@ impl Args {
     pub fn slice_config(&self) -> Result<SliceConfig> {
         Ok(SliceConfig {
             mode: SliceMode::Raster,
-            supersample: cbrt(self.supersample) as u8,
+            supersample: Supersample::splat(cbrt(self.supersample) as u8),
             exposure_remap: Default::default(), // todo
             platform_resolution: self.platform_resolution,
             platform_size: self.platform_size.map(Milimeters::new),

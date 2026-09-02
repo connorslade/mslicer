@@ -34,7 +34,7 @@ impl Slicer {
         let remap = self.slice_config.exposure_remap.table();
 
         let real_platform = self.slice_config.platform_resolution;
-        let platform = real_platform * supersample as u32;
+        let platform = real_platform * supersample.xy as u32;
         let pixels = platform.x as u64 * platform.y as u64;
 
         // A segment contains a reference to all of the triangles it contains. By
@@ -45,10 +45,10 @@ impl Slicer {
             .map(|model| Segments1D::from_mesh(&model.mesh, SEGMENT_LAYERS))
             .collect::<Vec<_>>();
 
-        (0..self.layers * supersample as u32)
+        (0..self.layers * supersample.z as u32)
             .into_par_iter()
             .map(|i| {
-                let height = i as f32 / supersample as f32
+                let height = i as f32 / supersample.z as f32
                     * self.slice_config.slice_height.get::<Milimeter>();
 
                 // Gets all the intersections between the slice plane and the
@@ -58,19 +58,19 @@ impl Slicer {
                 let segments = self.models.iter().enumerate().flat_map(|(idx, model)| {
                     let intersections = segments[idx].intersect_plane(&model.mesh, height);
                     intersections.into_iter().map(|(pos, dir)| Segment {
-                        endpoints: pos.map(|x| x * supersample as f32),
+                        endpoints: pos.map(|x| x * supersample.xy as f32),
                         entering: dir,
                         priority: model.exposure,
                         exposure: model.exposure,
                     })
                 });
 
-                layer(supersample, real_platform, segments)
+                layer(supersample.xy, real_platform, segments)
             })
-            .chunks(supersample as usize)
+            .chunks(supersample.z as usize)
             .enumerate()
             .map(|(i, mut chunk)| {
-                let mut data = if supersample > 1 {
+                let mut data = if supersample.z > 1 {
                     downsample_to_vec(&chunk, pixels)
                 } else {
                     chunk.pop().unwrap()

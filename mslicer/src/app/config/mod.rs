@@ -45,6 +45,7 @@ impl Config {
         match Self::load(config_dir) {
             Ok(config) => config,
             Err(err) => {
+                // todo: copy old config so its not lost
                 warn!("Failed to load config, using defaults: {}", err);
                 Config::default()
             }

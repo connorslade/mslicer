@@ -297,7 +297,7 @@ impl Header {
     pub fn into_slice_config(&self) -> SliceConfig {
         SliceConfig {
             mode: SliceMode::Raster,
-            supersample: 0,
+            supersample: Default::default(),
             exposure_remap: ExposureRemap::default(),
             platform_resolution: Vector2::new(self.x_resolution, self.y_resolution).cast(),
             platform_size: Vector3::new(self.x_size, self.y_size, self.x_size),
