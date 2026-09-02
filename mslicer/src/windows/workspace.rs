@@ -16,6 +16,7 @@ use crate::{
 };
 
 const BASIS_TIP: &str = "Set size to 0px to disable.";
+const AA_DESC: &str = "Anti-aliasing smooths jagged edges at the borders of models.";
 const SSAO_DESC: &str = "Ambient occlusion (SSAO) simulates how ambient light gets blocked in convex areas, making the rendering a little more realistic.";
 const SSAO_SCALE_TIP: &str = "Calculate ambient occlusion at a lower resolution to get better performance at the cost of quality.";
 const SPACENAV_CONNECTED: &str = "Connected to Spacenav.";
@@ -122,6 +123,52 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     ui.checkbox(&mut app.config.render.normals, "Show Normals");
     ui.add_space(8.0);
 
+    ui.heading("Rendering");
+
+    ui.collapsing("Camera", |ui| {
+        if ui
+            .button(concatcp!(ARROW_COUNTER_CLOCKWISE, " Reset"))
+            .clicked()
+        {
+            app.camera = Default::default();
+        }
+
+        Grid::new("workspace_camera")
+            .striped(true)
+            .num_columns(2)
+            .show(ui, |ui| {
+                ui.label("Target");
+                vec3_dragger(ui, app.camera.target.as_mut(), |x| x);
+                ui.end_row();
+
+                ui.label("Angle");
+                vec2_dragger(ui, app.camera.angle.as_mut(), |x| x);
+                ui.end_row();
+
+                ui.label("Distance");
+                dragger(ui, "", &mut app.camera.distance, |x| x.speed(5));
+                ui.end_row();
+
+                ui.label("Fov");
+                ui.horizontal(|ui| {
+                    ui.add(DragValue::new(&mut app.camera.fov).speed(0.01));
+                    ui.take_available_width();
+                });
+                ui.end_row();
+            });
+    });
+
+    let aa = &mut app.config.render.anti_aliasing;
+    aa.enabled = collapsing_toggle(
+        "Anti Aliasing",
+        aa.enabled,
+        |ui| {
+            ui.label(AA_DESC);
+        },
+        false,
+        ui,
+    );
+
     let ao = &mut app.config.render.ambient_occlusion;
     ao.enabled = collapsing_toggle(
         "Ambient Occlusion",
@@ -194,39 +241,8 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
         ui,
     );
 
-    ui.collapsing("Camera", |ui| {
-        if ui
-            .button(concatcp!(ARROW_COUNTER_CLOCKWISE, " Reset"))
-            .clicked()
-        {
-            app.camera = Default::default();
-        }
-
-        Grid::new("workspace_camera")
-            .striped(true)
-            .num_columns(2)
-            .show(ui, |ui| {
-                ui.label("Target");
-                vec3_dragger(ui, app.camera.target.as_mut(), |x| x);
-                ui.end_row();
-
-                ui.label("Angle");
-                vec2_dragger(ui, app.camera.angle.as_mut(), |x| x);
-                ui.end_row();
-
-                ui.label("Distance");
-                dragger(ui, "", &mut app.camera.distance, |x| x.speed(5));
-                ui.end_row();
-
-                ui.label("Fov");
-                ui.horizontal(|ui| {
-                    ui.add(DragValue::new(&mut app.camera.fov).speed(0.01));
-                    ui.take_available_width();
-                });
-                ui.end_row();
-            });
-    });
-
+    ui.add_space(8.0);
+    ui.heading("Miscellaneous");
     CollapsingHeader::new("Spacenav")
         .enabled(cfg!(unix))
         .show(ui, |ui| {

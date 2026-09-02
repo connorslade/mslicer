@@ -1,6 +1,7 @@
 use egui_wgpu::ScreenDescriptor;
 use wgpu::{
-    Buffer, BufferUsages, CommandEncoder, Device, RenderPass, Sampler, TextureFormat, TextureView,
+    Buffer, BufferUsages, CommandEncoder, Device, Origin3d, RenderPass, Sampler,
+    TexelCopyTextureInfo, TextureAspect, TextureFormat, TextureView,
     util::{BufferInitDescriptor, DeviceExt},
 };
 
@@ -80,8 +81,27 @@ impl ModelPipeline {
             self.ssao.paint(encoder, multi, index);
             self.blur.paint(encoder, multi, index);
         }
+
         self.lighting.paint(encoder, multi, index);
-        self.fxaa.paint(encoder, multi, index);
+        if app.config.render.anti_aliasing.enabled {
+            self.fxaa.paint(encoder, multi, index);
+        } else {
+            encoder.copy_texture_to_texture(
+                TexelCopyTextureInfo {
+                    texture: multi.target_b.texture(),
+                    mip_level: 0,
+                    origin: Origin3d::ZERO,
+                    aspect: TextureAspect::All,
+                },
+                TexelCopyTextureInfo {
+                    texture: multi.target_a.texture(),
+                    mip_level: 0,
+                    origin: Origin3d::ZERO,
+                    aspect: TextureAspect::All,
+                },
+                multi.target_a.texture().size(),
+            );
+        }
     }
 
     pub fn prepare(

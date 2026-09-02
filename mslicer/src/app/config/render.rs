@@ -10,6 +10,7 @@ pub struct RenderConfig {
     pub style: RenderStyle,
     pub projection: Projection,
     pub ambient_occlusion: AmbientOcclusion,
+    pub anti_aliasing: AntiAliasing,
 
     // extras
     pub grid_size: f32,
@@ -31,6 +32,12 @@ pub struct AmbientOcclusion {
     pub blur_spatial: f32,
     pub blur_depth: f32,
     pub blur_normal: f32,
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+#[serde(default)]
+pub struct AntiAliasing {
+    pub enabled: bool,
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -67,6 +74,7 @@ impl Default for RenderConfig {
             style: RenderStyle::Rendered,
             projection: Projection::Perspective,
             ambient_occlusion: Default::default(),
+            anti_aliasing: Default::default(),
 
             grid_size: 12.16,
             overhangs: (false, 30.0),
@@ -90,5 +98,11 @@ impl Default for AmbientOcclusion {
             blur_depth: 0.1,
             blur_normal: 0.1,
         }
+    }
+}
+
+impl Default for AntiAliasing {
+    fn default() -> Self {
+        Self { enabled: true }
     }
 }
