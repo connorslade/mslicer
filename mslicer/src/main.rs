@@ -118,6 +118,9 @@ fn main() -> Result<()> {
             app.init();
             args.open.start(&mut app);
 
+            // let mesh = PhonographRecord::default().generate();
+            // app.tasks.add(MeshLoad::complete("debug".to_owned(), mesh));
+
             Ok(Box::new(app))
         }),
     )

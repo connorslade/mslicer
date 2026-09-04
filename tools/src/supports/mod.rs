@@ -1,3 +1,12 @@
+// todo: not sure supports should be classified as a tool but fuck who cares
+// anyway noting in life really matters like its all about living your best life
+// and i shouldn't let something so small as a rust module being located in a
+// crate whose name doesn't completely convey the importance of the feature to
+// the overall application to which it belongs even slightly lower appreciation
+// for the world. one life is all we got you know, unless you're spiritual or
+// wtvr but you have to make it count, do important things, don't waste time on
+// the little things that don't deserve you mind.
+
 use common::{geometry::convex_hull, units::Milimeters};
 use nalgebra::Vector2;
 use nalgebra::Vector3;
