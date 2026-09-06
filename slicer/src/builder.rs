@@ -67,10 +67,20 @@ impl MeshBuilder {
         (a_radius, b_radius): (f32, f32),
         precision: u32,
     ) {
+        self._add_cylinder((a, b), (a_radius, b_radius), (true, true), precision);
+    }
+
+    pub fn _add_cylinder(
+        &mut self,
+        (a, b): (Vector3<f32>, Vector3<f32>),
+        (a_radius, b_radius): (f32, f32),
+        (top_face, bottom_face): (bool, bool),
+        precision: u32,
+    ) {
         let [u, v] = orthogonal_basis((a - b).normalize());
 
-        let bottom_center = self.add_vertex(a);
-        let top_center = self.add_vertex(b);
+        let bottom_center = bottom_face.then(|| self.add_vertex(a)).unwrap_or_default();
+        let top_center = top_face.then(|| self.add_vertex(b)).unwrap_or_default();
 
         let mut first = None;
         let mut last = None;
@@ -83,8 +93,8 @@ impl MeshBuilder {
 
             if let Some((last_top, last_bottom)) = last {
                 self.add_quad([last_bottom, last_top, bottom, top]);
-                self.add_face([top_center, last_top, top]);
-                self.add_face([bottom, last_bottom, bottom_center]);
+                top_face.then(|| self.add_face([top_center, last_top, top]));
+                bottom_face.then(|| self.add_face([bottom, last_bottom, bottom_center]));
             }
 
             last = Some((top, bottom));
@@ -95,8 +105,8 @@ impl MeshBuilder {
             && let Some((first_top, first_bottom)) = first
         {
             self.add_quad([last_bottom, last_top, first_bottom, first_top]);
-            self.add_face([top_center, last_top, first_top]);
-            self.add_face([first_bottom, last_bottom, bottom_center]);
+            top_face.then(|| self.add_face([top_center, last_top, first_top]));
+            bottom_face.then(|| self.add_face([first_bottom, last_bottom, bottom_center]));
         }
     }
 
@@ -134,7 +144,7 @@ impl MeshBuilder {
 }
 
 // Hughes Moeller method. Input vector should be normalized.
-fn orthogonal_basis(n: Vector3<f32>) -> [Vector3<f32>; 2] {
+pub fn orthogonal_basis(n: Vector3<f32>) -> [Vector3<f32>; 2] {
     let basis = if n.x.abs() > n.z.abs() {
         Vector3::new(-n.y, n.x, 0.0)
     } else {

@@ -2536,6 +2536,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "hound"
+version = "3.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "62adaabb884c94955b19907d60019f4e145d091c75345379e70d1ee696f7854f"
+
+[[package]]
 name = "http"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5468,8 +5474,10 @@ checksum = "fcc842091f2def52017664b53082ecbbeb5c7731092bad69d2c63050401dfd64"
 name = "tools"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "common",
  "gerber_parser",
+ "hound",
  "itertools 0.14.0",
  "nalgebra 0.34.1",
  "ordered-float",

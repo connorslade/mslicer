@@ -3,56 +3,52 @@
 // - https://en.wikipedia.org/wiki/Archimedean_spiral
 
 use std::{
-    f32::consts::{FRAC_PI_2, FRAC_PI_4, PI, SQRT_2, TAU},
-    fs,
+    f32::consts::{PI, TAU},
+    fs::File,
+    io::BufReader,
 };
 
 use common::units::{Micrometers, Milimeter, Milimeters};
 use nalgebra::{Rotation3, Vector2, Vector3};
-use slicer::{builder::MeshBuilder, mesh::Mesh};
+use slicer::{
+    builder::{MeshBuilder, orthogonal_basis},
+    mesh::Mesh,
+};
 
-use crate::printed_circuit_board::polygons::Polygons;
+use crate::phonograph_record::audio::AudioBuffer;
 
-const FRAC_3_PI_4: f32 = 3.0 * FRAC_PI_4;
+mod audio;
 
 pub struct PhonographRecord {
     outer_radius: Milimeters,
     inner_radius: Milimeters,
+    thickness: Milimeters,
     pitch: Milimeters, // must be > width
-    groove_resolution: u32,
+    groove_resolution: f32,
+    rpm: f32,
+    modulation: f32,
 
     width: Milimeters,
-    corner_radius: Milimeters,
-    profile_resolution: u32,
 }
 
 impl PhonographRecord {
-    pub fn debug_profile(&self) {
-        let mut geo = Polygons::new();
-
-        let profile = self.profile();
-        let width = self.width.get::<Milimeter>() as f64;
-        geo.rect([
-            Vector2::new(-width / 2.0, 0.0),
-            Vector2::new(width / 2.0, width / 2.0),
-        ]);
-        geo.trace(profile.iter().map(|x| x.xz().cast()).collect(), None);
-
-        geo.nonuniform_scale_mut(Vector2::repeat(50.0));
-        fs::write("debug.svg", geo.svg()).unwrap();
-    }
-
     pub fn generate(&self) -> Mesh {
+        let reader = BufReader::new(File::open("/home/connorslade/Downloads/taxi.wav").unwrap());
+        let audio = AudioBuffer::load(reader).unwrap();
+
         let mut builder = MeshBuilder::new();
 
-        let profile = self.profile();
-        let points = profile.len() as u32;
-        let b = self.pitch.get::<Milimeter>() / TAU;
+        let pitch = self.pitch.get::<Milimeter>();
         let outer_radius = self.outer_radius.get::<Milimeter>();
         let inner_radius = self.inner_radius.get::<Milimeter>();
+        let thickness = self.thickness.get::<Milimeter>();
 
-        for i in 0..self.groove_resolution {
-            let t = i as f32 / (self.groove_resolution - 1) as f32;
+        let duration = (outer_radius - inner_radius) / pitch * 60.0 / self.rpm;
+        let resolution = (self.groove_resolution * duration).round() as u32;
+        let b = pitch / TAU;
+
+        for i in 0..resolution {
+            let t = i as f32 / (resolution - 1) as f32;
             let theta = (outer_radius - inner_radius) / b * t;
             let rotation = Rotation3::new(Vector3::z() * theta);
 
@@ -60,50 +56,56 @@ impl PhonographRecord {
             let r = outer_radius - b * theta;
             let offset = unit * r;
 
+            let (l, r) = audio.get(t * duration);
+            let profile = self.profile((self.pitch - self.width) * 0.5 * self.modulation, l, r);
             for point in profile.iter() {
-                let vertex = rotation * point + offset.push(0.0);
+                let vertex = rotation * point + offset.push(thickness);
                 builder.add_vertex(vertex);
             }
 
-            if i < self.groove_resolution - 1 {
-                for j in 0..points - 1 {
-                    let base = i * points;
+            if i < resolution - 1 {
+                for j in 0..2 {
+                    let base = i * 3;
                     let (a, b) = (base + j, base + j + 1);
-                    let (c, d) = (a + points, b + points);
+                    let (c, d) = (a + 3, b + 3);
                     builder.add_quad([a, c, b, d]);
                 }
             }
         }
 
-        builder.add_cylinder(
-            (Vector3::zeros(), Vector3::z() * -2.0),
-            (outer_radius, outer_radius),
+        for j in 1..2 {
+            builder.add_face([0, j, j + 1]);
+        }
+
+        let base = (resolution - 1) * 3;
+        for j in 1..2 {
+            builder.add_face([base, base + j + 1, base + j]);
+        }
+
+        let radius = outer_radius + pitch;
+        builder._add_cylinder(
+            (Vector3::zeros(), Vector3::z() * thickness),
+            (radius, radius),
+            (false, true),
             1000,
         );
+
+        add_cylinder_inner(&mut builder, Vector3::zeros(), thickness, 3.62, 100);
 
         builder.build()
     }
 
-    fn profile(&self) -> Vec<Vector3<f32>> {
+    fn profile(&self, modulation: Milimeters, l: f32, r: f32) -> Vec<Vector3<f32>> {
         let mut points = Vec::new();
 
+        let modulation = modulation.get::<Milimeter>();
         let half_width = self.width.get::<Milimeter>() / 2.0;
-        let radius = self.corner_radius.get::<Milimeter>();
-        points.push(Vector3::new(-half_width, 0.0, 0.0));
 
-        if self.profile_resolution <= 1 || radius == 0.0 {
-            points.push(Vector3::new(0.0, 0.0, -half_width));
-        } else {
-            for i in 0..self.profile_resolution {
-                let t = i as f32 / (self.profile_resolution - 1) as f32;
-                let theta = -FRAC_3_PI_4 + FRAC_PI_2 * t;
-                let point = Vector3::new(theta.cos(), 0.0, theta.sin()) * radius
-                    + Vector3::z() * (radius * SQRT_2 - half_width);
-                points.push(point);
-            }
-        }
+        let (l, r) = (l * modulation, r * modulation);
 
-        points.push(Vector3::new(half_width, 0.0, 0.0));
+        points.push(Vector3::new(-half_width + l, 0.0, 0.0));
+        points.push(Vector3::new((l + r) / 2.0, 0.0, -half_width));
+        points.push(Vector3::new(half_width + r, 0.0, 0.0));
         points
     }
 }
@@ -113,16 +115,48 @@ impl Default for PhonographRecord {
         Self {
             outer_radius: Milimeters::new(60.0),
             inner_radius: Milimeters::new(50.0),
+            thickness: Milimeters::new(2.0),
+            rpm: 33.3333,
+            modulation: 2.0,
 
-            // pitch: Micrometers::new(125.0).convert(),
-            pitch: Micrometers::new(220.0).convert(),
-            groove_resolution: 10_000,
+            pitch: Micrometers::new(150.0).convert(),
+            groove_resolution: 20_000.0,
 
-            // width: Micrometers::new(56.0).convert(),
-            // corner_radius: Micrometers::new(6.0).convert(),
-            width: Micrometers::new(160.0).convert(),
-            corner_radius: Micrometers::new(40.0).convert(),
-            profile_resolution: 10,
+            width: Micrometers::new(80.0).convert(),
         }
+    }
+}
+
+fn add_cylinder_inner(
+    builder: &mut MeshBuilder,
+    bottom: Vector3<f32>,
+    height: f32,
+    radius: f32,
+    precision: u32,
+) {
+    let (a, b) = (bottom, bottom + Vector3::z() * height);
+    let [u, v] = orthogonal_basis((a - b).normalize());
+
+    let mut first = None;
+    let mut last = None;
+    for i in 0..(precision * 2) {
+        let angle = i as f32 / precision as f32 * PI;
+        let normal = u * angle.sin() + v * angle.cos();
+
+        let top = builder.add_vertex(b + normal * radius);
+        let bottom = builder.add_vertex(a + normal * radius);
+
+        if let Some((last_top, last_bottom)) = last {
+            builder.add_quad_flipped([last_bottom, last_top, bottom, top]);
+        }
+
+        last = Some((top, bottom));
+        first.is_none().then(|| first = last);
+    }
+
+    if let Some((last_top, last_bottom)) = last
+        && let Some((first_top, first_bottom)) = first
+    {
+        builder.add_quad_flipped([last_bottom, last_top, first_bottom, first_top]);
     }
 }

@@ -81,6 +81,14 @@ impl<L1: LengthUnit, L2: LengthUnit> ops::Add<Length<L2>> for Length<L1> {
     }
 }
 
+impl<L1: LengthUnit, L2: LengthUnit> ops::Sub<Length<L2>> for Length<L1> {
+    type Output = Self;
+
+    fn sub(self, rhs: Length<L2>) -> Self::Output {
+        Length::new(self.value - rhs.get::<L1>())
+    }
+}
+
 impl<A: LengthUnit, B: LengthUnit> ops::Div<Length<B>> for Length<A> {
     type Output = f32;
 

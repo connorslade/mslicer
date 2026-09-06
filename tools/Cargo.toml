@@ -7,7 +7,9 @@ edition = "2024"
 common.workspace = true
 slicer.workspace = true
 
+anyhow.workspace = true
 gerber_parser.workspace = true
+hound.workspace = true
 itertools.workspace = true
 nalgebra.workspace = true
 ordered-float.workspace = true
