@@ -1,12 +1,14 @@
 use tools::{
     auto_layout::AutoLayoutAnnealing, exposure_test::ExposureTest, graphics_3d::Graphics3D,
-    internal_exposure_test::InternalExposureTest, printed_circuit_board::PrintedCircuitBoard,
+    internal_exposure_test::InternalExposureTest, pattern_generator::PatternGenerator,
+    printed_circuit_board::PrintedCircuitBoard,
 };
 
 pub mod auto_layout;
 pub mod exposure_test;
 pub mod graphics_3d;
 pub mod internal_exposure_test;
+pub mod pattern_generator;
 pub mod printed_circuit_board;
 
 #[derive(Default)]
@@ -16,6 +18,7 @@ pub struct Tools {
     printed_circuit_board: PrintedCircuitBoard,
     advanced_layout: AutoLayoutAnnealing,
     graphics_3d: Graphics3D,
+    pattern_generator: PatternGenerator,
 }
 
 // i couldn't get lifetimes working to do this with a function... so

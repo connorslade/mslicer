@@ -9,6 +9,7 @@
 - Added anti-aliasing configuration dropdown
 - Fix FXAA sampler
 - Alow changing XY and Z antialiasing separately
+- Added pattern generator tool for mslicer debugging / testing
 
 ## v0.9.2 &mdash; August 30th, 2026
 

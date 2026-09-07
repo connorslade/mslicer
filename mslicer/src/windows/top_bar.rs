@@ -147,6 +147,8 @@ pub fn ui(app: &mut App, ctx: &Context) {
                     (ui.button("Exposure Test").clicked()).then(|| tools::exposure_test::open(app));
                     (ui.button("Internal Exposure Test").clicked())
                         .then(|| tools::internal_exposure_test::open(app));
+                    (ui.button("Pattern Generator").clicked())
+                        .then(|| tools::pattern_generator::open(app));
 
                     labeled_separator(ui, "Miscellaneous");
                     ui.button("Collect Instances")
