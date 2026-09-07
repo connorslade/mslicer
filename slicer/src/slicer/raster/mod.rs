@@ -102,7 +102,7 @@ pub fn layer(
 
     let mut runs = Vec::new();
     let padding = (first_y as u64 / supersample as u64) * real_platform.x as u64;
-    runs.push(Run::new(padding, 0));
+    (padding > 0).then(|| runs.push(Run::new(padding, 0)));
 
     let mut rows = vec![Vec::new(); supersample as usize];
     let mut row = Vec::new();

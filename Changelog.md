@@ -10,6 +10,11 @@
 - Fix FXAA sampler
 - Alow changing XY and Z antialiasing separately
 - Added pattern generator tool for mslicer debugging / testing
+- Fix zero length runs crashing the nanodlp png encoder
+- Fix NanoDLP encoder creating invalid results with horizontal dimensions not divisible by three
+  - Note that the expected behavior in this case is undefined by the NanoDLP
+    documentation, so files sliced with width % 3 != 0 may not be loadable by
+    other programs.
 
 ## v0.9.2 &mdash; August 30th, 2026
 

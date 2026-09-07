@@ -8,7 +8,6 @@ This is just a place for me to remember and plan features I want to add and bugs
 - fix gpu decompress failing:
   `Each current dispatch group size dimension ([159078, 1, 1]) must be less or equal to 65535`
 - correctly load nanodlp sliced files
-- fix zero length runs being generated
 
 ## Features
 
@@ -33,6 +32,7 @@ This is just a place for me to remember and plan features I want to add and bugs
 - save old versions of config files when being overwritten (invalid config). or like just ignore the broken values.
 - support exporting meshes (useful for converting sliced to mesh or other mesh generator tools)
 - phonographic record generator (it might be possible :eyes:)
+- show print mass (requires resin density to be provided) and cost ($ per L)
 
 ## Documentation
 

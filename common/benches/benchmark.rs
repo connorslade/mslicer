@@ -1,7 +1,9 @@
-use common::container::rle::png::{
-    ColorType, PngEncoder,
-    deflate::{Adler32, huffman, lz77_compress},
+use common::container::rle::{
     intersperse_runs,
+    png::{
+        ColorType, PngEncoder,
+        deflate::{Adler32, huffman, lz77_compress},
+    },
 };
 use common::{
     container::{BitVec, Run},
@@ -20,7 +22,7 @@ fn benchmark(c: &mut Criterion) {
     g.bench_function("Intersperse Runs", |b| {
         b.iter_batched(
             || layer.clone(),
-            |mut runs| black_box(intersperse_runs(&mut runs, 0, 11520)),
+            |mut runs| black_box(intersperse_runs(&mut runs, Run::new(1, 0), 0, 11520)),
             BatchSize::SmallInput,
         )
     });
@@ -34,7 +36,7 @@ fn benchmark(c: &mut Criterion) {
     });
 
     let mut rgb = layer.clone();
-    intersperse_runs(&mut rgb, 0, 11520);
+    intersperse_runs(&mut rgb, Run::new(1, 0), 0, 11520);
 
     g.bench_function("Tokens", |b| {
         b.iter_batched(

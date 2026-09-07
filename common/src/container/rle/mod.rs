@@ -69,3 +69,60 @@ pub fn difference(a: &[Run], b: &[Run]) -> u64 {
 
     difference
 }
+
+/// Adds a value into a RLE encoded sequence with a specified spacing.
+///
+/// For example running on `[0×3,1×2,0×3]` with `{ instance: 1×2, start: 0,
+/// spacing: 2}`, you will get `[1×2, 0×2, 1×2, 0×1, 1×4, 0×1, 1×2, 0×2]`.
+pub fn intersperse_runs(runs: &mut Vec<Run>, instance: Run, start: u64, spacing: u64) {
+    let mut i = 0; // The current run being processed
+    let mut pos = 0; // The current position in bytes
+    let mut next = start; // Next byte index to insert `value`
+
+    while i < runs.len() {
+        let run = &mut runs[i];
+
+        // The range of positions covered by the current run. Excluding end.
+        // [start, pos)
+        let (start, end) = (pos, pos + run.length);
+
+        // If next insertion point is not in the range, advance to the next run.
+        // But if it is, split the run into parts left and right of the
+        // insertion point with the inserted run between.
+        if (start..end).contains(&next) {
+            // Avoid splitting run into parts if possible. When the values are
+            // the same, the length can just be updated.
+            if run.value == instance.value {
+                let n = 1 + (end - next - 1) / spacing;
+                pos += run.length;
+                next += spacing * n;
+                run.length += n * instance.length;
+                i += 1;
+            } else {
+                let run = runs.remove(i);
+
+                let length_left = next - start;
+                let length_right = run.length - length_left;
+                next += spacing;
+                pos += length_left;
+
+                if length_left > 0 {
+                    let (length, value) = (length_left, run.value);
+                    runs.insert(i, Run { length, value });
+                    i += 1;
+                }
+
+                runs.insert(i, instance);
+                i += 1;
+
+                if length_right > 0 {
+                    let (length, value) = (length_right, run.value);
+                    runs.insert(i, Run { length, value });
+                }
+            }
+        } else {
+            pos += run.length;
+            i += 1;
+        }
+    }
+}

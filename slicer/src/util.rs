@@ -74,6 +74,7 @@ where
             //
             // This mainly affects the fully black (value = 0) runs.
             (layer.data.iter().copied())
+                .filter(|x| x.length > 0) // todo: check if still needed
                 .run_flatten()
                 .for_each(|run| encoder.add_run(run.length, run.value));
             encoder.finish(config, &layer.exposure, layer.height)

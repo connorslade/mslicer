@@ -2,7 +2,7 @@ use common::{
     container::{
         Clusters, Image, ImageRuns,
         rle::{
-            self, Run,
+            self, Run, intersperse_runs,
             png::{ColorType, PngEncoder},
         },
     },
@@ -45,8 +45,23 @@ impl LayerEncoder {
         out
     }
 
-    pub fn image_data(self) -> Vec<u8> {
+    // Note that the handling of encoding layers in the NanoDLP format where
+    // the horizontal size is not a multiple of three is undefined by the
+    // documentation. In fact NanoDLP's own slicer crashes in that case.
+    //
+    // I've decided to pad the extra subpixels in when size.x % 3 != 0, but
+    // these files will probably not be able to be loaded with most other
+    // software.
+    pub fn image_data(mut self) -> Vec<u8> {
         let mut ser = DynamicSerializer::new();
+
+        let width = self.platform.x as u64;
+        let sub_pad = 3 - width % 3;
+        if sub_pad != 3 {
+            let run = Run::new(sub_pad, 0);
+            intersperse_runs(&mut self.runs, run, width, width);
+            self.runs.push(run);
+        }
 
         let resolution = Vector2::new(self.platform.x.div_ceil(3), self.platform.y);
         let mut encoder = PngEncoder::new(&mut ser, ColorType::Truecolor, resolution);
