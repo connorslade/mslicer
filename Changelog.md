@@ -16,6 +16,10 @@
     documentation, so files sliced with width % 3 != 0 may not be loadable by
     other programs.
 - Added 'Resin Usage' section to sliced sidebar which shows estimated resin usage, mass, and cost
+- Added phonograph record generator
+  - mslicer has been my main project for a little while, so I guess anything
+    remotely related to resin printing is just getting included in the software.
+    But having more features is always good… right?
 
 ## v0.9.2 &mdash; August 30th, 2026
 

@@ -1,6 +1,8 @@
-// Resources:
-// - https://www.kabusa.com/frameset.htm?/needbelt.htm
+// References:
 // - https://en.wikipedia.org/wiki/Archimedean_spiral
+// - https://en.wikipedia.org/wiki/Phonograph_record
+// - https://en.wikipedia.org/wiki/RIAA_equalization
+// - https://www.kabusa.com/frameset.htm?/needbelt.htm
 
 use std::{
     f32::consts::{PI, TAU},
@@ -17,9 +19,9 @@ use slicer::{
     mesh::Mesh,
 };
 
-use crate::phonograph_record::audio::AudioBuffer;
+use crate::phonograph_record::audio::{AudioBuffer, Channels, Equalization};
 
-mod audio;
+pub mod audio;
 
 #[derive(Clone)]
 pub struct PhonographRecord {
@@ -27,20 +29,22 @@ pub struct PhonographRecord {
     pub inner_radius: Milimeters,
     pub thickness: Milimeters,
 
-    pub pitch: Milimeters, // must be > width
+    pub pitch: Milimeters, // must be >width
     pub width: Milimeters,
     pub groove_resolution: f32,
     pub rpm: f32,
     pub modulation: f32,
 
     pub audio: PathBuf,
+    pub channels: Channels,
+    pub equalization: Equalization,
 }
 
 impl PhonographRecord {
     // todo: generate manifold mesh
     pub fn generate(&self) -> Result<Mesh> {
         let reader = BufReader::new(File::open(&self.audio)?);
-        let audio = AudioBuffer::load(reader)?;
+        let audio = AudioBuffer::load(reader, self.channels)?;
 
         let mut builder = MeshBuilder::new();
 
@@ -130,6 +134,8 @@ impl Default for PhonographRecord {
             modulation: 2.0,
 
             audio: PathBuf::new(),
+            channels: Default::default(),
+            equalization: Default::default(),
         }
     }
 }

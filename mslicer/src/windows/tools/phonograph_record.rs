@@ -1,5 +1,6 @@
 use common::units::Mircometer;
-use egui::{Button, CollapsingHeader, DragValue, Ui, Widget, vec2};
+use egui::{Button, CollapsingHeader, ComboBox, DragValue, RichText, Ui, Widget, vec2};
+use tools::phonograph_record::audio::{Channels, Equalization};
 
 use crate::{
     app::App,
@@ -10,7 +11,7 @@ use crate::{
     },
 };
 
-pub const DESCRIPTION: &str = "Generates a phonographic record mesh from an audio file.";
+pub const DESCRIPTION: &str = "Generates a phonograph record mesh from an audio file.";
 
 pub fn open(app: &mut App) {
     app.popup
@@ -40,14 +41,44 @@ fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
             ui.horizontal(|ui| {
                 ui.spacing_mut().item_spacing.x = 0.0;
                 ui.label("Loaded ");
-                ui.weak(name).on_hover_text(tool.audio.to_string_lossy());
+                ui.label(RichText::new(name).underline())
+                    .on_hover_text(tool.audio.to_string_lossy());
                 ui.label(".");
             });
         }
     });
 
     ui.add_space(8.0);
-    CollapsingHeader::new("Disk Size")
+    CollapsingHeader::new("Audio Processing")
+        .default_open(true)
+        .show(ui, |ui| {
+            grid("audio").show(ui, |ui| {
+                ui.label("Channels");
+                ComboBox::new("channels", "")
+                    .selected_text(tool.channels.name())
+                    .show_ui(ui, |ui| {
+                        for channels in Channels::ALL {
+                            ui.selectable_value(&mut tool.channels, channels, channels.name());
+                        }
+                    });
+                ui.end_row();
+
+                ui.label("Equalization");
+                ui.horizontal(|ui| {
+                    ComboBox::new("eq", "")
+                        .selected_text(tool.equalization.name())
+                        .show_ui(ui, |ui| {
+                            for eq in Equalization::ALL {
+                                ui.selectable_value(&mut tool.equalization, eq, eq.name());
+                            }
+                        });
+                    ui.take_available_width();
+                });
+                ui.end_row();
+            });
+        });
+
+    CollapsingHeader::new("Disk")
         .default_open(true)
         .show(ui, |ui| {
             grid("disk").show(ui, |ui| {
