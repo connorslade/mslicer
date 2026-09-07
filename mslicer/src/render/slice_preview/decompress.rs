@@ -1,6 +1,7 @@
 use std::ops::Deref;
 
 use common::container::Run;
+use nalgebra::Vector2;
 use wgpu::{
     BindGroupDescriptor, BindGroupEntry, BindGroupLayoutDescriptor, BindGroupLayoutEntry,
     BindingType, Buffer, BufferBindingType, BufferUsages, CommandEncoder, ComputePassDescriptor,
@@ -12,6 +13,8 @@ use crate::{
     include_shader,
     render::{Gcx, util::ResizingBuffer},
 };
+
+const MAX_DISPATCH_DIM: usize = 65535;
 
 pub struct DecompressPass {
     pipeline: ComputePipeline,
@@ -124,10 +127,17 @@ impl DecompressPass {
         });
 
         let run_count = data.len() / 2;
+        let workgroups = run_count.div_ceil(64);
+        let workgroups = Vector2::new(
+            workgroups.min(MAX_DISPATCH_DIM),
+            workgroups.div_ceil(MAX_DISPATCH_DIM),
+        )
+        .map(|x| x as u32);
+
         compute_pass.set_pipeline(&self.pipeline);
         compute_pass.set_bind_group(0, &bind_group, &[]);
         compute_pass.set_push_constants(0, bytemuck::cast_slice(&[run_count as u32]));
-        compute_pass.dispatch_workgroups(run_count.div_ceil(64) as u32, 1, 1);
+        compute_pass.dispatch_workgroups(workgroups.x, workgroups.y, 1);
     }
 }
 

@@ -31,8 +31,12 @@ impl TestPattern {
             Pattern::Empty => data.push(Run::new(pixels, 0)),
             Pattern::Solid => data.push(Run::new(pixels, 255)),
             Pattern::Checkerboard => {
-                for i in 0..pixels {
-                    data.push(Run::new(1, [0, 255][(i % 2 == 0) as usize]));
+                for y in 0..config.platform_resolution.y {
+                    let y = y % 2;
+                    for x in 0..config.platform_resolution.x {
+                        let value = x % 2 == y;
+                        data.push(Run::new(1, [0, 255][value as usize]));
+                    }
                 }
             }
         }

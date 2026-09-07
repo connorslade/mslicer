@@ -93,6 +93,7 @@ fn main() -> Result<()> {
                             | Features::SHADER_PRIMITIVE_INDEX,
                         required_limits: Limits {
                             max_buffer_size,
+                            max_storage_buffer_binding_size: max_buffer_size as u32,
                             max_push_constant_size: 4,
                             ..Limits::default()
                         },

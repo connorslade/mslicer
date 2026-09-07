@@ -179,9 +179,12 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
 
                             if print_info.total_ticks != 0 {
                                 let eta = human_duration(Miliseconds::new(
-                                    (print_info.total_ticks - print_info.current_ticks) as f32,
+                                    print_info
+                                        .total_ticks
+                                        .saturating_sub(print_info.current_ticks)
+                                        as f32,
                                 ));
-                                ui.label(format!("ETA: {eta}"));
+                                ui.label(format!("Remaining time: {eta}"));
                             }
 
                             ui.add(

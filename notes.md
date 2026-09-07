@@ -5,8 +5,6 @@ This is just a place for me to remember and plan features I want to add and bugs
 ## Bugs
 
 - don't crash when interacting with remote print after the printer has disconnected (not confirmed after refactor)
-- fix gpu decompress failing:
-  `Each current dispatch group size dimension ([159078, 1, 1]) must be less or equal to 65535`
 - correctly load nanodlp sliced files
 - move layer encoding to remote thread (nanodlp save causes hang since it has to do so much more processing)
 
@@ -39,6 +37,8 @@ This is just a place for me to remember and plan features I want to add and bugs
 - refactor format crates (they're kinda a mess rn)
 - add well documented .zip and .bin output formats (closes #29)
 - resample sliced file to different sizes / resolutions?
+- task cancellation mechanism
+- ignore flat (normal = ‹0, 0, ±1›) faces when slicing?
 
 ## Documentation
 

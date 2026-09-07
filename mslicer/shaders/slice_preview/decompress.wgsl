@@ -5,9 +5,10 @@ var<push_constant> runs: u32;
 @compute
 @workgroup_size(64, 1, 1)
 fn main(@builtin(global_invocation_id) pos: vec3u) {
-    if (pos.x >= runs) { return; }
+    let run = pos.x + pos.y * 65535 * 64;
+    if (run >= runs) { return; }
 
-    let idx = pos.x * 2;
+    let idx = run * 2;
     let start = compressed[idx];
 
     let packed = compressed[idx + 1];
