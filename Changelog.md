@@ -15,6 +15,7 @@
   - Note that the expected behavior in this case is undefined by the NanoDLP
     documentation, so files sliced with width % 3 != 0 may not be loadable by
     other programs.
+- Added 'Resin Usage' section to sliced sidebar which shows estimated resin usage, mass, and cost
 
 ## v0.9.2 &mdash; August 30th, 2026
 

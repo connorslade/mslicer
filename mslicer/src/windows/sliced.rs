@@ -30,7 +30,7 @@ use crate::{
         App,
         config::{
             Config,
-            sliced::{SlicePreviewCoordinateSpace, SlicePreviewView, SlicedConfig},
+            sliced::{Currency, SlicePreviewCoordinateSpace, SlicePreviewView, SlicedConfig},
         },
         slice_operation::{
             GenericSliceData, GenericSliceResult, ISLAND_COLOR, PreviewImage, RasterSliceResult,
@@ -245,11 +245,14 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
 
                             ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                                 let duration = human_duration(raster.print_time.convert());
+                                ui.add_space(2.0);
                                 ui.label(format!("{CLOCK} {duration}"));
 
-                                ui.separator();
-                                let volume = raster.volume.get::<Centimeter>(); // cm³ = ml
-                                ui.label(format!("{DROP} {volume:.2} ml"));
+                                if !app.config.sliced.sidebar {
+                                    ui.separator();
+                                    let volume = raster.volume.get::<Centimeter>();
+                                    ui.label(format!("{DROP} {volume:.2} ml"));
+                                }
 
                                 ui.take_available_width();
                             })
@@ -730,6 +733,62 @@ fn sidebar(
 
     ui.add_space(8.0);
     ui.heading("Analysis");
+
+    CollapsingHeader::new("Resin Usage")
+        .default_open(true)
+        .show(ui, |ui| {
+            let volume = raster.volume.get::<Centimeter>(); // cm³ = ml
+
+            grid("resin_usage")
+                .num_columns(3)
+                .spacing([30.0, 4.0])
+                .show(ui, |ui| {
+                    ui.label("Volume");
+                    ui.label(format!("{volume:.2} mL",));
+                    ui.end_row();
+
+                    ui.label("Mass");
+                    ui.label(format!("{:.2} g", volume * config.sliced.resin_density));
+                    DragValue::new(&mut config.sliced.resin_density)
+                        .range(0.0..=f32::MAX)
+                        .speed(0.1)
+                        .suffix(" g/mL")
+                        .ui(ui);
+                    ui.end_row();
+
+                    ui.label("Cost");
+                    let symbol = config.sliced.currency.symbol();
+                    ui.label(format!(
+                        "{}{:.2}",
+                        symbol,
+                        volume * config.sliced.resin_cost / 1000.0
+                    ));
+                    ui.horizontal(|ui| {
+                        DragValue::new(&mut config.sliced.resin_cost)
+                            .speed(0.1)
+                            .range(0.0..=f32::MAX)
+                            .suffix(format!(" {symbol}/L"))
+                            .ui(ui);
+
+                        ComboBox::new("currency", "")
+                            .width(16.0)
+                            .selected_text(config.sliced.currency.symbol().to_string())
+                            .show_ui(ui, |ui| {
+                                for currency in Currency::ALL {
+                                    ui.selectable_value(
+                                        &mut config.sliced.currency,
+                                        currency,
+                                        currency.name(),
+                                    );
+                                }
+                            });
+
+                        ui.take_available_width();
+                    });
+                    ui.end_row();
+                });
+        });
+
     CollapsingHeader::new("Surface Area")
         .default_open(true)
         .show(ui, |ui| {
