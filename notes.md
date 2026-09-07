@@ -27,12 +27,15 @@ This is just a place for me to remember and plan features I want to add and bugs
 - put all models in the same segments1d to improve slicing times with supports?
 - multiple workspaces per project
 - optimize elephant foot post processing
-- allow manually editing the pixels in slice preview?
 - dont repaint every frame (or at least when unfocused)
 - speed up compilation
 - save old versions of config files when being overwritten (invalid config). or like just ignore the broken values.
 - support exporting meshes (useful for converting sliced to mesh or other mesh generator tools)
 - phonographic record generator (it might be possible :eyes:)
+  - generate async
+  - create manifold mesh
+- refactor format crates (they're kinda a mess rn)
+- add well documented .zip and .bin output formats (closes #29)
 
 ## Documentation
 
@@ -50,3 +53,4 @@ Features that would be cool, but are a bit out of scope for now.
 - improved auto layout supporting concave NFPs?
 - built-in mesh subdivision
 - render units as fractions with custom font
+- allow manually editing the pixels in slice preview?

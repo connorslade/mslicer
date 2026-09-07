@@ -6,8 +6,10 @@ use std::{
     f32::consts::{PI, TAU},
     fs::File,
     io::BufReader,
+    path::PathBuf,
 };
 
+use anyhow::Result;
 use common::units::{Micrometers, Milimeter, Milimeters};
 use nalgebra::{Rotation3, Vector2, Vector3};
 use slicer::{
@@ -19,22 +21,26 @@ use crate::phonograph_record::audio::AudioBuffer;
 
 mod audio;
 
+#[derive(Clone)]
 pub struct PhonographRecord {
-    outer_radius: Milimeters,
-    inner_radius: Milimeters,
-    thickness: Milimeters,
-    pitch: Milimeters, // must be > width
-    groove_resolution: f32,
-    rpm: f32,
-    modulation: f32,
+    pub outer_radius: Milimeters,
+    pub inner_radius: Milimeters,
+    pub thickness: Milimeters,
 
-    width: Milimeters,
+    pub pitch: Milimeters, // must be > width
+    pub width: Milimeters,
+    pub groove_resolution: f32,
+    pub rpm: f32,
+    pub modulation: f32,
+
+    pub audio: PathBuf,
 }
 
 impl PhonographRecord {
-    pub fn generate(&self) -> Mesh {
-        let reader = BufReader::new(File::open("/home/connorslade/Downloads/taxi.wav").unwrap());
-        let audio = AudioBuffer::load(reader).unwrap();
+    // todo: generate manifold mesh
+    pub fn generate(&self) -> Result<Mesh> {
+        let reader = BufReader::new(File::open(&self.audio)?);
+        let audio = AudioBuffer::load(reader)?;
 
         let mut builder = MeshBuilder::new();
 
@@ -92,7 +98,7 @@ impl PhonographRecord {
 
         add_cylinder_inner(&mut builder, Vector3::zeros(), thickness, 3.62, 100);
 
-        builder.build()
+        Ok(builder.build())
     }
 
     fn profile(&self, modulation: Milimeters, l: f32, r: f32) -> Vec<Vector3<f32>> {
@@ -116,13 +122,14 @@ impl Default for PhonographRecord {
             outer_radius: Milimeters::new(60.0),
             inner_radius: Milimeters::new(50.0),
             thickness: Milimeters::new(2.0),
+
+            pitch: Micrometers::new(150.0).convert(),
+            width: Micrometers::new(80.0).convert(),
+            groove_resolution: 20_000.0,
             rpm: 33.3333,
             modulation: 2.0,
 
-            pitch: Micrometers::new(150.0).convert(),
-            groove_resolution: 20_000.0,
-
-            width: Micrometers::new(80.0).convert(),
+            audio: PathBuf::new(),
         }
     }
 }
