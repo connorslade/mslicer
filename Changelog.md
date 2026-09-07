@@ -9,7 +9,7 @@
 - Added anti-aliasing configuration dropdown
 - Fix FXAA sampler
 - Alow changing XY and Z antialiasing separately
-- Added pattern generator tool for mslicer debugging / testing
+- Added test pattern tool for mslicer debugging / testing
 - Fix zero length runs crashing the nanodlp png encoder
 - Fix NanoDLP encoder creating invalid results with horizontal dimensions not divisible by three
   - Note that the expected behavior in this case is undefined by the NanoDLP

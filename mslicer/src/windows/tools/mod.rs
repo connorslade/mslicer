@@ -1,16 +1,16 @@
 use tools::{
     auto_layout::AutoLayoutAnnealing, exposure_test::ExposureTest, graphics_3d::Graphics3D,
-    internal_exposure_test::InternalExposureTest, pattern_generator::PatternGenerator,
-    phonograph_record::PhonographRecord, printed_circuit_board::PrintedCircuitBoard,
+    internal_exposure_test::InternalExposureTest, phonograph_record::PhonographRecord,
+    printed_circuit_board::PrintedCircuitBoard, test_pattern::TestPattern,
 };
 
 pub mod auto_layout;
 pub mod exposure_test;
 pub mod graphics_3d;
 pub mod internal_exposure_test;
-pub mod pattern_generator;
 pub mod phonograph_record;
 pub mod printed_circuit_board;
+pub mod test_pattern;
 
 #[derive(Default)]
 pub struct Tools {
@@ -19,7 +19,7 @@ pub struct Tools {
     printed_circuit_board: PrintedCircuitBoard,
     advanced_layout: AutoLayoutAnnealing,
     graphics_3d: Graphics3D,
-    pattern_generator: PatternGenerator,
+    pattern_generator: TestPattern,
     phonograph_record: PhonographRecord,
 }
 

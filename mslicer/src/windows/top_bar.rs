@@ -144,8 +144,7 @@ pub fn ui(app: &mut App, ctx: &Context) {
                         .then(|| tools::printed_circuit_board::open(app));
                     (ui.button("Phonograph Record").clicked())
                         .then(|| tools::phonograph_record::open(app));
-                    (ui.button("Test Pattern").clicked())
-                        .then(|| tools::pattern_generator::open(app));
+                    (ui.button("Test Pattern").clicked()).then(|| tools::test_pattern::open(app));
 
                     labeled_separator(ui, "Exposure");
                     (ui.button("Exposure Test").clicked()).then(|| tools::exposure_test::open(app));
@@ -203,7 +202,7 @@ pub fn ui(app: &mut App, ctx: &Context) {
 }
 
 fn actions_menu(app: &mut App, ui: &mut Ui) {
-    ui.set_width(150.0);
+    ui.set_width(300.0);
 
     let mut redo_to = None;
     for (i, action) in app.history.future.iter().enumerate() {

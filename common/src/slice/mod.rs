@@ -78,13 +78,17 @@ pub struct Layer {
 
 impl Layer {
     pub fn new(data: Vec<Run>, height: Milimeters, exposure: ExposureConfig) -> Self {
+        Self::new_arc(Arc::new(data), height, exposure)
+    }
+
+    pub fn new_arc(data: Arc<Vec<Run>>, height: Milimeters, exposure: ExposureConfig) -> Self {
         let area = data
             .iter()
             .filter(|x| x.value > 0)
             .fold(0, |acc, run| acc + run.length);
 
         Self {
-            data: Arc::new(data),
+            data,
             area,
             height,
 
