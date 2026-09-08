@@ -83,5 +83,14 @@ windows-registry = "0.6.1"
 winres = "0.1.12"
 zip = "7.2.0"
 
+# In development, only optimize external dependencies and crates that need the
+# performance for slicing, generating, or encoding.
 [profile.dev]
-opt-level = 3
+opt-level = 0
+package."*".opt-level = 3 # only applies to external deps
+package.ctb_format.opt-level = 3
+package.goo_format.opt-level = 3
+package.mesh_format.opt-level = 3
+package.nanodlp_format.opt-level = 3
+package.slicer.opt-level = 3
+package.tools.opt-level = 3

@@ -3,7 +3,7 @@
 ## v?.?.? &mdash; Coming Soon™
 
 - Merge lift and retract distance settings.
-  In practice they should always be the same and the setting was only supported by `.goo` files.
+  In practice they should always be the same and the setting was only supported by `.goo`
 - Fix auto-layout's previously incorrect handling of scaled and rotated models
 - Optimize auto layout (a bit) with NFP bounding box check
 - Added anti-aliasing configuration dropdown
@@ -13,8 +13,8 @@
 - Fix zero length runs crashing the nanodlp png encoder
 - Fix NanoDLP encoder creating invalid results with horizontal dimensions not divisible by three
   - Note that the expected behavior in this case is undefined by the NanoDLP
-    documentation, so files sliced with width % 3 != 0 may not be loadable by
-    other programs.
+    documentation, so files sliced with widths that aren't divisible by three
+    may not be loadable by other programs.
 - Added 'Resin Usage' section to sliced sidebar which shows estimated resin usage, mass, and cost
 - Added phonograph record generator
   - mslicer has been my main project for a little while, so I guess anything

@@ -5,7 +5,6 @@ Feel free to help out :eyes:.
 
 ## Bugs
 
-- don't crash when interacting with remote print after the printer has disconnected (not confirmed after refactor)
 - correctly calculate print time with exposure overrides
 - incorrect loaded in time when loading sliced file
 
@@ -24,9 +23,7 @@ Feel free to help out :eyes:.
     - don't simplify a cylinder to a segment during intersection testing.
       either use a different algorithm or sample multiple points around the edges.
 - put all models in the same segments1d to improve slicing times with supports?
-- optimize elephant foot post processing
 - dont repaint every frame (or at least when unfocused)
-- speed up compilation
 - save old versions of config files when being overwritten (invalid config). or like just ignore the broken values.
 - mesh export (useful for converting sliced to mesh or other mesh generator tools)
 - phonographic record generator (it might be possible :eyes:)
@@ -61,3 +58,9 @@ Features that would be cool, but are a bit out of scope for now.
 - optimize nanodlp loading with custom png decoder?...
 - resample sliced file to different sizes / resolutions?
 - multiple workspaces per project
+- optimize elephant foot post processing (deprecated post processor)
+- split mslicer crate?
+  - mslicer (startup + system stuff)
+  - mslicer_core (app + project + task?)
+  - mslicer_render (render)
+  - mslicer_ui (window + ui)
