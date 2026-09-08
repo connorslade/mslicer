@@ -9,7 +9,6 @@ Feel free to help out :eyes:.
 - correctly load nanodlp sliced files
 - move layer encoding to remote thread (nanodlp save causes hang since it has to do so much more processing)
 - correctly calculate print time with exposure overrides
-- nan print time (loading taxi.ctb)
 
 ## Features
 

@@ -24,6 +24,10 @@
 - Fix GPU RLE decompression failing on layers with a huge number of runs
 - Fix potential crash in remote print
 - Add file and layer property dropdowns to sliced sidebar
+- Prune unnecessary triangles before slicing (very slight optimization)
+- Fix first layer lift distance and speed being loaded incorrectly from .ctb files
+- Support layer exposure overrides with .goo files
+- Don't overwrite layers with exposure overrides by changing the global exposure config
 
 ## v0.9.2 &mdash; August 30th, 2026
 

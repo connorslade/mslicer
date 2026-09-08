@@ -35,6 +35,12 @@ impl Segments1D {
         // Adds the index of each face into all of the segments it covers.
         for face in 0..mesh.face_count() {
             let (min_height, max_height) = triangle_bounds(mesh, &transformed_points, face);
+            if min_height == max_height {
+                // Flat triangles can be excluded here since they won't
+                // contribute to the final sliced result.
+                continue;
+            }
+
             let (min_layer, max_layer) = (
                 ((min_height - min.z) / layer_height) as usize,
                 ((max_height - min.z) / layer_height).round() as usize,

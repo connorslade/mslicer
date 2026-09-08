@@ -58,7 +58,7 @@ impl Default for Header {
             second_retract_speed: MilimetersPerMinute::new(0.0),
             bottom_light_pwm: 255,
             light_pwm: 255,
-            per_layer_settings: false,
+            per_layer_settings: true,
             printing_time: 2659,
             total_volume: 526.507,
             total_weight: 0.684,

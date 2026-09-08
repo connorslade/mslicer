@@ -713,7 +713,12 @@ fn sidebar(
     let raster = result.inner.as_raster_mut().unwrap();
     if exposure_changed {
         raster.print_time = result.config.print_time(raster.layers.len() as u32);
-        for (i, layer) in raster.layers.iter_mut().enumerate() {
+        for (i, layer) in raster
+            .layers
+            .iter_mut()
+            .enumerate()
+            .filter(|(_, l)| !l.unique_exposure)
+        {
             layer.exposure = result.config.exposure_config(i as u32).into_owned();
         }
     }
