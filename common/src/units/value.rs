@@ -269,6 +269,20 @@ macro_rules! quantity {
                         {
                             Ok(value as f32)
                         }
+
+                        fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
+                        where
+                            E: serde::de::Error,
+                        {
+                            Ok(value as f32)
+                        }
+
+                        fn visit_i64<E>(self, value: i64) -> Result<Self::Value, E>
+                        where
+                            E: serde::de::Error,
+                        {
+                            Ok(value as f32)
+                        }
                     }
 
                     let value = deserializer.deserialize_f32(F32Visitor)?;

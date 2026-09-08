@@ -6,7 +6,6 @@ Feel free to help out :eyes:.
 ## Bugs
 
 - don't crash when interacting with remote print after the printer has disconnected (not confirmed after refactor)
-- correctly load nanodlp sliced files
 - move layer encoding to remote thread (nanodlp save causes hang since it has to do so much more processing)
 - correctly calculate print time with exposure overrides
 
@@ -40,7 +39,8 @@ Feel free to help out :eyes:.
 - add well documented .zip and .bin output formats (closes #29)
 - resample sliced file to different sizes / resolutions?
 - task cancellation mechanism
-- ignore flat (normal = ‹0, 0, ±1›) faces when slicing?
+- optimize nanodlp loading
+  - custom png decoder too?...
 
 ## Documentation
 
