@@ -55,7 +55,7 @@ use common::{
         SliceConfig, SliceMode,
         format::{Format, RasterFormat},
     },
-    units::{Centimeter, Milimeter},
+    units::{Centimeter, Milimeter, Mircometer},
 };
 
 const FILENAME_POPUP_TEXT: &str =
@@ -789,36 +789,80 @@ fn sidebar(
                 });
         });
 
-    CollapsingHeader::new("Surface Area")
+    CollapsingHeader::new("Layer Properties")
         .default_open(true)
         .show(ui, |ui| {
-            ui.label(SURFACE_AREA_DESC);
-            ui.add_space(8.0);
+            grid("layer").show(ui, |ui| {
+                let layer_height = layer.height.get::<Milimeter>();
+                ui.label("Layer Height");
+                ui.label(format!("{layer_height:.2} mm"))
+                    .on_hover_text(format!("{layer_height} mm"));
+                ui.end_row();
 
-            Plot::new("surface_area")
-                .width(ui.available_width())
-                .allow_drag(false)
-                .allow_zoom(false)
-                .allow_scroll(false)
-                .allow_boxed_zoom(false)
-                .view_aspect(3.0)
-                .show(ui, |plot| {
-                    let px_area = result.config.pixel_area();
-                    let layers = &result.inner.as_raster().unwrap().layers;
-                    let series = layers
-                        .iter()
-                        .enumerate()
-                        .map(|(x, layer)| {
-                            let area = layer.area as f32 * px_area;
-                            [x as f64, area.get::<Centimeter>() as f64]
-                        })
-                        .collect::<Vec<_>>();
-                    plot.add(Line::new("", series).color(Color32::WHITE));
-                    plot.add(
-                        VLine::new("", (state.preview_layer - 1) as f32)
-                            .color(Color32::RED)
-                            .style(LineStyle::Dashed { length: 4.0 }),
-                    );
+                ui.label("Runs");
+                ui.label(layer.data.len().to_string());
+                ui.end_row();
+
+                let memory = (layer.data.len() * 16) as f32 / 1024.0; // in KiB
+                ui.label("Memory Usage");
+                ui.horizontal(|ui| {
+                    if memory > 1024.0 {
+                        ui.label(format!("{:.1} MiB", memory / 1024.0));
+                    } else {
+                        ui.label(format!("{memory:.1} KiB"));
+                    }
+                    ui.take_available_width();
                 });
+            });
         });
+
+    CollapsingHeader::new("File Properties").show(ui, |ui| {
+        grid("file").show(ui, |ui| {
+            let slice_height = result.config.slice_height.get::<Mircometer>();
+            ui.label("Slice Height");
+            ui.label(format!("{slice_height:.0} μm"));
+            ui.end_row();
+
+            let size = result.config.platform_size.map(|x| x.get::<Milimeter>());
+            ui.label("Size (mm)");
+            ui.label(format!("{} × {} × {}", size.x, size.y, size.z));
+            ui.end_row();
+
+            let resolution = result.config.platform_resolution;
+            ui.label("Resolution");
+            ui.label(format!("{} × {}", resolution.x, resolution.y));
+            ui.end_row();
+        });
+    });
+
+    CollapsingHeader::new("Surface Area").show(ui, |ui| {
+        ui.label(SURFACE_AREA_DESC);
+        ui.add_space(8.0);
+
+        Plot::new("surface_area")
+            .width(ui.available_width())
+            .allow_drag(false)
+            .allow_zoom(false)
+            .allow_scroll(false)
+            .allow_boxed_zoom(false)
+            .view_aspect(3.0)
+            .show(ui, |plot| {
+                let px_area = result.config.pixel_area();
+                let layers = &result.inner.as_raster().unwrap().layers;
+                let series = layers
+                    .iter()
+                    .enumerate()
+                    .map(|(x, layer)| {
+                        let area = layer.area as f32 * px_area;
+                        [x as f64, area.get::<Centimeter>() as f64]
+                    })
+                    .collect::<Vec<_>>();
+                plot.add(Line::new("", series).color(Color32::WHITE));
+                plot.add(
+                    VLine::new("", (state.preview_layer - 1) as f32)
+                        .color(Color32::RED)
+                        .style(LineStyle::Dashed { length: 4.0 }),
+                );
+            });
+    });
 }

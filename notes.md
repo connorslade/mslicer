@@ -1,12 +1,15 @@
 # Notes
 
 This is just a place for me to remember and plan features I want to add and bugs to fix.
+Feel free to help out :eyes:.
 
 ## Bugs
 
 - don't crash when interacting with remote print after the printer has disconnected (not confirmed after refactor)
 - correctly load nanodlp sliced files
 - move layer encoding to remote thread (nanodlp save causes hang since it has to do so much more processing)
+- correctly calculate print time with exposure overrides
+- nan print time (loading taxi.ctb)
 
 ## Features
 
@@ -28,7 +31,7 @@ This is just a place for me to remember and plan features I want to add and bugs
 - dont repaint every frame (or at least when unfocused)
 - speed up compilation
 - save old versions of config files when being overwritten (invalid config). or like just ignore the broken values.
-- support exporting meshes (useful for converting sliced to mesh or other mesh generator tools)
+- mesh export (useful for converting sliced to mesh or other mesh generator tools)
 - phonographic record generator (it might be possible :eyes:)
   - apply RAII pre-emphasis
   - allow picking stereo or mono

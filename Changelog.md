@@ -23,6 +23,7 @@
 - Make max storage buffer binding size match the max buffer size
 - Fix GPU RLE decompression failing on layers with a huge number of runs
 - Fix potential crash in remote print
+- Add file and layer property dropdowns to sliced sidebar
 
 ## v0.9.2 &mdash; August 30th, 2026
 
