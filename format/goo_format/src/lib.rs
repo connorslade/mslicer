@@ -4,18 +4,17 @@
 //!
 //! - [Official Format Spec](https://github.com/elegooofficial/GOO)
 
-mod default;
-mod encoded_layer;
+mod encoding;
 mod file;
 mod header;
-mod layer_content;
-mod preview_image;
+mod layer;
+mod preview;
 
-pub use encoded_layer::{LayerDecoder, LayerEncoder};
+pub use encoding::{LayerDecoder, LayerEncoder};
 pub use file::File;
 pub use header::{ExposureDelayMode, Header};
-pub use layer_content::Layer;
-pub use preview_image::PreviewImage;
+pub use layer::Layer;
+pub use preview::PreviewImage;
 
 const ENDING_STRING: &[u8] = &[
     0x00, 0x00, 0x00, 0x07, 0x00, 0x00, 0x00, 0x44, 0x4C, 0x50, 0x00,

@@ -17,8 +17,7 @@ use nalgebra::{Vector2, Vector3, Vector4};
 use sha2::{Digest, Sha256};
 
 use crate::{
-    LayerDecoder, LayerEncoder, Section,
-    crypto::{decrypt, encrypt, encrypt_in_place},
+    LayerDecoder, LayerEncoder, Section, decrypt, encrypt, encrypt_in_place,
     layer::{Layer, LayerRef},
     preview::PreviewImage,
     resin::ResinParameters,

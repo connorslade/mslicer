@@ -8,7 +8,7 @@ use common::{
     units::{Milimeters, MilimetersPerMinute, Seconds},
 };
 
-use crate::{LayerDecoder, Section, crypto::decrypt_in_place};
+use crate::{LayerDecoder, Section, decrypt_in_place};
 
 #[derive(Debug)]
 pub struct LayerRef {

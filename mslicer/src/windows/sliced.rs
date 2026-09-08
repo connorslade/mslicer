@@ -492,7 +492,7 @@ fn name_popup(mainboard_id: String, data: Arc<Vec<u8>>) -> Popup {
 
 fn save_file(
     config: SliceConfig,
-    preview_image: Arc<RgbaImage>,
+    preview: Arc<RgbaImage>,
     format: Format,
     data: GenericSliceData,
 ) -> FileDialog {
@@ -503,9 +503,9 @@ fn save_file(
             let file_name = path.file_name().unwrap().to_string_lossy();
             let mut out = File::create(&path).unwrap();
 
-            let file = data.file(&config, &preview_image, format);
             tasks.push(Box::new(SaveResult::new(
-                (file, file_name.into_owned()),
+                (format, data.clone(), config, preview),
+                file_name.into_owned(),
                 move |bytes| out.write_all(&bytes).unwrap(),
             )));
         },

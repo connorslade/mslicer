@@ -133,3 +133,29 @@ pub fn calculate_checksum(data: &[u8]) -> u8 {
     }
     !out
 }
+
+impl Default for Layer {
+    fn default() -> Self {
+        Self {
+            pause: false,
+            pause_position_z: Milimeters::new(200.0),
+            layer_position_z: Milimeters::new(0.05),
+            layer_exposure_time: Seconds::new(50.0),
+            layer_off_time: Seconds::new(0.0),
+            before_lift_time: Seconds::new(0.0),
+            after_lift_time: Seconds::new(0.0),
+            after_retract_time: Seconds::new(0.0),
+            lift_distance: Milimeters::new(5.0),
+            lift_speed: MilimetersPerMinute::new(65.0),
+            second_lift_distance: Milimeters::new(0.0),
+            second_lift_speed: MilimetersPerMinute::new(0.0),
+            retract_distance: Milimeters::new(5.0),
+            retract_speed: MilimetersPerMinute::new(150.0),
+            second_retract_distance: Milimeters::new(0.0),
+            second_retract_speed: MilimetersPerMinute::new(0.0),
+            light_pwm: 255,
+            data: Vec::new(),
+            checksum: 0,
+        }
+    }
+}

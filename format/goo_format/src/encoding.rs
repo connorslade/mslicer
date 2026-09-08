@@ -5,7 +5,7 @@ use common::{
 };
 use nalgebra::Vector2;
 
-use crate::{Layer, layer_content::calculate_checksum};
+use crate::{Layer, layer::calculate_checksum};
 
 /// Encodes a series of runs into the internal layer format.
 pub struct LayerEncoder {

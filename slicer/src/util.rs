@@ -1,7 +1,8 @@
+// todo: move to common and ex-export through msla_format
+
 use std::{borrow::Borrow, io::Cursor, sync::Arc};
 
 use anyhow::{Ok, Result};
-
 use common::{
     container::rle::downsample::RunFlattenExt,
     progress::Progress,
@@ -12,7 +13,7 @@ use common::{
     },
 };
 use image::RgbaImage;
-use rayon::iter::ParallelIterator;
+use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
 use crate::slicer::vector::SvgFile;
 
@@ -23,7 +24,7 @@ pub fn export_raster<Layers, Layer>(
     format: RasterFormat,
 ) -> DynSlicedFile
 where
-    Layers: IntoIterator<Item = Layer>,
+    Layers: IntoParallelIterator<Item = Layer>,
     Layer: Borrow<slice::Layer>,
 {
     match format {
@@ -59,14 +60,17 @@ pub fn encode_raster_layers<Encoder, Layers, Layer>(
 ) -> Vec<Encoder::Output>
 where
     Encoder: EncodableLayer,
-    Layers: IntoIterator<Item = Layer>,
+    Layers: IntoParallelIterator<Item = Layer>,
     Layer: Borrow<slice::Layer>,
 {
     layers
-        .into_iter()
+        .into_par_iter()
         .map(|layer| {
             let layer = layer.borrow();
             let mut encoder = Encoder::new(config.platform_resolution);
+
+            // Zero length runs can mess up the nanodlp png encoder.
+            debug_assert!(layer.data.iter().all(|x| x.length > 0));
 
             // The runs need to be 'flattened' (adjacent runs with the same
             // value combined) because due to the way anti-aliasing is
@@ -75,7 +79,6 @@ where
             //
             // This mainly affects the fully black (value = 0) runs.
             (layer.data.iter().copied())
-                .filter(|x| x.length > 0) // todo: check if still needed
                 .run_flatten()
                 .for_each(|run| encoder.add_run(run.length, run.value));
             encoder.finish(config, &layer.exposure, layer.height)

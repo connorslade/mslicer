@@ -1,7 +1,17 @@
-use clone_macro::clone;
-use common::{progress::Progress, serde::DynamicSerializer, slice::DynSlicedFile};
+use std::sync::Arc;
 
-use crate::task::{PollResult, Task, TaskApp, TaskStatus, thread::TaskThread};
+use clone_macro::clone;
+use common::{
+    progress::Progress,
+    serde::DynamicSerializer,
+    slice::{SliceConfig, format::Format},
+};
+use image::RgbaImage;
+
+use crate::{
+    app::slice_operation::GenericSliceData,
+    task::{PollResult, Task, TaskApp, TaskStatus, thread::TaskThread},
+};
 
 pub struct SaveResult {
     progress: Progress,
@@ -11,11 +21,14 @@ pub struct SaveResult {
 
 impl SaveResult {
     pub fn new(
-        (file, file_name): (DynSlicedFile, String),
+        (format, file, config, preview): (Format, GenericSliceData, SliceConfig, Arc<RgbaImage>),
+        file_name: String,
         callback: impl FnOnce(Vec<u8>) + Send + 'static,
     ) -> Self {
         let progress = Progress::new();
         let handle = TaskThread::spawn(clone!([progress], move || {
+            let file = file.file(&config, &preview, format);
+
             let mut serializer = DynamicSerializer::new();
             file.serialize(&mut serializer, progress);
             callback(serializer.into_inner());

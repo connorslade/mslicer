@@ -20,6 +20,7 @@ use egui::Color32;
 use image::RgbaImage;
 use itertools::Itertools;
 use parking_lot::{Mutex, MutexGuard};
+use rayon::iter::IntoParallelRefIterator;
 use slicer::{slicer::vector::SvgFile, util};
 use tracing::info;
 
@@ -288,7 +289,7 @@ impl GenericSliceData {
         match &self {
             GenericSliceData::Raster { data, voxels } => {
                 let format = format.as_raster().unwrap();
-                let mut file = util::export_raster(config, data.iter(), *voxels, format);
+                let mut file = util::export_raster(config, data.par_iter(), *voxels, format);
                 file.set_preview(preview_image);
                 file
             }

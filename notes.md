@@ -6,8 +6,9 @@ Feel free to help out :eyes:.
 ## Bugs
 
 - don't crash when interacting with remote print after the printer has disconnected (not confirmed after refactor)
-- move layer encoding to remote thread (nanodlp save causes hang since it has to do so much more processing)
 - correctly calculate print time with exposure overrides
+- incorrect loaded in time when loading sliced file
+- correctly report SaveResult progress (include layer encoding)
 
 ## Features
 
@@ -24,7 +25,6 @@ Feel free to help out :eyes:.
     - don't simplify a cylinder to a segment during intersection testing.
       either use a different algorithm or sample multiple points around the edges.
 - put all models in the same segments1d to improve slicing times with supports?
-- multiple workspaces per project
 - optimize elephant foot post processing
 - dont repaint every frame (or at least when unfocused)
 - speed up compilation
@@ -37,10 +37,8 @@ Feel free to help out :eyes:.
   - create manifold mesh
 - refactor format crates (they're kinda a mess rn)
 - add well documented .zip and .bin output formats (closes #29)
-- resample sliced file to different sizes / resolutions?
 - task cancellation mechanism
-- optimize nanodlp loading
-  - custom png decoder too?...
+- release updated msla_format
 
 ## Documentation
 
@@ -61,3 +59,6 @@ Features that would be cool, but are a bit out of scope for now.
 - render units as fractions with custom font
 - allow manually editing the pixels in slice preview?
 - 3d model packing for sls type printers?
+- optimize nanodlp loading with custom png decoder?...
+- resample sliced file to different sizes / resolutions?
+- multiple workspaces per project
