@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use clone_macro::clone;
 use common::{
-    progress::Progress,
+    progress::CombinedProgress,
     serde::DynamicSerializer,
     slice::{SliceConfig, format::Format},
 };
@@ -14,7 +14,7 @@ use crate::{
 };
 
 pub struct SaveResult {
-    progress: Progress,
+    progress: CombinedProgress<2>,
     file_name: String,
     handle: TaskThread<()>,
 }
@@ -25,12 +25,12 @@ impl SaveResult {
         file_name: String,
         callback: impl FnOnce(Vec<u8>) + Send + 'static,
     ) -> Self {
-        let progress = Progress::new();
+        let progress = CombinedProgress::new();
         let handle = TaskThread::spawn(clone!([progress], move || {
-            let file = file.file(&config, &preview, format);
+            let file = file.file(&progress[0], &config, &preview, format);
 
             let mut serializer = DynamicSerializer::new();
-            file.serialize(&mut serializer, progress);
+            file.serialize(&mut serializer, &progress[1]);
             callback(serializer.into_inner());
         }));
         SaveResult {

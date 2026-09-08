@@ -8,7 +8,6 @@ Feel free to help out :eyes:.
 - don't crash when interacting with remote print after the printer has disconnected (not confirmed after refactor)
 - correctly calculate print time with exposure overrides
 - incorrect loaded in time when loading sliced file
-- correctly report SaveResult progress (include layer encoding)
 
 ## Features
 

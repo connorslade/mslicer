@@ -77,6 +77,7 @@ fn main() -> Result<()> {
     let slicer = Slicer::new(slice_config.clone(), meshes);
     let progress = slicer.progress();
     let total = slicer.layer_count();
+    progress.set_total(total as u64);
 
     let now = Instant::now();
     let preview = if let Some(path) = args.preview {
@@ -85,9 +86,15 @@ fn main() -> Result<()> {
         RgbaImage::new(290, 290)
     };
 
-    let file = thread::spawn(move || {
-        export_raster(&slicer.slice_config, slicer.slice_raster(), 0, format)
-    });
+    let file = thread::spawn(clone!([progress], move || {
+        export_raster(
+            &progress,
+            &slicer.slice_config,
+            slicer.slice_raster(),
+            0,
+            format,
+        )
+    }));
     let mut file = monitor_progress(file, progress, |progress| {
         format!(
             "\rLayer: {}/{total}, {:.1}%",
@@ -102,7 +109,7 @@ fn main() -> Result<()> {
     let progress = Progress::new();
     let handle = thread::spawn(clone!([progress], move || {
         let mut serializer = DynamicSerializer::new();
-        file.serialize(&mut serializer, progress);
+        file.serialize(&mut serializer, &progress);
         fs::write(args.output, serializer.into_inner()).unwrap();
     }));
 

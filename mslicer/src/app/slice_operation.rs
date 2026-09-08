@@ -282,18 +282,25 @@ impl GenericSliceResult {
 impl GenericSliceData {
     pub fn file(
         &self,
+        progress: &Progress,
         config: &SliceConfig,
         preview_image: &RgbaImage,
         format: Format,
     ) -> DynSlicedFile {
         match &self {
             GenericSliceData::Raster { data, voxels } => {
+                progress.set_total(data.len() as u64);
                 let format = format.as_raster().unwrap();
-                let mut file = util::export_raster(config, data.par_iter(), *voxels, format);
+                let mut file =
+                    util::export_raster(progress, config, data.par_iter(), *voxels, format);
                 file.set_preview(preview_image);
+                progress.set_finished();
                 file
             }
             GenericSliceData::Vector { data } => {
+                progress.set_total(1);
+                progress.set_finished();
+
                 let platform = config.platform_resolution.xy();
                 let file = SvgFile::new(platform, data.clone());
                 Box::new(file)

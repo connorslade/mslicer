@@ -26,7 +26,7 @@ pub type DynSlicedFile = Box<dyn SlicedFile + Send + Sync>;
 ///
 /// Implemented by all format File types.
 pub trait SlicedFile {
-    fn serialize(&self, ser: &mut DynamicSerializer, progress: Progress);
+    fn serialize(&self, ser: &mut DynamicSerializer, progress: &Progress);
     fn set_preview(&mut self, preview: &RgbaImage);
     fn info(&self) -> SliceInfo;
 

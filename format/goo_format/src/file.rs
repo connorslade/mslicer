@@ -88,7 +88,7 @@ impl File {
 }
 
 impl SlicedFile for File {
-    fn serialize(&self, ser: &mut DynamicSerializer, progress: Progress) {
+    fn serialize(&self, ser: &mut DynamicSerializer, progress: &Progress) {
         self.serialize(ser);
         progress.set_total(1);
         progress.set_finished();

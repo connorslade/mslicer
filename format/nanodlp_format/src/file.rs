@@ -107,7 +107,7 @@ impl File {
         }
     }
 
-    pub fn serialize<T: Serializer>(&self, ser: &mut T, progress: Progress) -> Result<()> {
+    pub fn serialize<T: Serializer>(&self, ser: &mut T, progress: &Progress) -> Result<()> {
         let mut bytes = Vec::new();
         let mut zip = ZipWriter::new(Cursor::new(&mut bytes));
 
@@ -219,7 +219,7 @@ impl File {
 }
 
 impl SlicedFile for File {
-    fn serialize(&self, ser: &mut DynamicSerializer, progress: Progress) {
+    fn serialize(&self, ser: &mut DynamicSerializer, progress: &Progress) {
         self.serialize(ser, progress).unwrap();
     }
 

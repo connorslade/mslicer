@@ -18,6 +18,7 @@ use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use crate::slicer::vector::SvgFile;
 
 pub fn export_raster<Layers, Layer>(
+    progress: &Progress,
     config: &SliceConfig,
     layers: Layers,
     voxels: u64,
@@ -30,15 +31,15 @@ where
     match format {
         RasterFormat::Goo => Box::new(goo_format::File::from_layers(
             config,
-            encode_raster_layers::<goo_format::LayerEncoder, _, _>(config, layers),
+            encode_raster_layers::<goo_format::LayerEncoder, _, _>(progress, config, layers),
         )),
         RasterFormat::Ctb => Box::new(ctb_format::File::from_layers(
             config,
-            encode_raster_layers::<ctb_format::LayerEncoder, _, _>(config, layers),
+            encode_raster_layers::<ctb_format::LayerEncoder, _, _>(progress, config, layers),
         )),
         RasterFormat::NanoDLP => Box::new(nanodlp_format::File::from_layers(
             config,
-            encode_raster_layers::<nanodlp_format::LayerEncoder, _, _>(config, layers),
+            encode_raster_layers::<nanodlp_format::LayerEncoder, _, _>(progress, config, layers),
             voxels,
         )),
     }
@@ -55,6 +56,7 @@ pub fn export_vector(
 }
 
 pub fn encode_raster_layers<Encoder, Layers, Layer>(
+    progress: &Progress,
     config: &SliceConfig,
     layers: Layers,
 ) -> Vec<Encoder::Output>
@@ -83,6 +85,7 @@ where
                 .for_each(|run| encoder.add_run(run.length, run.value));
             encoder.finish(config, &layer.exposure, layer.height)
         })
+        .inspect(|_| progress.add_complete(1))
         .collect()
 }
 

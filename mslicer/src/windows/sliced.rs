@@ -119,13 +119,14 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
 
                                     if ui.button(layout_job).clicked() {
                                         let file = result.slice_data().file(
+                                            &Progress::new(),
                                             &result.config,
                                             &slice_operation.preview(),
                                             RasterFormat::Ctb.into(),
                                         );
 
                                         let mut serializer = DynamicSerializer::new();
-                                        file.serialize(&mut serializer, Progress::new());
+                                        file.serialize(&mut serializer, &Progress::new());
                                         let data = Arc::new(serializer.into_inner());
 
                                         app.popup.open(name_popup(client.mainboard.clone(), data));
