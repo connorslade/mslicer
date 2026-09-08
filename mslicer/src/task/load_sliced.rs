@@ -15,12 +15,18 @@ use crate::{
 
 pub struct LoadSliced {
     progress: Progress,
+    operation: Option<SliceOperation>,
     handle: TaskThread<(SliceConfig, Vec<Layer>, Vec<RgbaImage>)>,
 }
 
 impl LoadSliced {
     pub fn new(path: PathBuf) -> Self {
         let progress = Progress::new();
+        let operation = SliceOperation::new(
+            Progress::already_complete(),
+            CombinedProgress::already_complete(),
+        );
+
         let handle = TaskThread::spawn(clone!([progress], move || {
             let ext = path.extension().unwrap().to_string_lossy();
             let format = RasterFormat::from_extension(&ext).unwrap();
@@ -28,7 +34,12 @@ impl LoadSliced {
             let data = fs::read(path).unwrap(); // todo:handle
             slicer::util::load_sliced(&progress, &format, &data).unwrap() // todo: handle
         }));
-        Self { progress, handle }
+
+        Self {
+            progress,
+            operation: Some(operation),
+            handle,
+        }
     }
 }
 
@@ -37,13 +48,9 @@ impl Task for LoadSliced {
         self.handle
             .poll(app, "Failed to Load Sliced File")
             .into_poll_result(|(config, layers, image)| {
-                let operation = SliceOperation::new(
-                    Progress::already_complete(),
-                    CombinedProgress::already_complete(),
-                );
-
+                let operation = self.operation.take().unwrap();
                 operation.add_raster_result(config, layers);
-                image.into_iter().for_each(|x| operation.add_preview(x));
+                (image.into_iter()).for_each(|x| operation.add_preview(x));
                 operation.set_loaded();
 
                 app.slice_operation.replace(operation);

@@ -6,7 +6,7 @@ Feel free to help out :eyes:.
 ## Bugs
 
 - correctly calculate print time with exposure overrides
-- incorrect loaded in time when loading sliced file
+- correctly calculate volume with non-uniform layer height
 
 ## Features
 
