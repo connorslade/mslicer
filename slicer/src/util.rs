@@ -12,6 +12,7 @@ use common::{
     },
 };
 use image::RgbaImage;
+use rayon::iter::ParallelIterator;
 
 use crate::slicer::vector::SvgFile;
 

@@ -29,6 +29,7 @@
 - Support layer exposure overrides with .goo files
 - Don't overwrite layers with exposure overrides by changing the global exposure config
 - Fix loading of .nanodlp sliced files
+- Multi-threaded nanodlp loading
 
 ## v0.9.2 &mdash; August 30th, 2026
 

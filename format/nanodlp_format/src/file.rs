@@ -12,6 +12,7 @@ use common::{
 };
 use image::{DynamicImage, RgbaImage};
 use nalgebra::{Vector2, Vector3};
+use rayon::iter::{IndexedParallelIterator, IntoParallelRefIterator, ParallelIterator};
 use serde::Serialize;
 use zip::{ZipArchive, ZipWriter, write::FileOptions};
 
@@ -204,13 +205,13 @@ impl File {
         }
     }
 
-    pub fn into_layers(&self) -> impl Iterator<Item = common::slice::Layer> {
-        self.layers.iter().map(|layer| {
+    pub fn into_layers(&self) -> impl ParallelIterator<Item = common::slice::Layer> {
+        self.layers.par_iter().enumerate().map(|(i, layer)| {
             let data = LayerDecoder::new(layer).runs().collect();
 
             common::slice::Layer::new(
                 data,
-                self.profile.depth.convert(),
+                self.profile.depth.convert() * (i + 1) as f32,
                 ExposureConfig::default(),
             )
         })
