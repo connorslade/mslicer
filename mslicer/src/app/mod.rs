@@ -61,7 +61,7 @@ pub struct App {
 }
 
 impl App {
-    pub fn new(
+    pub fn init(
         render_state: RenderState,
         config_dir: PathBuf,
         mut config: Config,
@@ -71,7 +71,7 @@ impl App {
         spacenav.try_connect();
 
         let slice_config = config.default_slice_config.clone();
-        Self {
+        let mut this = Self {
             render_state,
             panels: Panels::new(&mut config),
             fps: FpsTracker::new(),
@@ -93,15 +93,14 @@ impl App {
                 slice_config,
                 ..Default::default()
             },
-        }
-    }
+        };
 
-    pub fn init(&mut self) {
-        update_check_if_scheduled(self);
-
-        if !self.remote_print.is_initialized() && self.config.remote_print.init_at_startup {
-            windows::remote_print::initialize(self);
+        update_check_if_scheduled(&mut this);
+        if !this.remote_print.is_initialized() && this.config.remote_print.init_at_startup {
+            windows::remote_print::initialize(&mut this);
         }
+
+        this
     }
 
     pub fn is_slicing(&self) -> bool {

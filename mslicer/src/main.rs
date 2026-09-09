@@ -115,8 +115,7 @@ fn main() -> Result<()> {
 
             egui_extras::install_image_loaders(&cc.egui_ctx);
 
-            let mut app = App::new(render::init_wgpu(cc), config_dir, config, collector);
-            app.init();
+            let mut app = App::init(render::init_wgpu(cc), config_dir, config, collector);
             args.open.start(&mut app);
 
             Ok(Box::new(app))

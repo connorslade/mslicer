@@ -1,6 +1,10 @@
 // todo: move to common and ex-export through msla_format
 
-use std::{borrow::Borrow, io::Cursor, sync::Arc};
+use std::{
+    borrow::Borrow,
+    io::{Read, Seek},
+    sync::Arc,
+};
 
 use anyhow::{Ok, Result};
 use common::{
@@ -93,11 +97,18 @@ where
 pub fn load_sliced(
     progress: &Progress,
     format: &RasterFormat,
-    data: &[u8],
+    file: impl Read + Seek,
 ) -> Result<(SliceConfig, Vec<Layer>, Vec<RgbaImage>)> {
+    fn data(mut reader: impl Read + Seek) -> Result<Vec<u8>> {
+        let mut out = Vec::new();
+        reader.read_to_end(&mut out)?;
+        Ok(out)
+    }
+
     match format {
         RasterFormat::Goo => {
-            let mut des = SliceDeserializer::new(data);
+            let data = data(file)?;
+            let mut des = SliceDeserializer::new(&data);
             let file = goo_format::File::deserialize(&mut des)?;
             progress.set_total(file.layers.len() as _);
 
@@ -116,7 +127,8 @@ pub fn load_sliced(
             Ok((config, layers, images))
         }
         RasterFormat::Ctb => {
-            let mut des = SliceDeserializer::new(data);
+            let data = data(file)?;
+            let mut des = SliceDeserializer::new(&data);
             let file = ctb_format::File::deserialize(&mut des)?;
             progress.set_total(file.layers.len() as _);
 
@@ -134,7 +146,7 @@ pub fn load_sliced(
             Ok((config, layers, images))
         }
         RasterFormat::NanoDLP => {
-            let file = nanodlp_format::File::deserialize(Cursor::new(data))?;
+            let file = nanodlp_format::File::deserialize(file)?;
             progress.set_total(file.layers.len() as _);
 
             let config = file.into_slice_config();

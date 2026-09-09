@@ -1,4 +1,4 @@
-use std::{fs, path::PathBuf};
+use std::{fs::File, path::PathBuf};
 
 use clone_macro::clone;
 use common::{
@@ -31,8 +31,8 @@ impl LoadSliced {
             let ext = path.extension().unwrap().to_string_lossy();
             let format = RasterFormat::from_extension(&ext).unwrap();
 
-            let data = fs::read(path).unwrap(); // todo:handle
-            slicer::util::load_sliced(&progress, &format, &data).unwrap() // todo: handle
+            let file = File::open(path).unwrap();
+            slicer::util::load_sliced(&progress, &format, file).unwrap() // todo: handle
         }));
 
         Self {
