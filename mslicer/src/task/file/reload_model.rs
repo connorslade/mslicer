@@ -11,8 +11,8 @@ use tracing::info;
 use crate::{
     project::model::ModelId,
     task::{
-        MeshManifold, PollResult, Task, TaskApp, TaskStatus,
-        acceleration_structures::BuildAccelerationStructures, thread::TaskThread,
+        BuildAccelerationStructures, MeshManifold, PollResult, Task, TaskApp, TaskStatus,
+        thread::TaskThread,
     },
 };
 

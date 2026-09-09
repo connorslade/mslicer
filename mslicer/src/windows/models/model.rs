@@ -12,7 +12,7 @@ use egui::{
 use egui_phosphor::regular::{
     ARROW_LINE_DOWN, ARROWS_COUNTER_CLOCKWISE, COPY, CUBE, CURSOR_TEXT, DICE_THREE, EYE, EYE_SLASH,
     FLOPPY_DISK_BACK, FOLDER_DASHED, INFO, LINK_BREAK, LINK_SIMPLE, SUBTRACT_SQUARE, SWAP, TRASH,
-    WARNING,
+    VECTOR_THREE, WARNING,
 };
 use nalgebra::Vector3;
 
@@ -205,6 +205,11 @@ pub fn model_properties(
             ) {
                 app.tasks.add(SplitBodies::new(model));
             }
+
+            if ui
+                .button(concatcp!(VECTOR_THREE, " Flip Winding Order"))
+                .clicked()
+            {}
 
             ui.menu_button(concatcp!(FLOPPY_DISK_BACK, " Export"), |ui| {
                 for format in mesh_format::Format::ALL {

@@ -1,22 +1,28 @@
-use std::{fs::File, io::BufReader, mem, path::PathBuf};
+use std::{
+    fs::File,
+    io::{BufReader, BufWriter},
+    mem,
+    path::PathBuf,
+    sync::Arc,
+};
 
 use anyhow::Result;
 use clone_macro::clone;
 use common::{
     progress::Progress,
-    serde::{ReaderDeserializer, SliceDeserializer},
+    serde::{ReaderDeserializer, SliceDeserializer, WriterSerializer},
 };
-use mesh_format::{Format, load_mesh};
+use mesh_format::{Format, load_mesh, save_mesh};
 
-use slicer::mesh::Mesh;
+use slicer::mesh::{Mesh, MeshInner};
 use tracing::info;
 
 use crate::{
     app::history::Action,
     project::model::Model,
     task::{
-        MeshManifold, PollResult, Task, TaskApp, TaskStatus,
-        acceleration_structures::BuildAccelerationStructures, thread::TaskThread,
+        BuildAccelerationStructures, MeshManifold, PollResult, Task, TaskApp, TaskStatus,
+        thread::TaskThread,
     },
 };
 
@@ -102,6 +108,43 @@ impl Task for MeshLoad {
         Some(TaskStatus {
             name: "Loading Model".into(),
             details: Some(format!("Loading `{}`", self.name)),
+            progress: self.progress.progress(),
+        })
+    }
+}
+
+pub struct MeshSave {
+    progress: Progress,
+    handle: TaskThread<()>,
+}
+
+impl MeshSave {
+    pub fn new(path: PathBuf, format: Format, mesh: Arc<MeshInner>) -> Self {
+        // SAFETY: Both MeshInner and mesh_format::Mesh have the same layout.
+        let mesh = unsafe { mem::transmute::<Arc<MeshInner>, Arc<mesh_format::Mesh>>(mesh) };
+        let progress = Progress::new();
+
+        let handle = TaskThread::spawn(clone!([progress], move || {
+            let file = File::create(path).unwrap();
+            let mut ser = WriterSerializer::new(BufWriter::new(file));
+            save_mesh(&mut ser, format, &progress, &mesh);
+        }));
+
+        Self { progress, handle }
+    }
+}
+
+impl Task for MeshSave {
+    fn poll(&mut self, app: &mut TaskApp) -> PollResult {
+        self.handle
+            .poll(app, "Failed to Save Mesh")
+            .into_poll_result(|_| PollResult::complete())
+    }
+
+    fn status(&self) -> Option<TaskStatus<'_>> {
+        Some(TaskStatus {
+            name: "Saving Mesh".into(),
+            details: None, // todo: use file name?
             progress: self.progress.progress(),
         })
     }

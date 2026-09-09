@@ -10,41 +10,12 @@ use crate::{
     ui::{panels::Panels, popup::PopupManager, state::UiState},
 };
 
-mod acceleration_structures;
-mod auto_layout;
-mod file_dialog;
-mod island_detection;
-mod load_sliced;
-mod mesh_load;
-mod mesh_manifold;
-mod mesh_save;
-mod project;
-mod reconstruct_mesh;
-mod reload_model;
-mod remote_print;
-mod save_result;
-mod split_bodies;
+mod file;
+mod mesh;
+mod network;
+mod slice;
 mod thread;
-mod update_check;
-mod webhook;
-pub use self::{
-    acceleration_structures::BuildAccelerationStructures,
-    auto_layout::AutoLayout,
-    file_dialog::{FileDialog, MultiFileDialog},
-    island_detection::IslandDetection,
-    load_sliced::LoadSliced,
-    mesh_load::MeshLoad,
-    mesh_manifold::MeshManifold,
-    mesh_save::MeshSave,
-    project::{ProjectLoad, ProjectSave},
-    reconstruct_mesh::ReconstructMesh,
-    reload_model::ReloadModel,
-    remote_print::{PrinterConnect, PrinterScan},
-    save_result::SaveResult,
-    split_bodies::SplitBodies,
-    update_check::update_check_if_scheduled,
-    webhook::Webhook,
-};
+pub use self::{file::*, mesh::*, network::*, slice::*};
 
 type TaskQueue = (
     SyncSender<Box<dyn Task + Send + Sync>>,

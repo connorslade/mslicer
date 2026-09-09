@@ -38,7 +38,7 @@ use crate::{
         },
     },
     render::slice_preview::SlicePreviewRenderCallback,
-    task::{FileDialog, IslandDetection, ReconstructMesh, SaveResult, TaskManager},
+    task::{FileDialog, IslandDetection, ReconstructMesh, SaveSliced, TaskManager},
     ui::{
         components::{collapsing_toggle, grid},
         management::{LazyText, LazyTextureId},
@@ -503,7 +503,7 @@ fn save_file(
             let file_name = path.file_name().unwrap().to_string_lossy();
             let mut out = File::create(&path).unwrap();
 
-            tasks.push(Box::new(SaveResult::new(
+            tasks.push(Box::new(SaveSliced::new(
                 (format, data.clone(), config, preview),
                 file_name.into_owned(),
                 move |bytes| out.write_all(&bytes).unwrap(),

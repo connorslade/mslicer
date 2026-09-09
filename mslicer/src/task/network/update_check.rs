@@ -149,7 +149,7 @@ fn semver_cmp(a: &str, b: &str) -> Option<Ordering> {
 mod test {
     use std::cmp::Ordering;
 
-    use crate::task::update_check::semver_cmp;
+    use super::semver_cmp;
 
     #[test]
     fn test() {
