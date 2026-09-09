@@ -17,6 +17,7 @@ mod island_detection;
 mod load_sliced;
 mod mesh_load;
 mod mesh_manifold;
+mod mesh_save;
 mod project;
 mod reconstruct_mesh;
 mod reload_model;
@@ -34,6 +35,7 @@ pub use self::{
     load_sliced::LoadSliced,
     mesh_load::MeshLoad,
     mesh_manifold::MeshManifold,
+    mesh_save::MeshSave,
     project::{ProjectLoad, ProjectSave},
     reconstruct_mesh::ReconstructMesh,
     reload_model::ReloadModel,

@@ -3,7 +3,7 @@ use std::{fs::File, io::BufReader, mem, path::PathBuf};
 use anyhow::Context;
 use clone_macro::clone;
 use common::{progress::Progress, serde::ReaderDeserializer};
-use mesh_format::load_mesh;
+use mesh_format::{Format, load_mesh};
 
 use slicer::mesh::Mesh;
 use tracing::info;
@@ -18,7 +18,7 @@ use crate::{
 
 pub struct ReloadModel {
     progress: Progress,
-    join: TaskThread<Mesh>,
+    handle: TaskThread<Mesh>,
 
     model: ModelId,
     path: PathBuf,
@@ -27,18 +27,17 @@ pub struct ReloadModel {
 
 impl ReloadModel {
     pub fn new(model: ModelId, name: String, path: PathBuf) -> Self {
-        let ext = (path.extension().context("Unspecified file type").unwrap())
-            .to_string_lossy()
-            .into_owned();
+        let ext = (path.extension().context("Unspecified file type").unwrap()).to_string_lossy();
+        let format = Format::from_extension(&ext).unwrap();
 
         let file = File::open(&path).unwrap();
         let des = ReaderDeserializer::new(BufReader::new(file));
 
         let progress = Progress::new();
         Self {
-            join: TaskThread::spawn(clone!([progress], move || {
-                let mesh = load_mesh(des, &ext, progress).unwrap();
-                Mesh::new(mesh.verts, mesh.faces)
+            handle: TaskThread::spawn(clone!([progress], move || {
+                let mesh = load_mesh(des, format, &progress).unwrap();
+                Mesh::new_boxed(mesh.verts, mesh.faces)
             })),
             progress,
 
@@ -51,7 +50,7 @@ impl ReloadModel {
 
 impl Task for ReloadModel {
     fn poll(&mut self, app: &mut TaskApp) -> PollResult {
-        (self.join.poll(app, "Failed to Load Model")).into_poll_result(|mesh| {
+        (self.handle.poll(app, "Failed to Load Model")).into_poll_result(|mesh| {
             info!(
                 "Reloaded model `{}` with {} faces",
                 self.name,

@@ -11,7 +11,8 @@ use egui::{
 };
 use egui_phosphor::regular::{
     ARROW_LINE_DOWN, ARROWS_COUNTER_CLOCKWISE, COPY, CURSOR_TEXT, DICE_THREE, EYE, EYE_SLASH,
-    FOLDER_DASHED, INFO, LINK_BREAK, LINK_SIMPLE, SUBTRACT_SQUARE, SWAP, TRASH, WARNING,
+    FLOPPY_DISK_BACK, FOLDER_DASHED, INFO, LINK_BREAK, LINK_SIMPLE, SUBTRACT_SQUARE, SWAP, TRASH,
+    WARNING,
 };
 use nalgebra::Vector3;
 
@@ -21,7 +22,7 @@ use crate::{
         Collection, RenameState,
         model::{MeshUnit, MeshWarnings},
     },
-    task::{FileDialog, ReloadModel, SplitBodies},
+    task::{FileDialog, MeshSave, ReloadModel, SplitBodies},
     ui::components::{
         being_edited, grid, history_tracked_model, vec3_dragger, vec3_dragger_proportional,
     },
@@ -202,6 +203,18 @@ pub fn model_properties(
         {
             let task = ReloadModel::new(model.id, model.name.clone(), file.clone());
             app.tasks.add(task);
+        }
+
+        // todo: dropdown for stl or obj, then chance MeshSave::new to take a
+        // Format to apply the correct file extension before saving
+        if ui.button(concatcp!(FLOPPY_DISK_BACK, " Export")).clicked() {
+            let mesh = model.mesh.inner().clone();
+            app.tasks.add(FileDialog::save_file(
+                ("Mesh", &["stl", "obj"]),
+                |_app, path, tasks| {
+                    tasks.push(Box::new(MeshSave::new(path.to_path_buf(), mesh)));
+                },
+            ));
         }
     });
 

@@ -6,7 +6,7 @@ pub const WHITESPACE: [char; 4] = [' ', '\t', '\r', '\n'];
 pub fn tokenize<T: Deserializer>(
     des: &mut T,
     delimiter: &[char],
-    progress: Progress,
+    progress: &Progress,
     mut callback: impl FnMut(&str) -> Result<()>,
 ) -> Result<()> {
     let mut complete = 0;

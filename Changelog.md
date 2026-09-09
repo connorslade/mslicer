@@ -33,6 +33,7 @@
 - Multi-threaded output layer encoding (mainly for nanodlp where encoding is quite expensive)
 - Don't block the main thread while encoding layers
 - Show correct duration in sliced panel when loading a sliced file
+- Allow exporting meshes
 
 ## v0.9.2 &mdash; August 30th, 2026
 

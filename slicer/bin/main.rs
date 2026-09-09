@@ -124,8 +124,9 @@ fn main() -> Result<()> {
 
 fn load_mesh<T: Read + Seek + Send + 'static>(reader: T, format: &str) -> Result<Mesh> {
     let des = ReaderDeserializer::new(reader);
-    let mesh = mesh_format::load_mesh(des, format, Progress::new())?;
-    Ok(Mesh::new(mesh.verts, mesh.faces))
+    let format = mesh_format::Format::from_extension(format).context("Unknown mesh extension.")?;
+    let mesh = mesh_format::load_mesh(des, format, &Progress::new())?;
+    Ok(Mesh::new_boxed(mesh.verts, mesh.faces))
 }
 
 fn is_oob(mesh: &Mesh, slice_config: &SliceConfig) -> bool {

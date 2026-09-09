@@ -2,6 +2,7 @@ use common::{progress::Progress, serde::SliceDeserializer, slice::SliceConfig};
 use criterion::{
     BenchmarkGroup, Criterion, criterion_group, criterion_main, measurement::WallTime,
 };
+use mesh_format::Format;
 use slicer::{
     mesh::Mesh,
     slicer::{Slicer, SlicerModel},
@@ -20,12 +21,12 @@ criterion_main!(benches);
 
 fn slicer(model: &[u8]) -> Slicer {
     let des = SliceDeserializer::new(model);
-    let mesh = mesh_format::load_mesh(des, "stl", Progress::new()).unwrap();
+    let mesh = mesh_format::load_mesh(des, Format::Stl, &Progress::new()).unwrap();
 
     Slicer::new(
         SliceConfig::default(),
         vec![SlicerModel {
-            mesh: Mesh::new(mesh.verts, mesh.faces),
+            mesh: Mesh::new_boxed(mesh.verts, mesh.faces),
             exposure: 255,
         }],
     )

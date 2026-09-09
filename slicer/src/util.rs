@@ -121,7 +121,7 @@ pub fn load_sliced(
                 .collect();
             let images = vec![
                 file.header.big_preview.into_image(),
-                file.header.big_preview.into_image(),
+                file.header.small_preview.into_image(),
             ];
 
             Ok((config, layers, images))

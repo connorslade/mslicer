@@ -6,7 +6,7 @@ use common::{
     progress::Progress,
     serde::{ReaderDeserializer, SliceDeserializer},
 };
-use mesh_format::load_mesh;
+use mesh_format::{Format, load_mesh};
 
 use slicer::mesh::Mesh;
 use tracing::info;
@@ -22,7 +22,7 @@ use crate::{
 
 pub struct MeshLoad {
     progress: Progress,
-    join: TaskThread<Mesh>,
+    handle: TaskThread<Mesh>,
 
     name: String,
     file: Option<PathBuf>,
@@ -31,13 +31,14 @@ pub struct MeshLoad {
 impl MeshLoad {
     pub fn file(path: PathBuf, name: String, format: String) -> Result<Self> {
         let file = File::open(&path)?;
+        let format = Format::from_extension(&format).unwrap();
         let des = ReaderDeserializer::new(BufReader::new(file));
-
         let progress = Progress::new();
+
         Ok(Self {
-            join: TaskThread::spawn(clone!([progress], move || {
-                let mesh = load_mesh(des, &format, progress).unwrap();
-                Mesh::new(mesh.verts, mesh.faces)
+            handle: TaskThread::spawn(clone!([progress], move || {
+                let mesh = load_mesh(des, format, &progress).unwrap();
+                Mesh::new_boxed(mesh.verts, mesh.faces)
             })),
             progress,
 
@@ -47,12 +48,14 @@ impl MeshLoad {
     }
 
     pub fn buffer(buffer: &'static [u8], name: String, format: String) -> Self {
+        let format = Format::from_extension(&format).unwrap();
         let des = SliceDeserializer::new(buffer);
         let progress = Progress::new();
+
         Self {
-            join: TaskThread::spawn(clone!([progress], move || {
-                let mesh = load_mesh(des, &format, progress).unwrap();
-                Mesh::new(mesh.verts, mesh.faces)
+            handle: TaskThread::spawn(clone!([progress], move || {
+                let mesh = load_mesh(des, format, &progress).unwrap();
+                Mesh::new_boxed(mesh.verts, mesh.faces)
             })),
             progress,
 
@@ -64,7 +67,7 @@ impl MeshLoad {
     pub fn complete(name: String, mesh: Mesh) -> Self {
         Self {
             progress: Progress::already_complete(),
-            join: TaskThread::spawn(|| mesh),
+            handle: TaskThread::spawn(|| mesh),
 
             name,
             file: None,
@@ -74,7 +77,7 @@ impl MeshLoad {
 
 impl Task for MeshLoad {
     fn poll(&mut self, app: &mut TaskApp) -> PollResult {
-        (self.join.poll(app, "Failed to Load Model")).into_poll_result(|mesh| {
+        (self.handle.poll(app, "Failed to Load Model")).into_poll_result(|mesh| {
             info!(
                 "Loaded model `{}` with {} faces",
                 self.name,

@@ -25,7 +25,6 @@ Feel free to help out :eyes:.
 - put all models in the same segments1d to improve slicing times with supports?
 - dont repaint every frame (or at least when unfocused)
 - save old versions of config files when being overwritten (invalid config). or like just ignore the broken values.
-- mesh export (useful for converting sliced to mesh or other mesh generator tools)
 - phonographic record generator (it might be possible :eyes:)
   - apply RAII pre-emphasis
   - allow picking stereo or mono
@@ -35,6 +34,14 @@ Feel free to help out :eyes:.
 - add well documented .zip and .bin output formats (closes #29)
 - task cancellation mechanism
 - release updated msla_format
+- mesh repair tool/button
+  - non-welded verts
+  - holes
+  - inconstant winding order
+  - unconnected verts
+  - non-manifold (not sure how to fix this thb)
+  - repeated faces?
+- add button to flip winding order (rip flip normals)
 
 ## Documentation
 

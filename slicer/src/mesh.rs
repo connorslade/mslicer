@@ -34,18 +34,30 @@ impl Mesh {
     /// transformations are all 0 by default.
     pub fn new(mut vertices: Vec<Vector3<f32>>, faces: Vec<[u32; 3]>) -> Self {
         center_vertices(&mut vertices);
-        Self::new_uncentred(vertices, faces)
+        Self::new_uncentered(vertices, faces)
+    }
+
+    pub fn new_boxed(mut vertices: Box<[Vector3<f32>]>, faces: Box<[[u32; 3]]>) -> Self {
+        center_vertices(&mut vertices);
+        Self::new_boxed_uncentered(vertices, faces)
     }
 
     /// Creates a new mesh from the given vertices and faces. The
     /// transformations are all 0 by default and the vertices are
     /// not centered.
-    pub fn new_uncentred(vertices: Vec<Vector3<f32>>, faces: Vec<[u32; 3]>) -> Self {
+    pub fn new_uncentered(vertices: Vec<Vector3<f32>>, faces: Vec<[u32; 3]>) -> Self {
         Self {
             inner: Arc::new(MeshInner {
                 vertices: vertices.into_boxed_slice(),
                 faces: faces.into_boxed_slice(),
             }),
+            ..Default::default()
+        }
+    }
+
+    pub fn new_boxed_uncentered(vertices: Box<[Vector3<f32>]>, faces: Box<[[u32; 3]]>) -> Self {
+        Self {
+            inner: Arc::new(MeshInner { vertices, faces }),
             ..Default::default()
         }
     }
