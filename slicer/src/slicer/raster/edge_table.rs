@@ -78,8 +78,7 @@ pub fn global_edge_table(segments: impl Iterator<Item = Segment>) -> VecDeque<Ed
     }
 
     edges.sort_by(|a, b| {
-        a.p_min
-            .y
+        (a.p_min.y)
             .total_cmp(&b.p_min.y)
             .then_with(|| a.p_min.x.total_cmp(&b.p_min.x))
     });
@@ -104,10 +103,8 @@ pub fn update_active_edges(edges: &mut VecDeque<Edge>, active: &mut Vec<ActiveEd
             continue;
         }
 
-        let x = edge.p_min.x + (scan_y - edge.p_min.y) * edge.inv_slope;
-
         active.push(ActiveEdge {
-            x,
+            x: edge.p_min.x + (scan_y - edge.p_min.y) * edge.inv_slope,
             y_max: edge.p_max.y,
             inv_slope: edge.inv_slope,
             entering: edge.entering,

@@ -34,6 +34,7 @@
 - Don't block the main thread while encoding layers
 - Show correct duration in sliced panel when loading a sliced file
 - Allow exporting meshes
+- Rasterize edges using pixel center sampling ([#38](https://github.com/connorslade/mslicer/pull/38))
 
 ## v0.9.2 &mdash; August 30th, 2026
 

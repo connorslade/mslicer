@@ -1,7 +1,7 @@
 use common::{
     container::{
-        rle::downsample::{downsample, downsample_adjacent},
         Run,
+        rle::downsample::{downsample, downsample_adjacent},
     },
     slice::Layer,
     units::Milimeter,
@@ -13,8 +13,8 @@ use rayon::iter::{IndexedParallelIterator, IntoParallelIterator, ParallelIterato
 use crate::{
     geometry::Segments1D,
     slicer::{
+        SEGMENT_LAYERS, Slicer,
         raster::edge_table::{global_edge_table, update_active_edges},
-        Slicer, SEGMENT_LAYERS,
     },
 };
 
@@ -100,14 +100,15 @@ pub fn layer(
     let mut active = Vec::new();
     let first_y = edges
         .front()
-        .map(|e| {
-            let y = (e.p_min.y - 0.5).ceil().max(0.0);
-            y as u32
-        })
-        .unwrap_or(0);
+        .map(|e| (e.p_min.y - 0.5).ceil().max(0.0) as u32)
+        .unwrap_or_default();
     let mut runs = Vec::new();
     let padding = (first_y as u64 / supersample as u64) * real_platform.x as u64;
-    runs.push(Run::new(padding, 0));
+
+    // In the case that there is geometry in the first row this padding value
+    // will be zero and shouldn't be pushed as it could cause problems in later
+    // processing stages.
+    (padding > 0).then(|| runs.push(Run::new(padding, 0)));
 
     let mut rows = vec![Vec::new(); supersample as usize];
     let mut row = Vec::new();
