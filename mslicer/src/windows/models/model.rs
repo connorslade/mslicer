@@ -205,17 +205,23 @@ pub fn model_properties(
             app.tasks.add(task);
         }
 
-        // todo: dropdown for stl or obj, then chance MeshSave::new to take a
-        // Format to apply the correct file extension before saving
-        if ui.button(concatcp!(FLOPPY_DISK_BACK, " Export")).clicked() {
-            let mesh = model.mesh.inner().clone();
-            app.tasks.add(FileDialog::save_file(
-                ("Mesh", &["stl", "obj"]),
-                |_app, path, tasks| {
-                    tasks.push(Box::new(MeshSave::new(path.to_path_buf(), mesh)));
-                },
-            ));
-        }
+        ui.menu_button(concatcp!(FLOPPY_DISK_BACK, " Export"), |ui| {
+            for format in mesh_format::Format::ALL {
+                if ui
+                    .button(format!("{} ({})", format.name(), format.extension()))
+                    .clicked()
+                {
+                    let mesh = model.mesh.inner().clone();
+                    app.tasks.add(FileDialog::save_file(
+                        ("Mesh", &[format.extension()]),
+                        move |_app, path, tasks| {
+                            let path = path.with_extension(format.extension());
+                            tasks.push(Box::new(MeshSave::new(path, format, mesh)));
+                        },
+                    ));
+                }
+            }
+        })
     });
 
     CollapsingHeader::new("Transform")

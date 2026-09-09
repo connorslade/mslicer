@@ -13,10 +13,7 @@ pub struct MeshSave {
 }
 
 impl MeshSave {
-    pub fn new(path: PathBuf, mesh: Arc<MeshInner>) -> Self {
-        let format = path.extension().unwrap().to_string_lossy();
-        let format = Format::from_extension(&format).unwrap();
-
+    pub fn new(path: PathBuf, format: Format, mesh: Arc<MeshInner>) -> Self {
         // SAFETY: Both MeshInner and mesh_format::Mesh have the same layout.
         let mesh = unsafe { mem::transmute::<Arc<MeshInner>, Arc<mesh_format::Mesh>>(mesh) };
         let progress = Progress::new();

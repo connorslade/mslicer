@@ -15,9 +15,35 @@ pub struct Mesh {
     pub faces: Box<[[u32; 3]]>,
 }
 
+#[derive(Clone, Copy)]
 pub enum Format {
     Stl,
     Obj,
+}
+
+impl Mesh {
+    pub fn face_normal(&self, face: usize) -> Vector3<f32> {
+        let f = self.faces[face];
+        let edge1 = self.verts[f[2] as usize] - self.verts[f[1] as usize];
+        let edge2 = self.verts[f[0] as usize] - self.verts[f[1] as usize];
+        edge1.cross(&edge2).normalize()
+    }
+
+    pub fn vertex_normals(&self) -> Vec<Vector3<f32>> {
+        let mut normals = vec![Vector3::zeros(); self.verts.len()];
+        for (i, [a, b, c]) in self.faces.iter().enumerate() {
+            let normal = self.face_normal(i);
+            normals[*a as usize] += normal;
+            normals[*b as usize] += normal;
+            normals[*c as usize] += normal;
+        }
+
+        for normal in normals.iter_mut() {
+            *normal = normal.normalize();
+        }
+
+        normals
+    }
 }
 
 impl Format {
@@ -30,6 +56,20 @@ impl Format {
             "obj" => Self::Obj,
             _ => return None,
         })
+    }
+
+    pub fn extension(&self) -> &str {
+        match self {
+            Format::Stl => "stl",
+            Format::Obj => "obj",
+        }
+    }
+
+    pub fn name(&self) -> &str {
+        match self {
+            Format::Stl => "Stereolithography",
+            Format::Obj => "Wavefront",
+        }
     }
 }
 
