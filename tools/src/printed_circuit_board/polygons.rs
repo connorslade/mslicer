@@ -52,9 +52,15 @@ impl Polygons {
 
     pub fn trace(&mut self, path: Vec<Vector2<f64>>, thickness: Option<f64>) {
         if let Some(thickness) = thickness {
-            self.circle(*path.first().unwrap(), thickness / 2.0);
-            self.circle(*path.last().unwrap(), thickness / 2.0);
-            self.polygon(close_path(path, thickness));
+            let (first, last) = (*path.first().unwrap(), *path.last().unwrap());
+            // todo: maybe check within some ε?
+            if first != last {
+                self.circle(first, thickness / 2.0);
+                self.circle(last, thickness / 2.0);
+                self.polygon(inflate_path(path, thickness));
+            } else {
+                self.polygon(inflate_closed_path(path, thickness));
+            }
         } else {
             self.polygon(path);
         }
@@ -148,24 +154,57 @@ impl Default for Polygons {
     }
 }
 
-fn close_path(path: Vec<Vector2<f64>>, path_thickness: f64) -> Vec<Vector2<f64>> {
+fn inflate_path(path: Vec<Vector2<f64>>, path_thickness: f64) -> Vec<Vector2<f64>> {
     let half_thickness = path_thickness / 2.0;
     let mut out = vec![Vector2::zeros(); path.len() * 2];
 
-    for i in 0..path.len() {
-        let direction = if i == 0 {
-            path[1] - path[0]
+    for (i, this) in path.iter().enumerate() {
+        let normal = if i == 0 {
+            perpendicular((path[1] - this).normalize()) * half_thickness
         } else if i + 1 == path.len() {
-            path[path.len() - 1] - path[path.len() - 2]
+            perpendicular((this - path[i - 1]).normalize()) * half_thickness
         } else {
-            path[i + 1] - path[i - 1]
-        }
-        .normalize();
+            // If the current point it not an endpoint, offset it halfway
+            // between the normals of each connected segment
 
-        let normal = Vector2::new(-direction.y, direction.x).scale(half_thickness);
+            let bisect = (path[i + 1] - this).normalize() + (this - path[i - 1]).normalize();
+            perpendicular(bisect.normalize()) * path_thickness / bisect.magnitude()
+        };
+
         out[i] = path[i] + normal;
         out[path.len() * 2 - i - 1] = path[i] - normal;
     }
 
     out
+}
+
+fn inflate_closed_path(path: Vec<Vector2<f64>>, path_thickness: f64) -> Vec<Vector2<f64>> {
+    let mut out = vec![Vector2::zeros(); path.len() * 2];
+    let path = &path[1..]; // ignore the duplicated vert
+
+    for (i, this) in path.iter().enumerate() {
+        // Wrap around the endpoints
+        let [prev, next] = if i == 0 {
+            [path[path.len() - 1], path[i + 1]]
+        } else if i + 1 == path.len() {
+            [path[path.len() - 2], path[0]]
+        } else {
+            [path[i - 1], path[i + 1]]
+        };
+
+        let bisect = (next - this).normalize() + (this - prev).normalize();
+        let normal = perpendicular(bisect.normalize()) * path_thickness / bisect.magnitude();
+
+        out[i] = path[i] + normal;
+        out[(path.len() + 1) * 2 - i - 1] = path[i] - normal;
+    }
+
+    out[path.len()] = out[0];
+    out[path.len() + 1] = out[(path.len() + 1) * 2 - 1];
+
+    dbg!(out)
+}
+
+fn perpendicular(v: Vector2<f64>) -> Vector2<f64> {
+    Vector2::new(-v.y, v.x)
 }

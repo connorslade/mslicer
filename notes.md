@@ -5,6 +5,8 @@ Feel free to help out :eyes:.
 
 ## Bugs
 
+- incorrect pcb close_path impl
+
 ## Features
 
 - support generation

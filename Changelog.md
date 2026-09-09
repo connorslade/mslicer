@@ -38,6 +38,7 @@
 - Add button to flip model winding order
 - Combine 'Split Bodies', 'Flip Winding Order', and 'Export' into a 'Mesh' submenu
 - Correctly calculate volume with non-uniform layer height
+- Fix the way paths are inflated in the PCB tool
 
 ## v0.9.2 &mdash; August 30th, 2026
 
