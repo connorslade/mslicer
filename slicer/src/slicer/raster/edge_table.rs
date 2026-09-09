@@ -10,9 +10,10 @@ use crate::slicer::raster::Segment;
 
 #[derive(Debug)]
 pub struct Edge {
-    pub min: Vector2<u32>,
+    // Original edge geometry in pixel space.
+    pub p_min: Vector2<f32>,
+    pub p_max: Vector2<f32>,
 
-    pub y_max: u32,
     pub inv_slope: f32,
     pub entering: bool,
     pub priority: u8,
@@ -21,9 +22,10 @@ pub struct Edge {
 
 #[derive(Debug)]
 pub struct ActiveEdge {
+    // Intersection with the center of the current pixel row.
     pub x: f32,
+    pub y_max: f32,
 
-    pub y_max: u32,
     pub inv_slope: f32,
     pub entering: bool,
     pub priority: u8,
@@ -62,14 +64,11 @@ pub fn global_edge_table(segments: impl Iterator<Item = Segment>) -> VecDeque<Ed
             }
 
             let inv_slope = (p1.x - p0.x) / (p1.y - p0.y);
-            let pos = [p0, p1].map(|p| p.map(|x| x.round() as u32));
-            if pos[0].y == pos[1].y {
-                continue;
-            }
+            let (p_min, p_max) = if p0.y < p1.y { (p0, p1) } else { (p1, p0) };
 
             edges.push(Edge {
-                min: pos[(pos[0].y >= pos[1].y) as usize],
-                y_max: pos[0].y.max(pos[1].y),
+                p_min,
+                p_max,
                 inv_slope,
                 entering,
                 priority,
@@ -78,23 +77,41 @@ pub fn global_edge_table(segments: impl Iterator<Item = Segment>) -> VecDeque<Ed
         }
     }
 
-    edges.sort_by(|a, b| a.min.y.cmp(&b.min.y).then_with(|| a.min.x.cmp(&b.min.x)));
+    edges.sort_by(|a, b| {
+        (a.p_min.y)
+            .total_cmp(&b.p_min.y)
+            .then_with(|| a.p_min.x.total_cmp(&b.p_min.x))
+    });
     VecDeque::from(edges)
 }
 
 pub fn update_active_edges(edges: &mut VecDeque<Edge>, active: &mut Vec<ActiveEdge>, y: u32) {
-    active.retain(|x| x.y_max > y);
+    let scan_y = y as f32 + 0.5;
+
+    // Use a half-open interval: p_min.y <= scan_y < p_max.y.
+    active.retain(|e| e.y_max > scan_y);
+
+    // Existing active edges advance by one complete scanline.
     active.iter_mut().for_each(|e| e.x += e.inv_slope);
-    while !edges.is_empty() && edges[0].min.y == y {
+
+    // Add edges intersecting the center of the current pixel row.
+    while !edges.is_empty() && edges[0].p_min.y <= scan_y {
         let edge = edges.pop_front().unwrap();
+
+        // This edge does not intersect any sampled scanline.
+        if edge.p_max.y <= scan_y {
+            continue;
+        }
+
         active.push(ActiveEdge {
-            x: edge.min.x as f32,
-            y_max: edge.y_max,
+            x: edge.p_min.x + (scan_y - edge.p_min.y) * edge.inv_slope,
+            y_max: edge.p_max.y,
             inv_slope: edge.inv_slope,
             entering: edge.entering,
             priority: edge.priority,
             exposure: edge.exposure,
         });
     }
-    active.sort_by_key(|x| OrderedFloat(x.x));
+
+    active.sort_by_key(|e| OrderedFloat(e.x));
 }

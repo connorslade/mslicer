@@ -98,10 +98,16 @@ pub fn layer(
 
     let mut edges = global_edge_table(segments);
     let mut active = Vec::new();
-    let first_y = edges.front().map(|e| e.min.y).unwrap_or(0);
-
+    let first_y = edges
+        .front()
+        .map(|e| (e.p_min.y - 0.5).ceil().max(0.0) as u32)
+        .unwrap_or_default();
     let mut runs = Vec::new();
     let padding = (first_y as u64 / supersample as u64) * real_platform.x as u64;
+
+    // In the case that there is geometry in the first row this padding value
+    // will be zero and shouldn't be pushed as it could cause problems in later
+    // processing stages.
     (padding > 0).then(|| runs.push(Run::new(padding, 0)));
 
     let mut rows = vec![Vec::new(); supersample as usize];
@@ -129,7 +135,10 @@ pub fn layer(
                 exposure.0 = a.exposure;
             }
 
-            let [a, b] = [a.x, b.x].map(|x| (x.round() as u64).min(platform.x as u64));
+            let [a, b] = [a.x, b.x].map(|x| {
+                let pixel_x = (x - 0.5).ceil().max(0.0) as u64;
+                pixel_x.min(platform.x as u64)
+            });
             if depth != 0 && b != a {
                 let (start, length) = (a, b - a);
                 (start > last).then(|| out.push(Run::new(start - last, 0)));
