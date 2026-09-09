@@ -3,21 +3,25 @@
 use std::mem;
 
 use nalgebra::Vector3;
-use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(C)]
 pub struct LinearRgb<T> {
     pub r: T,
     pub g: T,
     pub b: T,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(C)]
 pub struct SRgb<T> {
     pub r: T,
     pub g: T,
     pub b: T,
 }
+
+// SAFETY: All the as_slice* functions are safe because of the repr(C), which
+// means the layout will match the definition order.
 
 impl<T> LinearRgb<T> {
     pub fn new(r: T, g: T, b: T) -> Self {

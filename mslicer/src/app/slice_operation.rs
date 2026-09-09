@@ -217,7 +217,8 @@ impl<'a> LockedAnnotations<'a> {
             return Vec::new();
         };
 
-        unsafe { mem::transmute::<Vec<Run<Annotation>>, Vec<Run>>(layer.clone()) }
+        // SAFETY: Annotation has repr(u8), so can be safely interpreted as a u8
+        unsafe { mem::transmute::<Vec<Run<Annotation>>, Vec<Run<u8>>>(layer.clone()) }
     }
 
     pub fn insert_layer(&mut self, annotation: Annotation, layer: usize, runs: &[u64]) {

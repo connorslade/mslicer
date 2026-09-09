@@ -35,6 +35,8 @@
 - Show correct duration in sliced panel when loading a sliced file
 - Allow exporting meshes
 - Rasterize edges using pixel center sampling ([#38](https://github.com/connorslade/mslicer/pull/38))
+- Add button to flip model winding order
+- Combine 'Split Bodies', 'Flip Winding Order', and 'Export' into a 'Mesh' submenu
 
 ## v0.9.2 &mdash; August 30th, 2026
 

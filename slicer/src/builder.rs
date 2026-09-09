@@ -79,8 +79,8 @@ impl MeshBuilder {
     ) {
         let [u, v] = orthogonal_basis((a - b).normalize());
 
-        let bottom_center = bottom_face.then(|| self.add_vertex(a)).unwrap_or_default();
-        let top_center = top_face.then(|| self.add_vertex(b)).unwrap_or_default();
+        let bottom_center = if bottom_face { self.add_vertex(a) } else { 0 };
+        let top_center = if top_face { self.add_vertex(b) } else { 0 };
 
         let mut first = None;
         let mut last = None;

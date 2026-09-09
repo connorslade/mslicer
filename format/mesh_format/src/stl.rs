@@ -73,8 +73,8 @@ mod binary {
         ser.write_bytes(&[0; 80 - HEADER.len()]);
 
         ser.write_u32_le(mesh.faces.len() as u32);
-        for face in mesh.faces.iter() {
-            ser_vec3f_bin(ser, &Vector3::zeros()); // not sure if this could be an issue
+        for (i, face) in mesh.faces.iter().enumerate() {
+            ser_vec3f_bin(ser, &mesh.face_normal(i));
             face.iter()
                 .for_each(|&v| ser_vec3f_bin(ser, &mesh.verts[v as usize]));
             ser.write_u16_le(0);

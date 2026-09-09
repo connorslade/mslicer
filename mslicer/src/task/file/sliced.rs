@@ -1,17 +1,68 @@
-use std::{fs::File, path::PathBuf};
+use std::{fs::File, path::PathBuf, sync::Arc};
 
 use clone_macro::clone;
 use common::{
     progress::{CombinedProgress, Progress},
-    slice::{Layer, SliceConfig, format::RasterFormat},
+    serde::DynamicSerializer,
+    slice::{
+        Layer, SliceConfig,
+        format::{Format, RasterFormat},
+    },
 };
 use image::RgbaImage;
 
 use crate::{
-    app::{SLICE_PREVIEW_SIZE, slice_operation::SliceOperation},
+    app::{
+        SLICE_PREVIEW_SIZE,
+        slice_operation::{GenericSliceData, SliceOperation},
+    },
     task::{PollResult, Task, TaskApp, TaskStatus, thread::TaskThread},
     windows::Tab,
 };
+
+pub struct SaveSliced {
+    progress: CombinedProgress<2>,
+    file_name: String,
+    handle: TaskThread<()>,
+}
+
+impl SaveSliced {
+    pub fn new(
+        (format, file, config, preview): (Format, GenericSliceData, SliceConfig, Arc<RgbaImage>),
+        file_name: String,
+        callback: impl FnOnce(Vec<u8>) + Send + 'static,
+    ) -> Self {
+        let progress = CombinedProgress::new();
+        let handle = TaskThread::spawn(clone!([progress], move || {
+            let file = file.file(&progress[0], &config, &preview, format);
+
+            let mut serializer = DynamicSerializer::new();
+            file.serialize(&mut serializer, &progress[1]);
+            callback(serializer.into_inner());
+        }));
+        SaveSliced {
+            progress,
+            file_name,
+            handle,
+        }
+    }
+}
+
+impl Task for SaveSliced {
+    fn poll(&mut self, app: &mut TaskApp) -> PollResult {
+        self.handle
+            .poll(app, "Failed to Write Slice Result")
+            .into_poll_result(|_| PollResult::complete())
+    }
+
+    fn status(&self) -> Option<TaskStatus<'_>> {
+        Some(TaskStatus {
+            name: "Writing Slice Result".into(),
+            details: Some(format!("Saving to {}", self.file_name)),
+            progress: self.progress.progress(),
+        })
+    }
+}
 
 pub struct LoadSliced {
     progress: Progress,

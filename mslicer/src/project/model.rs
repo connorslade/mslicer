@@ -160,7 +160,12 @@ impl Model {
         self.buffers.as_ref().unwrap()
     }
 
-    pub fn replace_mesh(&mut self, mesh: Mesh, file: PathBuf, platform: &Vector3<Milimeters>) {
+    pub fn replace_mesh(
+        &mut self,
+        mesh: Mesh,
+        file: Option<PathBuf>,
+        platform: &Vector3<Milimeters>,
+    ) {
         let (position, scale, rotation) = (
             self.mesh.position(),
             self.mesh.scale(),
@@ -172,7 +177,7 @@ impl Model {
         self.mesh.set_rotation_unchecked(rotation);
         self.mesh.update_transformation_matrix();
 
-        self.file = Some(file);
+        self.file = file;
         self.warnings = MeshWarnings::empty();
         self.bvh = None;
         self.half_edge = None;
