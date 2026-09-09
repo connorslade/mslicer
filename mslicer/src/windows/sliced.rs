@@ -64,7 +64,7 @@ const DETECT_ISLANDS_DESC: &str =
     "Will color disconnected chunks of voxels red in the slice preview.";
 const SURFACE_AREA_DESC: &str = "Surface area in cm² of each layer. Layers with higher areas will adhere more to the FEP potentially causing print failures.";
 
-pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
+pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     if let Some(slice_operation) = &app.slice_operation {
         let progress = &slice_operation.progress;
 
@@ -218,7 +218,6 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
                             &mut app.tasks,
                             &mut app.popup,
                             ui,
-                            ctx,
                         );
                     })
                 });
@@ -546,7 +545,6 @@ fn sidebar(
     tasks: &mut TaskManager,
     popups: &mut PopupManager,
     ui: &mut Ui,
-    ctx: &Context,
 ) {
     CollapsingHeader::new("Preview Image")
         .default_open(true)
@@ -634,7 +632,7 @@ fn sidebar(
             let (width, height) = (preview.image.width(), preview.image.height());
 
             let size = vec2(available, available / width as f32 * height as f32);
-            let texture = SizedTexture::new(preview.texture.get(ctx, &preview.image), size);
+            let texture = SizedTexture::new(preview.texture.get(ui.ctx(), &preview.image), size);
 
             reset_preview.then(|| previews.take());
 
