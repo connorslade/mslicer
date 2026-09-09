@@ -59,7 +59,7 @@ impl Task for ReloadModel {
 
             let platform_size = app.project.slice_config.platform_size;
             if let Some(model) = app.project.model(self.model) {
-                model.replace_mesh(mesh, mem::take(&mut self.path), &platform_size);
+                model.replace_mesh(mesh, Some(mem::take(&mut self.path)), &platform_size);
                 PollResult::complete()
                     .with_task(MeshManifold::new(model))
                     .with_task(BuildAccelerationStructures::new(model))

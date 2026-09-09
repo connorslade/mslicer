@@ -34,6 +34,8 @@
 - Don't block the main thread while encoding layers
 - Show correct duration in sliced panel when loading a sliced file
 - Allow exporting meshes
+- Add button to flip model winding order
+- Combine 'Split Bodies', 'Flip Winding Order', and 'Export' into a 'Mesh' submenu
 
 ## v0.9.2 &mdash; August 30th, 2026
 

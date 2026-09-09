@@ -22,7 +22,7 @@ use crate::{
         Collection, RenameState,
         model::{MeshUnit, MeshWarnings},
     },
-    task::{FileDialog, MeshSave, ReloadModel, SplitBodies},
+    task::{FileDialog, FlipWinding, MeshSave, ReloadModel, SplitBodies},
     ui::components::{
         being_edited, grid, history_tracked_model, vec3_dragger, vec3_dragger_proportional,
     },
@@ -209,7 +209,9 @@ pub fn model_properties(
             if ui
                 .button(concatcp!(VECTOR_THREE, " Flip Winding Order"))
                 .clicked()
-            {}
+            {
+                app.tasks.add(FlipWinding::new(model));
+            }
 
             ui.menu_button(concatcp!(FLOPPY_DISK_BACK, " Export"), |ui| {
                 for format in mesh_format::Format::ALL {
