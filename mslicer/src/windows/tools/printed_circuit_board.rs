@@ -1,5 +1,6 @@
 use std::{fs::File, io::Write};
 
+use common::units::Mircometer;
 use egui::{Align, Button, ComboBox, DragValue, Layout, Ui, Widget, vec2};
 use egui_extras::{Column, TableBuilder};
 use egui_phosphor::regular::{BOUNDING_BOX, EYE, INFO, TRASH};
@@ -147,6 +148,16 @@ fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
                 ui.selectable_value(&mut tool.invert, false, "Negative");
                 ui.selectable_value(&mut tool.invert, true, "Positive");
             });
+        ui.end_row();
+
+        ui.label("Circle Error");
+        tool.max_circle_error.with::<Mircometer>(|x| {
+            DragValue::new(x)
+                .suffix(" μm")
+                .speed(1.0)
+                .range(1.0..=f32::MAX)
+                .ui(ui);
+        });
         ui.end_row();
     });
 

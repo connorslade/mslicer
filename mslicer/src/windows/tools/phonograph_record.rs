@@ -49,101 +49,95 @@ fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
     });
 
     ui.add_space(8.0);
-    CollapsingHeader::new("Audio Processing")
-        .default_open(true)
-        .show(ui, |ui| {
-            grid("audio").show(ui, |ui| {
-                ui.label("Channels");
-                ComboBox::new("channels", "")
-                    .selected_text(tool.channels.name())
+    CollapsingHeader::new("Audio Processing").show(ui, |ui| {
+        grid("audio").show(ui, |ui| {
+            ui.label("Channels");
+            ComboBox::new("channels", "")
+                .selected_text(tool.channels.name())
+                .show_ui(ui, |ui| {
+                    for channels in Channels::ALL {
+                        ui.selectable_value(&mut tool.channels, channels, channels.name());
+                    }
+                });
+            ui.end_row();
+
+            ui.label("Equalization");
+            ui.horizontal(|ui| {
+                ComboBox::new("eq", "")
+                    .selected_text(tool.equalization.name())
                     .show_ui(ui, |ui| {
-                        for channels in Channels::ALL {
-                            ui.selectable_value(&mut tool.channels, channels, channels.name());
+                        for eq in Equalization::ALL {
+                            ui.selectable_value(&mut tool.equalization, eq, eq.name());
                         }
                     });
-                ui.end_row();
-
-                ui.label("Equalization");
-                ui.horizontal(|ui| {
-                    ComboBox::new("eq", "")
-                        .selected_text(tool.equalization.name())
-                        .show_ui(ui, |ui| {
-                            for eq in Equalization::ALL {
-                                ui.selectable_value(&mut tool.equalization, eq, eq.name());
-                            }
-                        });
-                    ui.take_available_width();
-                });
-                ui.end_row();
+                ui.take_available_width();
             });
+            ui.end_row();
         });
+    });
 
-    CollapsingHeader::new("Disk")
-        .default_open(true)
-        .show(ui, |ui| {
-            grid("disk").show(ui, |ui| {
-                ui.label("Outer Radius");
-                DragValue::new(tool.outer_radius.raw_mut())
+    CollapsingHeader::new("Disk").show(ui, |ui| {
+        grid("disk").show(ui, |ui| {
+            ui.label("Outer Radius");
+            DragValue::new(tool.outer_radius.raw_mut())
+                .suffix(" mm")
+                .ui(ui);
+            ui.end_row();
+
+            ui.label("Inner Radius");
+            DragValue::new(tool.inner_radius.raw_mut())
+                .suffix(" mm")
+                .ui(ui);
+            ui.end_row();
+
+            ui.label("Thickness");
+            ui.horizontal(|ui| {
+                DragValue::new(tool.thickness.raw_mut())
                     .suffix(" mm")
                     .ui(ui);
-                ui.end_row();
-
-                ui.label("Inner Radius");
-                DragValue::new(tool.inner_radius.raw_mut())
-                    .suffix(" mm")
-                    .ui(ui);
-                ui.end_row();
-
-                ui.label("Thickness");
-                ui.horizontal(|ui| {
-                    DragValue::new(tool.thickness.raw_mut())
-                        .suffix(" mm")
-                        .ui(ui);
-                    ui.take_available_width();
-                });
-                ui.end_row();
+                ui.take_available_width();
             });
+            ui.end_row();
         });
+    });
 
-    CollapsingHeader::new("Groove")
-        .default_open(true)
-        .show(ui, |ui| {
-            grid("groove").show(ui, |ui| {
-                ui.label("Pitch");
-                tool.pitch.with::<Mircometer>(|x| {
-                    DragValue::new(x).suffix(" μm").ui(ui);
-                });
-                ui.end_row();
-
-                ui.label("Width");
-                tool.width.with::<Mircometer>(|x| {
-                    DragValue::new(x).suffix(" μm").ui(ui);
-                });
-                ui.end_row();
-
-                ui.label("Resolution");
-                DragValue::new(&mut tool.groove_resolution)
-                    .suffix(" Hz")
-                    .ui(ui);
-                ui.end_row();
-
-                ui.label("Playback Speed");
-                DragValue::new(&mut tool.rpm).suffix(" RPM").ui(ui);
-                ui.end_row();
-
-                ui.label("Modulation");
-                ui.horizontal(|ui| {
-                    // todo: store as percent
-                    DragValue::new(&mut tool.modulation)
-                        .custom_formatter(|n, _| format!("{:.2}", n * 100.0))
-                        .custom_parser(|s| s.parse::<f64>().map(|x| x / 100.0).ok())
-                        .suffix("%")
-                        .ui(ui);
-                    ui.take_available_width();
-                });
-                ui.end_row();
+    CollapsingHeader::new("Groove").show(ui, |ui| {
+        grid("groove").show(ui, |ui| {
+            ui.label("Pitch");
+            tool.pitch.with::<Mircometer>(|x| {
+                DragValue::new(x).suffix(" μm").ui(ui);
             });
+            ui.end_row();
+
+            ui.label("Width");
+            tool.width.with::<Mircometer>(|x| {
+                DragValue::new(x).suffix(" μm").ui(ui);
+            });
+            ui.end_row();
+
+            ui.label("Resolution");
+            DragValue::new(&mut tool.groove_resolution)
+                .suffix(" Hz")
+                .ui(ui);
+            ui.end_row();
+
+            ui.label("Playback Speed");
+            DragValue::new(&mut tool.rpm).suffix(" RPM").ui(ui);
+            ui.end_row();
+
+            ui.label("Modulation");
+            ui.horizontal(|ui| {
+                // todo: store as percent
+                DragValue::new(&mut tool.modulation)
+                    .custom_formatter(|n, _| format!("{:.2}", n * 100.0))
+                    .custom_parser(|s| s.parse::<f64>().map(|x| x / 100.0).ok())
+                    .suffix("%")
+                    .ui(ui);
+                ui.take_available_width();
+            });
+            ui.end_row();
         });
+    });
 
     ui.add_space(8.0);
 

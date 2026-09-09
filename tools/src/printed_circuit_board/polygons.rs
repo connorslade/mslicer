@@ -1,4 +1,4 @@
-use std::f64::consts::TAU;
+use std::f64::consts::{PI, TAU};
 
 use nalgebra::Vector2;
 use svg::{
@@ -13,6 +13,7 @@ pub struct Polygons {
     pub bounds: Bounds2D<f64>,
 
     pub mode: Mode,
+    pub sagitta: f64,
 }
 
 #[derive(Copy, Clone)]
@@ -21,22 +22,26 @@ pub struct Mode {
     pub bounds: bool,
 }
 
-const PRECISION: usize = 16;
-
 impl Polygons {
     pub fn new() -> Self {
         Self {
             polygons: Vec::new(),
             bounds: Bounds2D::<f64>::EMPTY,
+
             mode: Mode {
                 polygon: true,
                 bounds: true,
             },
+            sagitta: 0.01, // 10μm
         }
     }
 
     pub fn set_mode(&mut self, mode: Mode) {
         self.mode = mode;
+    }
+
+    pub fn set_max_circle_error(&mut self, sagitta: f64) {
+        self.sagitta = sagitta;
     }
 
     fn polygon(&mut self, points: Vec<Vector2<f64>>) {
@@ -53,7 +58,6 @@ impl Polygons {
     pub fn trace(&mut self, path: Vec<Vector2<f64>>, thickness: Option<f64>) {
         if let Some(thickness) = thickness {
             let (first, last) = (*path.first().unwrap(), *path.last().unwrap());
-            // todo: maybe check within some ε?
             if first != last {
                 self.circle(first, thickness / 2.0);
                 self.circle(last, thickness / 2.0);
@@ -67,7 +71,11 @@ impl Polygons {
     }
 
     pub fn circle(&mut self, center: Vector2<f64>, r: f64) {
-        let points = ((r * PRECISION as f64).ceil() as usize).max(PRECISION);
+        // Reference: https://en.wikipedia.org/wiki/Sagitta_(geometry)
+        // self.sagitta = r (1 - cos θ/2)
+        // 2 cos⁻¹(-(self.sagitta / r - 1)) = θ
+        // n = π / cos⁻¹(1 - self.sagitta / r)
+        let points = ((PI / (1.0 - self.sagitta / r).acos()).ceil() as usize).max(3);
 
         let mut circle = Vec::with_capacity(points);
         for i in 0..points {
@@ -160,15 +168,14 @@ fn inflate_path(path: Vec<Vector2<f64>>, path_thickness: f64) -> Vec<Vector2<f64
 
     for (i, this) in path.iter().enumerate() {
         let normal = if i == 0 {
-            perpendicular((path[1] - this).normalize()) * half_thickness
+            rotate_ccw((path[1] - this).normalize()) * half_thickness
         } else if i + 1 == path.len() {
-            perpendicular((this - path[i - 1]).normalize()) * half_thickness
+            rotate_ccw((this - path[i - 1]).normalize()) * half_thickness
         } else {
             // If the current point it not an endpoint, offset it halfway
             // between the normals of each connected segment
-
             let bisect = (path[i + 1] - this).normalize() + (this - path[i - 1]).normalize();
-            perpendicular(bisect.normalize()) * path_thickness / bisect.magnitude()
+            rotate_ccw(bisect.normalize()) * path_thickness / bisect.magnitude()
         };
 
         out[i] = path[i] + normal;
@@ -193,18 +200,19 @@ fn inflate_closed_path(path: Vec<Vector2<f64>>, path_thickness: f64) -> Vec<Vect
         };
 
         let bisect = (next - this).normalize() + (this - prev).normalize();
-        let normal = perpendicular(bisect.normalize()) * path_thickness / bisect.magnitude();
+        let normal = rotate_ccw(bisect.normalize()) * path_thickness / bisect.magnitude();
 
         out[i] = path[i] + normal;
         out[(path.len() + 1) * 2 - i - 1] = path[i] - normal;
     }
 
+    // duplicate the firsts point to the end of the list to close the shape
     out[path.len()] = out[0];
     out[path.len() + 1] = out[(path.len() + 1) * 2 - 1];
 
-    dbg!(out)
+    out
 }
 
-fn perpendicular(v: Vector2<f64>) -> Vector2<f64> {
+fn rotate_ccw(v: Vector2<f64>) -> Vector2<f64> {
     Vector2::new(-v.y, v.x)
 }

@@ -3,7 +3,7 @@ use std::{fs::File, io::BufReader, iter, path::Path, sync::Arc};
 use common::{
     progress::Progress,
     slice::{ExposureConfig, Layer, SliceConfig},
-    units::{Milimeter, Milimeters, Minutes, Seconds},
+    units::{Micrometers, Milimeter, Milimeters, Minutes, Seconds},
 };
 use gerber_parser::{
     GerberDoc,
@@ -30,6 +30,7 @@ pub struct PrintedCircuitBoard {
     pub exposure_time: Seconds,
     pub alignment: Alignment,
     pub invert: bool,
+    pub max_circle_error: Milimeters,
 
     pub pre_offset: Vector2<Milimeters>,
     pub post_offset: Vector2<Milimeters>,
@@ -68,6 +69,8 @@ impl PrintedCircuitBoard {
         progress.set_total(command_count);
 
         let mut polygons = Polygons::new();
+        polygons.set_max_circle_error(self.max_circle_error.get::<Milimeter>() as f64);
+
         for gerber in self.layers.iter() {
             polygons.set_mode(gerber.mode);
             gerber::tessellate(&gerber.gerber, &mut polygons, progress);
@@ -208,6 +211,7 @@ impl Default for PrintedCircuitBoard {
             exposure_time: Minutes::new(5.0).convert(),
             alignment: Default::default(),
             invert: Default::default(),
+            max_circle_error: Micrometers::new(10.0).convert(),
 
             pre_offset: Default::default(),
             post_offset: Default::default(),
