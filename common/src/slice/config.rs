@@ -100,14 +100,8 @@ impl SliceConfig {
             .saturating_sub(first_layers)
             .saturating_sub(transition_layers);
 
-        let layer_time = exp.exposure_time
-            + exp.lift_distance / exp.lift_speed
-            + exp.lift_distance / exp.retract_speed
-            + exp.exposure_delay;
-        let bottom_layer_time = fexp.exposure_time
-            + fexp.lift_distance / fexp.lift_speed
-            + fexp.lift_distance / fexp.retract_speed
-            + fexp.exposure_delay;
+        let layer_time = exp.print_time();
+        let bottom_layer_time = fexp.print_time();
 
         regular_layers as f32 * layer_time
             + first_layers as f32 * bottom_layer_time
@@ -246,6 +240,13 @@ impl ExposureConfig {
             lift_speed: lerp(self.lift_speed, other.lift_speed, t),
             retract_speed: lerp(self.retract_speed, other.retract_speed, t),
         }
+    }
+
+    pub fn print_time(&self) -> Seconds {
+        self.exposure_time
+            + self.lift_distance / self.lift_speed
+            + self.lift_distance / self.retract_speed
+            + self.exposure_delay
     }
 }
 

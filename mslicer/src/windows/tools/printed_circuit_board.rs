@@ -16,6 +16,7 @@ use crate::{
 };
 
 pub const DESCRIPTION: &str = "Use your MSLA resin printer to expose UV sensitive photoresist or soldermask for PCB manufacturing.";
+pub const DOCS_PAGE: &str = "https://mslicer.com/docs/pcb-photolighography";
 
 pub fn open(app: &mut App) {
     app.popup
@@ -23,7 +24,14 @@ pub fn open(app: &mut App) {
 }
 
 fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
-    ui.label(DESCRIPTION);
+    ui.horizontal_wrapped(|ui| {
+        ui.spacing_mut().item_spacing.x = 0.0;
+
+        ui.label(DESCRIPTION);
+        ui.label(" See the ");
+        ui.hyperlink_to("PCB Photolighography", DOCS_PAGE);
+        ui.label(" docs for more info information.");
+    });
     ui.add_space(8.0);
 
     let slicing = app.is_slicing();

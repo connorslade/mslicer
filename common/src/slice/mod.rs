@@ -16,7 +16,7 @@ use crate::{
     container::{Image, Run, rle},
     progress::Progress,
     serde::DynamicSerializer,
-    units::Milimeters,
+    units::{Milimeters, Seconds},
 };
 
 /// Boxed [`SlicedFile`].
@@ -96,6 +96,12 @@ impl Layer {
             exposure,
         }
     }
+}
+
+pub fn print_time<'a, I: Iterator<Item = &'a Layer>>(layers: I) -> Seconds {
+    layers
+        .map(|x| x.exposure.print_time())
+        .fold(Seconds::new(0.0), |a, b| a + b)
 }
 
 pub type Polygon = Vec<Vector2<f32>>;

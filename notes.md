@@ -5,9 +5,6 @@ Feel free to help out :eyes:.
 
 ## Bugs
 
-- correctly calculate print time with exposure overrides
-- correctly calculate volume with non-uniform layer height
-
 ## Features
 
 - support generation
@@ -41,7 +38,6 @@ Feel free to help out :eyes:.
   - unconnected verts
   - non-manifold (not sure how to fix this thb)
   - repeated faces?
-- add button to flip winding order (rip flip normals)
 
 ## Documentation
 
@@ -51,6 +47,7 @@ Feel free to help out :eyes:.
   - changed exposure config component
   - change AA config
 - document on generating and printing phonograph records
+- add phosphor icons in doc pages (like i did on the pcb photolithography page)
 
 ## Maybe
 

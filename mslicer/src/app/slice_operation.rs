@@ -1,6 +1,6 @@
 use std::{
     collections::HashMap,
-    mem,
+    iter, mem,
     ops::Deref,
     sync::{
         Arc,
@@ -13,8 +13,8 @@ use common::{
     container::Run,
     misc::{IteratorExt, human_duration},
     progress::{CombinedProgress, Progress},
-    slice::{DynSlicedFile, Layer, SliceConfig, VectorLayer, format::Format},
-    units::{Miliseconds, Milliliters, Seconds},
+    slice::{DynSlicedFile, Layer, SliceConfig, VectorLayer, format::Format, print_time},
+    units::{CubicMilimeters, Milimeters, Miliseconds, Milliliters, Seconds},
 };
 use egui::Color32;
 use image::RgbaImage;
@@ -130,6 +130,15 @@ impl SliceOperationInner {
     }
 
     pub fn add_raster_result(&self, config: SliceConfig, layers: Vec<Layer>) {
+        let heights = iter::once(Milimeters::new(0.0))
+            .chain(layers.iter().map(|x| x.height))
+            .tuple_windows()
+            .map(|(a, b)| b - a);
+        let volume = (layers.iter().zip(heights))
+            .map(|(l, h)| l.area as f32 * config.pixel_area() * h)
+            .fold(CubicMilimeters::new(0.0), |a, b| a + b)
+            .convert();
+
         let voxels = (layers.iter())
             .flat_map(|x| x.data.iter().filter(|x| x.value != 0).map(|x| x.length))
             .sum::<u64>();
@@ -137,18 +146,16 @@ impl SliceOperationInner {
         let elapsed = self.start_time.elapsed();
         info!("Raster slice operation completed in {:?}", elapsed);
 
-        let variable_layer_height = !layers
-            .iter()
+        let variable_layer_height = !(layers.iter())
             .map(|x| x.height.raw())
             .tuple_windows()
             .map(|(a, b)| b - a)
             .all_equal_float(0.001);
+
         let raster = RasterSliceResult {
             voxels,
-            // todo: volume calculation currently doesn't respect nonuniform
-            // layer heights.
-            volume: (voxels as f32 * config.voxel_volume()).convert(),
-            print_time: config.print_time(layers.len() as u32),
+            volume,
+            print_time: print_time(layers.iter()),
 
             layers,
             annotations: Arc::new(Annotations::default()),

@@ -54,6 +54,7 @@ use common::{
     slice::{
         SliceConfig, SliceMode,
         format::{Format, RasterFormat},
+        print_time,
     },
     units::{Centimeter, Milimeter, Mircometer},
 };
@@ -711,7 +712,6 @@ fn sidebar(
 
     let raster = result.inner.as_raster_mut().unwrap();
     if exposure_changed {
-        raster.print_time = result.config.print_time(raster.layers.len() as u32);
         for (i, layer) in raster
             .layers
             .iter_mut()
@@ -722,18 +722,23 @@ fn sidebar(
         }
     }
 
+    // todo: disabling exposure override leaves exposure config as is.
     let layer = &mut raster.layers[state.preview_layer - 1];
     layer.unique_exposure = collapsing_toggle(
         "Current Layer Override",
         layer.unique_exposure,
         |ui| {
             ui.add_enabled_ui(layer.unique_exposure, |ui| {
-                exposure_config(ui, &mut layer.exposure);
+                exposure_changed |= exposure_config(ui, &mut layer.exposure);
             });
         },
         true,
         ui,
     );
+
+    // If any exposure setting was changed, recalculate the print time.
+    exposure_changed.then(|| raster.print_time = print_time(raster.layers.iter()));
+    let layer = &mut raster.layers[state.preview_layer - 1];
 
     ui.add_space(8.0);
     ui.heading("Analysis");

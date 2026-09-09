@@ -65,6 +65,14 @@ impl<L: LengthUnit> Volume<L> {
     }
 }
 
+impl<L1: LengthUnit, L2: LengthUnit> ops::Add<Volume<L2>> for Volume<L1> {
+    type Output = Self;
+
+    fn add(self, rhs: Volume<L2>) -> Self::Output {
+        Volume::new(self.value + rhs.get::<L1>())
+    }
+}
+
 impl<T1: TimeUnit, T2: TimeUnit> ops::Add<Time<T2>> for Time<T1> {
     type Output = Time<T1>;
 
