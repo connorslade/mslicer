@@ -17,7 +17,7 @@ use egui_phosphor::regular::{
 use nalgebra::Vector3;
 
 use crate::{
-    app::{App, history::ModelAction},
+    app::{App, config::ui::B_PER_MIB, history::ModelAction},
     project::{
         Collection, RenameState,
         model::{MeshUnit, MeshWarnings},
@@ -362,7 +362,11 @@ pub fn model_properties(
 
             ui.label("Faces");
             ui.horizontal(|ui| {
-                ui.label(separate_thousands(model.mesh.face_count()));
+                ui.label(format!(
+                    "{} ({:.2} MiB)",
+                    separate_thousands(model.mesh.face_count()),
+                    model.mesh.memory_size() as f32 / B_PER_MIB as f32
+                ));
                 ui.take_available_width();
             });
             ui.end_row();

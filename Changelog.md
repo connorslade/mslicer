@@ -41,6 +41,7 @@
 - Fix the way paths are inflated in the PCB tool
 - Allow configuring max allowed circle error in PCB tool
 - Don't save big meshes in history when deleted (configurable threshold)
+- Show mesh memory usage
 
 ## v0.9.2 &mdash; August 30th, 2026
 

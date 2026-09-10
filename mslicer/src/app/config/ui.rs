@@ -5,6 +5,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::windows::Tab;
 
+pub const B_PER_MIB: usize = 0x100000;
+
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct UiConfig {

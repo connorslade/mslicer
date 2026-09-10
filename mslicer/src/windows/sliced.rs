@@ -48,7 +48,7 @@ use crate::{
     windows::slice_config::exposure_config,
 };
 use common::{
-    misc::{IMAGE_FORMATS, human_duration},
+    misc::{IMAGE_FORMATS, human_duration, separate_thousands},
     progress::Progress,
     serde::DynamicSerializer,
     slice::{
@@ -809,7 +809,7 @@ fn sidebar(
                 ui.end_row();
 
                 ui.label("Runs");
-                ui.label(layer.data.len().to_string());
+                ui.label(separate_thousands(layer.data.len()));
                 ui.end_row();
 
                 let memory = (layer.data.len() * 16) as f32 / 1024.0; // in KiB

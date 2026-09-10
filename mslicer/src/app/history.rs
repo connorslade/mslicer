@@ -11,7 +11,7 @@ use slicer::post_process::{
 };
 
 use crate::{
-    app::App,
+    app::{App, config::ui::B_PER_MIB},
     app_ref_type,
     project::{
         Collection, CollectionId,
@@ -121,7 +121,7 @@ impl History {
 
     pub fn track(&mut self, action: Action) {
         if let Action::ModelRemoved { model, .. } = &action
-            && (model.mesh.memory_size() / 1048576) as u32 > self.max_mesh_size
+            && (model.mesh.memory_size() / B_PER_MIB) as u32 > self.max_mesh_size
         {
             return;
         }
