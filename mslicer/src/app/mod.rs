@@ -232,6 +232,8 @@ impl eframe::App for App {
 
         self.panels.update(ctx.viewport_rect().width());
         self.fps.update();
+        self.history
+            .set_max_mesh_size(self.config.ui.history_max_mesh_size);
         self.popup().render(ctx);
         self.tasks().poll();
 

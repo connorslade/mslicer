@@ -25,6 +25,8 @@ const MAX_HISTORY: usize = 0x80; // random number i picked
 pub struct History {
     pub history: VecDeque<Action>,
     pub future: VecDeque<Action>,
+
+    pub max_mesh_size: u32, // in MiB
 }
 
 pub struct ActionDescription {
@@ -113,7 +115,17 @@ impl History {
         }
     }
 
+    pub fn set_max_mesh_size(&mut self, mib: u32) {
+        self.max_mesh_size = mib;
+    }
+
     pub fn track(&mut self, action: Action) {
+        if let Action::ModelRemoved { model, .. } = &action
+            && (model.mesh.memory_size() / 1048576) as u32 > self.max_mesh_size
+        {
+            return;
+        }
+
         self.constrain_size();
         self.history.push_back(action);
         self.future.clear();

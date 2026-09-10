@@ -40,6 +40,7 @@
 - Correctly calculate volume with non-uniform layer height
 - Fix the way paths are inflated in the PCB tool
 - Allow configuring max allowed circle error in PCB tool
+- Don't save big meshes in history when deleted (configurable threshold)
 
 ## v0.9.2 &mdash; August 30th, 2026
 

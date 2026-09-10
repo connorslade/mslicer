@@ -12,6 +12,7 @@ pub struct UiConfig {
     pub panels: Option<Tree<Tab>>,
     pub about: bool,
     pub tasks: bool,
+    pub history_max_mesh_size: u32, // in MiB
 
     pub update_check: UpdateCheckFrequency,
     pub last_update_check: Option<DateTime<Utc>>,
@@ -56,6 +57,8 @@ impl Default for UiConfig {
             panels: None,
             about: true,
             tasks: true,
+            history_max_mesh_size: 20,
+
             update_check: UpdateCheckFrequency::EveryLaunch,
             last_update_check: None,
             ignore_update: None,

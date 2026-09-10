@@ -117,6 +117,12 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                 .suffix(" px")
                 .ui(ui);
             ui.end_row();
+
+            ui.label("Max History Mesh");
+            DragValue::new(&mut app.config.ui.history_max_mesh_size)
+                .suffix(" MiB")
+                .ui(ui);
+            ui.end_row();
         });
 
     ui.add_space(8.0);

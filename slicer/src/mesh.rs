@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::Arc};
+use std::{collections::HashMap, mem, sync::Arc};
 
 use common::progress::Progress;
 use nalgebra::{Matrix4, Vector3};
@@ -172,6 +172,11 @@ impl Mesh {
     /// model. These points define the bounding box of the model.
     pub fn bounds(&self) -> (Vector3<f32>, Vector3<f32>) {
         vertex_bounds(self.vertices(), &self.transform)
+    }
+
+    pub fn memory_size(&self) -> usize {
+        self.face_count() * mem::size_of::<[u32; 3]>()
+            + self.vertex_count() * mem::size_of::<Vector3<f32>>()
     }
 }
 
