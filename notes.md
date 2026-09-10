@@ -6,24 +6,31 @@ Feel free to help out :eyes:.
 ## Bugs
 
 - no way to configure quick layout spacing
+- rename non manifold mesh to defective mesh
+- max buffer size limit may fail, fall back to default
 
 ## Features
 
 - support generation
     - allow interacting with (deleting) supports place manually or automatically
-    - for support generation pick less steep angles for the top part of the support
-    - support presets, instead of having to mess with all the sliders to change the size
+    - for support generation pick less steep angles for the top part of the
+      support
+    - support presets, instead of having to mess with all the sliders to change
+      the size
     - dont place supports on points touching the build plate
         - ask you to raise the model before supporting
     - slice supports
-    - support placement tool instead of just a checkbox... or maybe a key to hold down while clicking
-    - options to only generate some combination of point, edge, and face overhangs
+    - support placement tool instead of just a checkbox... or maybe a key to
+      hold down while clicking
+    - options to only generate some combination of point, edge, and face
+      overhangs
     - transform supports with model
-    - don't simplify a cylinder to a segment during intersection testing.
-      either use a different algorithm or sample multiple points around the edges.
+    - don't simplify a cylinder to a segment during intersection testing. either
+      use a different algorithm or sample multiple points around the edges.
 - put all models in the same segments1d to improve slicing times with supports?
 - dont repaint every frame (or at least when unfocused)
-- save old versions of config files when being overwritten (invalid config). or like just ignore the broken values.
+- save old versions of config files when being overwritten (invalid config). or
+  like just ignore the broken values.
 - phonographic record generator (it might be possible :eyes:)
   - apply RAII pre-emphasis
   - allow picking stereo or mono
@@ -35,6 +42,11 @@ Feel free to help out :eyes:.
 - release updated msla_format
 - mesh repair tool/button
 - simd for mesh-plane intersection?
+- benchmark slice operation to see how mich time is spent between intersection
+  and rasterization
+- game style camera (arrow keys to move)
+- organize workspace settings, maybe rename panel too
+- sliced diff tool
 
 ## Documentation
 
@@ -43,6 +55,7 @@ Feel free to help out :eyes:.
 - update getting started guide
   - changed exposure config component
   - change AA config
+  - moved update check freq
 - document on generating and printing phonograph records
 - add phosphor icons in doc pages (like i did on the pcb photolithography page)
 
@@ -82,6 +95,5 @@ Features that would be cool, but are a bit out of scope for now.
 - non-welded verts
 - holes
 - inconstant winding order
-- unconnected verts
 - non-manifold (not sure how to fix this thb)
 - repeated faces?

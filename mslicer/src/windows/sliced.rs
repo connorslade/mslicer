@@ -683,7 +683,7 @@ fn sidebar(
     ui.heading("Exposure");
 
     let mut exposure_changed = false;
-    CollapsingHeader::new("Config").show(ui, |ui| {
+    ui.collapsing("Config", |ui| {
         grid("exposure").show(ui, |ui| {
             ui.label("First Layers");
             exposure_changed |= DragValue::new(&mut result.config.first_layers)
@@ -702,11 +702,11 @@ fn sidebar(
         });
     });
 
-    CollapsingHeader::new("Normal Layers").show(ui, |ui| {
+    ui.collapsing("Normal Layers", |ui| {
         exposure_changed |= exposure_config(ui, &mut result.config.exposure_config);
     });
 
-    CollapsingHeader::new("First Layers").show(ui, |ui| {
+    ui.collapsing("First Layers", |ui| {
         exposure_changed |= exposure_config(ui, &mut result.config.first_exposure_config);
     });
 
@@ -779,7 +779,7 @@ fn sidebar(
                             .suffix(format!(" {symbol}/L"))
                             .ui(ui);
 
-                        ComboBox::new("currency", "")
+                        ComboBox::from_id_salt("currency")
                             .width(16.0)
                             .selected_text(config.sliced.currency.symbol().to_string())
                             .show_ui(ui, |ui| {
@@ -825,7 +825,7 @@ fn sidebar(
             });
         });
 
-    CollapsingHeader::new("File Properties").show(ui, |ui| {
+    ui.collapsing("File Properties", |ui| {
         grid("file").show(ui, |ui| {
             let slice_height = result.config.slice_height.get::<Mircometer>();
             ui.label("Slice Height");
@@ -844,7 +844,7 @@ fn sidebar(
         });
     });
 
-    CollapsingHeader::new("Surface Area").show(ui, |ui| {
+    ui.collapsing("Surface Area", |ui| {
         ui.label(SURFACE_AREA_DESC);
         ui.add_space(8.0);
 

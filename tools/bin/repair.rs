@@ -1,11 +1,12 @@
 use std::{
+    env,
     fs::File,
     io::{BufReader, BufWriter},
     mem,
     sync::Arc,
 };
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 
 use common::{
     progress::Progress,
@@ -19,8 +20,10 @@ use slicer::{
 use tools::repair::{MeshRepair, RepairResult};
 
 fn main() -> Result<()> {
+    let path = (env::args().skip(1).next()).context("No input path supplied")?;
+
     println!("[*] Loading");
-    let file = File::open("/home/connorslade/Documents/Resin Printing/Test Models/Skull_v1.stl")?;
+    let file = File::open(path)?;
     let des = ReaderDeserializer::new(BufReader::new(file));
     let mesh = mesh_format::load_mesh(des, Format::Stl, &Progress::new())?;
 

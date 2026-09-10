@@ -17,7 +17,7 @@ impl MeshManifold {
     pub fn new(mesh: &Model) -> Self {
         let progress = Progress::new();
         let handle = TaskThread::spawn(clone!([progress, { mesh.mesh } as model], move || {
-            model.is_manifold(progress)
+            model.is_defective(progress)
         }));
 
         Self {

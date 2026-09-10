@@ -1,4 +1,4 @@
-use egui::{CollapsingHeader, Context, Ui};
+use egui::{Context, Ui};
 use slicer::builder::MeshBuilder;
 use tools::supports::{SupportGenerator, route_support};
 
@@ -45,7 +45,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     ui.add_space(8.0);
     let support = &mut app.state.support_config;
 
-    CollapsingHeader::new("Support Placement").show(ui, |ui| {
+    ui.collapsing("Support Placement", |ui| {
         dragger(ui, "Max Angle", &mut support.max_angle, |x| x.speed(0.01));
         dragger(
             ui,
@@ -68,7 +68,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
         );
     });
 
-    CollapsingHeader::new("Support Generation").show(ui, |ui| {
+    ui.collapsing("Support Generation", |ui| {
         for (name, value) in [
             ("Support Radius", &mut support.support_radius),
             ("Tip Length", &mut support.tip_length),

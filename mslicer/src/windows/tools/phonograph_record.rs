@@ -1,5 +1,5 @@
 use common::units::Mircometer;
-use egui::{Button, CollapsingHeader, ComboBox, DragValue, RichText, Ui, Widget, vec2};
+use egui::{Button, ComboBox, DragValue, RichText, Ui, Widget, vec2};
 use tools::phonograph_record::audio::{Channels, Equalization};
 
 use crate::{
@@ -49,10 +49,10 @@ fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
     });
 
     ui.add_space(8.0);
-    CollapsingHeader::new("Audio Processing").show(ui, |ui| {
+    ui.collapsing("Audio Processing", |ui| {
         grid("audio").show(ui, |ui| {
             ui.label("Channels");
-            ComboBox::new("channels", "")
+            ComboBox::from_id_salt("channels")
                 .selected_text(tool.channels.name())
                 .show_ui(ui, |ui| {
                     for channels in Channels::ALL {
@@ -63,7 +63,7 @@ fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
 
             ui.label("Equalization");
             ui.horizontal(|ui| {
-                ComboBox::new("eq", "")
+                ComboBox::from_id_salt("eq")
                     .selected_text(tool.equalization.name())
                     .show_ui(ui, |ui| {
                         for eq in Equalization::ALL {
@@ -76,7 +76,7 @@ fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
         });
     });
 
-    CollapsingHeader::new("Disk").show(ui, |ui| {
+    ui.collapsing("Disk", |ui| {
         grid("disk").show(ui, |ui| {
             ui.label("Outer Radius");
             DragValue::new(tool.outer_radius.raw_mut())
@@ -101,7 +101,7 @@ fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
         });
     });
 
-    CollapsingHeader::new("Groove").show(ui, |ui| {
+    ui.collapsing("Groove", |ui| {
         grid("groove").show(ui, |ui| {
             ui.label("Pitch");
             tool.pitch.with::<Mircometer>(|x| {

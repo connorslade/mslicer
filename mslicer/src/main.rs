@@ -86,18 +86,25 @@ fn main() -> Result<()> {
             centered: true,
             wgpu_options: WgpuConfiguration {
                 wgpu_setup: WgpuSetup::CreateNew(WgpuSetupCreateNew {
-                    device_descriptor: Arc::new(move |_adapter| DeviceDescriptor {
-                        label: None,
-                        required_features: Features::POLYGON_MODE_LINE
-                            | Features::PUSH_CONSTANTS
-                            | Features::SHADER_PRIMITIVE_INDEX,
-                        required_limits: Limits {
-                            max_buffer_size,
-                            max_storage_buffer_binding_size: max_buffer_size as u32,
-                            max_push_constant_size: 4,
-                            ..Limits::default()
-                        },
-                        ..Default::default()
+                    device_descriptor: Arc::new(move |adapter| {
+                        let limits = adapter.limits();
+                        let adapter_max_buffer = (limits.max_buffer_size)
+                            .min(limits.max_storage_buffer_binding_size as u64);
+                        let max_buffer_size = max_buffer_size.min(adapter_max_buffer); // todo: always use adapter maximum?
+
+                        DeviceDescriptor {
+                            label: None,
+                            required_features: Features::POLYGON_MODE_LINE
+                                | Features::PUSH_CONSTANTS
+                                | Features::SHADER_PRIMITIVE_INDEX,
+                            required_limits: Limits {
+                                max_buffer_size,
+                                max_storage_buffer_binding_size: max_buffer_size as u32,
+                                max_push_constant_size: 4,
+                                ..Limits::default()
+                            },
+                            ..Default::default()
+                        }
                     }),
                     ..Default::default()
                 }),

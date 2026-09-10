@@ -48,7 +48,8 @@ impl MeshRepair {
         // Detect close vertices
         let mut spatial = HashMap::<_, Vec<_>>::new();
         for (i, vert) in state.vertices.iter().enumerate() {
-            let hash = vert.map(|x| (x / self.vertex_epsilon) as i64);
+            // floor needed since it rounds negative numbers away (↓) from zero
+            let hash = vert.map(|x| (x / self.vertex_epsilon).floor() as i64);
             spatial.entry(hash).or_default().push(i as u32);
         }
 

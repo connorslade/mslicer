@@ -26,7 +26,7 @@ fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
 
     grid("").show(ui, |ui| {
         ui.label("Pattern");
-        ComboBox::new("pattern", "")
+        ComboBox::from_id_salt("pattern")
             .selected_text(tool.pattern.name())
             .show_ui(ui, |ui| {
                 for pattern in Pattern::ALL {

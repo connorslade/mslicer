@@ -320,7 +320,7 @@ pub fn model_properties(
             });
             ui.horizontal(|ui| {
                 let last_factor = model.unit.conversion();
-                ComboBox::new("units", "")
+                ComboBox::from_id_salt("units")
                     .selected_text(model.unit.name())
                     .show_ui(ui, |ui| {
                         for unit in MeshUnit::ALL {

@@ -42,6 +42,8 @@
 - Allow configuring max allowed circle error in PCB tool
 - Don't save big meshes in history when deleted (configurable threshold)
 - Show mesh memory usage
+- Take mesh warning off of non-manifold but sliceable meshes
+- Reorganize workspace panel
 
 ## v0.9.2 &mdash; August 30th, 2026
 

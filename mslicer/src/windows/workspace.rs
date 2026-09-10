@@ -9,7 +9,7 @@ use crate::{
         App,
         config::{
             render::{Projection, RenderStyle},
-            ui::UpdateCheckFrequency,
+            ui::{B_PER_MIB, UpdateCheckFrequency},
         },
     },
     ui::components::{collapsing_toggle, dragger, grid, vec2_dragger, vec3_dragger},
@@ -19,6 +19,7 @@ const BASIS_TIP: &str = "Set size to 0px to disable.";
 const AA_DESC: &str = "Anti-aliasing smooths jagged edges at the borders of models.";
 const SSAO_DESC: &str = "Ambient occlusion (SSAO) simulates how ambient light gets blocked in convex areas, making the rendering a little more realistic.";
 const SSAO_SCALE_TIP: &str = "Calculate ambient occlusion at a lower resolution to get better performance at the cost of quality.";
+const MAX_BUFFER_SIZE_TIP: &str = "The maximum GPU mesh size, high-poly meshes may require raising this setting but not all GPUs support larger values. Requires full app restart to take affect.";
 const SPACENAV_CONNECTED: &str = "Connected to Spacenav.";
 const SPACENAV_UNCONNECTED: &str =
     "Failed to connect to Spacenav. Make sure the daemon is running and reconnect.";
@@ -44,35 +45,10 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     });
     ui.add_space(8.0);
 
-    Grid::new("theme")
-        .spacing([40.0, 4.0])
-        .striped(true)
-        .num_columns(2)
-        .show(ui, |ui| {
-            ui.label("Theme");
-            ComboBox::from_id_salt("theme")
-                .selected_text(match app.config.ui.theme {
-                    Theme::Dark => "Dark",
-                    Theme::Light => "Light",
-                })
-                .show_ui(ui, |ui| {
-                    ui.selectable_value(&mut app.config.ui.theme, Theme::Dark, "Dark");
-                    ui.selectable_value(&mut app.config.ui.theme, Theme::Light, "Light");
-                });
-            ui.end_row();
-
-            ui.label("Check for Updates");
-            ComboBox::from_id_salt("update_frequency")
-                .selected_text(app.config.ui.update_check.name())
-                .show_ui(ui, |ui| {
-                    for freq in UpdateCheckFrequency::ALL {
-                        ui.selectable_value(&mut app.config.ui.update_check, freq, freq.name());
-                    }
-                });
-            ui.end_row();
-
+    ui.collapsing("Render Style", |ui| {
+        grid("style").show(ui, |ui| {
             ui.horizontal(|ui| {
-                ui.label("Render Style");
+                ui.label("Mode");
                 ui.label(INFO)
                     .on_hover_text("This setting is really only intended for debugging.");
             });
@@ -99,6 +75,33 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                 });
             ui.end_row();
 
+            ui.label("Normals");
+            ui.horizontal(|ui| {
+                ComboBox::from_id_salt("normals")
+                    .selected_text(["Hidden", "Shown"][app.config.render.normals as usize])
+                    .show_ui(ui, |ui| {
+                        ui.selectable_value(&mut app.config.render.normals, false, "Hidden");
+                        ui.selectable_value(&mut app.config.render.normals, true, "Shown");
+                    });
+                ui.take_available_width();
+            });
+            ui.end_row();
+        });
+    });
+    ui.collapsing("Interface", |ui| {
+        grid("interface").show(ui, |ui| {
+            ui.label("Theme");
+            ComboBox::from_id_salt("theme")
+                .selected_text(match app.config.ui.theme {
+                    Theme::Dark => "Dark",
+                    Theme::Light => "Light",
+                })
+                .show_ui(ui, |ui| {
+                    ui.selectable_value(&mut app.config.ui.theme, Theme::Dark, "Dark");
+                    ui.selectable_value(&mut app.config.ui.theme, Theme::Light, "Light");
+                });
+            ui.end_row();
+
             ui.label("Grid Size");
             ui.horizontal(|ui| {
                 dragger(ui, "", &mut app.config.render.grid_size, |x| {
@@ -117,20 +120,11 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                 .suffix(" px")
                 .ui(ui);
             ui.end_row();
-
-            ui.label("Max History Mesh");
-            DragValue::new(&mut app.config.ui.history_max_mesh_size)
-                .suffix(" MiB")
-                .ui(ui);
-            ui.end_row();
         });
+    });
 
     ui.add_space(8.0);
-    ui.checkbox(&mut app.config.render.normals, "Show Normals");
-    ui.add_space(8.0);
-
     ui.heading("Rendering");
-
     ui.collapsing("Camera", |ui| {
         if ui
             .button(concatcp!(ARROW_COUNTER_CLOCKWISE, " Reset"))
@@ -249,6 +243,39 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
 
     ui.add_space(8.0);
     ui.heading("Miscellaneous");
+    ui.collapsing("Limits", |ui| {
+        grid("limits").show(ui, |ui| {
+            ui.label("Check for Updates");
+            ComboBox::from_id_salt("update_frequency")
+                .selected_text(app.config.ui.update_check.name())
+                .show_ui(ui, |ui| {
+                    for freq in UpdateCheckFrequency::ALL {
+                        ui.selectable_value(&mut app.config.ui.update_check, freq, freq.name());
+                    }
+                });
+            ui.end_row();
+
+            ui.label("Max History Mesh");
+            ui.horizontal(|ui| {
+                DragValue::new(&mut app.config.ui.history_max_mesh_size)
+                    .suffix(" MiB")
+                    .ui(ui);
+                ui.take_available_width();
+            });
+            ui.end_row();
+
+            ui.horizontal(|ui| {
+                ui.label("Max Buffer Size");
+                ui.label(INFO).on_hover_text(MAX_BUFFER_SIZE_TIP);
+            });
+            let mut mib = app.config.render.max_buffer_size / B_PER_MIB as u64;
+            if DragValue::new(&mut mib).suffix(" MiB").ui(ui).changed() {
+                app.config.render.max_buffer_size = mib * B_PER_MIB as u64;
+            }
+            ui.end_row();
+        });
+    });
+
     CollapsingHeader::new("Spacenav")
         .enabled(cfg!(unix))
         .show(ui, |ui| {

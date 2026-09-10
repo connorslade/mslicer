@@ -113,7 +113,7 @@ impl Mesh {
         self.faces().len()
     }
 
-    pub fn is_manifold(&self, progress: Progress) -> bool {
+    pub fn is_defective(&self, progress: Progress) -> bool {
         let mut edges = HashMap::<_, u8>::new();
 
         progress.set_total(self.face_count() as u64);
@@ -126,7 +126,9 @@ impl Mesh {
 
         progress.set_finished();
         for count in edges.values() {
-            if *count < 2 {
+            // Allows edges to be connected to an even number of triangle faces.
+            // In these cases the mesh is not manifold but will still slice.
+            if *count % 2 != 0 {
                 return false;
             }
         }
