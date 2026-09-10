@@ -21,7 +21,7 @@ use crate::{
     },
     windows::{
         Tab,
-        tools::{self, graphics_3d},
+        tools::{self, graphics_3d, sliced_diff},
     },
 };
 
@@ -156,9 +156,8 @@ pub fn ui(app: &mut App, ctx: &Context) {
                         .clicked()
                         .then(|| collect_instances(app));
 
-                    if ui.button("3D Graphics").clicked() {
-                        graphics_3d::open(app);
-                    }
+                    (ui.button("3D Graphics").clicked()).then(|| graphics_3d::open(app));
+                    (ui.button("Sliced Diff").clicked()).then(|| sliced_diff::open(app));
                 });
 
                 ui.menu_button(concatcp!(CARDS, " View"), |ui| {

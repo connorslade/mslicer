@@ -1,11 +1,12 @@
 pub mod auto_layout;
-pub mod exposure_test;
+mod exposure;
 pub mod graphics_3d;
-pub mod internal_exposure_test;
 mod misc;
 pub mod phonograph_record;
 pub mod printed_circuit_board;
 pub mod reconstruct_mesh;
 pub mod repair;
+pub mod sliced_diff;
 pub mod supports;
 pub mod test_pattern;
+pub use exposure::{exposure_test, internal_exposure_test};

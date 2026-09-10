@@ -41,11 +41,15 @@ Feel free to help out :eyes:.
 - release updated msla_format
 - mesh repair tool/button
 - simd for mesh-plane intersection?
-- benchmark slice operation to see how mich time is spent between intersection
-  and rasterization
+- benchmark slice operation to see how mich time is spent between intersection and rasterization
 - game style camera (arrow keys to move)
 - organize workspace settings, maybe rename panel too
 - sliced diff tool
+  - ui cleanup
+  - write description
+  - diffrent diff modes: threshold, abs diff
+  - pipe in loaded data
+- organize tools menu with categories?
 
 ## Documentation
 
