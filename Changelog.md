@@ -1,6 +1,6 @@
 # Changelog
 
-## v?.?.? &mdash; Coming Soon™
+## v0.10.0 &mdash; Coming Soon™
 
 - Merge lift and retract distance settings.
   In practice they should always be the same and the setting was only supported by `.goo`
@@ -45,6 +45,7 @@
 - Take mesh warning off of non-manifold but sliceable meshes
 - Reorganize workspace panel
 - Rename non manifold mesh to defective mesh since some kinds of non-manifold meshes will slice correctly
+- Sliced file diff tool
 
 ## v0.9.2 &mdash; August 30th, 2026
 

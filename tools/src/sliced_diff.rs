@@ -14,7 +14,9 @@ use slicer::util::load_sliced;
 pub struct SlicedDiff {
     pub old: Source,
     pub new: Source,
-    pub threshold: u8,
+
+    pub comparison: Comparison,
+    pub threshold: (bool, u8),
 }
 
 #[derive(Clone, Default)]
@@ -31,6 +33,12 @@ pub enum SourceId {
     New,
 }
 
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub enum Comparison {
+    AbsoluteDifference,
+    SignedDifference,
+}
+
 impl SlicedDiff {
     pub fn slice_config(&self, _config: &mut SliceConfig) {}
 
@@ -44,7 +52,7 @@ impl SlicedDiff {
         (0..layers)
             .map(|i| {
                 let (old, new) = (&old[i].data, &new[i].data);
-                let data = diff_layer(old, new, self.threshold);
+                let data = self.diff_layer(old, new);
 
                 Layer::new(
                     data,
@@ -65,6 +73,38 @@ impl SlicedDiff {
             SourceId::Old => &mut self.old,
             SourceId::New => &mut self.new,
         }
+    }
+
+    fn threshold(&self, value: u8) -> u8 {
+        if self.threshold.0 {
+            [0, 255][(value >= self.threshold.1) as usize]
+        } else {
+            value
+        }
+    }
+
+    fn diff_layer(&self, old: &[Run], new: &[Run]) -> Vec<Run> {
+        let (mut old, mut new) = (RunQueue::new(old), RunQueue::new(new));
+        let mut out = Vec::new();
+
+        // uncompressed length of old and new must be the same
+        while old.remaining() {
+            let length = old.active.length.min(new.active.length);
+            let (old, new) = (old.take_up_to(length), new.take_up_to(length));
+
+            let [old_value, new_value] = [old.value, new.value].map(|x| self.threshold(x));
+            let value = match self.comparison {
+                Comparison::AbsoluteDifference => old_value.abs_diff(new_value),
+                Comparison::SignedDifference => {
+                    let diff = new_value as i16 - old_value as i16;
+                    (diff / 2 + 128) as u8
+                }
+            };
+
+            out.push(Run::new(length, value));
+        }
+
+        out
     }
 }
 
@@ -88,24 +128,15 @@ impl Source {
     }
 }
 
-fn diff_layer(old: &[Run], new: &[Run], threshold: u8) -> Vec<Run> {
-    let (mut old, mut new) = (RunQueue::new(old), RunQueue::new(new));
-    let mut out = Vec::new();
+impl Comparison {
+    pub const ALL: [Self; 2] = [Self::AbsoluteDifference, Self::SignedDifference];
 
-    // uncompressed length of old and new must be the same
-    while old.remaining() {
-        let length = old.active.length.min(new.active.length);
-        let (old, new) = (old.take_up_to(length), new.take_up_to(length));
-
-        let new_threshold = new.value >= threshold;
-        if (old.value >= threshold) ^ new_threshold {
-            out.push(Run::new(length, new_threshold as u8 * 255));
-        } else {
-            out.push(Run::new(length, 128));
+    pub fn name(&self) -> &str {
+        match self {
+            Comparison::AbsoluteDifference => "Absolute Difference",
+            Comparison::SignedDifference => "Signed Difference",
         }
     }
-
-    out
 }
 
 impl Default for SlicedDiff {
@@ -113,7 +144,9 @@ impl Default for SlicedDiff {
         Self {
             old: Default::default(),
             new: Default::default(),
-            threshold: 128,
+
+            comparison: Comparison::SignedDifference,
+            threshold: (false, 128),
         }
     }
 }

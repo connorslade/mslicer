@@ -6,7 +6,7 @@ Feel free to help out :eyes:.
 ## Bugs
 
 - no way to configure quick layout spacing
-- max buffer size limit may fail, fall back to default
+- You can open multiple instances of a tool window
 
 ## Features
 
@@ -95,8 +95,9 @@ Features that would be cool, but are a bit out of scope for now.
 
 > types of defects
 
-- non-welded verts
-- holes
-- inconstant winding order
-- non-manifold (not sure how to fix this thb)
-- repeated faces?
+- [x] non-welded verts
+- [ ] holes
+  - find edge loop and triangulate (somehow...)
+- [ ] inconstant winding order
+- [ ] non-manifold (not sure how to fix this thb)
+- [ ] repeated faces?

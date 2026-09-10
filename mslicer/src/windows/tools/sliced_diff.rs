@@ -1,6 +1,6 @@
-use egui::{Button, DragValue, RichText, Ui, Widget};
+use egui::{Button, ComboBox, DragValue, RichText, Ui};
 use egui_phosphor::regular::{FOLDER_OPEN, STACK_SIMPLE};
-use tools::sliced_diff::{Source, SourceId};
+use tools::sliced_diff::{Comparison, Source, SourceId};
 
 use crate::{
     app::App,
@@ -12,7 +12,8 @@ use crate::{
     },
 };
 
-pub const DESCRIPTION: &str = "todo.";
+pub const DESCRIPTION: &str =
+    "Compares the layer data between two sliced files using your selected difference method.";
 
 pub fn open(app: &mut App) {
     app.popup
@@ -35,9 +36,20 @@ fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
         ui.end_row();
 
         let tool = &mut app.state.tools.sliced_diff;
+        ui.label("Comparison");
+        ComboBox::from_id_salt("comparison")
+            .selected_text(tool.comparison.name())
+            .show_ui(ui, |ui| {
+                for comparison in Comparison::ALL {
+                    ui.selectable_value(&mut tool.comparison, comparison, comparison.name());
+                }
+            });
+        ui.end_row();
+
         ui.label("Threshold");
         ui.horizontal(|ui| {
-            DragValue::new(&mut tool.threshold).ui(ui);
+            ui.checkbox(&mut tool.threshold.0, "");
+            ui.add_enabled(tool.threshold.0, DragValue::new(&mut tool.threshold.1));
             ui.take_available_width();
         });
         ui.end_row();
