@@ -15,7 +15,7 @@ use tracing::info;
 use crate::{
     project::Project,
     task::{
-        BuildAccelerationStructures, MeshManifold, PollResult, Task, TaskApp, TaskStatus,
+        BuildAccelerationStructures, MeshDefective, PollResult, Task, TaskApp, TaskStatus,
         thread::TaskThread,
     },
 };
@@ -89,7 +89,7 @@ impl Task for ProjectLoad {
                 // Only spawn these tasks one per mesh, not per instance
                 if seen_meshes.insert(model.mesh.mesh_id()) {
                     result = result
-                        .with_task(MeshManifold::new(model))
+                        .with_task(MeshDefective::new(model))
                         .with_task(BuildAccelerationStructures::new(model));
                 }
 

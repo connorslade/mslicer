@@ -7,13 +7,13 @@ use crate::{
     task::{PollResult, Task, TaskApp, TaskStatus, thread::TaskThread},
 };
 
-pub struct MeshManifold {
+pub struct MeshDefective {
     mesh_id: MeshId,
     progress: Progress,
     handle: TaskThread<bool>,
 }
 
-impl MeshManifold {
+impl MeshDefective {
     pub fn new(mesh: &Model) -> Self {
         let progress = Progress::new();
         let handle = TaskThread::spawn(clone!([progress, { mesh.mesh } as model], move || {
@@ -28,10 +28,10 @@ impl MeshManifold {
     }
 }
 
-impl Task for MeshManifold {
+impl Task for MeshDefective {
     fn poll(&mut self, app: &mut TaskApp) -> PollResult {
         self.handle
-            .poll(app, "Failed to Check Mesh Manifold")
+            .poll(app, "Failed to Check for Mesh Defects")
             .into_poll_result(|result| {
                 for model in app
                     .project
@@ -39,7 +39,7 @@ impl Task for MeshManifold {
                     .iter_mut()
                     .filter(|x| x.mesh.mesh_id() == self.mesh_id)
                 {
-                    model.warnings.set(MeshWarnings::NonManifold, !result);
+                    model.warnings.set(MeshWarnings::Defective, !result);
                 }
                 PollResult::complete()
             })
@@ -47,7 +47,7 @@ impl Task for MeshManifold {
 
     fn status(&self) -> Option<TaskStatus<'_>> {
         Some(TaskStatus {
-            name: "Is Manifold".into(),
+            name: "Is Detective".into(),
             details: None,
             progress: self.progress.progress(),
         })

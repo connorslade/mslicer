@@ -32,7 +32,7 @@ use crate::{
     },
 };
 
-const WARN_NON_MANIFOLD: &str = "This mesh is non-manifold, it may produce unexpected results when sliced.\nConsider running it through a mesh repair tool.";
+const WARN_DEFECTIVE: &str = "This mesh is defective, it may produce unexpected results when sliced.\nConsider running it through a mesh repair tool.";
 const WARN_OUT_OF_BOUNDS: &str = "This mesh extends beyond the printer volume and will be cut off.";
 const UNIT_TIP: &str = "Common polygon mesh formats like .stl and .obj don't include unit information. For this reason you need to manually specify the units for each mesh, although Millimeters, the default, is often correct.";
 const CUSTOM_UNIT_TIP: &str = "To use a custom unit, input the conversion factor from the input unit to Millimeters. For example if your mesh was defined in feet (for some reason) you would use 30.48.";
@@ -93,7 +93,7 @@ pub fn model_entry(
                 let mut warn = ui.label(format!("{WARNING}{}", subscript_number(count)));
                 for warning in model.warnings.iter() {
                     let desc = match warning {
-                        MeshWarnings::NonManifold => WARN_NON_MANIFOLD,
+                        MeshWarnings::Defective => WARN_DEFECTIVE,
                         MeshWarnings::OutOfBounds => WARN_OUT_OF_BOUNDS,
                         _ => unreachable!(),
                     };

@@ -6,7 +6,6 @@ Feel free to help out :eyes:.
 ## Bugs
 
 - no way to configure quick layout spacing
-- rename non manifold mesh to defective mesh
 - max buffer size limit may fail, fall back to default
 
 ## Features

@@ -49,7 +49,7 @@ pub struct ModelUi {
 bitflags! {
     #[derive(Clone, Copy, PartialEq, Eq)]
     pub struct MeshWarnings: u8 {
-        const NonManifold = 1 << 0;
+        const Defective = 1 << 0;
         const OutOfBounds = 1 << 1;
     }
 }

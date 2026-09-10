@@ -21,7 +21,7 @@ use crate::{
     app::history::Action,
     project::model::Model,
     task::{
-        BuildAccelerationStructures, MeshManifold, PollResult, Task, TaskApp, TaskStatus,
+        BuildAccelerationStructures, MeshDefective, PollResult, Task, TaskApp, TaskStatus,
         thread::TaskThread,
     },
 };
@@ -96,7 +96,7 @@ impl Task for MeshLoad {
                 .with_random_color();
             model.update_oob(&app.project.slice_config.platform_size);
             let result = PollResult::complete()
-                .with_task(MeshManifold::new(&model))
+                .with_task(MeshDefective::new(&model))
                 .with_task(BuildAccelerationStructures::new(&model));
             app.history.track(Action::ModelAdded { id: model.id });
             app.project.models.push(model);

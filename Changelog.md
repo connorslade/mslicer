@@ -44,6 +44,7 @@
 - Show mesh memory usage
 - Take mesh warning off of non-manifold but sliceable meshes
 - Reorganize workspace panel
+- Rename non manifold mesh to defective mesh since some kinds of non-manifold meshes will slice correctly
 
 ## v0.9.2 &mdash; August 30th, 2026
 

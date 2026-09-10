@@ -10,7 +10,7 @@ use crate::{
         model::{Model, ModelId},
     },
     task::{
-        BuildAccelerationStructures, MeshManifold, PollResult, Task, TaskApp, TaskStatus,
+        BuildAccelerationStructures, MeshDefective, PollResult, Task, TaskApp, TaskStatus,
         thread::TaskThread,
     },
 };
@@ -90,7 +90,7 @@ impl Task for SplitBodies {
                         .with_random_color();
                     model.update_oob(&app.project.slice_config.platform_size);
                     result = result
-                        .with_task(MeshManifold::new(&model))
+                        .with_task(MeshDefective::new(&model))
                         .with_task(BuildAccelerationStructures::new(&model));
                     app.project.models.push(model);
                 }
