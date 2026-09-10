@@ -126,7 +126,7 @@ impl Mesh {
 
         progress.set_finished();
         for count in edges.values() {
-            if *count != 2 {
+            if *count < 2 {
                 return false;
             }
         }

@@ -6,5 +6,6 @@ mod misc;
 pub mod phonograph_record;
 pub mod printed_circuit_board;
 pub mod reconstruct_mesh;
+pub mod repair;
 pub mod supports;
 pub mod test_pattern;

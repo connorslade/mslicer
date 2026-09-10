@@ -5480,6 +5480,7 @@ dependencies = [
  "gerber_parser",
  "hound",
  "itertools 0.14.0",
+ "mesh_format",
  "nalgebra 0.34.1",
  "ordered-float",
  "parking_lot",

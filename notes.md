@@ -5,6 +5,8 @@ Feel free to help out :eyes:.
 
 ## Bugs
 
+- no way to configure quick layout spacing
+
 ## Features
 
 - support generation
@@ -32,12 +34,7 @@ Feel free to help out :eyes:.
 - task cancellation mechanism
 - release updated msla_format
 - mesh repair tool/button
-  - non-welded verts
-  - holes
-  - inconstant winding order
-  - unconnected verts
-  - non-manifold (not sure how to fix this thb)
-  - repeated faces?
+- simd for mesh-plane intersection?
 
 ## Documentation
 
@@ -68,3 +65,23 @@ Features that would be cool, but are a bit out of scope for now.
   - mslicer_core (app + project + task?)
   - mslicer_render (render)
   - mslicer_ui (window + ui)
+
+## Defective Meshes
+
+> when do non-manifold meshes slice correctly?
+
+- non-welded verts?
+- hole has no height (only if not rotated in XY)
+
+> test models
+
+- capybara
+
+> types of defects
+
+- non-welded verts
+- holes
+- inconstant winding order
+- unconnected verts
+- non-manifold (not sure how to fix this thb)
+- repeated faces?
