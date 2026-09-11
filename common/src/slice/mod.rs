@@ -27,6 +27,8 @@ pub trait SlicedFile {
     fn serialize(&self, ser: &mut DynamicSerializer, progress: &Progress);
     fn set_preview(&mut self, preview: &RgbaImage);
     fn slice_config(&self) -> SliceConfig;
+
+    fn layer_count(&self) -> usize;
     fn layers(&self, progress: &Progress) -> Vec<Layer>;
     fn previews(&self) -> Vec<RgbaImage>;
 }

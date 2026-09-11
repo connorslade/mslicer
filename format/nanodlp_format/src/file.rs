@@ -226,6 +226,10 @@ impl SlicedFile for File {
         }
     }
 
+    fn layer_count(&self) -> usize {
+        self.layers.len()
+    }
+
     fn layers(&self, progress: &Progress) -> Vec<common::slice::Layer> {
         progress.set_total(self.layers.len() as u64);
         self.into_layers()

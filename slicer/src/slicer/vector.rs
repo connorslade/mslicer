@@ -153,6 +153,10 @@ impl SlicedFile for SvgFile {
         }
     }
 
+    fn layer_count(&self) -> usize {
+        self.layers.len()
+    }
+
     fn layers(&self, _progress: &Progress) -> Vec<common::slice::Layer> {
         vec![]
     }

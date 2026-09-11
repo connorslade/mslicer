@@ -39,9 +39,6 @@ Feel free to help out :eyes:.
 - benchmark slice operation to see how mich time is spent between intersection and rasterization
 - game style camera (arrow keys to move)
 - organize workspace settings, maybe rename panel too
-- sliced diff tool
-  - use max layers
-  - verify resolutions
 - organize tools menu with categories?
 - report slice errors ↓
 

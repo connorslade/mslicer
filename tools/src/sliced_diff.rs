@@ -2,9 +2,10 @@ use std::{path::PathBuf, sync::Arc};
 
 use common::{
     container::{Run, rle::downsample::RunQueue},
-    progress::{CombinedProgress, Progress},
+    progress::Progress,
     slice::{Layer, SliceConfig, SlicedFile},
 };
+use nalgebra::Vector2;
 
 #[derive(Clone)]
 pub struct SlicedDiff {
@@ -45,19 +46,19 @@ impl SlicedDiff {
     pub fn slice_config(&self, _config: &mut SliceConfig) {}
 
     pub fn generate(&self, config: &SliceConfig, progress: &Progress) -> Vec<Layer> {
-        let _progress = CombinedProgress::<3>::new();
-        let (old_config, old_layers) = self.old.load(&_progress[0]).unwrap();
-        let (new_config, new_layers) = self.new.load(&_progress[1]).unwrap();
+        let layers = self.old.layers().max(self.new.layers());
+        progress.set_total((self.old.layers() + self.new.layers() + layers) as u64);
 
-        if old_config.platform_resolution != new_config.platform_resolution {
-            panic!();
-        }
+        let (loaded_config, old) = self.old.load(progress).unwrap();
+        let (_, new) = self.new.load(progress).unwrap();
 
-        let layers = old_layers.len().min(new_layers.len()); // todo: max
-        progress.set_total(layers as u64);
-        (0..layers)
+        let platform = loaded_config.platform_resolution;
+        let pixels = platform.x as u64 * platform.y as u64;
+        let empty = Arc::new(vec![Run::new(pixels, 0)]);
+
+        let layers = (0..layers)
             .map(|i| {
-                let (old, new) = (&old_layers[i].data, &new_layers[i].data);
+                let [old, new] = [&old, &new].map(|x| x.get(i).map(|x| &x.data).unwrap_or(&empty));
                 let data = self.diff_layer(old, new);
 
                 Layer::new(
@@ -67,11 +68,19 @@ impl SlicedDiff {
                 )
             })
             .inspect(|_| progress.add_complete(1))
-            .collect()
+            .collect();
+
+        progress.set_finished();
+        layers
     }
 
     pub fn sources_specified(&self) -> bool {
         self.old.is_specified() && self.new.is_specified()
+    }
+
+    /// Checks if both sources are specified and have the same layer resolution
+    pub fn matching_sources(&self) -> bool {
+        self.old.resolution() == self.new.resolution()
     }
 
     pub fn source_mut(&mut self, id: SourceId) -> &mut Source {
@@ -117,6 +126,22 @@ impl SlicedDiff {
 impl Source {
     pub fn is_specified(&self) -> bool {
         !matches!(self, Self::Empty)
+    }
+
+    pub fn resolution(&self) -> Option<Vector2<u32>> {
+        Some(match self {
+            Source::Empty => return None,
+            Source::File { file, .. } => file.slice_config().platform_resolution,
+            Source::Loaded { config, .. } => config.platform_resolution,
+        })
+    }
+
+    pub fn layers(&self) -> usize {
+        match self {
+            Source::Empty => 0,
+            Source::File { file, .. } => file.layer_count(),
+            Source::Loaded { layers, .. } => layers.len(),
+        }
     }
 
     fn load(&self, progress: &Progress) -> Option<(SliceConfig, Arc<Vec<Layer>>)> {

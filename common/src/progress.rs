@@ -63,7 +63,9 @@ impl Progress {
     }
 
     pub fn set_total(&self, total: u64) {
-        self.0.total.store(total, Ordering::Relaxed);
+        // Only allow setting total once.
+        // todo: this might cause problems in random places idk
+        let _ = (self.0.total).compare_exchange(0, total, Ordering::Relaxed, Ordering::Relaxed);
     }
 
     pub fn set_complete(&self, complete: u64) {

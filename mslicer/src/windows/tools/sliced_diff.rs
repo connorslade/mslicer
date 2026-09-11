@@ -65,12 +65,20 @@ fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
         ui.end_row();
     });
 
+    let tool = &mut app.state.tools.sliced_diff;
+    let has_source = tool.sources_specified();
+    let sources_match = tool.matching_sources();
+
     ui.add_space(8.0);
+    if has_source && !sources_match {
+        ui.label("Layer resolutions don't match.");
+        ui.add_space(8.0);
+    }
+
     ui.centered_and_justified(|ui| {
-        let tool = &mut app.state.tools.sliced_diff;
         if ui
             .add_enabled(
-                !slicing && tool.sources_specified(),
+                !slicing && has_source && sources_match,
                 Button::new("Generate"),
             )
             .clicked()
@@ -90,7 +98,11 @@ fn source_ui(app: &mut PopupApp, ui: &mut Ui, id: SourceId) {
             && let Some(result) = result.as_ref()
             && let GenericSliceData::Raster { data, .. } = result.slice_data()
         {
-            if ui.button(STACK_SIMPLE).clicked() {
+            if ui
+                .button(STACK_SIMPLE)
+                .on_hover_text("Just sliced")
+                .clicked()
+            {
                 *source = Source::Loaded {
                     config: result.config.clone(),
                     layers: Arc::new(data),
@@ -100,7 +112,11 @@ fn source_ui(app: &mut PopupApp, ui: &mut Ui, id: SourceId) {
             ui.add_enabled(false, Button::new(STACK_SIMPLE));
         }
 
-        if ui.button(FOLDER_OPEN).clicked() {
+        if ui
+            .button(FOLDER_OPEN)
+            .on_hover_text("Load from disk")
+            .clicked()
+        {
             app.tasks.add(FileDialog::pick_file(
                 ("Sliced", &["goo", "ctb", "nanodlp"]),
                 move |app, path, _tasks| {
@@ -120,13 +136,17 @@ fn source_ui(app: &mut PopupApp, ui: &mut Ui, id: SourceId) {
             Source::Empty => {
                 ui.label("Unspecified");
             }
-            Source::File { path, .. } => {
+            Source::File { path, file } => {
                 let name = path.file_name().unwrap().to_string_lossy();
-                ui.label(RichText::new(name).underline())
-                    .on_hover_text(path.to_string_lossy());
+                ui.horizontal(|ui| {
+                    ui.spacing_mut().item_spacing.x = 0.0;
+                    ui.label(RichText::new(name).underline())
+                        .on_hover_text(path.to_string_lossy());
+                    ui.label(format!(" ({} layers)", file.layer_count()));
+                });
             }
-            Source::Loaded { .. } => {
-                ui.label("Loaded");
+            Source::Loaded { layers, .. } => {
+                ui.label(format!("Loaded ({} layers)", layers.len()));
             }
         };
     });
