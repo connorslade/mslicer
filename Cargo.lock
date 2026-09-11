@@ -1373,6 +1373,7 @@ dependencies = [
  "common",
  "image",
  "nalgebra 0.34.1",
+ "rayon",
  "sha2",
 ]
 

@@ -31,7 +31,6 @@ Feel free to help out :eyes:.
   - allow picking stereo or mono
   - generate async
   - create manifold mesh
-- refactor format crates (they're kinda a mess rn)
 - add well documented .zip and .bin output formats (closes #29)
 - task cancellation mechanism
 - release updated msla_format
@@ -41,7 +40,6 @@ Feel free to help out :eyes:.
 - game style camera (arrow keys to move)
 - organize workspace settings, maybe rename panel too
 - sliced diff tool
-  - pipe in loaded data
   - use max layers
   - verify resolutions
 - organize tools menu with categories?

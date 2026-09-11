@@ -2,16 +2,15 @@ use anyhow::{Result, ensure};
 
 use chrono::Local;
 use common::{
-    container::{Image, Run},
     progress::Progress,
     serde::{DynamicSerializer, Serializer, SizedString, SliceDeserializer},
-    slice::{SliceConfig, SliceInfo, SlicedFile},
+    slice::{self, ExposureConfig, ExposureRemap, SliceConfig, SliceMode, SlicedFile},
     units::Second,
 };
 use image::{RgbaImage, imageops::FilterType};
 use nalgebra::{Vector2, Vector3};
 
-use crate::{ENDING_STRING, Header, Layer, LayerDecoder, LayerEncoder, PreviewImage};
+use crate::{ENDING_STRING, Header, Layer, PreviewImage};
 
 /// A Goo file.
 pub struct File {
@@ -99,29 +98,48 @@ impl SlicedFile for File {
         self.header.small_preview = PreviewImage::from_image_scaled(preview, FilterType::Nearest);
     }
 
-    fn info(&self) -> SliceInfo {
-        SliceInfo {
-            layers: self.layers.len() as u32,
-            resolution: Vector2::new(
-                self.header.x_resolution as u32,
-                self.header.y_resolution as u32,
-            ),
-            size: Vector3::new(self.header.x_size, self.header.y_size, self.header.x_size),
-            bottom_layers: self.header.bottom_layers,
+    fn slice_config(&self) -> SliceConfig {
+        let header = &self.header;
+        SliceConfig {
+            mode: SliceMode::Raster,
+            supersample: Default::default(),
+            exposure_remap: ExposureRemap::default(),
+            platform_resolution: Vector2::new(header.x_resolution, header.y_resolution).cast(),
+            platform_size: Vector3::new(header.x_size, header.y_size, header.x_size),
+            slice_height: header.layer_thickness,
+            exposure_config: ExposureConfig {
+                exposure_time: header.exposure_time,
+                exposure_delay: header.after_retract_time,
+                pwm: header.light_pwm,
+                lift_distance: header.lift_distance,
+                lift_speed: header.lift_speed.convert(),
+                retract_speed: header.retract_speed.convert(),
+            },
+            first_exposure_config: ExposureConfig {
+                exposure_time: header.bottom_exposure_time,
+                exposure_delay: header.bottom_after_retract_time,
+                pwm: header.bottom_light_pwm,
+                lift_distance: header.bottom_lift_distance,
+                lift_speed: header.bottom_lift_speed.convert(),
+                retract_speed: header.bottom_retract_speed.convert(),
+            },
+            first_layers: header.bottom_layers,
+            transition_layers: header.transition_layers as u32,
         }
     }
 
-    fn runs(&self, layer: usize) -> Box<dyn Iterator<Item = Run> + '_> {
-        let data = &self.layers[layer].data;
-        Box::new(LayerDecoder::new(data))
+    fn layers(&self, progress: &Progress) -> Vec<slice::Layer> {
+        progress.set_total(self.layers.len() as u64);
+        (self.layers.iter())
+            .map(|l| l.into_layer())
+            .inspect(|_| progress.add_complete(1))
+            .collect()
     }
 
-    fn overwrite_layer(&mut self, layer: usize, image: Image) {
-        let mut encoder = LayerEncoder::new();
-        (image.runs()).for_each(|run| encoder.add_run(run.length, run.value));
-
-        let layer = &mut self.layers[layer];
-        layer.checksum = encoder.checksum();
-        layer.data = encoder.into_inner();
+    fn previews(&self) -> Vec<RgbaImage> {
+        vec![
+            self.header.big_preview.into_image(),
+            self.header.small_preview.into_image(),
+        ]
     }
 }

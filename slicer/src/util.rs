@@ -12,11 +12,10 @@ use common::{
     progress::Progress,
     serde::SliceDeserializer,
     slice::{
-        self, DynSlicedFile, EncodableLayer, Layer, SliceConfig, VectorLayer,
+        self, DynSlicedFile, EncodableLayer, SliceConfig, SlicedFile, VectorLayer,
         format::{RasterFormat, VectorFormat},
     },
 };
-use image::RgbaImage;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
 use crate::slicer::vector::SvgFile;
@@ -93,72 +92,27 @@ where
         .collect()
 }
 
-// todo: make some kinda generic decoder maybe
 pub fn load_sliced(
-    progress: &Progress,
     format: &RasterFormat,
     file: impl Read + Seek,
-) -> Result<(SliceConfig, Vec<Layer>, Vec<RgbaImage>)> {
+) -> Result<Box<dyn SlicedFile + Send + Sync>> {
     fn data(mut reader: impl Read + Seek) -> Result<Vec<u8>> {
         let mut out = Vec::new();
         reader.read_to_end(&mut out)?;
         Ok(out)
     }
 
-    match format {
+    Ok(match format {
         RasterFormat::Goo => {
             let data = data(file)?;
             let mut des = SliceDeserializer::new(&data);
-            let file = goo_format::File::deserialize(&mut des)?;
-            progress.set_total(file.layers.len() as _);
-
-            let config = file.header.into_slice_config();
-            let layers = (file.layers.iter())
-                .map(|x| {
-                    progress.add_complete(1);
-                    x.into_layer()
-                })
-                .collect();
-            let images = vec![
-                file.header.big_preview.into_image(),
-                file.header.small_preview.into_image(),
-            ];
-
-            Ok((config, layers, images))
+            Box::new(goo_format::File::deserialize(&mut des)?)
         }
         RasterFormat::Ctb => {
             let data = data(file)?;
             let mut des = SliceDeserializer::new(&data);
-            let file = ctb_format::File::deserialize(&mut des)?;
-            progress.set_total(file.layers.len() as _);
-
-            let config = file.into_slice_config();
-            let layers = (file.layers.iter())
-                .map(|x| {
-                    progress.add_complete(1);
-                    x.into_layer()
-                })
-                .collect();
-            let images = [file.large_preview, file.small_preview]
-                .map(|x| x.into_image())
-                .to_vec();
-
-            Ok((config, layers, images))
+            Box::new(ctb_format::File::deserialize(&mut des)?)
         }
-        RasterFormat::NanoDLP => {
-            let file = nanodlp_format::File::deserialize(file)?;
-            progress.set_total(file.layers.len() as _);
-
-            let config = file.into_slice_config();
-            // todo: optimize since this calls the image crate to load each png
-            // image then converts to runs...
-            let layers = file
-                .into_layers()
-                .inspect(|_| progress.add_complete(1))
-                .collect();
-            let image = file.preview.into_rgba8();
-
-            Ok((config, layers, vec![image]))
-        }
-    }
+        RasterFormat::NanoDLP => Box::new(nanodlp_format::File::deserialize(file)?),
+    })
 }

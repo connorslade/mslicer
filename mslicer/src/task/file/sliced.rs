@@ -83,7 +83,8 @@ impl LoadSliced {
             let format = RasterFormat::from_extension(&ext).unwrap();
 
             let file = File::open(path).unwrap();
-            slicer::util::load_sliced(&progress, &format, file).unwrap() // todo: handle
+            let file = slicer::util::load_sliced(&format, file).unwrap();
+            (file.slice_config(), file.layers(&progress), file.previews())
         }));
 
         Self {

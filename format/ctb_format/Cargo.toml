@@ -12,4 +12,5 @@ cbc.workspace = true
 clap.workspace = true
 image.workspace = true
 nalgebra.workspace = true
+rayon.workspace = true
 sha2.workspace = true

@@ -1,13 +1,12 @@
 use std::{collections::HashSet, sync::Arc};
 
 use common::{
-    container::{Image, Run},
     progress::Progress,
     serde::{DynamicSerializer, Serializer},
-    slice::{SliceInfo, SlicedFile, VectorLayer},
+    slice::{SliceConfig, SliceMode, SlicedFile, VectorLayer},
     units::Milimeter,
 };
-use nalgebra::{Vector2, Vector3};
+use nalgebra::Vector2;
 use ordered_float::OrderedFloat;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use svg::{
@@ -147,20 +146,18 @@ impl SlicedFile for SvgFile {
 
     fn set_preview(&mut self, _preview: &image::RgbaImage) {}
 
-    fn info(&self) -> SliceInfo {
-        SliceInfo {
-            layers: self.layers.len() as u32,
-            resolution: Vector2::zeros(),
-            size: Vector3::default(),
-            bottom_layers: 0,
+    fn slice_config(&self) -> common::slice::SliceConfig {
+        SliceConfig {
+            mode: SliceMode::Vector,
+            ..SliceConfig::default()
         }
     }
 
-    fn runs(&self, _layer: usize) -> Box<dyn Iterator<Item = Run> + '_> {
-        unimplemented!()
+    fn layers(&self, _progress: &Progress) -> Vec<common::slice::Layer> {
+        vec![]
     }
 
-    fn overwrite_layer(&mut self, _layer: usize, _image: Image) {
-        unimplemented!()
+    fn previews(&self) -> Vec<image::RgbaImage> {
+        vec![]
     }
 }

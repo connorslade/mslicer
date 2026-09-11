@@ -1,12 +1,10 @@
-use std::{fs::File, path::PathBuf};
+use std::{path::PathBuf, sync::Arc};
 
-use anyhow::Result;
 use common::{
     container::{Run, rle::downsample::RunQueue},
     progress::{CombinedProgress, Progress},
-    slice::{Layer, SliceConfig, format::RasterFormat},
+    slice::{Layer, SliceConfig, SlicedFile},
 };
-use slicer::util::load_sliced;
 
 #[derive(Clone)]
 pub struct SlicedDiff {
@@ -21,8 +19,14 @@ pub struct SlicedDiff {
 pub enum Source {
     #[default]
     Empty,
-    File(PathBuf),
-    Loaded,
+    File {
+        path: PathBuf,
+        file: Arc<Box<dyn SlicedFile + Send + Sync>>,
+    },
+    Loaded {
+        config: SliceConfig,
+        layers: Arc<Vec<Layer>>,
+    },
 }
 
 #[derive(Clone, Copy)]
@@ -42,14 +46,18 @@ impl SlicedDiff {
 
     pub fn generate(&self, config: &SliceConfig, progress: &Progress) -> Vec<Layer> {
         let _progress = CombinedProgress::<3>::new();
-        let old = self.old.load(&_progress[0]).unwrap();
-        let new = self.new.load(&_progress[1]).unwrap();
+        let (old_config, old_layers) = self.old.load(&_progress[0]).unwrap();
+        let (new_config, new_layers) = self.new.load(&_progress[1]).unwrap();
 
-        let layers = old.len().min(new.len()); // todo: max
+        if old_config.platform_resolution != new_config.platform_resolution {
+            panic!();
+        }
+
+        let layers = old_layers.len().min(new_layers.len()); // todo: max
         progress.set_total(layers as u64);
         (0..layers)
             .map(|i| {
-                let (old, new) = (&old[i].data, &new[i].data);
+                let (old, new) = (&old_layers[i].data, &new_layers[i].data);
                 let data = self.diff_layer(old, new);
 
                 Layer::new(
@@ -111,17 +119,14 @@ impl Source {
         !matches!(self, Self::Empty)
     }
 
-    fn load(&self, progress: &Progress) -> Result<Vec<Layer>> {
-        Ok(match self {
-            Source::File(path) => {
-                let format =
-                    RasterFormat::from_extension(&path.extension().unwrap().to_string_lossy())
-                        .unwrap();
-                let file = File::open(path)?;
-                load_sliced(progress, &format, file)?.1
+    fn load(&self, progress: &Progress) -> Option<(SliceConfig, Arc<Vec<Layer>>)> {
+        Some(match self {
+            Source::File { file, .. } => {
+                let layers = file.layers(progress);
+                (file.slice_config(), Arc::new(layers))
             }
-            Source::Loaded => todo!(),
-            Source::Empty => unreachable!(),
+            Source::Loaded { config, layers } => (config.clone(), layers.clone()),
+            Source::Empty => return None,
         })
     }
 }

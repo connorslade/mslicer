@@ -5,10 +5,9 @@ use std::{
 
 use anyhow::Result;
 use common::{
-    container::{Image, Run},
     progress::Progress,
     serde::{DynamicSerializer, Serializer},
-    slice::{ExposureConfig, SliceConfig, SliceInfo, SliceMode, SlicedFile},
+    slice::{ExposureConfig, SliceConfig, SliceMode, SlicedFile},
 };
 use image::{DynamicImage, RgbaImage};
 use nalgebra::{Vector2, Vector3};
@@ -17,7 +16,7 @@ use serde::Serialize;
 use zip::{ZipArchive, ZipWriter, write::FileOptions};
 
 use crate::{
-    Layer, LayerDecoder, LayerEncoder, decode_png, encode_png,
+    Layer, LayerDecoder, decode_png, encode_png,
     layer::layers_bounds,
     read_to_bytes,
     types::{
@@ -184,27 +183,6 @@ impl File {
         })
     }
 
-    pub fn into_slice_config(&self) -> SliceConfig {
-        let platform_size = Vector3::new(
-            self.options.x_pixel_size * self.options.p_width as f32,
-            self.options.y_pixel_size * self.options.p_height as f32,
-            (self.profile.depth * self.layers.len() as f32).convert(),
-        );
-
-        SliceConfig {
-            mode: SliceMode::Raster,
-            supersample: Default::default(),
-            exposure_remap: Default::default(),
-            platform_resolution: Vector2::new(self.options.p_width, self.options.p_height),
-            platform_size,
-            slice_height: self.profile.depth.convert(),
-            exposure_config: ExposureConfig::default(),
-            first_exposure_config: ExposureConfig::default(),
-            first_layers: 0,
-            transition_layers: 0,
-        }
-    }
-
     pub fn into_layers(&self) -> impl ParallelIterator<Item = common::slice::Layer> {
         self.layers.par_iter().enumerate().map(|(i, layer)| {
             let data = LayerDecoder::new(layer).runs().collect();
@@ -227,22 +205,35 @@ impl SlicedFile for File {
         self.preview = preview.to_owned().into();
     }
 
-    fn info(&self) -> SliceInfo {
-        SliceInfo {
-            layers: self.layer_info.len() as u32,
-            resolution: Vector2::new(self.options.p_width, self.options.p_height),
-            size: Vector3::default(), // todo: this
-            bottom_layers: self.profile.support_layer_number,
+    fn slice_config(&self) -> SliceConfig {
+        let platform_size = Vector3::new(
+            self.options.x_pixel_size * self.options.p_width as f32,
+            self.options.y_pixel_size * self.options.p_height as f32,
+            (self.profile.depth * self.layers.len() as f32).convert(),
+        );
+
+        SliceConfig {
+            mode: SliceMode::Raster,
+            supersample: Default::default(),
+            exposure_remap: Default::default(),
+            platform_resolution: Vector2::new(self.options.p_width, self.options.p_height),
+            platform_size,
+            slice_height: self.profile.depth.convert(),
+            exposure_config: ExposureConfig::default(),
+            first_exposure_config: ExposureConfig::default(),
+            first_layers: 0,
+            transition_layers: 0,
         }
     }
 
-    fn runs(&self, layer: usize) -> Box<dyn Iterator<Item = Run> + '_> {
-        let decoder = LayerDecoder::new(&self.layers[layer]);
-        Box::new(decoder.runs().collect::<Vec<_>>().into_iter())
+    fn layers(&self, progress: &Progress) -> Vec<common::slice::Layer> {
+        progress.set_total(self.layers.len() as u64);
+        self.into_layers()
+            .inspect(|_| progress.add_complete(1))
+            .collect()
     }
 
-    fn overwrite_layer(&mut self, layer: usize, image: Image) {
-        let encoder = LayerEncoder::from_image(image);
-        self.layers[layer] = encoder.image_data();
+    fn previews(&self) -> Vec<RgbaImage> {
+        vec![self.preview.to_rgba8()]
     }
 }

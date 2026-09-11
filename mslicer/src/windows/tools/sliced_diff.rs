@@ -1,12 +1,14 @@
-use std::mem;
+use std::{fs::File, mem, sync::Arc};
 
+use common::slice::format::RasterFormat;
 use const_format::concatcp;
 use egui::{Button, ComboBox, DragValue, RichText, Ui};
 use egui_phosphor::regular::{FOLDER_OPEN, STACK_SIMPLE, SWAP};
+use slicer::util;
 use tools::sliced_diff::{Difference, Source, SourceId};
 
 use crate::{
-    app::App,
+    app::{App, slice_operation::GenericSliceData},
     generator_tool,
     task::FileDialog,
     ui::{
@@ -83,15 +85,33 @@ fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
 fn source_ui(app: &mut PopupApp, ui: &mut Ui, id: SourceId) {
     ui.horizontal(|ui| {
         let source = app.state.tools.sliced_diff.source_mut(id);
-        if ui.button(STACK_SIMPLE).clicked() {
-            *source = Source::Loaded;
+
+        if let Some(result) = app.slice_operation.as_ref().map(|x| x.result())
+            && let Some(result) = result.as_ref()
+            && let GenericSliceData::Raster { data, .. } = result.slice_data()
+        {
+            if ui.button(STACK_SIMPLE).clicked() {
+                *source = Source::Loaded {
+                    config: result.config.clone(),
+                    layers: Arc::new(data),
+                };
+            }
+        } else {
+            ui.add_enabled(false, Button::new(STACK_SIMPLE));
         }
 
         if ui.button(FOLDER_OPEN).clicked() {
             app.tasks.add(FileDialog::pick_file(
                 ("Sliced", &["goo", "ctb", "nanodlp"]),
                 move |app, path, _tasks| {
-                    *app.state.tools.sliced_diff.source_mut(id) = Source::File(path.to_path_buf());
+                    let file = File::open(path).unwrap();
+                    let ext = path.extension().unwrap().to_string_lossy();
+                    let format = RasterFormat::from_extension(&ext).unwrap();
+
+                    *app.state.tools.sliced_diff.source_mut(id) = Source::File {
+                        path: path.to_path_buf(),
+                        file: Arc::new(util::load_sliced(&format, file).unwrap()),
+                    };
                 },
             ));
         }
@@ -100,12 +120,12 @@ fn source_ui(app: &mut PopupApp, ui: &mut Ui, id: SourceId) {
             Source::Empty => {
                 ui.label("Unspecified");
             }
-            Source::File(path) => {
+            Source::File { path, .. } => {
                 let name = path.file_name().unwrap().to_string_lossy();
                 ui.label(RichText::new(name).underline())
                     .on_hover_text(path.to_string_lossy());
             }
-            Source::Loaded => {
+            Source::Loaded { .. } => {
                 ui.label("Loaded");
             }
         };
