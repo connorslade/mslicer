@@ -1,6 +1,9 @@
+use std::mem;
+
+use const_format::concatcp;
 use egui::{Button, ComboBox, DragValue, RichText, Ui};
-use egui_phosphor::regular::{FOLDER_OPEN, STACK_SIMPLE};
-use tools::sliced_diff::{Comparison, Source, SourceId};
+use egui_phosphor::regular::{FOLDER_OPEN, STACK_SIMPLE, SWAP};
+use tools::sliced_diff::{Difference, Source, SourceId};
 
 use crate::{
     app::App,
@@ -26,6 +29,11 @@ fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
 
     let slicing = app.is_slicing();
 
+    if ui.button(concatcp!(SWAP, " Swap Files")).clicked() {
+        let tool = &mut app.state.tools.sliced_diff;
+        mem::swap(&mut tool.new, &mut tool.old);
+    }
+
     grid("").show(ui, |ui| {
         ui.label("Old");
         source_ui(app, ui, SourceId::Old);
@@ -36,12 +44,12 @@ fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
         ui.end_row();
 
         let tool = &mut app.state.tools.sliced_diff;
-        ui.label("Comparison");
-        ComboBox::from_id_salt("comparison")
-            .selected_text(tool.comparison.name())
+        ui.label("Difference");
+        ComboBox::from_id_salt("difference")
+            .selected_text(tool.difference.name())
             .show_ui(ui, |ui| {
-                for comparison in Comparison::ALL {
-                    ui.selectable_value(&mut tool.comparison, comparison, comparison.name());
+                for difference in Difference::ALL {
+                    ui.selectable_value(&mut tool.difference, difference, difference.name());
                 }
             });
         ui.end_row();

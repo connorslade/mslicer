@@ -8,14 +8,12 @@ use common::{
 };
 use slicer::util::load_sliced;
 
-// grey means voxel is the same in both, black or white is the voxel value of new
-
 #[derive(Clone)]
 pub struct SlicedDiff {
     pub old: Source,
     pub new: Source,
 
-    pub comparison: Comparison,
+    pub difference: Difference,
     pub threshold: (bool, u8),
 }
 
@@ -34,9 +32,9 @@ pub enum SourceId {
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
-pub enum Comparison {
-    AbsoluteDifference,
-    SignedDifference,
+pub enum Difference {
+    Absolute,
+    Signed,
 }
 
 impl SlicedDiff {
@@ -93,9 +91,9 @@ impl SlicedDiff {
             let (old, new) = (old.take_up_to(length), new.take_up_to(length));
 
             let [old_value, new_value] = [old.value, new.value].map(|x| self.threshold(x));
-            let value = match self.comparison {
-                Comparison::AbsoluteDifference => old_value.abs_diff(new_value),
-                Comparison::SignedDifference => {
+            let value = match self.difference {
+                Difference::Absolute => old_value.abs_diff(new_value),
+                Difference::Signed => {
                     let diff = new_value as i16 - old_value as i16;
                     (diff / 2 + 128) as u8
                 }
@@ -128,13 +126,13 @@ impl Source {
     }
 }
 
-impl Comparison {
-    pub const ALL: [Self; 2] = [Self::AbsoluteDifference, Self::SignedDifference];
+impl Difference {
+    pub const ALL: [Self; 2] = [Self::Absolute, Self::Signed];
 
     pub fn name(&self) -> &str {
         match self {
-            Comparison::AbsoluteDifference => "Absolute Difference",
-            Comparison::SignedDifference => "Signed Difference",
+            Difference::Absolute => "Absolute Difference",
+            Difference::Signed => "Signed Difference",
         }
     }
 }
@@ -145,7 +143,7 @@ impl Default for SlicedDiff {
             old: Default::default(),
             new: Default::default(),
 
-            comparison: Comparison::SignedDifference,
+            difference: Difference::Signed,
             threshold: (false, 128),
         }
     }

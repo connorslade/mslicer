@@ -12,17 +12,13 @@ Feel free to help out :eyes:.
 
 - support generation
     - allow interacting with (deleting) supports place manually or automatically
-    - for support generation pick less steep angles for the top part of the
-      support
-    - support presets, instead of having to mess with all the sliders to change
-      the size
+    - for support generation pick less steep angles for the top part of the support
+    - support presets, instead of having to mess with all the sliders to change the size
     - dont place supports on points touching the build plate
         - ask you to raise the model before supporting
     - slice supports
-    - support placement tool instead of just a checkbox... or maybe a key to
-      hold down while clicking
-    - options to only generate some combination of point, edge, and face
-      overhangs
+    - support placement tool instead of just a checkbox... or maybe a key to hold down while clicking
+    - options to only generate some combination of point, edge, and face overhangs
     - transform supports with model
     - don't simplify a cylinder to a segment during intersection testing. either
       use a different algorithm or sample multiple points around the edges.
@@ -45,11 +41,20 @@ Feel free to help out :eyes:.
 - game style camera (arrow keys to move)
 - organize workspace settings, maybe rename panel too
 - sliced diff tool
-  - ui cleanup
-  - write description
-  - diffrent diff modes: threshold, abs diff
   - pipe in loaded data
+  - use max layers
+  - verify resolutions
 - organize tools menu with categories?
+- report slice errors ↓
+
+```rs
+if let Some(last) = active.last() {
+    let depth = depth + 1 - (last.entering as i32) * 2;
+    if depth != 0 {
+        println!("  failed to slice: {}", depth);
+    }
+}
+```
 
 ## Documentation
 
