@@ -6,6 +6,7 @@ use common::{
     slice::{Layer, SliceConfig, SlicedFile},
 };
 use nalgebra::Vector2;
+use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
 #[derive(Clone)]
 pub struct SlicedDiff {
@@ -57,6 +58,7 @@ impl SlicedDiff {
         let empty = Arc::new(vec![Run::new(pixels, 0)]);
 
         let layers = (0..layers)
+            .into_par_iter()
             .map(|i| {
                 let [old, new] = [&old, &new].map(|x| x.get(i).map(|x| &x.data).unwrap_or(&empty));
                 let data = self.diff_layer(old, new);

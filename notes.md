@@ -38,7 +38,6 @@ Feel free to help out :eyes:.
 - simd for mesh-plane intersection?
 - benchmark slice operation to see how mich time is spent between intersection and rasterization
 - game style camera (arrow keys to move)
-- organize workspace settings, maybe rename panel too
 - organize tools menu with categories?
 - report slice errors ↓
 
@@ -96,7 +95,7 @@ Features that would be cool, but are a bit out of scope for now.
 > types of defects
 
 - [x] non-welded verts
-- [ ] holes
+- [x] holes
   - find edge loop and triangulate (somehow...)
 - [ ] inconstant winding order
 - [ ] non-manifold (not sure how to fix this thb)

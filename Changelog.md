@@ -46,6 +46,7 @@
 - Reorganize workspace panel
 - Rename non manifold mesh to defective mesh since some kinds of non-manifold meshes will slice correctly
 - Sliced file diff tool
+- Mesh repair tool
 
 ## v0.9.2 &mdash; August 30th, 2026
 

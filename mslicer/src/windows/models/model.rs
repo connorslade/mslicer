@@ -10,9 +10,9 @@ use egui::{
     TextEdit, Ui, UiBuilder, Widget, text::CCursorRange, vec2,
 };
 use egui_phosphor::regular::{
-    ARROW_LINE_DOWN, ARROWS_COUNTER_CLOCKWISE, COPY, CUBE, CURSOR_TEXT, DICE_THREE, EYE, EYE_SLASH,
-    FLOPPY_DISK_BACK, FOLDER_DASHED, INFO, LINK_BREAK, LINK_SIMPLE, SUBTRACT_SQUARE, SWAP, TRASH,
-    VECTOR_THREE, WARNING,
+    ARROW_LINE_DOWN, ARROWS_COUNTER_CLOCKWISE, BANDAIDS, COPY, CUBE, CURSOR_TEXT, DICE_THREE, EYE,
+    EYE_SLASH, FLOPPY_DISK_BACK, FOLDER_DASHED, INFO, LINK_BREAK, LINK_SIMPLE, SUBTRACT_SQUARE,
+    SWAP, TRASH, VECTOR_THREE, WARNING,
 };
 use nalgebra::Vector3;
 
@@ -22,7 +22,7 @@ use crate::{
         Collection, RenameState,
         model::{MeshUnit, MeshWarnings},
     },
-    task::{FileDialog, FlipWinding, MeshSave, ReloadModel, SplitBodies},
+    task::{FileDialog, FlipWinding, MeshRepair, MeshSave, ReloadModel, SplitBodies},
     ui::components::{
         being_edited, grid, history_tracked_model, vec3_dragger, vec3_dragger_proportional,
     },
@@ -211,6 +211,10 @@ pub fn model_properties(
                 .clicked()
             {
                 app.tasks.add(FlipWinding::new(model));
+            }
+
+            if ui.button(concatcp!(BANDAIDS, " Repair")).clicked() {
+                app.tasks.add(MeshRepair::new(model));
             }
 
             ui.menu_button(concatcp!(FLOPPY_DISK_BACK, " Export"), |ui| {

@@ -36,12 +36,13 @@ fn main() -> Result<()> {
     let RepairResult {
         mesh,
         unwelded_vertices,
+        holes,
     } = MeshRepair {
         vertex_epsilon: 1e-4,
     }
     .repair(&mesh, half_edge);
 
-    println!("{{ unwelded_vertices: {unwelded_vertices} }}");
+    println!("{{ unwelded_vertices: {unwelded_vertices}, holes: {holes} }}");
 
     println!("[*] Saving");
     let repair =

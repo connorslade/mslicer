@@ -5486,6 +5486,7 @@ dependencies = [
  "ordered-float",
  "parking_lot",
  "rand 0.10.2",
+ "rayon",
  "slicer",
  "svg",
  "tracing",

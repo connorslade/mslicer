@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::Arc};
+use std::{collections::HashMap, iter, sync::Arc};
 
 use itertools::Itertools;
 use nalgebra::Vector3;
@@ -14,12 +14,13 @@ pub struct RepairResult {
     pub mesh: Mesh,
 
     pub unwelded_vertices: u64,
+    pub holes: u64,
 }
 
 struct RepairState {
     vertices: Vec<Vector3<f32>>,
     faces: Vec<[u32; 3]>,
-    _half_edge: Arc<HalfEdgeMesh>,
+    half_edge: Arc<HalfEdgeMesh>,
     // todo: store working_* vecs here to maintain the same allocation for processing
 }
 
@@ -29,9 +30,10 @@ impl MeshRepair {
         let mut state = RepairState {
             vertices: mesh.vertices().to_vec(),
             faces: mesh.faces().to_vec(),
-            _half_edge: half_edge,
+            half_edge,
         };
 
+        let holes = self.repair_holes(&mut state);
         let unwelded_vertices = self.repair_unwelded_vertices(&mut state);
 
         let mut out = Mesh::new(state.vertices, state.faces);
@@ -41,7 +43,57 @@ impl MeshRepair {
         RepairResult {
             mesh: out,
             unwelded_vertices,
+            holes,
         }
+    }
+
+    fn repair_holes(&self, state: &mut RepairState) -> u64 {
+        let mut map = HashMap::new();
+        for edge in state.half_edge.half_edges() {
+            // if edge only has one face, edge is on a hole
+            if edge.twin.is_none() {
+                map.insert(edge.origin_vertex, edge.vertex);
+            }
+        }
+
+        let mut loops = Vec::new();
+        while !map.is_empty() {
+            let start = *map.keys().next().unwrap();
+            let mut edge_loop = Vec::new();
+            let mut pointer = start;
+
+            loop {
+                edge_loop.push(pointer);
+                let Some(next) = map.remove(&pointer) else {
+                    break;
+                };
+
+                if next == start {
+                    break;
+                }
+
+                pointer = next
+            }
+
+            loops.push(edge_loop);
+        }
+
+        for edge_loop in loops.iter() {
+            let center = (edge_loop.iter())
+                .map(|x| state.vertices[*x as usize])
+                .sum::<Vector3<_>>()
+                / edge_loop.len() as f32;
+
+            let c = state.vertices.len() as u32;
+            state.vertices.push(center);
+
+            let first = &edge_loop[0];
+            for (a, b) in edge_loop.iter().chain(iter::once(first)).tuple_windows() {
+                state.faces.push([*a, c, *b]);
+            }
+        }
+
+        loops.len() as u64
     }
 
     fn repair_unwelded_vertices(&self, state: &mut RepairState) -> u64 {
