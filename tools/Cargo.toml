@@ -7,6 +7,10 @@ edition = "2024"
 name = "repair"
 path = "bin/repair.rs"
 
+[[bin]]
+name = "bulk_defective"
+path = "bin/bulk_defective.rs"
+
 [dependencies]
 common.workspace = true
 mesh_format.workspace = true

@@ -42,7 +42,7 @@ use crate::{
     ui::{
         components::{collapsing_toggle, grid},
         management::{LazyText, LazyTextureId},
-        popup::{Popup, PopupManager},
+        popup::{Popup, PopupIcon, PopupManager},
         state::UiState,
     },
     windows::slice_config::exposure_config,
@@ -52,7 +52,7 @@ use common::{
     progress::Progress,
     serde::DynamicSerializer,
     slice::{
-        SliceConfig, SliceMode,
+        Layer, SliceConfig, SliceMode,
         format::{Format, RasterFormat},
         print_time,
     },
@@ -64,6 +64,8 @@ const FILENAME_POPUP_TEXT: &str =
 const DETECT_ISLANDS_DESC: &str =
     "Will color disconnected chunks of voxels red in the slice preview.";
 const SURFACE_AREA_DESC: &str = "Surface area in cm² of each layer. Layers with higher areas will adhere more to the FEP potentially causing print failures.";
+const SLICING_DEFECTS: &str = "There were (potential) slicing defects detected on {layers} layer{s}. Try using the mesh repair tool and slicing again.";
+const DEFECT_EXPL: &str = "Defective meshes can cause incorrect slicing. See how many defects were detected in each layer.";
 
 pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     if let Some(slice_operation) = &app.slice_operation {
@@ -77,6 +79,16 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                 app.state.last_preview_layer = 0;
                 app.state.preview_offset = Vector2::zeros();
                 app.state.preview_scale = 1.0;
+
+                if let GenericSliceData::Raster { data, .. } = result.slice_data()
+                    && let Some((layers, _defects)) = error_stats(&data)
+                {
+                    let body = SLICING_DEFECTS
+                        .replace("{layers}", &layers.to_string())
+                        .replace("{s}", if layers == 1 { "" } else { "s" });
+                    app.popup
+                        .open(Popup::simple("Slicing Defects", PopupIcon::Warning, body));
+                }
 
                 let layers = result.inner.layers();
                 app.state.layer_count = (layers, layers.to_string().len() as u8);
@@ -863,7 +875,7 @@ fn sidebar(
                     .enumerate()
                     .map(|(x, layer)| {
                         let area = layer.area as f32 * px_area;
-                        [x as f64, area.get::<Centimeter>() as f64]
+                        [(x + 1) as f64, area.get::<Centimeter>() as f64]
                     })
                     .collect::<Vec<_>>();
                 plot.add(Line::new("", series).color(Color32::WHITE));
@@ -874,4 +886,48 @@ fn sidebar(
                 );
             });
     });
+
+    ui.collapsing("Defects", |ui| {
+        let layers = &result.inner.as_raster().unwrap().layers;
+        let mut has_defects = false;
+
+        let defects = (layers.iter())
+            .inspect(|x| has_defects |= x.defects > 0)
+            .enumerate()
+            .map(|(i, x)| [(i + 1) as f64, x.defects as f64])
+            .collect::<Vec<_>>();
+
+        if has_defects {
+            ui.label(DEFECT_EXPL);
+            ui.add_space(8.0);
+
+            Plot::new("defects")
+                .width(ui.available_width())
+                .allow_drag(false)
+                .allow_zoom(false)
+                .allow_scroll(false)
+                .allow_boxed_zoom(false)
+                .view_aspect(3.0)
+                .show(ui, |plot| {
+                    plot.add(Line::new("", defects).color(Color32::WHITE));
+                    plot.add(
+                        VLine::new("", (state.preview_layer - 1) as f32)
+                            .color(Color32::RED)
+                            .style(LineStyle::Dashed { length: 4.0 }),
+                    );
+                });
+        } else {
+            ui.label("No defects detected while slicing.");
+        }
+    });
+}
+
+fn error_stats(layers: &[Layer]) -> Option<(u64, u64)> {
+    let (mut count, mut scan_lines) = (0, 0);
+    for layer in layers.iter() {
+        count += (layer.defects > 0) as u64;
+        scan_lines += layer.defects;
+    }
+
+    (count > 0).then_some((count, scan_lines))
 }

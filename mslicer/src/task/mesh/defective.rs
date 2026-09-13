@@ -32,14 +32,14 @@ impl Task for MeshDefective {
     fn poll(&mut self, app: &mut TaskApp) -> PollResult {
         self.handle
             .poll(app, "Failed to Check for Mesh Defects")
-            .into_poll_result(|result| {
+            .into_poll_result(|defective| {
                 for model in app
                     .project
                     .models
                     .iter_mut()
                     .filter(|x| x.mesh.mesh_id() == self.mesh_id)
                 {
-                    model.warnings.set(MeshWarnings::Defective, !result);
+                    model.warnings.set(MeshWarnings::Defective, defective);
                 }
                 PollResult::complete()
             })

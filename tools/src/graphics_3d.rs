@@ -119,7 +119,8 @@ pub fn render<'a>(
         config.supersample.xy,
         config.platform_resolution,
         segments.into_iter(),
-    );
+    )
+    .0;
 
     Layer::new(
         runs,

@@ -70,8 +70,10 @@ impl Slicer {
             .chunks(supersample.z as usize)
             .enumerate()
             .map(|(i, mut chunk)| {
-                let mut data = if supersample.z > 1 {
-                    downsample_to_vec(&chunk, pixels)
+                let (mut data, errors) = if supersample.z > 1 {
+                    let data = downsample_to_vec(&chunk, pixels);
+                    let errors = chunk.iter().map(|x| x.1).sum();
+                    (data, errors)
                 } else {
                     chunk.pop().unwrap()
                 };
@@ -82,7 +84,7 @@ impl Slicer {
 
                 let exposure = self.slice_config.exposure_config(i as u32).into_owned();
                 let height = (i + 1) as f32 * self.slice_config.slice_height;
-                Layer::new(data, height, exposure)
+                Layer::new(data, height, exposure).with_defects(errors)
             })
             .inspect(|_| self.progress.add_complete(1))
             .collect::<Vec<_>>()
@@ -93,7 +95,7 @@ pub fn layer(
     supersample: u8,
     real_platform: Vector2<u32>,
     segments: impl Iterator<Item = Segment>,
-) -> Vec<Run> {
+) -> (Vec<Run>, u64) {
     let platform = real_platform * supersample as u32;
 
     let mut edges = global_edge_table(segments);
@@ -112,7 +114,9 @@ pub fn layer(
 
     let mut rows = vec![Vec::new(); supersample as usize];
     let mut row = Vec::new();
+    let mut errors = 0;
     let mut y = first_y;
+
     while (!edges.is_empty() || !active.is_empty()) && y < platform.y {
         update_active_edges(&mut edges, &mut active, y);
         let out = if supersample > 1 { &mut row } else { &mut runs };
@@ -152,6 +156,10 @@ pub fn layer(
             }
         }
 
+        if let Some(last) = active.last() {
+            errors += ((depth + 1 - (last.entering as i32) * 2) != 0) as u64;
+        }
+
         // Fill the empty space at the end of the row
         let padding = platform.x as u64 - last;
         (padding > 0).then(|| out.push(Run::new(padding, 0)));
@@ -162,7 +170,7 @@ pub fn layer(
             row.clear();
 
             if (y + 1).is_multiple_of(supersample as u32) {
-                downsample(&rows, platform.x as u64, &mut runs);
+                downsample(rows.iter(), platform.x as u64, &mut runs);
                 rows.iter_mut().for_each(Vec::clear);
             }
         }
@@ -179,11 +187,11 @@ pub fn layer(
         runs.push(Run::new(rows * real_platform.x as u64, 0));
     }
 
-    runs
+    (runs, errors)
 }
 
-fn downsample_to_vec(chunks: &[Vec<Run>], width: u64) -> Vec<Run> {
+fn downsample_to_vec(chunks: &[(Vec<Run>, u64)], width: u64) -> Vec<Run> {
     let mut out = Vec::new();
-    downsample(chunks, width, &mut out);
+    downsample(chunks.iter().map(|x| &x.0), width, &mut out);
     out
 }

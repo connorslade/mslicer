@@ -62,6 +62,7 @@ pub struct Layer {
     pub data: Arc<Vec<Run>>,
     pub area: u64,
     pub height: Milimeters,
+    pub defects: u64, // Number of scan lines affected by mesh errors
 
     /// If this exposure is not derived directly from the slice config.
     pub unique_exposure: bool,
@@ -83,10 +84,15 @@ impl Layer {
             data,
             area,
             height,
+            defects: 0,
 
             unique_exposure: false,
             exposure,
         }
+    }
+
+    pub fn with_defects(self, defects: u64) -> Self {
+        Self { defects, ..self }
     }
 }
 

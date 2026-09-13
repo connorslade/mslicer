@@ -182,7 +182,7 @@ fn decode(res: Vector2<u32>, factor: u8, layer: &Layer) -> Vec<u8> {
     let chunks = chunks(&out, size.x as u64 / factor as u64);
     let mut out = Vec::new();
     for y in chunks.chunks(factor as usize) {
-        downsample(y, size.x as u64 / factor as u64, &mut out);
+        downsample(y.iter(), size.x as u64 / factor as u64, &mut out);
     }
 
     let mut pixels = vec![0; (size.x / factor as u32 * size.y / factor as u32) as usize];

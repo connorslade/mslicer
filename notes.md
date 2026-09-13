@@ -39,16 +39,8 @@ Feel free to help out :eyes:.
 - benchmark slice operation to see how mich time is spent between intersection and rasterization
 - game style camera (arrow keys to move)
 - organize tools menu with categories?
-- report slice errors ↓
-
-```rs
-if let Some(last) = active.last() {
-    let depth = depth + 1 - (last.entering as i32) * 2;
-    if depth != 0 {
-        println!("  failed to slice: {}", depth);
-    }
-}
-```
+- change first/transition layers to a distance?
+- remote print auto scan on startup option
 
 ## Documentation
 
@@ -60,6 +52,7 @@ if let Some(last) = active.last() {
   - moved update check freq
 - document on generating and printing phonograph records
 - add phosphor icons in doc pages (like i did on the pcb photolithography page)
+- update mesh repair page (previously repairing non-manifold meshes)
 
 ## Maybe
 

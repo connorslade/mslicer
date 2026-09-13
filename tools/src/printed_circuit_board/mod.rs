@@ -80,7 +80,7 @@ impl PrintedCircuitBoard {
         let segments = self.screen_segments(config, polygons);
 
         let platform = config.platform_resolution;
-        let mut runs = raster::layer(config.supersample.xy, platform, segments.into_iter());
+        let mut runs = raster::layer(config.supersample.xy, platform, segments.into_iter()).0;
 
         if self.invert {
             runs.iter_mut().for_each(|run| run.value = 255 - run.value);

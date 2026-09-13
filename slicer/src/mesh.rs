@@ -114,7 +114,7 @@ impl Mesh {
     }
 
     pub fn is_defective(&self, progress: Progress) -> bool {
-        let mut edges = HashMap::<_, u8>::new();
+        let mut edges = HashMap::<_, u32>::new();
 
         progress.set_total(self.face_count() as u64);
         for [a, b, c] in self.faces() {
@@ -129,11 +129,11 @@ impl Mesh {
             // Allows edges to be connected to an even number of triangle faces.
             // In these cases the mesh is not manifold but will still slice.
             if *count % 2 != 0 {
-                return false;
+                return true;
             }
         }
 
-        true
+        false
     }
 
     /// Updates the internal transformation matrices. This is called

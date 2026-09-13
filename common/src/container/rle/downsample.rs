@@ -53,10 +53,11 @@ pub fn downsample_adjacent(factor: u8, runs: &[Run], out: &mut Vec<Run>) {
     }
 }
 
-pub fn downsample(chunks: &[Vec<Run>], width: u64, out: &mut Vec<Run>) {
+pub fn downsample<'a>(chunks: impl Iterator<Item = &'a Vec<Run>>, width: u64, out: &mut Vec<Run>) {
+    let mut len = 0;
     let mut queues = chunks
-        .iter()
         .map(|x| RunQueue::new_fallback(x, width))
+        .inspect(|_| len += 1)
         .collect::<Vec<_>>();
     while queues[0].remaining() {
         let length = queues.iter().map(|x| x.active.length).min().unwrap();
@@ -67,7 +68,7 @@ pub fn downsample(chunks: &[Vec<Run>], width: u64, out: &mut Vec<Run>) {
             value += front.value as u64;
         }
 
-        out.push(Run::new(length, (value / chunks.len() as u64) as u8));
+        out.push(Run::new(length, (value / len) as u8));
     }
 }
 
