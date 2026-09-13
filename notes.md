@@ -53,6 +53,7 @@ Feel free to help out :eyes:.
 - document on generating and printing phonograph records
 - add phosphor icons in doc pages (like i did on the pcb photolithography page)
 - update mesh repair page (previously repairing non-manifold meshes)
+- ultimate slicer benchmark (slice Thingi10K dataset)
 
 ## Maybe
 

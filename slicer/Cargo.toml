@@ -5,7 +5,15 @@ edition = "2024"
 
 [[bin]]
 name = "slicer"
-path = "bin/main.rs"
+path = "bin/slicer/main.rs"
+
+[[bin]]
+name = "bulk_defects"
+path = "bin/bulk_defects.rs"
+
+[[bin]]
+name = "bulk_manifold"
+path = "bin/bulk_manifold.rs"
 
 [[bench]]
 name = "benchmark"
