@@ -48,6 +48,8 @@
 - Sliced file diff tool
 - Mesh repair tool
 - Detect and report slicing defects (caused by mesh defects)
+- Added more CLI debugging tools
+- More robust mesh deserialization
 
 ## v0.9.2 &mdash; August 30th, 2026
 

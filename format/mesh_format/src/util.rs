@@ -9,18 +9,20 @@ pub fn tokenize<T: Deserializer>(
     progress: &Progress,
     mut callback: impl FnMut(&str) -> Result<()>,
 ) -> Result<()> {
+    let size = des.size();
     let mut complete = 0;
     let mut carry = String::new();
-    loop {
+
+    while complete < size {
         let next = des.read_bytes(8 * 1024);
         if next.is_empty() && carry.is_empty() {
             break;
         }
 
-        complete += next.len() as u64;
-        progress.set_complete(complete);
+        complete += next.len();
+        progress.set_complete(complete as u64);
 
-        let str = carry + str::from_utf8(&next).unwrap();
+        let str = carry + &String::from_utf8_lossy(&next);
         let (str, new_carry) = str.rsplit_once(delimiter).unwrap_or(("", &str));
         carry = new_carry.to_owned();
 
@@ -29,5 +31,6 @@ pub fn tokenize<T: Deserializer>(
         }
     }
 
+    (!carry.is_empty()).then(|| callback(&carry));
     Ok(())
 }
