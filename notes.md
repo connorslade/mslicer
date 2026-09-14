@@ -77,6 +77,8 @@ Features that would be cool, but are a bit out of scope for now.
   - mslicer_core (app + project + task?)
   - mslicer_render (render)
   - mslicer_ui (window + ui)
+- slice b-rep?
+  - at what point of mesh resolution is polygon intersection slower 
 
 ## Defective Meshes
 

@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 common.workspace = true
+experimental.workspace = true
 mesh_format.workspace = true
 remote_print.workspace = true
 slicer.workspace = true
@@ -55,3 +56,6 @@ windows-registry.workspace = true
 
 [target.'cfg(windows)'.build-dependencies]
 winres.workspace = true
+
+[features]
+brep = ["experimental/brep"]

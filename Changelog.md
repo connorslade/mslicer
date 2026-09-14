@@ -50,7 +50,7 @@
 - Detect and report slicing defects (caused by mesh defects)
 - Added more CLI debugging tools
 - More robust mesh deserialization
-- SDF slicer
+- Experimental SDF and Boundary Representation (BREP) slicing
 
 ## v0.9.2 &mdash; August 30th, 2026
 

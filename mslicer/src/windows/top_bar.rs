@@ -142,9 +142,12 @@ pub fn ui(app: &mut App, ctx: &Context) {
                     labeled_separator(ui, "Generators");
                     (ui.button("Printed Circuit Board").clicked())
                         .then(|| tools::printed_circuit_board::open(app));
-                    (ui.button("Phonograph Record").clicked())
-                        .then(|| tools::phonograph_record::open(app));
                     (ui.button("Test Pattern").clicked()).then(|| tools::test_pattern::open(app));
+                    ui.menu_button("Fun", |ui| {
+                        (ui.button("Phonograph Record").clicked())
+                            .then(|| tools::phonograph_record::open(app));
+                        (ui.button("3D Graphics").clicked()).then(|| graphics_3d::open(app));
+                    });
 
                     labeled_separator(ui, "Exposure");
                     (ui.button("Exposure Test").clicked()).then(|| tools::exposure_test::open(app));
@@ -156,9 +159,12 @@ pub fn ui(app: &mut App, ctx: &Context) {
                         .clicked()
                         .then(|| collect_instances(app));
 
-                    (ui.button("3D Graphics").clicked()).then(|| graphics_3d::open(app));
                     (ui.button("Sliced Diff").clicked()).then(|| sliced_diff::open(app));
-                    (ui.button("SDF Slicer").clicked()).then(|| sdf_slicer::open(app));
+                    ui.menu_button("Experimental", |ui| {
+                        (ui.button("SDF Slicer").clicked()).then(|| sdf_slicer::open(app));
+                        #[cfg(feature = "brep")]
+                        (ui.button("BREP Slicer").clicked()).then(|| tools::brep_slicer::open(app));
+                    });
                 });
 
                 ui.menu_button(concatcp!(CARDS, " View"), |ui| {

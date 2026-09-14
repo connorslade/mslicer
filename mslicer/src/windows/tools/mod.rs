@@ -1,11 +1,13 @@
+use experimental::sdf::SdfSlicer;
 use tools::{
     auto_layout::AutoLayoutAnnealing, exposure_test::ExposureTest, graphics_3d::Graphics3D,
     internal_exposure_test::InternalExposureTest, phonograph_record::PhonographRecord,
-    printed_circuit_board::PrintedCircuitBoard, sdf::SdfSlicer, sliced_diff::SlicedDiff,
-    test_pattern::TestPattern,
+    printed_circuit_board::PrintedCircuitBoard, sliced_diff::SlicedDiff, test_pattern::TestPattern,
 };
 
 pub mod auto_layout;
+#[cfg(feature = "brep")]
+pub mod brep_slicer;
 pub mod exposure_test;
 pub mod graphics_3d;
 pub mod internal_exposure_test;
@@ -25,7 +27,10 @@ pub struct Tools {
     pattern_generator: TestPattern,
     phonograph_record: PhonographRecord,
     sliced_diff: SlicedDiff,
+
     sdf_slicer: SdfSlicer,
+    #[cfg(feature = "brep")]
+    brep_slicer: experimental::brep::BrepSlicer,
 }
 
 // i couldn't get lifetimes working to do this with a function... so

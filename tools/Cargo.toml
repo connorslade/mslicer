@@ -13,6 +13,7 @@ mesh_format.workspace = true
 slicer.workspace = true
 
 anyhow.workspace = true
+clone-macro.workspace = true
 gerber_parser.workspace = true
 hound.workspace = true
 itertools.workspace = true

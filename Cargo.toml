@@ -4,6 +4,7 @@ default-members = ["mslicer"]
 members = [
     "common",
     "dist/msla_format",
+    "experimental",
     "format/ctb_format",
     "format/goo_format",
     "format/mesh_format",
@@ -17,6 +18,7 @@ members = [
 [workspace.dependencies]
 common = { path = "common" }
 ctb_format = { path = "format/ctb_format" }
+experimental = { path = "experimental" }
 goo_format = { path = "format/goo_format" }
 mesh_format = { path = "format/mesh_format" }
 nanodlp_format = { path = "format/nanodlp_format" }

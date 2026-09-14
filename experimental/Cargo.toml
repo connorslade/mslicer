@@ -1,0 +1,21 @@
+[package]
+name = "experimental"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+slicer.workspace = true
+common.workspace = true
+
+anyhow.workspace = true
+clone-macro.workspace = true
+itertools.workspace = true
+nalgebra.workspace = true
+rayon.workspace = true
+tracing.workspace = true
+
+glam = "0.24"
+opencascade = "0.3.0"
+
+[features]
+brep = []
