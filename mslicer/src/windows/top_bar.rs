@@ -21,7 +21,7 @@ use crate::{
     },
     windows::{
         Tab,
-        tools::{self, graphics_3d, sliced_diff},
+        tools::{self, graphics_3d, sdf_slicer, sliced_diff},
     },
 };
 
@@ -158,6 +158,7 @@ pub fn ui(app: &mut App, ctx: &Context) {
 
                     (ui.button("3D Graphics").clicked()).then(|| graphics_3d::open(app));
                     (ui.button("Sliced Diff").clicked()).then(|| sliced_diff::open(app));
+                    (ui.button("SDF Slicer").clicked()).then(|| sdf_slicer::open(app));
                 });
 
                 ui.menu_button(concatcp!(CARDS, " View"), |ui| {

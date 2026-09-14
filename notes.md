@@ -7,6 +7,9 @@ Feel free to help out :eyes:.
 
 - no way to configure quick layout spacing
 - You can open multiple instances of a tool window
+- variable layer height tooltip
+- variable layer height max layers
+- variable layer height progress being reported as elephant foot fixer
 
 ## Features
 
@@ -18,7 +21,7 @@ Feel free to help out :eyes:.
         - ask you to raise the model before supporting
     - slice supports
     - support placement tool instead of just a checkbox... or maybe a key to hold down while clicking
-    - options to only generate some combination of point, edge, and face overhangs
+    - options to only generate some combination of point, edge, and face overhangs 
     - transform supports with model
     - don't simplify a cylinder to a segment during intersection testing. either
       use a different algorithm or sample multiple points around the edges.

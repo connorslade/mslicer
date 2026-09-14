@@ -1,7 +1,8 @@
 use tools::{
     auto_layout::AutoLayoutAnnealing, exposure_test::ExposureTest, graphics_3d::Graphics3D,
     internal_exposure_test::InternalExposureTest, phonograph_record::PhonographRecord,
-    printed_circuit_board::PrintedCircuitBoard, sliced_diff::SlicedDiff, test_pattern::TestPattern,
+    printed_circuit_board::PrintedCircuitBoard, sdf::SdfSlicer, sliced_diff::SlicedDiff,
+    test_pattern::TestPattern,
 };
 
 pub mod auto_layout;
@@ -10,6 +11,7 @@ pub mod graphics_3d;
 pub mod internal_exposure_test;
 pub mod phonograph_record;
 pub mod printed_circuit_board;
+pub mod sdf_slicer;
 pub mod sliced_diff;
 pub mod test_pattern;
 
@@ -23,6 +25,7 @@ pub struct Tools {
     pattern_generator: TestPattern,
     phonograph_record: PhonographRecord,
     sliced_diff: SlicedDiff,
+    sdf_slicer: SdfSlicer,
 }
 
 // i couldn't get lifetimes working to do this with a function... so

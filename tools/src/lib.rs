@@ -10,3 +10,4 @@ pub mod sliced_diff;
 pub mod supports;
 pub mod test_pattern;
 pub use exposure::{exposure_test, internal_exposure_test};
+pub mod sdf;

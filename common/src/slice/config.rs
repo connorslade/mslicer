@@ -73,10 +73,16 @@ impl SliceConfig {
         self.slice_height * (layer + 1) as f32
     }
 
+    pub fn pixel_size(&self) -> Vector2<Milimeters> {
+        Vector2::new(
+            self.platform_size.x / self.platform_resolution.x as f32,
+            self.platform_size.y / self.platform_resolution.y as f32,
+        )
+    }
+
     pub fn pixel_area(&self) -> SquareMilimeters {
-        let x = self.platform_size.x / self.platform_resolution.x as f32;
-        let y = self.platform_size.y / self.platform_resolution.y as f32;
-        x * y
+        let size = self.pixel_size();
+        size.x * size.y
     }
 
     pub fn voxel_volume(&self) -> CubicMilimeters {
