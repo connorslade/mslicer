@@ -31,13 +31,11 @@ Feel free to help out :eyes:.
 - add well documented .zip and .bin output formats (closes #29)
 - task cancellation mechanism
 - release updated msla_format
-- mesh repair tool/button
 - simd for mesh-plane intersection?
 - benchmark slice operation to see how mich time is spent between intersection and rasterization
 - game style camera (arrow keys to move)
 - organize tools menu with categories?
 - change first/transition layers to a distance?
-- remote print auto scan on startup option
 - plot voxel error across different triangulations
 
 ## Documentation

@@ -20,12 +20,12 @@ use crate::{
     },
     project::{Project, model::ModelId},
     render::{Gcx, workspace::model},
-    task::{TaskManager, update_check_if_scheduled},
+    task::{PrinterScan, TaskManager, update_check_if_scheduled},
     ui::{
         drag_and_drop,
         panels::Panels,
         popup::{Popup, PopupIcon, PopupManager},
-        state::{UiState, WorkspaceHover},
+        state::{RemotePrintConnectStatus, UiState, WorkspaceHover},
     },
     windows::{self, Tab},
 };
@@ -98,6 +98,13 @@ impl App {
         update_check_if_scheduled(&mut this);
         if !this.remote_print.is_initialized() && this.config.remote_print.init_at_startup {
             windows::remote_print::initialize(&mut this);
+
+            // Initial scan
+            this.state.remote_print_connecting = RemotePrintConnectStatus::Scanning;
+            this.tasks.add(PrinterScan::new(
+                &this.remote_print,
+                this.config.remote_print.broadcast_address,
+            ));
         }
 
         this

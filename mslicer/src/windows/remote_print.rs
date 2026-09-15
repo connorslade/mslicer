@@ -413,10 +413,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
 
         ui.checkbox(&mut config.alert_completion, "Send toast on print complete");
 
-        ui.checkbox(
-            &mut config.init_at_startup,
-            "Initialize remote print at startup",
-        );
+        ui.checkbox(&mut config.init_at_startup, "Initialize at startup");
 
         let last_status_proxy = config.status_proxy;
         ui.checkbox(&mut config.status_proxy, "Enable HTTP status proxy");
