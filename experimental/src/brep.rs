@@ -6,15 +6,24 @@ use common::{
     slice::{Layer, SliceConfig},
     units::Milimeter,
 };
-use glam::dvec3;
+use cxx::UniquePtr;
+use glam::{DVec3, dvec3};
 use itertools::Itertools;
 use nalgebra::Vector2;
+use opencascade::primitives::Edge;
 use opencascade::{
     bounding_box::aabb,
     primitives::{IntoShape, Shape},
     section,
     workplane::Workplane,
 };
+use opencascade_sys::{
+    self,
+    b_rep::TopoDS_Edge,
+    b_rep_adaptor::BRepAdaptor_Curve_new,
+    gc_pnts::{GCPnts_TangentialDeflection_Value, TangentialDeflection_new},
+};
+use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use slicer::slicer::raster::{
     Segment,
     edge_table::{global_edge_table, update_active_edges},
@@ -50,9 +59,12 @@ impl BrepSlicer {
         let width = (max.x - min.x) * 1.1 + 1.0;
         let depth = (max.y - min.y) * 1.1 + 1.0;
 
+        // behold, the power of human creativity
+        let ptr = &shape as *const Shape as usize;
         (0..layers)
-            .into_iter()
+            .into_par_iter()
             .map(|i| {
+                let shape = unsafe { &*(ptr as *const Shape) };
                 let height = (i as f64 + 0.5) * slice_height as f64;
 
                 let plane = Workplane::xy()
@@ -62,8 +74,8 @@ impl BrepSlicer {
                     .into_shape();
 
                 let mut segments = Vec::new();
-                for edge in section::edges(&shape, &plane).iter().flat_map(Shape::edges) {
-                    for (a, b) in edge.approximation_segments().tuple_windows() {
+                for edge in section::edges(shape, &plane).iter().flat_map(Shape::edges) {
+                    for (a, b) in approximate(&edge, 0.001, 0.001).tuple_windows() {
                         segments.push(Segment {
                             endpoints: [a, b].map(|x| {
                                 Vector2::new(x.x, x.y)
@@ -147,4 +159,17 @@ fn layer_simple(
     }
 
     (runs, errors)
+}
+
+fn edge_ffi(edge: &Edge) -> &TopoDS_Edge {
+    unsafe { &*(edge as *const Edge as *const UniquePtr<TopoDS_Edge>) }
+}
+
+fn approximate(edge: &Edge, angular: f64, sag: f64) -> impl Iterator<Item = DVec3> {
+    let curve = BRepAdaptor_Curve_new(edge_ffi(edge));
+    let approx = TangentialDeflection_new(&curve, angular, sag);
+    (1..=approx.NbPoints()).map(move |i| {
+        let p = GCPnts_TangentialDeflection_Value(&approx, i);
+        dvec3(p.X(), p.Y(), p.Z())
+    })
 }

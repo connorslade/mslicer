@@ -16,6 +16,8 @@ tracing.workspace = true
 
 glam = { version = "0.24", optional = true }
 opencascade = { version = "0.3.0", optional = true }
+opencascade-sys = { version = "0.3.0", optional = true }
+cxx = { version = "1.0", optional = true }
 
 [features]
-brep = ["glam", "opencascade"]
+brep = ["glam", "opencascade", "opencascade-sys", "cxx"]

@@ -8,13 +8,16 @@ use crate::{
     ui::popup::{Popup, PopupApp},
 };
 
+const DESCRIPTION: &str =
+    "An experiment in slicing models directly from a boundary representation (BREP) like .step.";
+
 pub fn open(app: &mut App) {
     app.popup
         .open(Popup::new("Brep Slicer", interface).close_button(true));
 }
 
 fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
-    ui.label("todo");
+    ui.label(DESCRIPTION);
     ui.add_space(8.0);
 
     let slicing = app.is_slicing();
