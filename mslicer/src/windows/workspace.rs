@@ -276,7 +276,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
             ui.end_row();
 
             ui.label("Quick Layout Spacing");
-            app.config.ui.quick_layout_spacing.with::<Milimeter>(|x| {
+            (app.config.ui.quick_layout_spacing).with::<Milimeter, _>(|x| {
                 DragValue::new(x).suffix(" mm").ui(ui);
             });
             ui.end_row();

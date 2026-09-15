@@ -4,7 +4,7 @@ use chrono::Local;
 use common::{
     progress::Progress,
     serde::{DynamicSerializer, Serializer, SizedString, SliceDeserializer},
-    slice::{self, ExposureConfig, ExposureRemap, SliceConfig, SliceMode, SlicedFile},
+    slice::{self, ExposureConfig, ExposureRemap, Height, SliceConfig, SliceMode, SlicedFile},
     units::Second,
 };
 use image::{RgbaImage, imageops::FilterType};
@@ -28,6 +28,8 @@ impl File {
 
         let print_time = config.print_time(layer_count);
         let save_time = Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
+
+        let (first_layers, transition_layers) = config.layer_counts();
         Self::new(
             Header {
                 x_resolution: config.platform_resolution.x as u16,
@@ -39,8 +41,8 @@ impl File {
                 layer_count,
                 printing_time: print_time.get::<Second>() as u32,
                 layer_thickness: config.slice_height,
-                bottom_layers: config.first_layers,
-                transition_layers: config.transition_layers as u16,
+                bottom_layers: first_layers,
+                transition_layers: transition_layers as u16,
 
                 exposure_time: config.exposure_config.exposure_time,
                 after_retract_time: config.exposure_config.exposure_delay,
@@ -123,8 +125,8 @@ impl SlicedFile for File {
                 lift_speed: header.bottom_lift_speed.convert(),
                 retract_speed: header.bottom_retract_speed.convert(),
             },
-            first_layers: header.bottom_layers,
-            transition_layers: header.transition_layers as u32,
+            first_layers: Height::Layers(header.bottom_layers),
+            transition_layers: Height::Layers(header.transition_layers as u32),
         }
     }
 

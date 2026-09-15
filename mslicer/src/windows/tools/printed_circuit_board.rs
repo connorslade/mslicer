@@ -151,7 +151,7 @@ fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
         ui.end_row();
 
         ui.label("Circle Error");
-        tool.max_circle_error.with::<Mircometer>(|x| {
+        tool.max_circle_error.with::<Mircometer, _>(|x| {
             DragValue::new(x)
                 .suffix(" μm")
                 .speed(1.0)

@@ -104,13 +104,13 @@ fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
     ui.collapsing("Groove", |ui| {
         grid("groove").show(ui, |ui| {
             ui.label("Pitch");
-            tool.pitch.with::<Mircometer>(|x| {
+            tool.pitch.with::<Mircometer, _>(|x| {
                 DragValue::new(x).suffix(" μm").ui(ui);
             });
             ui.end_row();
 
             ui.label("Width");
-            tool.width.with::<Mircometer>(|x| {
+            tool.width.with::<Mircometer, _>(|x| {
                 DragValue::new(x).suffix(" μm").ui(ui);
             });
             ui.end_row();

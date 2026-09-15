@@ -29,15 +29,13 @@ impl ElephantFootFixer {
 
         let [width, height] = *config.platform_resolution.as_ref();
         let platform = config.platform_size;
+        let (first_layers, _) = config.layer_counts();
 
         let (x_radius, y_radius) = (
             (self.inset_distance * (width as f32 / platform.x).get::<Milimeter>()) as usize,
             (self.inset_distance * (height as f32 / platform.y).get::<Milimeter>()) as usize,
         );
-        info!(
-            "Eroding {} bottom layers with radius ({}, {})",
-            config.first_layers, x_radius, y_radius
-        );
+        info!("Eroding {first_layers} bottom layers with radius ({x_radius}, {y_radius})",);
 
         let intensity = self.intensity_multiplier / 100.0;
         let mask = generate_mask(x_radius, y_radius);
@@ -45,11 +43,11 @@ impl ElephantFootFixer {
         let darken = |value: u8| (value as f32 * intensity).round() as u8;
 
         let start = Instant::now();
-        progress.set_total(config.first_layers as u64);
+        progress.set_total(first_layers as u64);
 
         layers
             .iter_mut()
-            .take(config.first_layers as usize)
+            .take(first_layers as usize)
             .par_bridge()
             .for_each(|layer| {
                 let inner = rle::decode_vec(&*layer.data);

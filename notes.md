@@ -5,6 +5,8 @@ Feel free to help out :eyes:.
 
 ## Bugs
 
+- Open slice preview as tab next to 3d view by default
+
 ## Features
 
 - support generation
@@ -31,11 +33,8 @@ Feel free to help out :eyes:.
 - add well documented .zip and .bin output formats (closes #29)
 - task cancellation mechanism
 - release updated msla_format
-- simd for mesh-plane intersection?
-- benchmark slice operation to see how mich time is spent between intersection and rasterization
 - game style camera (arrow keys to move)
 - organize tools menu with categories?
-- change first/transition layers to a distance?
 - plot voxel error across different triangulations
 
 ## Documentation
@@ -46,6 +45,8 @@ Feel free to help out :eyes:.
   - changed exposure config component
   - change AA config
   - moved update check freq
+  - Rename 'First Layers' to 'Bottom Layers'
+  - note where to find quick layout spacing
 - document on generating and printing phonograph records
 - add phosphor icons in doc pages (like i did on the pcb photolithography page)
 - update mesh repair page (previously repairing non-manifold meshes)

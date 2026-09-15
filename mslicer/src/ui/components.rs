@@ -1,10 +1,14 @@
 use std::{hash::Hash, mem};
 
+use common::{
+    slice::Height,
+    units::{Milimeter, Milimeters},
+};
 use egui::{
     Align, Button, CollapsingHeader, Color32, DragValue, FontId, Grid, Layout, OpenUrl, Response,
     RichText, Separator, Ui, Widget, emath::Numeric, vec2,
 };
-use egui_phosphor::regular::LINK;
+use egui_phosphor::regular::{LINK, SCALES};
 
 use crate::{
     app::history::{Action, History, ModelAction},
@@ -200,4 +204,25 @@ pub fn link_button(ui: &mut Ui, text: &str, link: &str) {
             new_tab: true, // doesn't matter
         });
     }
+}
+
+pub fn height_dragger(ui: &mut Ui, slice_height: Milimeters, height: &mut Height) -> bool {
+    let mut changed = false;
+    ui.horizontal(|ui| {
+        changed |= match height {
+            Height::Layers(layers) => DragValue::new(layers).ui(ui).changed(),
+            Height::Distance(length) => length.with::<Milimeter, _>(|x| {
+                DragValue::new(x).speed(0.1).suffix(" mm").ui(ui).changed()
+            }),
+        };
+
+        let tip = ["Specify height in layers", "Specify height in mm"]
+            [matches!(height, Height::Layers(..)) as usize];
+        if ui.button(SCALES).on_hover_text(tip).clicked() {
+            *height = height.flip(slice_height);
+            changed |= true;
+        }
+    });
+
+    changed
 }

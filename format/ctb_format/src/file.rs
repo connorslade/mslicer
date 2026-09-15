@@ -8,7 +8,7 @@ use anyhow::{Result, ensure};
 use common::{
     progress::Progress,
     serde::{Deserializer, DynamicSerializer, Serializer, SliceDeserializer},
-    slice::{self, ExposureConfig, SliceConfig, SliceMode, SlicedFile},
+    slice::{self, ExposureConfig, Height, SliceConfig, SliceMode, SlicedFile},
     units::{Milimeters, MilimetersPerMinute, Seconds},
 };
 use image::{RgbaImage, imageops::FilterType};
@@ -386,6 +386,7 @@ impl File {
             .unwrap()
             .as_secs();
 
+        let (first_layers, transition_layers) = config.layer_counts();
         Self {
             layers,
             checksum: 0,
@@ -405,7 +406,7 @@ impl File {
             total_height: config.slice_height * layer_count as f32,
             layer_height: config.slice_height,
             last_layer_index: layer_count.saturating_sub(1) as u32,
-            transition_layer_count: config.transition_layers,
+            transition_layer_count: transition_layers,
             anti_alias_flag: 7,
             anti_alias_level: 0,
             per_layer_settings: 0x40,
@@ -418,7 +419,7 @@ impl File {
             exposure_time: config.exposure_config.exposure_time,
             bottom_exposure_time: config.first_exposure_config.exposure_time,
             light_off_delay: Seconds::new(0.0),
-            bottom_layer_count: config.first_layers,
+            bottom_layer_count: first_layers,
             bottom_lift_height: config.first_exposure_config.lift_distance,
             bottom_lift_speed: config.first_exposure_config.lift_speed.convert(),
             lift_height: config.exposure_config.lift_distance,
@@ -485,8 +486,8 @@ impl SlicedFile for File {
                 lift_speed: self.bottom_lift_speed.convert(),
                 retract_speed: self.bottom_retract_speed.convert(),
             },
-            first_layers: self.bottom_layer_count,
-            transition_layers: self.transition_layer_count,
+            first_layers: Height::Layers(self.bottom_layer_count),
+            transition_layers: Height::Layers(self.transition_layer_count),
         }
     }
 

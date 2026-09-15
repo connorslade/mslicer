@@ -23,8 +23,8 @@ use crate::{
     },
     ui::{
         components::{
-            BeingEditedExt, being_edited, collapsing_toggle, grid, history_tracked_value,
-            vec2_dragger,
+            BeingEditedExt, being_edited, collapsing_toggle, grid, height_dragger,
+            history_tracked_value, vec2_dragger,
         },
         popup::{Popup, PopupApp},
         state::{SelectedPrinter, UiState},
@@ -166,7 +166,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
         ui.horizontal(|ui| {
             let old_slice_height = slice_config.slice_height;
             let mut editing = false;
-            slice_config.slice_height.with::<Mircometer>(|value| {
+            slice_config.slice_height.with::<Mircometer, _>(|value| {
                 let response = DragValue::new(value)
                     .suffix(" μm")
                     .range(1.0..=f32::MAX)
@@ -192,7 +192,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
             let mut edit = false;
 
             if app.state.anisotropic_aa {
-                // todo: make it more clear what each slicer does
+                // todo: make it more clear what each slider does
                 DragValue::new(&mut slice_config.supersample.xy)
                     .custom_formatter(|val, _| (val as u32).pow(2).to_string())
                     .custom_parser(|val| val.parse::<u32>().ok().map(|x| x.sqrt() as f64))
@@ -234,11 +234,15 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
         });
         ui.end_row();
 
-        ui.label("First Layers");
+        ui.label("Bottom Layers");
         let old_first_layers = slice_config.first_layers;
-        let response = DragValue::new(&mut slice_config.first_layers).ui(ui);
+        let changed = height_dragger(
+            ui,
+            slice_config.slice_height,
+            &mut slice_config.first_layers,
+        );
         history_tracked_value(
-            (being_edited(&response), ui, &mut app.history),
+            (changed, ui, &mut app.history),
             ("first_layers", || {
                 SliceConfigAction::FirstLayers(old_first_layers).into()
             }),
@@ -250,9 +254,13 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
             ui.label(INFO).on_hover_text(TRANSITION_LAYER_TIP);
         });
         let old_transition_layers = slice_config.transition_layers;
-        let response = DragValue::new(&mut slice_config.transition_layers).ui(ui);
+        let changed = height_dragger(
+            ui,
+            slice_config.slice_height,
+            &mut slice_config.transition_layers,
+        );
         history_tracked_value(
-            (being_edited(&response), ui, &mut app.history),
+            (changed, ui, &mut app.history),
             ("transition_layers", || {
                 SliceConfigAction::TransitionLayers(old_transition_layers).into()
             }),

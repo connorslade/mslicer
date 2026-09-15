@@ -40,7 +40,7 @@ use crate::{
     render::slice_preview::SlicePreviewRenderCallback,
     task::{FileDialog, IslandDetection, ReconstructMesh, SaveSliced, TaskManager},
     ui::{
-        components::{collapsing_toggle, grid},
+        components::{collapsing_toggle, grid, height_dragger},
         management::{LazyText, LazyTextureId},
         popup::{Popup, PopupIcon, PopupManager},
         state::UiState,
@@ -698,16 +698,20 @@ fn sidebar(
     ui.collapsing("Config", |ui| {
         grid("exposure").show(ui, |ui| {
             ui.label("First Layers");
-            exposure_changed |= DragValue::new(&mut result.config.first_layers)
-                .ui(ui)
-                .changed();
+            exposure_changed |= height_dragger(
+                ui,
+                result.config.slice_height,
+                &mut result.config.first_layers,
+            );
             ui.end_row();
 
             ui.label("Transition Layers");
             ui.horizontal(|ui| {
-                exposure_changed |= DragValue::new(&mut result.config.transition_layers)
-                    .ui(ui)
-                    .changed();
+                exposure_changed |= height_dragger(
+                    ui,
+                    result.config.slice_height,
+                    &mut result.config.transition_layers,
+                );
                 ui.take_available_width();
             });
             ui.end_row();

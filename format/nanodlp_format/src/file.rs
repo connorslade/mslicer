@@ -7,7 +7,7 @@ use anyhow::Result;
 use common::{
     progress::Progress,
     serde::{DynamicSerializer, Serializer},
-    slice::{ExposureConfig, SliceConfig, SliceMode, SlicedFile},
+    slice::{ExposureConfig, Height, SliceConfig, SliceMode, SlicedFile},
 };
 use image::{DynamicImage, RgbaImage};
 use nalgebra::{Vector2, Vector3};
@@ -41,6 +41,7 @@ impl File {
         let (layers, layer_info): (Vec<_>, Vec<_>) =
             layers.into_iter().map(|x| (x.inner, x.info)).unzip();
 
+        let (first_layers, transition_layers) = config.layer_counts();
         let pixel_size = Vector2::new(
             config.platform_size.x / config.platform_resolution.x as f32,
             config.platform_size.y / config.platform_resolution.y as f32,
@@ -77,7 +78,7 @@ impl File {
                 ignore_mask: 1,
                 image_mirror: 1,
                 display_controller: 1,
-                support_layer_number: config.first_layers,
+                support_layer_number: first_layers,
                 fill_color: "#ffffff".into(),
                 blank_color: "#000000".into(),
                 fill_color_rgb: Color::repeat(255),
@@ -88,7 +89,7 @@ impl File {
                 title: "mslicer Config".into(),
                 depth: config.slice_height.convert(),
                 support_depth: config.slice_height.convert(),
-                transitional_layer: config.transition_layers,
+                transitional_layer: transition_layers,
                 updated: timestamp as u32,
                 cure_time: config.exposure_config.exposure_time,
                 support_cure_time: config.first_exposure_config.exposure_time,
@@ -221,8 +222,8 @@ impl SlicedFile for File {
             slice_height: self.profile.depth.convert(),
             exposure_config: ExposureConfig::default(),
             first_exposure_config: ExposureConfig::default(),
-            first_layers: 0,
-            transition_layers: 0,
+            first_layers: Height::Layers(0),
+            transition_layers: Height::Layers(0),
         }
     }
 

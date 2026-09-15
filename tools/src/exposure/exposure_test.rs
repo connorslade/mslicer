@@ -57,9 +57,11 @@ impl ExposureTest {
         }
 
         let [raft, top, body] = [raft, top, body].map(|x| x.runs().collect::<Vec<_>>());
+        let (first_layers, _) = config.layer_counts();
+
         (0..support_layers)
             .map(move |layer| {
-                if layer < config.first_layers as u64 {
+                if layer < first_layers as u64 {
                     return raft.clone();
                 }
 

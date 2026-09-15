@@ -2,7 +2,7 @@ use std::{borrow::Cow, collections::VecDeque, mem};
 
 use common::{
     color::LinearRgb,
-    slice::{ExposureConfig, ExposureRemap, SliceMode, Supersample},
+    slice::{ExposureConfig, ExposureRemap, Height, SliceMode, Supersample},
     units::Milimeters,
 };
 use nalgebra::{Vector2, Vector3};
@@ -67,8 +67,8 @@ pub enum SliceConfigAction {
     PlatformSize(Vector3<Milimeters>),
     SliceHeight(Milimeters),
     Supersample(Supersample),
-    FirstLayers(u32),
-    TransitionLayers(u32),
+    FirstLayers(Height),
+    TransitionLayers(Height),
     NormalExposure(ExposureConfig),
     FirstExposure(ExposureConfig),
     ExposureRemap(ExposureRemap),

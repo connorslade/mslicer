@@ -11,10 +11,11 @@ impl<L: LengthUnit> Length<L> {
         Length::new(self.get::<T>())
     }
 
-    pub fn with<T: LengthUnit>(&mut self, callback: impl FnOnce(&mut f32)) {
+    pub fn with<T: LengthUnit, K>(&mut self, callback: impl FnOnce(&mut f32) -> K) -> K {
         let mut value = self.convert::<T>();
-        callback(value.raw_mut());
+        let response = callback(value.raw_mut());
         *self = value.convert();
+        response
     }
 }
 

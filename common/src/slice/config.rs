@@ -27,8 +27,8 @@ pub struct SliceConfig {
 
     pub exposure_config: ExposureConfig,
     pub first_exposure_config: ExposureConfig,
-    pub first_layers: u32,
-    pub transition_layers: u32,
+    pub first_layers: Height,
+    pub transition_layers: Height,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
@@ -42,6 +42,12 @@ pub struct ExposureRemap {
     pub start: f32,
     pub end: f32,
     pub control: [Vector2<f32>; 2],
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+pub enum Height {
+    Layers(u32),
+    Distance(Milimeters),
 }
 
 /// Layer exposure settings.
@@ -58,11 +64,20 @@ pub struct ExposureConfig {
 }
 
 impl SliceConfig {
+    pub fn layer_counts(&self) -> (u32, u32) {
+        let slice_height = self.slice_height;
+        let first_layers = self.first_layers.layers(slice_height);
+        let transition_layers = self.transition_layers.layers(slice_height);
+
+        (first_layers, transition_layers)
+    }
+
     pub fn exposure_config(&self, layer: u32) -> Cow<'_, ExposureConfig> {
-        if layer < self.first_layers {
+        let (first_layers, transition_layers) = self.layer_counts();
+        if layer < first_layers {
             Cow::Borrowed(&self.first_exposure_config)
-        } else if layer < self.first_layers + self.transition_layers {
-            let t = (layer - self.first_layers) as f32 / self.transition_layers as f32;
+        } else if layer < first_layers + transition_layers {
+            let t = (layer - first_layers) as f32 / transition_layers as f32;
             Cow::Owned(self.first_exposure_config.lerp(&self.exposure_config, t))
         } else {
             Cow::Borrowed(&self.exposure_config)
@@ -98,10 +113,11 @@ impl SliceConfig {
         let exp = &self.exposure_config;
         let fexp = &self.first_exposure_config;
 
-        let first_layers = self.first_layers.min(layers);
+        let slice_height = self.slice_height;
+        let first_layers = self.first_layers.layers(slice_height).min(layers);
         let transition_layers = layers
-            .saturating_sub(self.first_layers)
-            .min(self.transition_layers);
+            .saturating_sub(first_layers)
+            .min(self.transition_layers.layers(slice_height));
         let regular_layers = layers
             .saturating_sub(first_layers)
             .saturating_sub(transition_layers);
@@ -169,6 +185,62 @@ impl ExposureRemap {
     }
 }
 
+impl Height {
+    pub fn type_name(&self) -> &str {
+        match self {
+            Height::Layers(_) => "Layers",
+            Height::Distance(_) => "Distance",
+        }
+    }
+
+    pub fn layers(&self, slice_height: Milimeters) -> u32 {
+        match self {
+            Height::Layers(x) => *x,
+            Height::Distance(length) => (*length / slice_height).round() as u32,
+        }
+    }
+
+    pub fn distance(&self, slice_height: Milimeters) -> Milimeters {
+        match self {
+            Height::Layers(x) => *x as f32 * slice_height,
+            Height::Distance(length) => *length,
+        }
+    }
+
+    pub fn flip(&self, slice_height: Milimeters) -> Self {
+        match self {
+            Height::Layers(x) => Height::Distance(*x as f32 * slice_height),
+            Height::Distance(length) => Height::Layers((*length / slice_height).round() as u32),
+        }
+    }
+
+    pub fn serialize<T: Serializer>(&self, ser: &mut T) {
+        match self {
+            Height::Layers(layers) => {
+                ser.write_u8(0);
+                ser.write_u32_be(*layers);
+            }
+            Height::Distance(length) => {
+                ser.write_u8(1);
+                ser.write_f32_be(length.get::<Milimeter>());
+            }
+        }
+    }
+
+    pub fn deserialize<T: Deserializer>(des: &mut T, version: u16) -> Self {
+        if version < 15 {
+            return Self::Layers(des.read_u32_be());
+        }
+
+        let tag = des.read_u8();
+        match tag {
+            0 => Self::Layers(des.read_u32_be()),
+            1 => Self::Distance(Milimeters::new(des.read_f32_be())),
+            _ => Self::Layers(0), // unreachable
+        }
+    }
+}
+
 impl SliceConfig {
     pub fn serialize<T: Serializer>(&self, ser: &mut T) {
         self.mode.serialize(ser);
@@ -179,8 +251,8 @@ impl SliceConfig {
         ser.write_f32_be(self.slice_height.raw());
         self.exposure_config.serialize(ser);
         self.first_exposure_config.serialize(ser);
-        ser.write_u32_be(self.first_layers);
-        ser.write_u32_be(self.transition_layers);
+        self.first_layers.serialize(ser);
+        self.transition_layers.serialize(ser);
     }
 
     pub fn deserialize<T: Deserializer>(des: &mut T, version: u16) -> Result<Self> {
@@ -205,8 +277,8 @@ impl SliceConfig {
             slice_height: Milimeters::new(des.read_f32_be()),
             exposure_config: ExposureConfig::deserialize(des, version),
             first_exposure_config: ExposureConfig::deserialize(des, version),
-            first_layers: des.read_u32_be(),
-            transition_layers: des.read_u32_be(),
+            first_layers: Height::deserialize(des, version),
+            transition_layers: Height::deserialize(des, version),
         })
     }
 }
@@ -299,8 +371,8 @@ impl Default for SliceConfig {
                 exposure_time: Seconds::new(30.0),
                 ..Default::default()
             },
-            first_layers: 3,
-            transition_layers: 10,
+            first_layers: Height::Distance(Milimeters::new(0.5)),
+            transition_layers: Height::Distance(Milimeters::new(0.2)),
         }
     }
 }

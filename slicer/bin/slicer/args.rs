@@ -3,7 +3,7 @@ use std::{any::Any, path::PathBuf, str::FromStr};
 use anyhow::{Context, Ok, Result};
 use clap::{ArgMatches, Parser};
 use common::{
-    slice::{ExposureConfig, SliceConfig, SliceMode, Supersample},
+    slice::{ExposureConfig, Height, SliceConfig, SliceMode, Supersample},
     units::{Milimeters, MilimetersPerMinute, Seconds},
 };
 use nalgebra::{ArrayStorage, Const, Matrix, Scalar, U1, Vector2, Vector3};
@@ -142,8 +142,8 @@ impl Args {
                 lift_speed: MilimetersPerMinute::new(self.first_lift_speed).convert(),
                 retract_speed: MilimetersPerMinute::new(self.first_retract_speed).convert(),
             },
-            first_layers: self.first_layers,
-            transition_layers: self.transition_layers,
+            first_layers: Height::Layers(self.first_layers),
+            transition_layers: Height::Layers(self.transition_layers),
         })
     }
 
