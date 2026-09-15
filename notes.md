@@ -44,6 +44,7 @@ Feel free to help out :eyes:.
 - organize tools menu with categories?
 - change first/transition layers to a distance?
 - remote print auto scan on startup option
+- plot voxel error across different triangulations
 
 ## Documentation
 

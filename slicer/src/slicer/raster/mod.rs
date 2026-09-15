@@ -18,7 +18,7 @@ use crate::{
     },
 };
 
-mod edge_table;
+pub mod edge_table;
 
 pub struct Segment {
     pub endpoints: [Vector2<f32>; 2],
