@@ -7,7 +7,6 @@ use wgpu::Device;
 
 use crate::{project::model::RenderedMeshBuffers, render::util::gpu_mesh_buffers};
 
-#[derive(Default)]
 pub struct Supports {
     auto: Vec<Support>,
     manual: Vec<Support>,
@@ -98,5 +97,17 @@ impl Supports {
         self.buffers
             .as_ref()
             .map(|x| (x, self.mesh.as_ref().unwrap().face_count() as u32 * 3))
+    }
+}
+
+impl Default for Supports {
+    fn default() -> Self {
+        Self {
+            auto: Default::default(),
+            manual: Default::default(),
+
+            mesh: Default::default(),
+            buffers: Default::default(),
+        }
     }
 }

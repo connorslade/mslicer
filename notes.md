@@ -15,7 +15,6 @@ Feel free to help out :eyes:.
     - support presets, instead of having to mess with all the sliders to change the size
     - dont place supports on points touching the build plate
         - ask you to raise the model before supporting
-    - slice supports
     - support placement tool instead of just a checkbox... or maybe a key to hold down while clicking
     - options to only generate some combination of point, edge, and face overhangs 
     - transform supports with model
@@ -27,7 +26,6 @@ Feel free to help out :eyes:.
   like just ignore the broken values.
 - phonographic record generator (it might be possible :eyes:)
   - apply RAII pre-emphasis
-  - allow picking stereo or mono
   - generate async
   - create manifold mesh
 - add well documented .zip and .bin output formats (closes #29)
@@ -75,17 +73,6 @@ Features that would be cool, but are a bit out of scope for now.
   - at what point of mesh resolution is polygon intersection slower 
 
 ## Defective Meshes
-
-> when do non-manifold meshes slice correctly?
-
-- non-welded verts?
-- hole has no height (only if not rotated in XY)
-
-> test models
-
-- capybara
-
-> types of defects
 
 - [x] non-welded verts
 - [x] holes

@@ -1,9 +1,6 @@
-use std::{path::PathBuf, sync::Arc, thread};
+use std::path::PathBuf;
 
-use clone_macro::clone;
-use const_format::concatcp;
 use egui::{Theme, ViewportCommand, Visuals};
-use egui_phosphor::regular::CARET_RIGHT;
 use egui_tracing::EventCollector;
 use egui_wgpu::RenderState;
 use nalgebra::{Vector2, Vector3};
@@ -24,18 +21,17 @@ use crate::{
     ui::{
         drag_and_drop,
         panels::Panels,
-        popup::{Popup, PopupIcon, PopupManager},
+        popup::PopupManager,
         state::{RemotePrintConnectStatus, UiState, WorkspaceHover},
     },
-    windows::{self, Tab},
+    windows,
 };
-use common::{progress::CombinedProgress, slice::SliceMode, units::Milimeter};
-use slicer::slicer::{Slicer, SlicerModel};
 
 pub mod camera;
 pub mod config;
 mod fps_tracker;
 pub mod history;
+mod slice;
 pub mod slice_operation;
 
 pub const SLICE_PREVIEW_SIZE: Vector2<f32> = Vector2::new(700.0, 400.0);
@@ -156,79 +152,6 @@ impl App {
         }
 
         (min.0 != f32::MAX).then_some(min.1)
-    }
-}
-
-impl App {
-    pub fn slice(&mut self) {
-        let meshes = (self.project.models.iter())
-            .filter(|x| !x.hidden)
-            .cloned()
-            .collect::<Vec<_>>();
-
-        if meshes.is_empty() {
-            const NO_MODELS_ERROR: &str = concatcp!(
-                "There are no models to slice. Add one by going to File ",
-                CARET_RIGHT,
-                " Import Model or drag and drop a model file into the workspace."
-            );
-            self.popup.open(Popup::simple(
-                "Slicing Error",
-                PopupIcon::Error,
-                NO_MODELS_ERROR,
-            ));
-            return;
-        }
-
-        info!("Starting slicing operation");
-
-        let slice_config = self.project.slice_config.clone();
-        let slice_height = slice_config.slice_height.get::<Milimeter>();
-        let platform_size = (slice_config.platform_size.xy()).map(|x| x.get::<Milimeter>());
-
-        let platform = slice_config.platform_resolution.cast::<f32>();
-        let mm_to_px = platform.component_div(&platform_size).push(1.0);
-
-        // Transform models from world-space to platform-space
-        let mut out = Vec::new();
-        for model in meshes.into_iter() {
-            let (mut mesh, exposure) = (model.mesh, model.exposure);
-
-            let offset = (platform / 2.0).push(-slice_height / 2.0);
-            mesh.set_scale_unchecked(mesh.scale().component_mul(&mm_to_px));
-            mesh.set_position_unchecked(mesh.position().component_mul(&mm_to_px) + offset);
-            mesh.update_transformation_matrix();
-
-            out.push(SlicerModel { mesh, exposure });
-        }
-
-        let slicer = Slicer::new(slice_config, out);
-        let post_process = CombinedProgress::new();
-        let slice_operation = SliceOperation::new(slicer.progress(), post_process.clone());
-        self.slice_operation.replace(slice_operation);
-        self.panels.focus_tab(Tab::Sliced, SLICE_PREVIEW_SIZE);
-
-        thread::spawn(clone!(
-            [
-                { self.slice_operation } as slice_operation,
-                { self.project.post_processing } as post_processing
-            ],
-            move || {
-                let slice_operation = slice_operation.as_ref().unwrap();
-
-                match slicer.slice_config.mode {
-                    SliceMode::Raster => {
-                        let mut layers = slicer.slice_raster();
-                        post_processing.process(&slicer.slice_config, &mut layers, post_process);
-                        slice_operation.add_raster_result(slicer.slice_config, layers);
-                    }
-                    SliceMode::Vector => {
-                        let layers = slicer.slice_vector();
-                        slice_operation.add_vector_result(slicer.slice_config, Arc::new(layers));
-                    }
-                }
-            }
-        ));
     }
 }
 
