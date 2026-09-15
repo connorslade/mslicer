@@ -14,7 +14,7 @@ pub const DESCRIPTION: &str = "Generates patterns for testing and debugging purp
 
 pub fn open(app: &mut App) {
     app.popup
-        .open(Popup::new("Test Pattern", interface).close_button(true));
+        .open(Popup::new_seeded("Test Pattern", interface).close_button(true));
 }
 
 fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {

@@ -40,6 +40,7 @@ fn main() -> Result<()> {
 
     let filter = filter::Targets::new()
         .with_default(LevelFilter::OFF)
+        .with_target("experimental", LevelFilter::TRACE)
         .with_target("mslicer", LevelFilter::TRACE)
         .with_target("remote_print", LevelFilter::TRACE)
         .with_target("slicer", LevelFilter::TRACE)

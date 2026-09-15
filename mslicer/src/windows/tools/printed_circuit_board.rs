@@ -21,7 +21,7 @@ pub const DOCS_PAGE: &str = "https://mslicer.com/docs/pcb-photolighography";
 
 pub fn open(app: &mut App) {
     app.popup
-        .open(Popup::new("Printed Circuit Board", interface).close_button(true));
+        .open(Popup::new_seeded("Printed Circuit Board", interface).close_button(true));
 }
 
 fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {

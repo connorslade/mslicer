@@ -21,7 +21,7 @@ pub const DESCRIPTION: &str = "Automatically lays out models on the print bed. S
 
 pub fn open(app: &mut App) {
     app.popup
-        .open(Popup::new("Auto Layout", interface).close_button(true));
+        .open(Popup::new_seeded("Auto Layout", interface).close_button(true));
 }
 
 fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {

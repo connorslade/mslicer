@@ -38,7 +38,7 @@ impl VariableLayerHeight {
 
         while i < layers.len() - 1 {
             // If next layer is identical, remove and merge into current
-            if merged < self.max_layers
+            if merged < self.max_layers.saturating_sub(1)
                 && (difference(&layers[i].data, &layers[i + 1].data) as f32) < threshold
             {
                 let old = layers.remove(i + 1);

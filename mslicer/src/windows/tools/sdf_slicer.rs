@@ -8,7 +8,7 @@ use crate::{
 
 pub fn open(app: &mut App) {
     app.popup
-        .open(Popup::new("SDF Slicer", interface).close_button(true));
+        .open(Popup::new_seeded("SDF Slicer", interface).close_button(true));
 }
 
 fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {

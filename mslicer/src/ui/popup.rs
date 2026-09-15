@@ -58,6 +58,10 @@ pub enum PopupIcon {
 
 impl PopupManager {
     pub fn open(&mut self, popup: Popup) {
+        if self.popups.iter().any(|x| x.id == popup.id) {
+            return;
+        }
+
         self.popups.push(popup);
     }
 }
@@ -147,6 +151,13 @@ impl Popup {
             title.as_ref().to_owned(),
             ui,
         )
+    }
+
+    pub fn new_seeded(
+        title: impl AsRef<str>,
+        ui: impl FnMut(&mut PopupApp, &mut Ui) -> bool + 'static,
+    ) -> Self {
+        Self::new_with_id(Id::new(title.as_ref()), title.as_ref().to_owned(), ui)
     }
 
     pub fn simple(title: impl AsRef<str>, icon: PopupIcon, body: impl Into<WidgetText>) -> Self {

@@ -15,7 +15,7 @@ pub const DESCRIPTION: &str = "peak unemployment";
 
 pub fn open(app: &mut App) {
     app.popup
-        .open(Popup::new("3D Graphics", interface).close_button(true));
+        .open(Popup::new_seeded("3D Graphics", interface).close_button(true));
 }
 
 fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {

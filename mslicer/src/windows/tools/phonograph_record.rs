@@ -15,7 +15,7 @@ pub const DESCRIPTION: &str = "Generates a phonograph record mesh from an audio 
 
 pub fn open(app: &mut App) {
     app.popup
-        .open(Popup::new("Phonograph Record", interface).close_button(true));
+        .open(Popup::new_seeded("Phonograph Record", interface).close_button(true));
 }
 
 fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {

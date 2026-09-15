@@ -22,7 +22,7 @@ pub const DESCRIPTION: &str =
 
 pub fn open(app: &mut App) {
     app.popup
-        .open(Popup::new("Sliced Diff", interface).close_button(true));
+        .open(Popup::new_seeded("Sliced Diff", interface).close_button(true));
 }
 
 fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {

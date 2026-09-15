@@ -1,3 +1,4 @@
+use common::units::Milimeter;
 use const_format::concatcp;
 use egui::{CollapsingHeader, Color32, ComboBox, Context, DragValue, Grid, Theme, Ui, Widget};
 use egui_phosphor::regular::{ARROW_COUNTER_CLOCKWISE, ARROWS_CLOCKWISE, FOLDER, INFO};
@@ -272,6 +273,12 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
             if DragValue::new(&mut mib).suffix(" MiB").ui(ui).changed() {
                 app.config.render.max_buffer_size = mib * B_PER_MIB as u64;
             }
+            ui.end_row();
+
+            ui.label("Quick Layout Spacing");
+            app.config.ui.quick_layout_spacing.with::<Milimeter>(|x| {
+                DragValue::new(x).suffix(" mm").ui(ui);
+            });
             ui.end_row();
         });
     });

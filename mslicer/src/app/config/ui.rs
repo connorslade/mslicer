@@ -1,4 +1,5 @@
 use chrono::{DateTime, Duration, Utc};
+use common::units::Milimeters;
 use egui::Theme;
 use egui_dock::Tree;
 use serde::{Deserialize, Serialize};
@@ -15,6 +16,7 @@ pub struct UiConfig {
     pub about: bool,
     pub tasks: bool,
     pub history_max_mesh_size: u32, // in MiB
+    pub quick_layout_spacing: Milimeters,
 
     pub update_check: UpdateCheckFrequency,
     pub last_update_check: Option<DateTime<Utc>>,
@@ -60,6 +62,7 @@ impl Default for UiConfig {
             about: true,
             tasks: true,
             history_max_mesh_size: 20,
+            quick_layout_spacing: Milimeters::new(2.0),
 
             update_check: UpdateCheckFrequency::EveryLaunch,
             last_update_check: None,

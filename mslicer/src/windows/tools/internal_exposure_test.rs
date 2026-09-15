@@ -14,7 +14,7 @@ pub const DESCRIPTION: &str = "Generates a rectangular prism with a gradient of 
 
 pub fn open(app: &mut App) {
     app.popup
-        .open(Popup::new("Internal Exposure Test", interface).close_button(true));
+        .open(Popup::new_seeded("Internal Exposure Test", interface).close_button(true));
 }
 
 fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {

@@ -1,5 +1,6 @@
 use std::ops::Deref;
 
+use common::units::Milimeter;
 use egui::{Context, Key, KeyboardShortcut, Modifiers, ViewportCommand};
 
 use crate::{
@@ -176,10 +177,11 @@ fn select_none(app: &mut App, _ctx: &Context) {
 }
 
 fn quick_layout(app: &mut App, _ctx: &Context) {
+    let padding = app.config.ui.quick_layout_spacing.get::<Milimeter>();
     app.tasks.add(AutoLayout::new(
         &app.project.slice_config,
         &app.project.models,
-        (2.0, 10.0),
+        (padding, 10.0),
     ));
 }
 

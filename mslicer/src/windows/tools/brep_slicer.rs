@@ -13,7 +13,7 @@ const DESCRIPTION: &str =
 
 pub fn open(app: &mut App) {
     app.popup
-        .open(Popup::new("Brep Slicer", interface).close_button(true));
+        .open(Popup::new_seeded("Brep Slicer", interface).close_button(true));
 }
 
 fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {

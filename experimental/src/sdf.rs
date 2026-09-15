@@ -95,25 +95,7 @@ impl SdfSlicer {
 
 // From: https://jbaker.graphics/writings/DEC.html
 fn sdf(p: Vector3<f32>) -> f32 {
-    // let rt = 15.0;
-    // let rg = 4.0;
-    // let ws = 0.3;
-
-    // let nx = rt * p.z.atan2(-p.x);
-    // let nz = p.xz().magnitude() - rt;
-    // p.x = nx;
-    // p.z = nz;
-
-    // let ny = rg * p.z.atan2(-p.y);
-    // let nz = p.yz().magnitude() - rg;
-    // p.y = ny;
-    // p.z = nz;
-
-    // let s = p.map(|x| x.sin()).dot(&p.map(|x| x.cos()).yzx());
-    // 0.6 * ((s.abs() - ws).max(p.z.abs() - 0.5 * PI))
-
-    // return dot(sin(p.xyz), cos(p.yzx)) + osc(-1.3, 1.3);
-    let gyroid = p.map(|x| x.sin()).dot(&p.map(|x| x.cos()).yzx());
+    let gyroid = p.map(|x| x.sin()).dot(&p.map(|x| x.cos()).yzx()) * 0.6;
     let bounds = (p - Vector3::new(0.0, 0.0, 10.0)).magnitude() - 10.0;
 
     gyroid.max(bounds)

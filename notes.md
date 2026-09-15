@@ -5,12 +5,6 @@ Feel free to help out :eyes:.
 
 ## Bugs
 
-- no way to configure quick layout spacing
-- You can open multiple instances of a tool window
-- variable layer height tooltip
-- variable layer height max layers
-- variable layer height progress being reported as elephant foot fixer
-
 ## Features
 
 - support generation

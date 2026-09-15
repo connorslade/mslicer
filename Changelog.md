@@ -51,6 +51,10 @@
 - Added more CLI debugging tools
 - More robust mesh deserialization
 - Experimental SDF and Boundary Representation (BREP) slicing
+- Fix Variable layer height max layers and progress being reported as elephant foot fixer
+- Prevent opening the same tool window multiple times
+- Allow configuring quick layout min spacing
+
 
 ## v0.9.2 &mdash; August 30th, 2026
 
