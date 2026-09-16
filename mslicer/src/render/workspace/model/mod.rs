@@ -10,20 +10,25 @@ use crate::{
     render::{
         Gcx,
         consts::{FILTERING_SAMPLER, NONFILTERING_SAMPLER},
-        workspace::model::pass::{
-            base::BasePass, blur::BlurPass, composite::CompositePass, fxaa::FxaaPass,
-            lighting::LightingPass, ssao::SsaoPass,
+        workspace::model::{
+            pass::{
+                base::BasePass, blur::BlurPass, composite::CompositePass, fxaa::FxaaPass,
+                lighting::LightingPass, ssao::SsaoPass,
+            },
+            pick::ModelPicker,
         },
     },
 };
 
 mod bindings;
 mod pass;
+mod pick;
 mod preview;
 pub use preview::process_previews;
 
 pub struct ModelPipeline {
     multi_stage: Option<MultiStage>,
+    picker: ModelPicker,
     base: BasePass,
     ssao: SsaoPass,
     blur: BlurPass,
@@ -45,6 +50,7 @@ struct MultiStage {
 
     // g buffer
     depth_target: TextureView,
+    model_target: TextureView,
     normal_target: TextureView,
     world_target: TextureView,
 }
@@ -62,6 +68,7 @@ impl ModelPipeline {
 
         Self {
             multi_stage: None,
+            picker: ModelPicker::new(device),
             base: BasePass::create(device, texture),
             ssao: SsaoPass::create(device),
             blur: BlurPass::create(device),
@@ -124,6 +131,9 @@ impl ModelPipeline {
 
         self.size_textures(gcx, app, screen.size_in_pixels.into());
         self.render(encoder, app);
+
+        let multi = self.multi_stage.as_ref().unwrap();
+        self.picker.update(gcx, encoder, multi, app);
     }
 
     // Runs the post-processing pipeline, copying the data from the intermediary

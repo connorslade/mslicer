@@ -15,7 +15,7 @@ use crate::{
         history::History,
         slice_operation::SliceOperation,
     },
-    project::{Project, model::ModelId},
+    project::Project,
     render::{Gcx, workspace::model},
     task::{PrinterScan, TaskManager, update_check_if_scheduled},
     ui::{
@@ -135,23 +135,6 @@ impl App {
         workspace
             .hovered()
             .then(|| self.camera.hovered_ray(projection, *aspect, *uv))
-    }
-
-    pub fn hovered_model(&self) -> Option<ModelId> {
-        let (pos, dir) = self.hovered_ray()?;
-        let mut min = (f32::MAX, ModelId::default());
-
-        for model in self.project.models.iter() {
-            if !model.hidden
-                && let Some(bvh) = &model.bvh
-                && let Some(hit) = bvh.intersect_ray(&model.mesh, pos, dir)
-                && hit.t < min.0
-            {
-                min = (hit.t, model.id);
-            }
-        }
-
-        (min.0 != f32::MAX).then_some(min.1)
     }
 }
 

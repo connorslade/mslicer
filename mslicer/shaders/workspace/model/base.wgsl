@@ -13,7 +13,8 @@ struct Context {
     build_volume: vec3f,
     model_color: vec3f,
     render_style: u32,
-    overhang_angle: f32
+    overhang_angle: f32,
+    id: u32
 }
 
 struct VertexOutput {
@@ -23,8 +24,9 @@ struct VertexOutput {
 
 struct FragmentOutput {
     @location(0) color: vec4f,
-    @location(1) normal: vec4f,
-    @location(2) world: vec4f,
+    @location(1) model: vec2u,
+    @location(2) normal: vec4f,
+    @location(3) world: vec4f,
 }
 
 @vertex
@@ -44,6 +46,7 @@ fn frag(
     let normal = screen_normal(in.world_position);
     return FragmentOutput(
         render(is_front, in, index, normal),
+        vec2(context.id, index),
         vec4(normal, 0.0),
         vec4(in.world_position, 0.0)
     );

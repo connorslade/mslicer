@@ -22,6 +22,7 @@ pub struct UiState {
 
     // support stuff
     pub workspace: WorkspaceHover,
+    pub hovered_geometry: Option<GeometryHit>,
     pub support_placement: bool,
 
     pub selected: Selected,
@@ -73,6 +74,12 @@ pub enum Selected {
     None,
     Models(HashSet<ModelId>),
     Collection(CollectionId),
+}
+
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+pub struct GeometryHit {
+    pub model: ModelId,
+    pub face: u32,
 }
 
 #[derive(Default)]

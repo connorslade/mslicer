@@ -143,7 +143,7 @@ fn viewport(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     if response.clicked() && !is_moving {
         if app.state.support_placement {
             manual_support_placement(app, true);
-        } else if let Some(id) = app.hovered_model() {
+        } else if let Some(id) = app.state.hovered_geometry.map(|x| x.model) {
             app.state
                 .selected
                 .model_clicked(id, ui.input(|x| x.modifiers.shift));

@@ -40,6 +40,7 @@ struct Uniforms {
     model_color: Vector3<f32>,
     render_style: u32,
     overhang_angle: f32,
+    id: u32,
 }
 
 impl BasePass {
@@ -83,6 +84,12 @@ impl BasePass {
                     Some(ColorTargetState {
                         format: texture,
                         blend: Some(BlendState::ALPHA_BLENDING),
+                        write_mask: ColorWrites::all(),
+                    }),
+                    // model
+                    Some(ColorTargetState {
+                        format: TextureFormat::Rg32Uint,
+                        blend: None,
                         write_mask: ColorWrites::all(),
                     }),
                     // normals
@@ -191,6 +198,7 @@ impl BasePass {
                 model_color: model.color.to_srgb().into(),
                 render_style,
                 overhang_angle,
+                id: model.id.raw(),
             }
         });
     }
@@ -208,6 +216,7 @@ impl BasePass {
                 model_color: model.color.to_srgb().into(),
                 render_style: RenderStyle::Rendered as u32,
                 overhang_angle: 0.0,
+                id: model.id.raw(),
             }
         });
     }
@@ -225,6 +234,20 @@ impl BasePass {
                     resolve_target: None,
                     ops: Operations {
                         load: LoadOp::Clear(Color::TRANSPARENT),
+                        store: StoreOp::Store,
+                    },
+                    depth_slice: None,
+                }),
+                Some(RenderPassColorAttachment {
+                    view: &multi.model_target,
+                    resolve_target: None,
+                    ops: Operations {
+                        load: LoadOp::Clear(Color {
+                            r: u32::MAX as f64,
+                            g: u32::MAX as f64,
+                            b: 0.0,
+                            a: 0.0,
+                        }),
                         store: StoreOp::Store,
                     },
                     depth_slice: None,
