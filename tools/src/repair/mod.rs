@@ -2,6 +2,7 @@ use std::{collections::HashMap, iter, sync::Arc};
 
 use itertools::Itertools;
 use nalgebra::Vector3;
+use ordered_float::OrderedFloat;
 use slicer::{half_edge::HalfEdgeMesh, mesh::Mesh};
 
 // todo: separate and faster detection pass?
@@ -79,18 +80,22 @@ impl MeshRepair {
         }
 
         for edge_loop in loops.iter() {
-            let center = (edge_loop.iter())
-                .map(|x| state.vertices[*x as usize])
-                .sum::<Vector3<_>>()
-                / edge_loop.len() as f32;
+            let mut poly = edge_loop.clone();
+            while poly.len() > 3 {
+                let n = poly.len();
+                let i = (0..n)
+                    .min_by_key(|&idx| {
+                        let face = state.faces[idx];
+                        let [a, b, c] = face.map(|x| state.vertices[x as usize]);
+                        OrderedFloat((a - b).cross(&(c - b)).magnitude()) // minimizes triangle area
+                    })
+                    .unwrap();
 
-            let c = state.vertices.len() as u32;
-            state.vertices.push(center);
-
-            let first = &edge_loop[0];
-            for (a, b) in edge_loop.iter().chain(iter::once(first)).tuple_windows() {
-                state.faces.push([*a, c, *b]);
+                let face = [i, (i + n - 1) % n, (i + 1) % n].map(|k| poly[k]);
+                state.faces.push(face);
+                poly.remove(i);
             }
+            state.faces.push([poly[1], poly[2], poly[0]]);
         }
 
         loops.len() as u64
