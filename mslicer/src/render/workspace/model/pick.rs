@@ -1,9 +1,6 @@
-use std::{
-    mem,
-    sync::{
-        Arc,
-        atomic::{AtomicBool, Ordering},
-    },
+use std::sync::{
+    Arc,
+    atomic::{AtomicBool, Ordering},
 };
 
 use clone_macro::clone;
@@ -21,10 +18,10 @@ use crate::{
 
 pub struct ModelPicker {
     staging: Buffer,
-    state: PickState,
+    state: StateMachine,
 }
 
-enum PickState {
+enum StateMachine {
     None,
     Copied,
     Mapping(Arc<AtomicBool>),
@@ -41,7 +38,7 @@ impl ModelPicker {
 
         Self {
             staging,
-            state: PickState::None,
+            state: StateMachine::None,
         }
     }
 
@@ -52,17 +49,17 @@ impl ModelPicker {
         multi: &MultiStage,
         app: &mut App,
     ) {
-        match mem::replace(&mut self.state, PickState::None) {
-            PickState::None => self.copy(encoder, multi, app),
-            PickState::Copied => {
+        match &self.state {
+            StateMachine::None => self.copy(encoder, multi, app),
+            StateMachine::Copied => {
                 let complete = Arc::new(AtomicBool::new(false));
                 (self.staging.slice(..)).map_async(
                     MapMode::Read,
                     clone!([complete], move |_| complete.store(true, Ordering::Relaxed)),
                 );
-                self.state = PickState::Mapping(complete);
+                self.state = StateMachine::Mapping(complete);
             }
-            PickState::Mapping(complete) => {
+            StateMachine::Mapping(complete) => {
                 let _ = gcx.device.poll(PollType::Poll);
                 complete.load(Ordering::Relaxed).then(|| self.download(app));
             }
@@ -107,7 +104,7 @@ impl ModelPicker {
             },
         );
 
-        self.state = PickState::Copied;
+        self.state = StateMachine::Copied;
     }
 
     fn download(&mut self, app: &mut App) {
@@ -120,5 +117,6 @@ impl ModelPicker {
             model: ModelId::from_raw(model),
             face,
         });
+        self.state = StateMachine::None;
     }
 }

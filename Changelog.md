@@ -58,6 +58,7 @@
 - Rename 'First Layers' to 'Bottom Layers'
 - Allow setting slice config layer counts in millimeters
 - Detect clicked model with GPU model pass (No longer requires the BVH to be built)
+- Support changing SSAO scale at runtime
 
 ## v0.9.2 &mdash; August 30th, 2026
 

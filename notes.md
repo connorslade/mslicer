@@ -34,6 +34,7 @@ Feel free to help out :eyes:.
 - game style camera (arrow keys to move)
 - organize tools menu with categories?
 - plot voxel error across different triangulations
+- Lower render resolution?
 
 ## Documentation
 

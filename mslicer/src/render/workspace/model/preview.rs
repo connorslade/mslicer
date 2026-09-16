@@ -18,7 +18,10 @@ use crate::{
     app::{App, camera::Camera},
     render::{
         Gcx,
-        workspace::{WorkspaceRenderResources, model::ModelPipeline},
+        workspace::{
+            WorkspaceRenderResources,
+            model::{ModelPipeline, bindings::occlusion_size},
+        },
     },
 };
 
@@ -39,7 +42,7 @@ impl ModelPipeline {
 
         self.base.prepare_preview(gcx, app, &camera);
         self.ssao.prepare(gcx, app, Some(&camera));
-        self.blur.prepare(gcx, app, size);
+        self.blur.prepare(gcx, app, occlusion_size(app, size));
         self.lighting.prepare(gcx, app, Some(&camera));
         self.fxaa.prepare(gcx, app, size);
         self.render(encoder, app);

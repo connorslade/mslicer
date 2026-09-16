@@ -11,6 +11,7 @@ use crate::{
         Gcx,
         consts::{FILTERING_SAMPLER, NONFILTERING_SAMPLER},
         workspace::model::{
+            bindings::occlusion_size,
             pass::{
                 base::BasePass, blur::BlurPass, composite::CompositePass, fxaa::FxaaPass,
                 lighting::LightingPass, ssao::SsaoPass,
@@ -122,10 +123,11 @@ impl ModelPipeline {
         app: &mut App,
     ) {
         let size = screen.size_in_pixels.into();
+        let occlusion_size = occlusion_size(app, size);
 
         self.base.prepare(gcx, app);
         self.ssao.prepare(gcx, app, None);
-        self.blur.prepare(gcx, app, size);
+        self.blur.prepare(gcx, app, occlusion_size);
         self.lighting.prepare(gcx, app, None);
         self.fxaa.prepare(gcx, app, size);
 

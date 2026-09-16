@@ -17,8 +17,16 @@ impl ModelPipeline {
             depth_or_array_layers: 1,
         };
 
+        let occlusion_size = occlusion_size(app, size);
+        let occlusion_extent = Extent3d {
+            width: occlusion_size.x,
+            height: occlusion_size.y,
+            depth_or_array_layers: 1,
+        };
+
         if let Some(multi_stage) = &self.multi_stage
             && multi_stage.target_a.texture().size() == extent
+            && multi_stage.occlusion_target_a.texture().size() == occlusion_extent
         {
             return;
         }
@@ -84,13 +92,6 @@ impl ModelPipeline {
             view_formats: &[],
         });
 
-        let size = (size.cast::<f32>() * app.config.render.ambient_occlusion.scale)
-            .map(|x| x.ceil() as u32);
-        let occlusion_extent = Extent3d {
-            width: size.x,
-            height: size.y,
-            depth_or_array_layers: 1,
-        };
         let occlusion_desc = TextureDescriptor {
             label: Some("Occlusion"),
             size: occlusion_extent,
@@ -140,4 +141,9 @@ impl ModelPipeline {
         self.fxaa.recreate_bind_group(gcx, multi, filtering_sampler);
         self.composite.recreate_bind_group(gcx, multi, sampler);
     }
+}
+
+pub fn occlusion_size(app: &App, size: Vector2<u32>) -> Vector2<u32> {
+    let scale = app.config.render.ambient_occlusion.scale.clamp(0.1, 1.0);
+    (size.cast::<f32>() * scale).map(|x| x.ceil() as u32)
 }
