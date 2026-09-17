@@ -35,6 +35,7 @@ Feel free to help out :eyes:.
 - organize tools menu with categories?
 - plot voxel error across different triangulations
 - Lower render resolution?
+- Different support colors (also diff default styles)
 
 ## Documentation
 

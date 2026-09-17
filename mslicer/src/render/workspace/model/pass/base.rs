@@ -1,4 +1,9 @@
-use common::units::Milimeter;
+use std::f32::consts::PI;
+
+use common::{
+    color::{LinearRgb, OkLab, SRgb},
+    units::Milimeter,
+};
 use encase::{DynamicUniformBuffer, ShaderSize, ShaderType};
 use nalgebra::{Matrix4, Vector3};
 use wgpu::{
@@ -32,7 +37,7 @@ pub struct BasePass {
     bind_group: Option<BindGroup>,
 }
 
-#[derive(ShaderType)]
+#[derive(ShaderType, Clone)]
 struct Uniforms {
     transform: Matrix4<f32>,
     model_transform: Matrix4<f32>,
@@ -144,16 +149,19 @@ impl BasePass {
         &mut self,
         gcx: &Gcx,
         app: &mut App,
-        mut callback: impl FnMut(&Gcx, &mut Model) -> Uniforms,
+        mut callback: impl FnMut(&Gcx, &mut Model) -> Vec<Uniforms>,
     ) {
         self.offsets.clear();
 
         let mut buffer = DynamicUniformBuffer::new(Vec::new());
         for model in app.project.models.iter_mut().filter(|x| !x.hidden) {
             model.get_buffers(&gcx.device);
+            model.supports.get_buffers(&gcx.device);
 
-            let offset = buffer.write(&callback(gcx, model));
-            self.offsets.push(offset.unwrap() as u32);
+            for uniform in callback(gcx, model) {
+                let offset = buffer.write(&uniform);
+                self.offsets.push(offset.unwrap() as u32);
+            }
         }
 
         if self.uniform.write(gcx, &buffer.into_inner()) {
@@ -189,9 +197,9 @@ impl BasePass {
 
         self.write_uniforms(gcx, app, |gcx, model| {
             model.get_buffers(&gcx.device);
-            let model_transform = *model.mesh.transformation_matrix();
 
-            Uniforms {
+            let model_transform = *model.mesh.transformation_matrix();
+            let base = Uniforms {
                 transform: view_projection * model_transform,
                 model_transform,
                 build_volume,
@@ -199,7 +207,17 @@ impl BasePass {
                 render_style,
                 overhang_angle,
                 id: model.id.raw(),
+            };
+
+            let mut uniforms = vec![base.clone()];
+            if model.supports.get_buffers(&gcx.device).is_some() {
+                uniforms.push(Uniforms {
+                    model_color: invert_color(model.color).into(),
+                    ..base
+                });
             }
+
+            uniforms
         });
     }
 
@@ -209,7 +227,7 @@ impl BasePass {
             model.get_buffers(&gcx.device);
             let model_transform = *model.mesh.transformation_matrix();
 
-            Uniforms {
+            let base = Uniforms {
                 transform: view_projection * model_transform,
                 model_transform,
                 build_volume: Vector3::repeat(f32::MAX),
@@ -217,7 +235,17 @@ impl BasePass {
                 render_style: RenderStyle::Rendered as u32,
                 overhang_angle: 0.0,
                 id: model.id.raw(),
+            };
+
+            let mut uniforms = vec![base.clone()];
+            if model.supports.get_buffers(&gcx.device).is_some() {
+                uniforms.push(Uniforms {
+                    model_color: invert_color(model.color).into(),
+                    ..base
+                });
             }
+
+            uniforms
         });
     }
 
@@ -289,14 +317,32 @@ impl BasePass {
             .filter(|(_, x)| !x.hidden)
             .map(|(idx, _)| idx);
 
-        for (i, idx) in indexes.enumerate() {
+        let mut i = 0;
+        for idx in indexes {
             render_pass.set_bind_group(0, bind_group, &[self.offsets[i]]);
+            i += 1;
 
             let model = &app.project.models[idx];
             let buffers = model.try_get_buffers().unwrap();
             render_pass.set_vertex_buffer(0, buffers.vertex_buffer.slice(..));
             render_pass.set_index_buffer(buffers.index_buffer.slice(..), IndexFormat::Uint32);
             render_pass.draw_indexed(0..(model.mesh.face_count() as u32 * 3), 0, 0..1);
+
+            if let Some((buffers, count)) = model.supports.try_get_buffers() {
+                render_pass.set_bind_group(0, bind_group, &[self.offsets[i]]);
+                i += 1;
+
+                render_pass.set_vertex_buffer(0, buffers.vertex_buffer.slice(..));
+                render_pass.set_index_buffer(buffers.index_buffer.slice(..), IndexFormat::Uint32);
+                render_pass.draw_indexed(0..count, 0, 0..1);
+            }
         }
     }
+}
+
+fn invert_color(linear: LinearRgb<f32>) -> SRgb<f32> {
+    OkLab::from_linear_srgb(linear)
+        .hue_shift(PI)
+        .to_linear_srgb()
+        .to_srgb()
 }

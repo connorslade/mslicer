@@ -1,4 +1,4 @@
-use std::{collections::HashMap, iter, sync::Arc};
+use std::{collections::HashMap, sync::Arc};
 
 use itertools::Itertools;
 use nalgebra::Vector3;
