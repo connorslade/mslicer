@@ -8,9 +8,11 @@ use egui_dock::{DockArea, TabViewer};
 use egui_wgpu::Callback;
 use nalgebra::Matrix4;
 use serde::{Deserialize, Serialize};
+use tracing::trace;
 
 use crate::{
     app::App,
+    project::model::ModelId,
     render::{interface::basis::BasisRenderCallback, workspace::WorkspaceRenderCallback},
     ui::state::WorkspaceHover,
     windows::supports::manual_support_placement,
@@ -143,10 +145,18 @@ fn viewport(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     if response.clicked() && !is_moving {
         if app.state.support_placement {
             manual_support_placement(app, true);
-        } else if let Some(id) = app.state.hovered_geometry.map(|x| x.model) {
-            app.state
-                .selected
-                .model_clicked(id, ui.input(|x| x.modifiers.shift));
+        } else if let Some(hover) = app.state.hovered_geometry {
+            if hover.model.raw() & (1 << 31) != 0 {
+                let id = ModelId::from_raw(hover.model.raw() & !(1 << 31));
+                if let Some(model) = app.project.model(id)
+                    && let Some((_, ranges)) = model.supports.mesh()
+                    && let Some(support) = ranges.iter().position(|x| x.contains(&hover.face))
+                {
+                    trace!("Click detected on support {support}");
+                }
+            } else {
+                (app.state.selected).model_clicked(hover.model, ui.input(|x| x.modifiers.shift));
+            }
         }
     }
 

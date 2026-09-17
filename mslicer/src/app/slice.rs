@@ -56,7 +56,7 @@ impl App {
             transform_mesh(&mut mesh, mm_to_px, offset);
             out.push(SlicerModel { mesh, exposure });
 
-            if let Some(mut mesh) = supports {
+            if let Some((mut mesh, _)) = supports {
                 transform_mesh(&mut mesh, mm_to_px, offset);
                 out.push(SlicerModel { mesh, exposure });
             }

@@ -14,7 +14,7 @@ Feel free to help out :eyes:.
     - for support generation pick less steep angles for the top part of the support
     - support presets, instead of having to mess with all the sliders to change the size
     - dont place supports on points touching the build plate
-        - ask you to raise the model before supporting
+        - ask you to raise the model before supporting?
     - support placement tool instead of just a checkbox... or maybe a key to hold down while clicking
     - options to only generate some combination of point, edge, and face overhangs 
     - transform supports with model

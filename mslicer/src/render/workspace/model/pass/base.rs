@@ -213,6 +213,7 @@ impl BasePass {
             if model.supports.get_buffers(&gcx.device).is_some() {
                 uniforms.push(Uniforms {
                     model_color: invert_color(model.color).into(),
+                    id: base.id | 1 << 31,
                     ..base
                 });
             }

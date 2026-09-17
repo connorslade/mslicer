@@ -21,6 +21,10 @@ impl MeshBuilder {
         self.vertices.len() as u32
     }
 
+    pub fn next_face_idx(&self) -> u32 {
+        self.faces.len() as u32
+    }
+
     pub fn is_empty(&self) -> bool {
         self.faces.is_empty()
     }

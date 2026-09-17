@@ -1,4 +1,4 @@
-use std::f32::consts::PI;
+use std::{f32::consts::PI, range::Range};
 
 use nalgebra::{Vector2, Vector3};
 use slicer::{builder::MeshBuilder, mesh::Mesh};
@@ -11,7 +11,7 @@ pub struct Supports {
     auto: Vec<Support>,
     manual: Vec<Support>,
 
-    mesh: Option<Mesh>,
+    mesh: Option<(Mesh, Vec<Range<u32>>)>,
     buffers: Option<RenderedMeshBuffers>,
 }
 
@@ -48,17 +48,20 @@ impl Supports {
         });
     }
 
-    pub fn mesh(&mut self) -> &Option<Mesh> {
+    pub fn mesh(&mut self) -> &Option<(Mesh, Vec<Range<u32>>)> {
         if self.mesh.is_some() || (self.auto.is_empty() && self.manual.is_empty()) {
             return &self.mesh;
         }
 
         let mut builder = MeshBuilder::new();
         let mut raft_points = Vec::new();
+        let mut ranges = Vec::new();
+
         for support in self.auto.iter().chain(self.manual.iter()) {
             let (r, p) = (support.radius, 20); // todo: make precision follow actual config...
             let points = &support.points;
 
+            let start = builder.next_face_idx();
             builder.add_cylinder((points[0], points[1]), (support.tip_radius, r), p);
             builder.add_cylinder((points[1], points[2]), (r, r), p);
             builder.add_cylinder((points[2], points[2].xy().push(0.0)), (r, r), p);
@@ -72,16 +75,22 @@ impl Supports {
             builder.add_sphere(points[0], 0.2, p);
             builder.add_sphere(points[1], r, p);
             builder.add_sphere(points[2], r, p);
+
+            let end = builder.next_face_idx();
+            ranges.push(Range::from(start..end));
         }
 
         build_raft_mesh(1.0, 1.0, &raft_points, &mut builder);
-        self.mesh = (!builder.is_empty()).then(|| builder.build());
+        if !builder.is_empty() {
+            self.mesh = Some((builder.build(), ranges));
+        }
+
         &self.mesh
     }
 
     pub fn get_buffers(&mut self, device: &Device) -> &Option<RenderedMeshBuffers> {
         if self.buffers.is_none()
-            && let Some(mesh) = self.mesh()
+            && let Some((mesh, _)) = self.mesh()
         {
             let (vertex_buffer, index_buffer) = gpu_mesh_buffers(device, mesh);
             self.buffers = Some(RenderedMeshBuffers {
@@ -94,9 +103,10 @@ impl Supports {
     }
 
     pub fn try_get_buffers(&self) -> Option<(&RenderedMeshBuffers, u32)> {
-        self.buffers
-            .as_ref()
-            .map(|x| (x, self.mesh.as_ref().unwrap().face_count() as u32 * 3))
+        self.buffers.as_ref().map(|x| {
+            let face_count = self.mesh.as_ref().unwrap().0.face_count() as u32 * 3;
+            (x, face_count)
+        })
     }
 }
 
