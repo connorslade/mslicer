@@ -64,3 +64,34 @@ impl<'a> BitVec<'a> {
         self.bytes.resize(self.index.div_ceil(8), 0);
     }
 }
+
+pub struct OwnedBitVec<S> {
+    words: Vec<S>,
+    index: usize,
+}
+
+impl<S> OwnedBitVec<S> {
+    const BITS: usize = size_of::<S>() * 8;
+
+    pub fn new() -> Self {
+        Self {
+            words: Vec::new(),
+            index: 0,
+        }
+    }
+
+    pub fn into_inner(self) -> Vec<S> {
+        self.words
+    }
+}
+
+impl OwnedBitVec<u32> {
+    pub fn push(&mut self, value: bool) {
+        let bit_index = self.index % Self::BITS;
+        (bit_index == 0).then(|| self.words.push(0));
+
+        self.index += 1;
+        let word = self.words.last_mut().unwrap();
+        *word |= (value as u32) << bit_index;
+    }
+}

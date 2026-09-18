@@ -6,7 +6,7 @@ mod image;
 mod ring_buffer;
 pub mod rle;
 pub use self::{
-    bitvec::BitVec,
+    bitvec::{BitVec, OwnedBitVec},
     clusters::{ArrayCluster, Clusters},
     image::{Image, ImageRuns},
     ring_buffer::RingBuffer,

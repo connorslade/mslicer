@@ -1,9 +1,11 @@
 @group(0) @binding(0) var<uniform> context: Context;
+@group(0) @binding(1) var<storage, read> selected: array<u32>;
 
 const STYLE_NORMAL: u32 = 0;
 const STYLE_RANDOM: u32 = 1;
 const STYLE_RENDERED: u32 = 2;
 
+const SELECTED_COLOR: vec3f = vec3f(0.2, 0.2, 1.0);
 const OOB_COLOR: vec3f = vec3f(1.0, 0.0, 0.0);
 const OVERHANG_COLOR: vec3f = vec3f(0.67, 0.65, 0.38);
 
@@ -14,7 +16,8 @@ struct Context {
     model_color: vec3f,
     render_style: u32,
     overhang_angle: f32,
-    id: u32
+    id: u32,
+    selected_offset: u32
 }
 
 struct VertexOutput {
@@ -67,6 +70,7 @@ fn render(is_front: bool, in: VertexOutput, index: u32, normal: vec3f) -> vec4f 
                 color = mix(color, OVERHANG_COLOR, 1.0 - smoothstep(0, context.overhang_angle, acos(-normal.z)));
             }
 
+            color = select(color, SELECTED_COLOR, is_selected(index));
             color = select(vec3f(.5), color, is_front);
             color = select(color, OOB_COLOR, outside_build_volume(in.world_position));
 
@@ -76,6 +80,12 @@ fn render(is_front: bool, in: VertexOutput, index: u32, normal: vec3f) -> vec4f 
             return vec4f();
         }
     }
+}
+
+fn is_selected(face: u32) -> bool {
+    let word = context.selected_offset + face / 32;
+    let bit = face % 32;
+    return ((selected[word] >> bit) & 0x01) != 0;
 }
 
 fn outside_build_volume(pos: vec3f) -> bool {

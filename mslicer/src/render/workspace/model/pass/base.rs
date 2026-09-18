@@ -1,4 +1,4 @@
-use std::f32::consts::PI;
+use std::{f32::consts::PI, num::NonZero};
 
 use common::{
     color::{LinearRgb, OkLab, SRgb},
@@ -6,6 +6,7 @@ use common::{
 };
 use encase::{DynamicUniformBuffer, ShaderSize, ShaderType};
 use nalgebra::{Matrix4, Vector3};
+use slicer::mesh::Mesh;
 use wgpu::{
     BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayout, BindGroupLayoutDescriptor,
     BindGroupLayoutEntry, BindingResource, BindingType, BlendState, BufferBinding,
@@ -33,7 +34,10 @@ pub struct BasePass {
     group_layout: BindGroupLayout,
 
     uniform: ResizingBuffer,
-    offsets: Vec<u32>,
+    uniform_offsets: Vec<u32>,
+
+    selected: ResizingBuffer,
+
     bind_group: Option<BindGroup>,
 }
 
@@ -46,6 +50,7 @@ struct Uniforms {
     render_style: u32,
     overhang_angle: f32,
     id: u32,
+    selected_offset: u32,
 }
 
 impl BasePass {
@@ -55,16 +60,28 @@ impl BasePass {
 
         let group_layout = device.create_bind_group_layout(&BindGroupLayoutDescriptor {
             label: None,
-            entries: &[BindGroupLayoutEntry {
-                binding: 0,
-                visibility: ShaderStages::VERTEX | ShaderStages::FRAGMENT,
-                ty: BindingType::Buffer {
-                    ty: BufferBindingType::Uniform,
-                    has_dynamic_offset: true,
-                    min_binding_size: Some(Uniforms::SHADER_SIZE),
+            entries: &[
+                BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: ShaderStages::VERTEX | ShaderStages::FRAGMENT,
+                    ty: BindingType::Buffer {
+                        ty: BufferBindingType::Uniform,
+                        has_dynamic_offset: true,
+                        min_binding_size: Some(Uniforms::SHADER_SIZE),
+                    },
+                    count: None,
                 },
-                count: None,
-            }],
+                BindGroupLayoutEntry {
+                    binding: 1,
+                    visibility: ShaderStages::FRAGMENT,
+                    ty: BindingType::Buffer {
+                        ty: BufferBindingType::Storage { read_only: true },
+                        has_dynamic_offset: false,
+                        min_binding_size: NonZero::new(4),
+                    },
+                    count: None,
+                },
+            ],
         });
         let pipeline_layout = device.create_pipeline_layout(&PipelineLayoutDescriptor {
             label: None,
@@ -135,12 +152,17 @@ impl BasePass {
         });
 
         let uniform = ResizingBuffer::new(device, BufferUsages::UNIFORM | BufferUsages::COPY_DST);
+        let selected = ResizingBuffer::new(device, BufferUsages::STORAGE | BufferUsages::COPY_DST);
 
         Self {
             pipeline,
             group_layout,
+
             uniform,
-            offsets: Vec::new(),
+            uniform_offsets: Vec::new(),
+
+            selected,
+
             bind_group: None,
         }
     }
@@ -149,33 +171,52 @@ impl BasePass {
         &mut self,
         gcx: &Gcx,
         app: &mut App,
-        mut callback: impl FnMut(&Gcx, &mut Model) -> Vec<Uniforms>,
+        mut callback: impl FnMut(&Gcx, &mut Model) -> Vec<(Uniforms, Vec<u32>)>,
     ) {
-        self.offsets.clear();
+        self.uniform_offsets.clear();
 
-        let mut buffer = DynamicUniformBuffer::new(Vec::new());
+        let mut uniform_buffer = DynamicUniformBuffer::new(Vec::new());
+        let mut selected_words = Vec::new();
+
         for model in app.project.models.iter_mut().filter(|x| !x.hidden) {
             model.get_buffers(&gcx.device);
             model.supports.get_buffers(&gcx.device);
 
-            for uniform in callback(gcx, model) {
-                let offset = buffer.write(&uniform);
-                self.offsets.push(offset.unwrap() as u32);
+            for (mut uniform, selected) in callback(gcx, model) {
+                uniform.selected_offset = selected_words.len() as u32;
+                selected_words.extend_from_slice(&selected);
+
+                let offset = uniform_buffer.write(&uniform);
+                self.uniform_offsets.push(offset.unwrap() as u32);
             }
         }
 
-        if self.uniform.write(gcx, &buffer.into_inner()) {
+        selected_words.resize(selected_words.len().max(1), 0);
+        let uniform = self.uniform.write(gcx, &uniform_buffer.into_inner());
+        let selected = self.selected.write_slice(gcx, &selected_words);
+
+        if !self.uniform_offsets.is_empty() && (uniform || selected) {
             let bind_group = gcx.device.create_bind_group(&BindGroupDescriptor {
                 label: None,
                 layout: &self.group_layout,
-                entries: &[BindGroupEntry {
-                    binding: 0,
-                    resource: BindingResource::Buffer(BufferBinding {
-                        buffer: &self.uniform,
-                        offset: 0,
-                        size: Some(Uniforms::SHADER_SIZE),
-                    }),
-                }],
+                entries: &[
+                    BindGroupEntry {
+                        binding: 0,
+                        resource: BindingResource::Buffer(BufferBinding {
+                            buffer: &self.uniform,
+                            offset: 0,
+                            size: Some(Uniforms::SHADER_SIZE),
+                        }),
+                    },
+                    BindGroupEntry {
+                        binding: 1,
+                        resource: BindingResource::Buffer(BufferBinding {
+                            buffer: &self.selected,
+                            offset: 0,
+                            size: None,
+                        }),
+                    },
+                ],
             });
 
             self.bind_group.replace(bind_group);
@@ -195,6 +236,7 @@ impl BasePass {
             .map(|x| x.to_radians())
             .unwrap_or(f32::from_bits(u32::MAX));
 
+        let hovered_geometry = app.state.hovered_geometry;
         self.write_uniforms(gcx, app, |gcx, model| {
             model.get_buffers(&gcx.device);
 
@@ -207,21 +249,32 @@ impl BasePass {
                 render_style,
                 overhang_angle,
                 id: model.id.raw(),
+                selected_offset: 0,
             };
 
-            let mut uniforms = vec![base.clone()];
+            let mut selected_raw = selected(&model.mesh, false);
+            if let Some(geo) = hovered_geometry
+                && geo.model == model.id
+            {
+                let word = geo.face / 32;
+                let bit = geo.face % 32;
+                selected_raw[word as usize] |= 1 << bit;
+            }
+
+            let mut out = vec![(base.clone(), selected_raw)];
             if model.supports.get_buffers(&gcx.device).is_some() {
-                let model_transform =
-                    (model.supports.mesh().as_ref().unwrap().0).transformation_matrix();
-                uniforms.push(Uniforms {
+                let mesh = &model.supports.mesh().as_ref().unwrap().0;
+                let model_transform = mesh.transformation_matrix();
+                let uniform = Uniforms {
                     transform: view_projection * model_transform,
                     model_color: invert_color(model.color).into(),
                     id: base.id | 1 << 31,
                     ..base
-                });
+                };
+                out.push((uniform, selected(mesh, false)));
             }
 
-            uniforms
+            out
         });
     }
 
@@ -239,20 +292,22 @@ impl BasePass {
                 render_style: RenderStyle::Rendered as u32,
                 overhang_angle: 0.0,
                 id: model.id.raw(),
+                selected_offset: 0,
             };
 
-            let mut uniforms = vec![base.clone()];
+            let mut out = vec![(base.clone(), selected(&model.mesh, false))];
             if model.supports.get_buffers(&gcx.device).is_some() {
-                let model_transform =
-                    (model.supports.mesh().as_ref().unwrap().0).transformation_matrix();
-                uniforms.push(Uniforms {
+                let mesh = &model.supports.mesh().as_ref().unwrap().0;
+                let model_transform = mesh.transformation_matrix();
+                let uniform = Uniforms {
                     transform: view_projection * model_transform,
                     model_color: invert_color(model.color).into(),
                     ..base
-                });
+                };
+                out.push((uniform, selected(mesh, false)));
             }
 
-            uniforms
+            out
         });
     }
 
@@ -326,7 +381,7 @@ impl BasePass {
 
         let mut i = 0;
         for idx in indexes {
-            render_pass.set_bind_group(0, bind_group, &[self.offsets[i]]);
+            render_pass.set_bind_group(0, bind_group, &[self.uniform_offsets[i]]);
             i += 1;
 
             let model = &app.project.models[idx];
@@ -336,7 +391,7 @@ impl BasePass {
             render_pass.draw_indexed(0..(model.mesh.face_count() as u32 * 3), 0, 0..1);
 
             if let Some((buffers, count)) = model.supports.try_get_buffers() {
-                render_pass.set_bind_group(0, bind_group, &[self.offsets[i]]);
+                render_pass.set_bind_group(0, bind_group, &[self.uniform_offsets[i]]);
                 i += 1;
 
                 render_pass.set_vertex_buffer(0, buffers.vertex_buffer.slice(..));
@@ -352,4 +407,9 @@ fn invert_color(linear: LinearRgb<f32>) -> SRgb<f32> {
         .hue_shift(PI)
         .to_linear_srgb()
         .to_srgb()
+}
+
+fn selected(mesh: &Mesh, selected: bool) -> Vec<u32> {
+    let words = mesh.face_count().div_ceil(32);
+    vec![[0, u32::MAX][selected as usize]; words]
 }

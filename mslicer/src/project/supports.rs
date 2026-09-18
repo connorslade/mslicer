@@ -8,6 +8,7 @@ use wgpu::Device;
 
 use crate::{project::model::RenderedMeshBuffers, render::util::gpu_mesh_buffers};
 
+#[derive(Default)]
 pub struct Supports {
     auto: Vec<Support>,
     manual: Vec<Support>,
@@ -75,7 +76,7 @@ impl Supports {
 
         for support in self.auto.iter().chain(self.manual.iter()) {
             let (r, p) = (support.radius, 20); // todo: make precision follow actual config...
-            let mut points = support.points.clone();
+            let mut points = support.points;
 
             //rotate!?
 
@@ -164,19 +165,6 @@ impl Supports {
             if scale != old.scale || position.z != old.position.z {
                 self.invalidate_cache();
             }
-        }
-    }
-}
-
-impl Default for Supports {
-    fn default() -> Self {
-        Self {
-            auto: Default::default(),
-            manual: Default::default(),
-            transform: Default::default(),
-
-            mesh: Default::default(),
-            buffers: Default::default(),
         }
     }
 }
