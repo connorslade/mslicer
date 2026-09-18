@@ -64,6 +64,7 @@
   - Allow clicking on individual supports in the viewport
   - New supports UI
   - Supports track parent model transformations
+- Show slicing speed in layers/sec
 
 ## v0.9.2 &mdash; August 30th, 2026
 

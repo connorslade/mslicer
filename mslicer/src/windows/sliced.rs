@@ -96,9 +96,10 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
 
             ui.horizontal(|ui| {
                 ui.label(format!(
-                    "{} completed in {}!",
+                    "{} completed in {}! ({:.1} layer/s)",
                     ["Loading", "Slicing"][result.sliced as usize],
-                    result.completion()
+                    result.completion(),
+                    result.layers() as f32 / result.elapsed.as_secs_f32()
                 ));
 
                 ui.with_layout(Layout::default().with_cross_align(Align::Max), |ui| {

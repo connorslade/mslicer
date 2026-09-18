@@ -250,6 +250,13 @@ impl SliceResult {
         human_duration(Miliseconds::new(time))
     }
 
+    pub fn layers(&self) -> usize {
+        match self.slice_data() {
+            GenericSliceData::Raster { data, .. } => data.len(),
+            GenericSliceData::Vector { data } => data.len(),
+        }
+    }
+
     /// Assumes result is not None
     pub fn slice_data(&self) -> GenericSliceData {
         match &self.inner {
