@@ -1,86 +1,82 @@
-use egui::{Context, Ui};
+use const_format::concatcp;
+use egui::{Button, Context, Ui, Widget};
+use egui_phosphor::regular::{SPARKLE, USER_SWITCH};
 use slicer::builder::MeshBuilder;
 use tools::supports::{SupportGenerator, route_support};
 
 use crate::{app::App, ui::components::dragger};
 
 pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
-    ui.label("This feature is still very early in development.");
-
-    ui.add_space(8.0);
-    ui.heading("Overhang Detection");
-
-    let overhang = &mut app.config.render.overhangs;
-    ui.checkbox(&mut overhang.0, "Visualize Overhanging Faces");
-    dragger(ui, "Overhang Angle", &mut overhang.1, |x| x.speed(0.1));
-
-    ui.add_space(8.0);
-    ui.heading("Manual Supports");
-    ui.label("Unfinished!");
-
-    ui.checkbox(&mut app.state.support_placement, "Support Placement");
-
-    ui.add_space(8.0);
-    ui.heading("Automatic Supports");
-
-    ui.add_space(8.0);
+    let support_mode = &mut app.state.support_mode;
     ui.horizontal(|ui| {
-        ui.menu_button("Generate", |ui| {
-            ui.style_mut().visuals.button_frame = false;
+        *support_mode ^= Button::selectable(!*support_mode, "Place").ui(ui).clicked();
+        *support_mode ^= Button::selectable(*support_mode, "Edit").ui(ui).clicked();
+    });
+    ui.separator();
 
-            for idx in 0..app.project.models.len() {
-                if ui.button(&app.project.models[idx].name).clicked() {
-                    generate_support(app, idx);
-                }
-            }
+    if *support_mode {
+        // edit
+    } else {
+        // place
+        ui.horizontal(|ui| {
+            let placement = &mut app.state.support_placement;
+            *placement ^= Button::selectable(*placement, concatcp!(USER_SWITCH, " Manual"))
+                .ui(ui)
+                .clicked();
+            app.state.support_placement &= !ui
+                .menu_button(concatcp!(SPARKLE, " Auto"), |ui| {
+                    ui.style_mut().visuals.button_frame = false;
+
+                    for idx in 0..app.project.models.len() {
+                        if ui.button(&app.project.models[idx].name).clicked() {
+                            generate_support(app, idx);
+                        }
+                    }
+                })
+                .response
+                .clicked();
         });
 
-        if ui.button("Generate All").clicked() {
-            for i in 0..app.project.models.len() {
-                generate_support(app, i);
+        ui.add_space(8.0);
+        let support = &mut app.state.support_config;
+
+        ui.collapsing("Support Placement", |ui| {
+            dragger(ui, "Max Angle", &mut support.max_angle, |x| x.speed(0.01));
+            dragger(
+                ui,
+                "Face Support Spacing",
+                &mut support.face_support_spacing,
+                |x| x,
+            );
+            dragger(ui, "Edge Angle Delta", &mut support.edge_angle_delta, |x| x);
+            dragger(
+                ui,
+                "Edge Support Spacing",
+                &mut support.edge_support_spacing,
+                |x| x,
+            );
+            dragger(
+                ui,
+                "Minimum Support Spacing",
+                &mut support.min_spacing,
+                |x| x,
+            );
+        });
+
+        ui.collapsing("Support Generation", |ui| {
+            for (name, value) in [
+                ("Support Radius", &mut support.support_radius),
+                ("Tip Length", &mut support.tip_length),
+                ("Tip Radius", &mut support.tip_radius),
+                ("Raft Height", &mut support.raft_height),
+                ("Raft Offset", &mut support.raft_offset),
+            ] {
+                dragger(ui, name, value, |x| x.speed(0.1));
             }
-        }
-    });
 
-    ui.add_space(8.0);
-    let support = &mut app.state.support_config;
-
-    ui.collapsing("Support Placement", |ui| {
-        dragger(ui, "Max Angle", &mut support.max_angle, |x| x.speed(0.01));
-        dragger(
-            ui,
-            "Face Support Spacing",
-            &mut support.face_support_spacing,
-            |x| x,
-        );
-        dragger(ui, "Edge Angle Delta", &mut support.edge_angle_delta, |x| x);
-        dragger(
-            ui,
-            "Edge Support Spacing",
-            &mut support.edge_support_spacing,
-            |x| x,
-        );
-        dragger(
-            ui,
-            "Minimum Support Spacing",
-            &mut support.min_spacing,
-            |x| x,
-        );
-    });
-
-    ui.collapsing("Support Generation", |ui| {
-        for (name, value) in [
-            ("Support Radius", &mut support.support_radius),
-            ("Tip Length", &mut support.tip_length),
-            ("Tip Radius", &mut support.tip_radius),
-            ("Raft Height", &mut support.raft_height),
-            ("Raft Offset", &mut support.raft_offset),
-        ] {
-            dragger(ui, name, value, |x| x.speed(0.1));
-        }
-
-        dragger(ui, "Support Precision", &mut support.precision, |x| x);
-    });
+            dragger(ui, "Support Precision", &mut support.precision, |x| x);
+        });
+    }
 
     (app.state.support_placement).then(|| manual_support_placement(app, false));
 }
@@ -142,3 +138,6 @@ pub fn manual_support_placement(app: &mut App, clicked: bool) {
 
     app.state.support_preview = (!builder.is_empty()).then(|| builder.build());
 }
+
+// NO DRUGS
+// remember that.

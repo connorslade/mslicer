@@ -1,14 +1,13 @@
 use std::mem;
 
 use egui::{
-    CentralPanel, Color32, Context, Frame, Id, Painter, Rect, Sense, Stroke, StrokeKind, Theme, Ui,
-    WidgetText, pos2, vec2,
+    CentralPanel, Color32, Context, FontId, Frame, Id, Painter, Rect, Sense, Stroke, StrokeKind,
+    Theme, Ui, WidgetText, pos2, vec2,
 };
 use egui_dock::{DockArea, TabViewer};
 use egui_wgpu::Callback;
 use nalgebra::Matrix4;
 use serde::{Deserialize, Serialize};
-use tracing::trace;
 
 use crate::{
     app::App,
@@ -139,23 +138,27 @@ fn viewport(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     is_moving |= response.dragged();
 
     let aspect = rect.width() / rect.height();
-    let uv = (response.hover_pos().unwrap_or_default() - rect.min) / rect.size();
+    let px = response.hover_pos().unwrap_or_default();
+    let uv = (px - rect.min) / rect.size();
     app.state.workspace = WorkspaceHover::new(is_moving, aspect, uv);
 
     if response.clicked() && !is_moving {
         if app.state.support_placement {
             manual_support_placement(app, true);
         } else if let Some(hover) = app.state.hovered_geometry {
+            let shift = ui.input(|x| x.modifiers.shift);
             if hover.model.raw() & (1 << 31) != 0 {
                 let id = ModelId::from_raw(hover.model.raw() & !(1 << 31));
                 if let Some(model) = app.project.model(id)
                     && let Some((_, ranges)) = model.supports.mesh()
                     && let Some(support) = ranges.iter().position(|x| x.contains(&hover.face))
                 {
-                    trace!("Click detected on support {support}");
+                    app.state
+                        .selected_supports
+                        .support_clicked(model.id, support);
                 }
             } else {
-                (app.state.selected).model_clicked(hover.model, ui.input(|x| x.modifiers.shift));
+                app.state.selected.model_clicked(hover.model, shift);
             }
         }
     }
@@ -173,6 +176,24 @@ fn viewport(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     ));
 
     paint_basis_vectors(painter, app, &rect);
+
+    if app.config.ui.hover_overlay
+        && let Some(hover) = app.state.hovered_geometry
+        && response.contains_pointer()
+    {
+        let painter = ui.painter();
+        let galley = painter.layout(
+            format!("Model: {}\nFace: {}", hover.model.raw(), hover.face),
+            FontId::proportional(16.0),
+            Color32::WHITE,
+            100.0,
+        );
+
+        let px = px - vec2(0.0, galley.size().y);
+
+        painter.rect_filled(Rect::from_min_size(px, galley.size()), 2.0, Color32::BLACK);
+        painter.galley(px, galley, Color32::WHITE);
+    }
 }
 
 fn paint_basis_vectors(painter: &Painter, app: &mut App, rect: &Rect) {

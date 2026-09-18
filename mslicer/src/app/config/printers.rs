@@ -4,7 +4,7 @@ use common::{slice::SliceConfig, units::Milimeters};
 use nalgebra::{Vector2, Vector3};
 use serde::{Deserialize, Serialize};
 
-use crate::{app::config::Config, ui::state::SelectedPrinter};
+use crate::{app::config::Config, ui::selected::SelectedPrinter};
 
 #[rustfmt::skip]
 pub const DEFAULT_PRINTERS: &[(&str, &[PrinterProperties])] = &[

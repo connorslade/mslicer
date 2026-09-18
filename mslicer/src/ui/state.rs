@@ -1,15 +1,15 @@
-use std::{collections::HashSet, iter, sync::Arc};
+use std::sync::Arc;
 
 use egui::Vec2;
 use egui_tracing::EventCollector;
-use itertools::Either;
 use nalgebra::{Vector2, Vector3};
 use slicer::mesh::Mesh;
 use tools::supports::SupportConfig;
 
 use crate::{
     app::config::peripherals::Webhook,
-    project::{CollectionId, model::ModelId},
+    project::model::ModelId,
+    ui::selected::{SelectedModel, SelectedPrinter, SelectedSupports},
     windows::tools::Tools,
 };
 
@@ -24,9 +24,11 @@ pub struct UiState {
     pub workspace: WorkspaceHover,
     pub hovered_geometry: Option<GeometryHit>,
     pub support_placement: bool,
+    pub support_mode: bool,
 
-    pub selected: Selected,
+    pub selected: SelectedModel,
     pub selected_printer: SelectedPrinter,
+    pub selected_supports: SelectedSupports,
     pub support_preview: Option<Mesh>,
 
     pub selected_remap_point: Option<u8>,
@@ -56,26 +58,6 @@ pub struct SharedPrintCompletion {
     pub alert: bool,
 }
 
-pub enum SelectedPrinter {
-    Project,
-    Custom(usize),
-    Preset(usize, usize),
-}
-
-impl Default for SelectedPrinter {
-    fn default() -> Self {
-        SelectedPrinter::Preset(0, 0)
-    }
-}
-
-#[derive(Default)]
-pub enum Selected {
-    #[default]
-    None,
-    Models(HashSet<ModelId>),
-    Collection(CollectionId),
-}
-
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub struct GeometryHit {
     pub model: ModelId,
@@ -95,106 +77,6 @@ pub enum RemotePrintConnectStatus {
     None,
     Connecting,
     Scanning,
-}
-
-impl Selected {
-    pub fn clear(&mut self) {
-        *self = Selected::None;
-    }
-
-    pub fn has_any(&self) -> bool {
-        match self {
-            Selected::None => false,
-            Selected::Models(set) => !set.is_empty(),
-            Selected::Collection(..) => true,
-        }
-    }
-
-    pub fn model_clicked(&mut self, id: ModelId, shift: bool) {
-        match self {
-            Selected::None | Selected::Collection(_) => {
-                let mut set = HashSet::new();
-                set.insert(id);
-                *self = Selected::Models(set);
-            }
-            Selected::Models(set) => {
-                if shift {
-                    if set.contains(&id) {
-                        set.remove(&id);
-                    } else {
-                        set.insert(id);
-                    }
-                } else {
-                    set.clear();
-                    set.insert(id);
-                }
-            }
-        }
-    }
-
-    pub fn select_model(&mut self, id: ModelId) {
-        match self {
-            Selected::None | Selected::Collection(_) => {
-                let mut set = HashSet::new();
-                set.insert(id);
-                *self = Selected::Models(set);
-            }
-            Selected::Models(set) => {
-                set.insert(id);
-            }
-        }
-    }
-
-    pub fn selected_models(&self) -> impl Iterator<Item = ModelId> {
-        match self {
-            Selected::None | Selected::Collection(_) => Either::Left(iter::empty()),
-            Selected::Models(set) => Either::Right(set.iter().copied()),
-        }
-    }
-
-    pub fn contains_model(&self, id: ModelId) -> bool {
-        match self {
-            Selected::Models(set) => set.contains(&id),
-            _ => false,
-        }
-    }
-
-    pub fn single_model(&self) -> Option<ModelId> {
-        match self {
-            Selected::Models(set) if set.len() == 1 => set.iter().next().copied(),
-            _ => None,
-        }
-    }
-
-    pub fn has_models(&self) -> bool {
-        match self {
-            Selected::Models(set) => !set.is_empty(),
-            _ => false,
-        }
-    }
-
-    pub fn contains_collection(&self, id: CollectionId) -> bool {
-        match self {
-            Selected::Collection(collection) => *collection == id,
-            _ => false,
-        }
-    }
-
-    pub fn collection_clicked(&mut self, id: CollectionId, shift: bool) {
-        match self {
-            Selected::Models(set) if !shift || set.is_empty() => *self = Self::Collection(id),
-            Selected::Collection(group) if id == *group => self.clear(),
-            Selected::Collection(_) | Selected::None => *self = Self::Collection(id),
-            _ => {}
-        }
-    }
-
-    pub fn single_collection(&self) -> Option<CollectionId> {
-        match self {
-            Selected::Collection(id) => Some(*id),
-            _ => None,
-        }
-    }
 }
 
 impl WorkspaceHover {

@@ -27,7 +27,8 @@ use crate::{
             history_tracked_value, vec2_dragger,
         },
         popup::{Popup, PopupApp},
-        state::{SelectedPrinter, UiState},
+        selected::SelectedPrinter,
+        state::UiState,
     },
 };
 use common::{

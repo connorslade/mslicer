@@ -121,6 +121,18 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                 .suffix(" px")
                 .ui(ui);
             ui.end_row();
+
+            ui.label("Hover Overlay");
+            ComboBox::from_id_salt("hover_overlay")
+                .selected_text(match app.config.ui.hover_overlay {
+                    true => "Enabled",
+                    false => "Disabled",
+                })
+                .show_ui(ui, |ui| {
+                    ui.selectable_value(&mut app.config.ui.hover_overlay, true, "Enabled");
+                    ui.selectable_value(&mut app.config.ui.hover_overlay, false, "Disabled");
+                });
+            ui.end_row();
         });
     });
 

@@ -17,6 +17,7 @@ pub struct UiConfig {
     pub tasks: bool,
     pub history_max_mesh_size: u32, // in MiB
     pub quick_layout_spacing: Milimeters,
+    pub hover_overlay: bool,
 
     pub update_check: UpdateCheckFrequency,
     pub last_update_check: Option<DateTime<Utc>>,
@@ -63,6 +64,7 @@ impl Default for UiConfig {
             tasks: true,
             history_max_mesh_size: 20,
             quick_layout_spacing: Milimeters::new(2.0),
+            hover_overlay: false,
 
             update_check: UpdateCheckFrequency::EveryLaunch,
             last_update_check: None,

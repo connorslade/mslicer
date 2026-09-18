@@ -36,6 +36,7 @@ Feel free to help out :eyes:.
 - plot voxel error across different triangulations
 - Lower render resolution?
 - Different support colors (also diff default styles)
+- New selection module in ui
 
 ## Documentation
 

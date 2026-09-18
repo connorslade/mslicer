@@ -62,6 +62,7 @@
 - Support generation progress
   - Slice supports
   - Allow clicking on individual supports in the viewport
+  - New supports UI
 
 ## v0.9.2 &mdash; August 30th, 2026
 
