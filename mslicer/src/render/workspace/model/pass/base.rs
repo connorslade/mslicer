@@ -211,7 +211,10 @@ impl BasePass {
 
             let mut uniforms = vec![base.clone()];
             if model.supports.get_buffers(&gcx.device).is_some() {
+                let model_transform =
+                    (model.supports.mesh().as_ref().unwrap().0).transformation_matrix();
                 uniforms.push(Uniforms {
+                    transform: view_projection * model_transform,
                     model_color: invert_color(model.color).into(),
                     id: base.id | 1 << 31,
                     ..base
@@ -240,7 +243,10 @@ impl BasePass {
 
             let mut uniforms = vec![base.clone()];
             if model.supports.get_buffers(&gcx.device).is_some() {
+                let model_transform =
+                    (model.supports.mesh().as_ref().unwrap().0).transformation_matrix();
                 uniforms.push(Uniforms {
+                    transform: view_projection * model_transform,
                     model_color: invert_color(model.color).into(),
                     ..base
                 });

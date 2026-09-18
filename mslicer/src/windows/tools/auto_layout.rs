@@ -1,11 +1,14 @@
 use std::{cmp::Reverse, iter, sync::atomic::Ordering};
 
-use common::{geometry::convex_hull, units::Milimeter};
+use common::{
+    geometry::convex_hull,
+    units::{Milimeter, Milimeters},
+};
 use egui::{
     Button, CollapsingHeader, Color32, ComboBox, DragValue, Ui, Widget, emath::OrderedFloat, vec2,
 };
 use egui_plot::{Line, Plot};
-use nalgebra::{Rotation3, Scale3, Vector2};
+use nalgebra::{Rotation3, Scale3, Vector2, Vector3};
 use tools::auto_layout::{self, Hull, LayoutCache, Objective, Placement, Rotation};
 
 use crate::{
@@ -131,8 +134,9 @@ fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
                     });
             });
 
+        let platform = &app.project.slice_config.platform_size;
         while let Ok(result) = running.rx.try_recv() {
-            (result.iter()).for_each(|x| apply_placement(&mut app.project.models, x));
+            (result.iter()).for_each(|x| apply_placement(&mut app.project.models, platform, x));
         }
 
         ui.vertical_centered(|ui| {
@@ -188,12 +192,18 @@ pub fn layout_cache(padding: f32, models: &[Model]) -> (LayoutCache, Vec<auto_la
     (cache, out)
 }
 
-pub fn apply_placement(models: &mut [Model], placement: &Placement) {
+pub fn apply_placement(
+    models: &mut [Model],
+    platform: &Vector3<Milimeters>,
+    placement: &Placement,
+) {
     if let Some(model) = models.iter_mut().find(|x| x.id.raw() == placement.model) {
         let new_position = placement.position.xy().push(model.mesh.position().z);
         let new_rotation = model.mesh.rotation().xy().push(placement.rotation);
         model.mesh.set_position(new_position);
         model.mesh.set_rotation(new_rotation);
+
+        model.update_oob(platform);
     }
 }
 

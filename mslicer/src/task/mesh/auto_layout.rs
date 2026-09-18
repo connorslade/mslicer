@@ -39,8 +39,9 @@ impl Task for AutoLayout {
         self.handle
             .poll(app, "Failed to Layout Models")
             .into_poll_result(|x| {
+                let platform = &app.project.slice_config.platform_size;
                 x.iter()
-                    .for_each(|x| apply_placement(&mut app.project.models, x));
+                    .for_each(|x| apply_placement(&mut app.project.models, platform, x));
                 PollResult::complete()
             })
     }

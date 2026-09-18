@@ -15,9 +15,7 @@ Feel free to help out :eyes:.
     - support presets, instead of having to mess with all the sliders to change the size
     - dont place supports on points touching the build plate
         - ask you to raise the model before supporting?
-    - support placement tool instead of just a checkbox... or maybe a key to hold down while clicking
     - options to only generate some combination of point, edge, and face overhangs 
-    - transform supports with model
     - don't simplify a cylinder to a segment during intersection testing. either
       use a different algorithm or sample multiple points around the edges.
 - put all models in the same segments1d to improve slicing times with supports?

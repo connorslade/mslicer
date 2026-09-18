@@ -195,6 +195,12 @@ impl Model {
     }
 
     pub fn update_oob(&mut self, platform: &Vector3<Milimeters>) {
+        self.supports.set_transform(
+            self.mesh.position(),
+            self.mesh.scale(),
+            self.mesh.rotation(),
+        );
+
         let (min, max) = self.mesh.bounds();
         let half = platform.map(|x| x.raw()) / 2.0;
 

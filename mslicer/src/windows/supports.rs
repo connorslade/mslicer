@@ -25,7 +25,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                 .clicked();
             app.state.support_placement &= !ui
                 .menu_button(concatcp!(SPARKLE, " Auto"), |ui| {
-                    ui.style_mut().visuals.button_frame = false;
+                    ui.set_width(200.0);
 
                     for idx in 0..app.project.models.len() {
                         if ui.button(&app.project.models[idx].name).clicked() {

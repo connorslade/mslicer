@@ -3,6 +3,7 @@ use std::{f32::consts::PI, range::Range};
 use nalgebra::{Vector2, Vector3};
 use slicer::{builder::MeshBuilder, mesh::Mesh};
 use tools::supports::{SupportConfig, build_raft_mesh};
+use tracing::info;
 use wgpu::Device;
 
 use crate::{project::model::RenderedMeshBuffers, render::util::gpu_mesh_buffers};
@@ -10,6 +11,7 @@ use crate::{project::model::RenderedMeshBuffers, render::util::gpu_mesh_buffers}
 pub struct Supports {
     auto: Vec<Support>,
     manual: Vec<Support>,
+    transform: Transform,
 
     mesh: Option<(Mesh, Vec<Range<u32>>)>,
     buffers: Option<RenderedMeshBuffers>,
@@ -21,10 +23,24 @@ pub struct Support {
     radius: f32,
 }
 
+#[derive(Clone, Copy)]
+struct Transform {
+    position: Vector3<f32>,
+    scale: Vector3<f32>,
+    rotation: f32,
+}
+
 impl Supports {
     pub fn invalidate_cache(&mut self) {
         self.mesh.take();
         self.buffers.take();
+    }
+
+    pub fn clear(&mut self) {
+        self.auto.clear();
+        self.manual.clear();
+        self.transform = Default::default();
+        self.invalidate_cache();
     }
 
     pub fn replace_auto(&mut self, config: &SupportConfig, supports: Vec<[Vector3<f32>; 3]>) {
@@ -59,7 +75,18 @@ impl Supports {
 
         for support in self.auto.iter().chain(self.manual.iter()) {
             let (r, p) = (support.radius, 20); // todo: make precision follow actual config...
-            let points = &support.points;
+            let mut points = support.points.clone();
+
+            //rotate!?
+
+            // ↓ incorrect!
+            points[0] = points[0].component_mul(&self.transform.scale);
+            points[1] = points[1].component_mul(&self.transform.scale);
+            points[2] = points[2].component_mul(&self.transform.scale);
+
+            points[0].z += self.transform.position.z;
+            points[1].z += self.transform.position.z;
+            points[2].z += self.transform.position.z;
 
             let start = builder.next_face_idx();
             builder.add_cylinder((points[0], points[1]), (support.tip_radius, r), p);
@@ -82,7 +109,9 @@ impl Supports {
 
         build_raft_mesh(1.0, 1.0, &raft_points, &mut builder);
         if !builder.is_empty() {
-            self.mesh = Some((builder.build(), ranges));
+            let mesh = builder.build();
+            info!("Generated support mesh with {} faces", mesh.face_count());
+            self.mesh = Some((mesh, ranges));
         }
 
         &self.mesh
@@ -108,6 +137,35 @@ impl Supports {
             (x, face_count)
         })
     }
+
+    // kickin it old school rn
+    pub fn set_transform(
+        &mut self,
+        position: Vector3<f32>,
+        scale: Vector3<f32>,
+        rotation: Vector3<f32>,
+    ) {
+        if let Some((mesh, _)) = &mut self.mesh {
+            if mesh.rotation().xy() != rotation.xy() {
+                self.clear();
+                return;
+            }
+
+            mesh.set_position(position.xy().push(mesh.position().z));
+            mesh.set_rotation(mesh.rotation().xy().push(rotation.z));
+
+            let old = self.transform;
+            self.transform = Transform {
+                position,
+                scale,
+                rotation: rotation.z,
+            };
+
+            if scale != old.scale || position.z != old.position.z {
+                self.invalidate_cache();
+            }
+        }
+    }
 }
 
 impl Default for Supports {
@@ -115,9 +173,20 @@ impl Default for Supports {
         Self {
             auto: Default::default(),
             manual: Default::default(),
+            transform: Default::default(),
 
             mesh: Default::default(),
             buffers: Default::default(),
+        }
+    }
+}
+
+impl Default for Transform {
+    fn default() -> Self {
+        Self {
+            position: Default::default(),
+            scale: Vector3::repeat(1.0),
+            rotation: 0.0,
         }
     }
 }
