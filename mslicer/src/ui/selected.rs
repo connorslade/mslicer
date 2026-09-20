@@ -142,7 +142,7 @@ impl SelectedSupport {
 }
 
 impl SelectedSupports {
-    pub fn iter<'a>(&'a self) -> impl Iterator<Item = &'a SelectedSupport> {
+    pub fn iter(&self) -> impl Iterator<Item = &SelectedSupport> {
         self.supports.iter()
     }
 

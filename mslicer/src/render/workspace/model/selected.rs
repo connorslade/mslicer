@@ -25,7 +25,7 @@ impl Selected {
 
     pub fn set_selected(&mut self, idx: usize) {
         let (word, bit) = idx.div_rem(&32);
-        self.words[word as usize] |= 1 << bit;
+        self.words[word] |= 1 << bit;
     }
 
     pub fn set_selected_range(&mut self, range: Range<u32>) {

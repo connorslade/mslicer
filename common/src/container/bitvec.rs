@@ -65,6 +65,7 @@ impl<'a> BitVec<'a> {
     }
 }
 
+#[derive(Default)]
 pub struct OwnedBitVec<S> {
     words: Vec<S>,
     index: usize,

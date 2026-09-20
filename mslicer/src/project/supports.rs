@@ -1,4 +1,4 @@
-use std::{collections::HashMap, f32::consts::PI, range::Range};
+use std::{collections::HashMap, f32::consts::PI, range::Range, time::Instant};
 
 use common::id_type;
 use nalgebra::{Vector2, Vector3};
@@ -78,6 +78,7 @@ impl Supports {
             return &self.mesh;
         }
 
+        let start = Instant::now();
         let mut builder = MeshBuilder::new();
         let mut raft_points = Vec::new();
         let mut map = HashMap::new();
@@ -119,7 +120,8 @@ impl Supports {
         build_raft_mesh(1.0, 1.0, &raft_points, &mut builder);
         if !builder.is_empty() {
             let mesh = builder.build();
-            info!("Generated support mesh with {} faces", mesh.face_count());
+            let (faces, duration) = (mesh.face_count(), start.elapsed());
+            info!("Generated support mesh with {faces} faces in {duration:?}");
             self.mesh = Some((mesh, map));
         }
 
