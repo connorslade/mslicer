@@ -10,7 +10,6 @@ Feel free to help out :eyes:.
 ## Features
 
 - support generation
-    - allow interacting with (deleting) supports place manually or automatically
     - for support generation pick less steep angles for the top part of the support
     - support presets, instead of having to mess with all the sliders to change the size
     - dont place supports on points touching the build plate

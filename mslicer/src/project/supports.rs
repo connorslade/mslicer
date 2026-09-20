@@ -167,6 +167,14 @@ impl Supports {
             }
         }
     }
+
+    pub fn remove(&mut self, idx: usize) {
+        if idx < self.auto.len() {
+            self.auto.remove(idx);
+        } else {
+            self.manual.remove(idx - self.auto.len());
+        }
+    }
 }
 
 impl Default for Transform {

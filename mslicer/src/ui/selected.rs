@@ -30,9 +30,9 @@ pub struct SelectedSupports {
 }
 
 #[derive(Eq, Hash, PartialEq)]
-struct SupportId {
-    model: ModelId,
-    idx: usize,
+pub struct SupportId {
+    pub model: ModelId,
+    pub idx: usize,
 }
 
 impl SelectedModel {
@@ -142,15 +142,32 @@ impl SupportId {
 }
 
 impl SelectedSupports {
-    // pub fn clear(&mut self) {
-    //     self.supports.clear();
-    // }
+    pub fn iter<'a>(&'a self) -> impl Iterator<Item = &'a SupportId> {
+        self.supports.iter()
+    }
+
+    pub fn clear(&mut self) {
+        self.supports.clear();
+    }
 
     pub fn for_model(&self, model: ModelId) -> impl Iterator<Item = usize> {
         self.supports
             .iter()
             .filter(move |x| x.model == model)
             .map(|x| x.idx)
+    }
+
+    pub fn count(&self) -> usize {
+        self.supports.len()
+    }
+
+    pub fn model_count(&self) -> usize {
+        let mut models = HashSet::new();
+        for support in self.supports.iter() {
+            models.insert(support.model);
+        }
+
+        models.len()
     }
 
     pub fn support_clicked(&mut self, model: ModelId, support: usize) {

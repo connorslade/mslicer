@@ -65,6 +65,7 @@
   - New supports UI
   - Supports track parent model transformations
   - Select multiple supports
+  - Delete selected supports
 - Show slicing speed in layers/sec
 - Support highlighting selected mesh sections
 

@@ -1,4 +1,5 @@
 // For format version 15!
+// i have no use for this not sure why i spent so long making it...
 
 #pragma endian big
 

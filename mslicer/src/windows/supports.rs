@@ -1,6 +1,6 @@
 use const_format::concatcp;
 use egui::{Button, Context, Ui, Widget};
-use egui_phosphor::regular::{SPARKLE, USER_SWITCH};
+use egui_phosphor::regular::{SELECTION_INVERSE, SPARKLE, TRASH, USER_SWITCH};
 use slicer::builder::MeshBuilder;
 use tools::supports::{SupportGenerator, route_support};
 
@@ -16,6 +16,34 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
 
     if *support_mode {
         // edit
+        let selected = &mut app.state.selected_supports;
+        let selected_count = selected.count();
+
+        if selected_count == 0 {
+            ui.label("No supports selected.");
+        } else {
+            let models = selected.model_count();
+            ui.label(format!(
+                "{selected_count} support{} selected across {models} model{}.",
+                ["", "s"][(selected_count != 1) as usize],
+                ["", "s"][(models != 1) as usize],
+            ));
+
+            ui.add_space(8.0);
+            ui.horizontal_wrapped(|ui| {
+                if ui.button(concatcp!(TRASH, " Delete")).clicked() {
+                    for support in selected.iter() {
+                        let model = app.project.model(support.model).unwrap();
+                        model.supports.remove(support.idx);
+                        model.supports.invalidate_cache();
+                    }
+                }
+
+                ui.button(concatcp!(SELECTION_INVERSE, " Deselect"))
+                    .clicked()
+                    .then(|| selected.clear());
+            });
+        }
     } else {
         // place
         ui.horizontal(|ui| {
