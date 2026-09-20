@@ -6,7 +6,6 @@ use common::{
 };
 use encase::{DynamicUniformBuffer, ShaderSize, ShaderType};
 use nalgebra::{Matrix4, Vector3};
-use slicer::mesh::Mesh;
 use wgpu::{
     BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayout, BindGroupLayoutDescriptor,
     BindGroupLayoutEntry, BindingResource, BindingType, BlendState, BufferBinding,
@@ -25,8 +24,12 @@ use crate::{
         config::render::{Projection, RenderStyle},
     },
     include_shader,
-    project::model::Model,
-    render::{Gcx, VERTEX_BUFFER_LAYOUT, util::ResizingBuffer, workspace::model::MultiStage},
+    project::model::ModelId,
+    render::{
+        Gcx, VERTEX_BUFFER_LAYOUT,
+        util::ResizingBuffer,
+        workspace::model::{MultiStage, selected::Selected},
+    },
 };
 
 pub struct BasePass {
@@ -171,18 +174,24 @@ impl BasePass {
         &mut self,
         gcx: &Gcx,
         app: &mut App,
-        mut callback: impl FnMut(&Gcx, &mut Model) -> Vec<(Uniforms, Vec<u32>)>,
+        mut callback: impl FnMut(&mut App, &Gcx, ModelId) -> Vec<(Uniforms, Vec<u32>)>,
     ) {
         self.uniform_offsets.clear();
 
         let mut uniform_buffer = DynamicUniformBuffer::new(Vec::new());
         let mut selected_words = Vec::new();
 
-        for model in app.project.models.iter_mut().filter(|x| !x.hidden) {
+        let ids = (app.project.models.iter_mut())
+            .filter(|x| !x.hidden)
+            .map(|x| x.id)
+            .collect::<Vec<_>>();
+
+        for model_id in ids {
+            let model = app.project.model(model_id).unwrap();
             model.get_buffers(&gcx.device);
             model.supports.get_buffers(&gcx.device);
 
-            for (mut uniform, selected) in callback(gcx, model) {
+            for (mut uniform, selected) in callback(app, gcx, model_id) {
                 uniform.selected_offset = selected_words.len() as u32;
                 selected_words.extend_from_slice(&selected);
 
@@ -236,8 +245,8 @@ impl BasePass {
             .map(|x| x.to_radians())
             .unwrap_or(f32::from_bits(u32::MAX));
 
-        let hovered_geometry = app.state.hovered_geometry;
-        self.write_uniforms(gcx, app, |gcx, model| {
+        self.write_uniforms(gcx, app, |app, gcx, model_id| {
+            let model = app.project.model(model_id).unwrap();
             model.get_buffers(&gcx.device);
 
             let model_transform = *model.mesh.transformation_matrix();
@@ -252,18 +261,9 @@ impl BasePass {
                 selected_offset: 0,
             };
 
-            let mut selected_raw = selected(&model.mesh, false);
-            if let Some(geo) = hovered_geometry
-                && geo.model == model.id
-            {
-                let word = geo.face / 32;
-                let bit = geo.face % 32;
-                selected_raw[word as usize] |= 1 << bit;
-            }
-
-            let mut out = vec![(base.clone(), selected_raw)];
+            let mut out = vec![(base.clone(), Selected::for_model(model).into_inner())];
             if model.supports.get_buffers(&gcx.device).is_some() {
-                let mesh = &model.supports.mesh().as_ref().unwrap().0;
+                let (mesh, support_faces) = model.supports.mesh().as_ref().unwrap();
                 let model_transform = mesh.transformation_matrix();
                 let uniform = Uniforms {
                     transform: view_projection * model_transform,
@@ -271,7 +271,13 @@ impl BasePass {
                     id: base.id | 1 << 31,
                     ..base
                 };
-                out.push((uniform, selected(mesh, false)));
+
+                let mut selected = Selected::new(mesh.face_count());
+                for support in app.state.selected_supports.for_model(model.id) {
+                    selected.set_selected_range(support_faces[support]);
+                }
+
+                out.push((uniform, selected.into_inner()));
             }
 
             out
@@ -280,10 +286,11 @@ impl BasePass {
 
     pub fn prepare_preview(&mut self, gcx: &Gcx, app: &mut App, camera: &Camera) {
         let view_projection = camera.view_projection_matrix(Projection::Perspective, 1.0);
-        self.write_uniforms(gcx, app, |gcx, model| {
+        self.write_uniforms(gcx, app, |app, gcx, model_id| {
+            let model = app.project.model(model_id).unwrap();
             model.get_buffers(&gcx.device);
-            let model_transform = *model.mesh.transformation_matrix();
 
+            let model_transform = *model.mesh.transformation_matrix();
             let base = Uniforms {
                 transform: view_projection * model_transform,
                 model_transform,
@@ -295,7 +302,7 @@ impl BasePass {
                 selected_offset: 0,
             };
 
-            let mut out = vec![(base.clone(), selected(&model.mesh, false))];
+            let mut out = vec![(base.clone(), Selected::for_model(model).into_inner())];
             if model.supports.get_buffers(&gcx.device).is_some() {
                 let mesh = &model.supports.mesh().as_ref().unwrap().0;
                 let model_transform = mesh.transformation_matrix();
@@ -304,7 +311,7 @@ impl BasePass {
                     model_color: invert_color(model.color).into(),
                     ..base
                 };
-                out.push((uniform, selected(mesh, false)));
+                out.push((uniform, Selected::new(mesh.face_count()).into_inner()));
             }
 
             out
@@ -407,9 +414,4 @@ fn invert_color(linear: LinearRgb<f32>) -> SRgb<f32> {
         .hue_shift(PI)
         .to_linear_srgb()
         .to_srgb()
-}
-
-fn selected(mesh: &Mesh, selected: bool) -> Vec<u32> {
-    let words = mesh.face_count().div_ceil(32);
-    vec![[0, u32::MAX][selected as usize]; words]
 }

@@ -64,6 +64,7 @@
   - Allow clicking on individual supports in the viewport
   - New supports UI
   - Supports track parent model transformations
+  - Select multiple supports
 - Show slicing speed in layers/sec
 - Support highlighting selected mesh sections
 

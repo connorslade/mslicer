@@ -25,6 +25,7 @@ mod bindings;
 mod pass;
 mod pick;
 mod preview;
+mod selected;
 pub use preview::process_previews;
 
 pub struct ModelPipeline {

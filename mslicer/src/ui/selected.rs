@@ -146,6 +146,13 @@ impl SelectedSupports {
     //     self.supports.clear();
     // }
 
+    pub fn for_model(&self, model: ModelId) -> impl Iterator<Item = usize> {
+        self.supports
+            .iter()
+            .filter(move |x| x.model == model)
+            .map(|x| x.idx)
+    }
+
     pub fn support_clicked(&mut self, model: ModelId, support: usize) {
         let key = SupportId::new(model, support);
 
