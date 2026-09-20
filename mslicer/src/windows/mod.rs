@@ -181,17 +181,23 @@ fn viewport(app: &mut App, ui: &mut Ui, _ctx: &Context) {
         && let Some(hover) = app.state.hovered_geometry
         && response.contains_pointer()
     {
+        let (model, face) = (hover.model.raw(), hover.face);
+        let text = if (model >> 31) != 0 {
+            let model = hover.model.raw() & 0x7FFFFFFF;
+            format!("Supported Model: {model}\nFace: {face}")
+        } else {
+            format!("Model: {model}\nFace: {face}")
+        };
+
         let painter = ui.painter();
-        let galley = painter.layout(
-            format!("Model: {}\nFace: {}", hover.model.raw(), hover.face),
-            FontId::proportional(16.0),
-            Color32::WHITE,
-            100.0,
-        );
+        let galley = painter.layout(text, FontId::proportional(13.0), Color32::WHITE, 300.0);
 
-        let px = px - vec2(0.0, galley.size().y);
+        let p = vec2(4.0, 4.0);
+        let px = px - vec2(-p.x, galley.size().y + p.y);
 
-        painter.rect_filled(Rect::from_min_size(px, galley.size()), 2.0, Color32::BLACK);
+        let rect = Rect::from_min_size(px - p, galley.size() + p * 2.0);
+        let color = Color32::BLACK.lerp_to_gamma(Color32::TRANSPARENT, 0.25);
+        painter.rect_filled(rect, ui.visuals().menu_corner_radius, color);
         painter.galley(px, galley, Color32::WHITE);
     }
 }
