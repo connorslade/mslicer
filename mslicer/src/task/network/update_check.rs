@@ -11,12 +11,12 @@ use tracing::info;
 
 use crate::{
     VERSION,
-    app::{App, config::ui::UpdateCheckFrequency},
-    task::{PollResult, Task, TaskApp, thread::TaskThread},
-    ui::{
+    core::{App, config::ui::UpdateCheckFrequency},
+    interface::{
         components::button_row,
         popup::{Popup, PopupIcon},
     },
+    task::{PollResult, Task, TaskApp, thread::TaskThread},
 };
 
 pub const VERSION_MANIFEST: &str = "https://mslicer.com/version.json";

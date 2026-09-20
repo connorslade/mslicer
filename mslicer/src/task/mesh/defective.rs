@@ -3,7 +3,7 @@ use common::progress::Progress;
 use slicer::mesh::MeshId;
 
 use crate::{
-    project::model::{MeshWarnings, Model},
+    core::project::model::{MeshWarnings, Model},
     task::{PollResult, Task, TaskApp, TaskStatus, thread::TaskThread},
 };
 

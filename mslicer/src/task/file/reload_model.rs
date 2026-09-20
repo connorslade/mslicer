@@ -9,7 +9,7 @@ use slicer::mesh::Mesh;
 use tracing::info;
 
 use crate::{
-    project::model::ModelId,
+    core::project::model::ModelId,
     task::{
         BuildAccelerationStructures, MeshDefective, PollResult, Task, TaskApp, TaskStatus,
         thread::TaskThread,

@@ -6,7 +6,7 @@ use wgpu::{
 };
 
 use crate::{
-    app::App,
+    core::App,
     render::{
         Gcx,
         consts::{FILTERING_SAMPLER, NONFILTERING_SAMPLER},

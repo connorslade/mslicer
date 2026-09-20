@@ -12,12 +12,12 @@ use common::{
 use image::RgbaImage;
 
 use crate::{
-    app::{
-        SLICE_PREVIEW_SIZE,
+    core::{
+        app::SLICE_PREVIEW_SIZE,
         slice_operation::{GenericSliceData, SliceOperation},
     },
+    interface::panels::Tab,
     task::{PollResult, Task, TaskApp, TaskStatus, thread::TaskThread},
-    windows::Tab,
 };
 
 pub struct SaveSliced {

@@ -4,10 +4,12 @@ use std::{
 };
 
 use crate::{
-    app::{config::Config, history::History, slice_operation::SliceOperation},
     app_ref_type,
-    project::Project,
-    ui::{panels::Panels, popup::PopupManager, state::UiState},
+    core::{
+        config::Config, history::History, project::Project, slice_operation::SliceOperation,
+        state::UiState,
+    },
+    interface::{panels::Panels, popup::PopupManager},
 };
 
 mod file;

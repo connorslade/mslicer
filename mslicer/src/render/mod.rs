@@ -17,7 +17,8 @@ use crate::render::{
     },
 };
 
-mod consts;
+pub mod camera;
+pub mod consts;
 pub mod interface;
 pub mod slice_preview;
 pub mod util;

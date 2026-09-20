@@ -5,7 +5,7 @@ use common::progress::Progress;
 use slicer::{geometry::bvh::Bvh, half_edge::HalfEdgeMesh, mesh::MeshId};
 
 use crate::{
-    project::model::Model,
+    core::project::model::Model,
     task::{PollResult, Task, TaskApp, TaskStatus, thread::TaskThread},
 };
 

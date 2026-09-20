@@ -4,8 +4,8 @@ use remote_print::manager::RemotePrintManager;
 use tracing::trace;
 
 use crate::{
+    core::state::RemotePrintConnectStatus,
     task::{PollResult, Task, TaskApp, thread::TaskThread},
-    ui::state::RemotePrintConnectStatus,
 };
 
 pub struct PrinterConnect {

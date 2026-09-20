@@ -3,7 +3,7 @@ use common::progress::Progress;
 use slicer::mesh::Mesh;
 
 use crate::{
-    project::model::{Model, ModelId},
+    core::project::model::{Model, ModelId},
     task::{
         BuildAccelerationStructures, PollResult, Task, TaskApp, TaskStatus, thread::TaskThread,
     },

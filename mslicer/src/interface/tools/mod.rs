@@ -1,0 +1,62 @@
+use experimental::sdf::SdfSlicer;
+use tools::{
+    auto_layout::AutoLayoutAnnealing, exposure_test::ExposureTest, graphics_3d::Graphics3D,
+    internal_exposure_test::InternalExposureTest, phonograph_record::PhonographRecord,
+    printed_circuit_board::PrintedCircuitBoard, sliced_diff::SlicedDiff, test_pattern::TestPattern,
+};
+
+pub mod auto_layout;
+#[cfg(feature = "brep")]
+pub mod brep_slicer;
+pub mod exposure_test;
+pub mod graphics_3d;
+pub mod internal_exposure_test;
+pub mod phonograph_record;
+pub mod printed_circuit_board;
+pub mod sdf_slicer;
+pub mod sliced_diff;
+pub mod test_pattern;
+
+#[derive(Default)]
+pub struct Tools {
+    exposure_test: ExposureTest,
+    internal_exposure_test: InternalExposureTest,
+    printed_circuit_board: PrintedCircuitBoard,
+    advanced_layout: AutoLayoutAnnealing,
+    graphics_3d: Graphics3D,
+    pattern_generator: TestPattern,
+    phonograph_record: PhonographRecord,
+    sliced_diff: SlicedDiff,
+
+    sdf_slicer: SdfSlicer,
+    #[cfg(feature = "brep")]
+    brep_slicer: experimental::brep::BrepSlicer,
+}
+
+// i couldn't get lifetimes working to do this with a function... so
+#[macro_export]
+macro_rules! generator_tool {
+    ($app:expr, $tool:expr $(, $extra:expr)* $(,)?) => {{
+        use clone_macro::clone;
+        use image::RgbaImage;
+
+        use common::progress::{CombinedProgress, Progress};
+        use $crate::{
+            core::{app::SLICE_PREVIEW_SIZE, slice_operation::SliceOperation},
+            interface::panels::Tab,
+        };
+
+        let mut config = $app.project.slice_config.clone();
+        let operation = SliceOperation::new(Progress::new(), CombinedProgress::new());
+        operation.add_preview(RgbaImage::new(512, 512)); // blank preview image
+        let tool = $tool.clone();
+        tool.slice_config(&mut config);
+
+        std::thread::spawn(clone!([operation], move || {
+            let layers = tool.generate(&config, &operation.progress $(, $extra)*);
+            operation.add_raster_result(config, layers);
+        }));
+        $app.slice_operation.replace(operation);
+        $app.panels.focus_tab(Tab::Sliced, SLICE_PREVIEW_SIZE);
+    }};
+}

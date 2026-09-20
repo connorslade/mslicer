@@ -33,7 +33,6 @@ epaint_default_fonts.workspace = true
 image.workspace = true
 imageproc.workspace = true
 itertools.workspace = true
-markdown.workspace = true
 nalgebra.workspace = true
 notify-rust.workspace = true
 num-integer.workspace = true

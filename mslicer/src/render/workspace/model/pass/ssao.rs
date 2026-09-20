@@ -11,9 +11,9 @@ use wgpu::{
 };
 
 use crate::{
-    app::{App, camera::Camera, config::render::Projection},
+    core::{App, config::render::Projection},
     include_shader,
-    render::{Gcx, workspace::model::MultiStage},
+    render::{Gcx, camera::Camera, workspace::model::MultiStage},
 };
 
 pub struct SsaoPass {

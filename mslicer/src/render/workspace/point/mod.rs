@@ -10,7 +10,7 @@ use wgpu::{
 };
 
 use crate::{
-    app::App,
+    core::App,
     include_shader,
     render::{
         Gcx, VERTEX_BUFFER_LAYOUT,

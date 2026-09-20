@@ -2,7 +2,7 @@ use nalgebra::Vector2;
 use wgpu::{Extent3d, TextureDescriptor, TextureDimension, TextureFormat, TextureUsages};
 
 use crate::{
-    app::App,
+    core::App,
     render::{
         Gcx,
         workspace::model::{ModelPipeline, MultiStage},

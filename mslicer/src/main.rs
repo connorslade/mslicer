@@ -14,20 +14,17 @@ use egui::{FontDefinitions, Vec2, ViewportBuilder};
 use egui_wgpu::{WgpuConfiguration, WgpuSetup, WgpuSetupCreateNew};
 use tracing::{info, level_filters::LevelFilter};
 use tracing_subscriber::{filter, fmt::layer, layer::SubscriberExt, util::SubscriberInitExt};
-use wgpu::{DeviceDescriptor, Features, Limits, TextureFormat};
+use wgpu::{DeviceDescriptor, Features, Limits};
 
-const DEPTH_TEXTURE_FORMAT: TextureFormat = TextureFormat::Depth24PlusStencil8;
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
-mod app;
-mod project;
+mod core;
+mod interface;
 mod render;
 mod system;
 mod task;
-mod ui;
 mod util;
-mod windows;
-use app::{App, config::Config};
+use core::{App, config::Config};
 
 use crate::system::{arguments::Args, icon};
 

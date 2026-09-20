@@ -10,10 +10,8 @@ use wgpu::{
 };
 
 use crate::{
-    app::App,
-    project::model::ModelId,
+    core::{App, project::model::ModelId, state::GeometryHit},
     render::{Gcx, workspace::model::MultiStage},
-    ui::state::GeometryHit,
 };
 
 pub struct ModelPicker {

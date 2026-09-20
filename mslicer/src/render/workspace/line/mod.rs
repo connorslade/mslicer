@@ -8,7 +8,7 @@ use wgpu::{
 };
 
 use crate::{
-    app::App,
+    core::App,
     include_shader,
     render::{
         Gcx,

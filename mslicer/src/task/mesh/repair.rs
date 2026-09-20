@@ -4,12 +4,12 @@ use tools::repair::{self, RepairResult};
 use tracing::info;
 
 use crate::{
-    project::model::{Model, ModelId},
+    core::project::model::{Model, ModelId},
+    interface::{components::grid, popup::Popup},
     task::{
         BuildAccelerationStructures, MeshDefective, PollResult, Task, TaskApp, TaskStatus,
         thread::TaskThread,
     },
-    ui::{components::grid, popup::Popup},
 };
 
 pub struct MeshRepair {

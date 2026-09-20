@@ -5,7 +5,7 @@ use common::{container::ArrayCluster, progress::Progress};
 use slicer::mesh::Mesh;
 
 use crate::{
-    project::{
+    core::project::{
         Collection,
         model::{Model, ModelId},
     },

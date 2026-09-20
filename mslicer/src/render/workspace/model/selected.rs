@@ -2,7 +2,7 @@ use std::range::Range;
 
 use num_integer::Integer;
 
-use crate::project::model::Model;
+use crate::core::project::model::Model;
 
 pub struct Selected {
     words: Vec<u32>,

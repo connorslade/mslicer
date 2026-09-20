@@ -18,15 +18,15 @@ use wgpu::{
 };
 
 use crate::{
-    app::{
+    core::{
         App,
-        camera::Camera,
         config::render::{Projection, RenderStyle},
+        project::model::ModelId,
     },
     include_shader,
-    project::model::ModelId,
     render::{
         Gcx, VERTEX_BUFFER_LAYOUT,
+        camera::Camera,
         util::ResizingBuffer,
         workspace::model::{MultiStage, selected::Selected},
     },

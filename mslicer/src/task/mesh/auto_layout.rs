@@ -3,9 +3,9 @@ use common::{progress::Progress, slice::SliceConfig, units::Milimeter};
 use tools::auto_layout::{self, Placement};
 
 use crate::{
-    project::model::Model,
+    core::project::model::Model,
+    interface::tools::auto_layout::{apply_placement, layout_cache},
     task::{PollResult, Task, TaskApp, TaskStatus, thread::TaskThread},
-    windows::tools::auto_layout::{apply_placement, layout_cache},
 };
 
 pub struct AutoLayout {

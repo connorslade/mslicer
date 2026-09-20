@@ -3,7 +3,7 @@ use std::slice;
 use nalgebra::{Vector3, Vector4};
 
 use crate::{
-    app::App,
+    core::App,
     render::workspace::point::{Point, PointGenerator},
 };
 

@@ -1,8 +1,8 @@
 use std::thread::{self, JoinHandle};
 
 use crate::{
+    interface::popup::{Popup, PopupIcon},
     task::{PollResult, TaskApp},
-    ui::popup::{Popup, PopupIcon},
 };
 
 pub struct TaskThread<T> {

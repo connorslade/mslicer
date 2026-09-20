@@ -6,9 +6,9 @@ use std::{
 use tracing::warn;
 
 use crate::{
-    app::App,
+    core::App,
+    interface::popup::confirm_unsaved,
     task::{LoadSliced, MeshLoad, ProjectLoad},
-    ui::popup::confirm_unsaved,
 };
 
 pub struct Args {

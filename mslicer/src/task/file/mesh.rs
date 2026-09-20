@@ -18,8 +18,7 @@ use slicer::mesh::{Mesh, MeshInner};
 use tracing::info;
 
 use crate::{
-    app::history::Action,
-    project::model::Model,
+    core::{history::Action, project::model::Model},
     task::{
         BuildAccelerationStructures, MeshDefective, PollResult, Task, TaskApp, TaskStatus,
         thread::TaskThread,

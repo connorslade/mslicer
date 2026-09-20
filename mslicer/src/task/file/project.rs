@@ -13,7 +13,7 @@ use common::{
 use tracing::info;
 
 use crate::{
-    project::Project,
+    core::project::Project,
     task::{
         BuildAccelerationStructures, MeshDefective, PollResult, Task, TaskApp, TaskStatus,
         thread::TaskThread,

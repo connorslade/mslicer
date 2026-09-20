@@ -3,7 +3,7 @@ use egui::Theme;
 use nalgebra::Vector3;
 
 use crate::{
-    app::App,
+    core::App,
     render::workspace::line::{Line, LineGenerator},
 };
 

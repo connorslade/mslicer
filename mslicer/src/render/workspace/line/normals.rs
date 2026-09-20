@@ -1,8 +1,10 @@
 use nalgebra::{Matrix4, Vector3};
 
 use crate::{
-    app::App,
-    project::model::{Model, ModelId},
+    core::{
+        App,
+        project::model::{Model, ModelId},
+    },
     render::workspace::line::{Line, LineGenerator},
 };
 

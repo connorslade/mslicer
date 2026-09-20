@@ -3,10 +3,10 @@ use wgpu::{
     BindGroupLayoutDescriptor, BindGroupLayoutEntry, BindingResource, BindingType,
     BufferBindingType, BufferDescriptor, BufferUsages, CompareFunction, DepthBiasState,
     DepthStencilState, Device, FilterMode, SamplerDescriptor, ShaderStages, StencilFaceState,
-    StencilState,
+    StencilState, TextureFormat,
 };
 
-use crate::DEPTH_TEXTURE_FORMAT;
+pub const DEPTH_TEXTURE_FORMAT: TextureFormat = TextureFormat::Depth24PlusStencil8;
 
 pub const BASE_UNIFORM_DESCRIPTOR: BufferDescriptor = BufferDescriptor {
     label: None,

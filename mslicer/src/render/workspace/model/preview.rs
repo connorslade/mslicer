@@ -15,9 +15,10 @@ use wgpu::{
 };
 
 use crate::{
-    app::{App, camera::Camera},
+    core::App,
     render::{
         Gcx,
+        camera::Camera,
         workspace::{
             WorkspaceRenderResources,
             model::{ModelPipeline, bindings::occlusion_size},

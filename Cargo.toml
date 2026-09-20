@@ -56,7 +56,6 @@ hound = "3.5.1"
 image = { version = "=0.25.6", default-features = false, features = ["png"] }
 imageproc = "0.25.0"
 itertools = "0.14.0"
-markdown = "0.3.0"
 md5 = "0.8.0"
 nalgebra = { version = "0.34.1", features = ["serde-serialize", "encase"] }
 notify-rust = "4.11.7"
