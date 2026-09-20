@@ -5,7 +5,8 @@ Feel free to help out :eyes:.
 
 ## Bugs
 
-- Open slice preview as tab next to 3d view by default
+- open slice preview as tab next to 3d view by default
+- check if slicing with spacemouse button causes crash
 
 ## Features
 
@@ -31,9 +32,8 @@ Feel free to help out :eyes:.
 - game style camera (arrow keys to move)
 - organize tools menu with categories?
 - plot voxel error across different triangulations
-- Lower render resolution?
-- Different support colors (also diff default styles)
-- New selection module in ui
+- lower render resolution?
+- different support colors (also diff default styles)
 
 ## Documentation
 

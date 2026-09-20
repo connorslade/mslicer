@@ -172,7 +172,7 @@ impl eframe::App for App {
 impl Drop for App {
     fn drop(&mut self) {
         // todo: save all surfaces (except slice operation?)
-        self.config.ui.panels = Some(self.panels.dock_state.main_surface().clone());
+        self.config.ui.panels = Some(self.panels.main_surface().clone());
         if let Err(err) = self.config.save(&self.config_dir) {
             warn!("Failed to save config: {}", err);
         } else {
