@@ -1,5 +1,6 @@
-use std::{f32::consts::PI, range::Range};
+use std::{collections::HashMap, f32::consts::PI, range::Range};
 
+use common::id_type;
 use nalgebra::{Vector2, Vector3};
 use slicer::{builder::MeshBuilder, mesh::Mesh};
 use tools::supports::{SupportConfig, build_raft_mesh};
@@ -14,11 +15,12 @@ pub struct Supports {
     manual: Vec<Support>,
     transform: Transform,
 
-    mesh: Option<(Mesh, Vec<Range<u32>>)>,
+    mesh: Option<(Mesh, FaceMap)>,
     buffers: Option<RenderedMeshBuffers>,
 }
 
 pub struct Support {
+    id: SupportId,
     points: [Vector3<f32>; 3],
     tip_radius: f32,
     radius: f32,
@@ -30,6 +32,10 @@ struct Transform {
     scale: Vector3<f32>,
     rotation: f32,
 }
+
+id_type!(SupportId, u32);
+
+type FaceMap = HashMap<SupportId, Range<u32>>;
 
 impl Supports {
     pub fn invalidate_cache(&mut self) {
@@ -49,6 +55,7 @@ impl Supports {
         self.auto = supports
             .into_iter()
             .map(|points| Support {
+                id: SupportId::new(),
                 points,
                 tip_radius: config.tip_radius,
                 radius: config.support_radius,
@@ -59,20 +66,21 @@ impl Supports {
     pub fn add_manual(&mut self, config: &SupportConfig, support: [Vector3<f32>; 3]) {
         self.invalidate_cache();
         self.manual.push(Support {
+            id: SupportId::new(),
             points: support,
             tip_radius: config.tip_radius,
             radius: config.support_radius,
         });
     }
 
-    pub fn mesh(&mut self) -> &Option<(Mesh, Vec<Range<u32>>)> {
+    pub fn mesh(&mut self) -> &Option<(Mesh, FaceMap)> {
         if self.mesh.is_some() || (self.auto.is_empty() && self.manual.is_empty()) {
             return &self.mesh;
         }
 
         let mut builder = MeshBuilder::new();
         let mut raft_points = Vec::new();
-        let mut ranges = Vec::new();
+        let mut map = HashMap::new();
 
         for support in self.auto.iter().chain(self.manual.iter()) {
             let (r, p) = (support.radius, 20); // todo: make precision follow actual config...
@@ -105,14 +113,14 @@ impl Supports {
             builder.add_sphere(points[2], r, p);
 
             let end = builder.next_face_idx();
-            ranges.push(Range::from(start..end));
+            map.insert(support.id, Range::from(start..end));
         }
 
         build_raft_mesh(1.0, 1.0, &raft_points, &mut builder);
         if !builder.is_empty() {
             let mesh = builder.build();
             info!("Generated support mesh with {} faces", mesh.face_count());
-            self.mesh = Some((mesh, ranges));
+            self.mesh = Some((mesh, map));
         }
 
         &self.mesh
@@ -168,12 +176,9 @@ impl Supports {
         }
     }
 
-    pub fn remove(&mut self, idx: usize) {
-        if idx < self.auto.len() {
-            self.auto.remove(idx);
-        } else {
-            self.manual.remove(idx - self.auto.len());
-        }
+    pub fn remove(&mut self, id: SupportId) {
+        self.auto.retain(|x| x.id != id);
+        self.manual.retain(|x| x.id != id);
     }
 }
 

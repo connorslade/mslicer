@@ -274,7 +274,7 @@ impl BasePass {
 
                 let mut selected = Selected::new(mesh.face_count());
                 for support in app.state.selected_supports.for_model(model.id) {
-                    selected.set_selected_range(support_faces[support]);
+                    selected.set_selected_range(support_faces[&support]);
                 }
 
                 out.push((uniform, selected.into_inner()));

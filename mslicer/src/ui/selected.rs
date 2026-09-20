@@ -2,7 +2,7 @@ use std::{collections::HashSet, iter};
 
 use itertools::Either;
 
-use crate::project::{CollectionId, model::ModelId};
+use crate::project::{CollectionId, model::ModelId, supports::SupportId};
 
 pub enum SelectedPrinter {
     Project,
@@ -26,13 +26,13 @@ pub enum SelectedModel {
 
 #[derive(Default)]
 pub struct SelectedSupports {
-    supports: HashSet<SupportId>,
+    supports: HashSet<SelectedSupport>,
 }
 
 #[derive(Eq, Hash, PartialEq)]
-pub struct SupportId {
+pub struct SelectedSupport {
     pub model: ModelId,
-    pub idx: usize,
+    pub support: SupportId,
 }
 
 impl SelectedModel {
@@ -135,14 +135,14 @@ impl SelectedModel {
     }
 }
 
-impl SupportId {
-    pub fn new(model: ModelId, idx: usize) -> Self {
-        Self { model, idx }
+impl SelectedSupport {
+    pub fn new(model: ModelId, support: SupportId) -> Self {
+        Self { model, support }
     }
 }
 
 impl SelectedSupports {
-    pub fn iter<'a>(&'a self) -> impl Iterator<Item = &'a SupportId> {
+    pub fn iter<'a>(&'a self) -> impl Iterator<Item = &'a SelectedSupport> {
         self.supports.iter()
     }
 
@@ -150,11 +150,11 @@ impl SelectedSupports {
         self.supports.clear();
     }
 
-    pub fn for_model(&self, model: ModelId) -> impl Iterator<Item = usize> {
+    pub fn for_model(&self, model: ModelId) -> impl Iterator<Item = SupportId> {
         self.supports
             .iter()
             .filter(move |x| x.model == model)
-            .map(|x| x.idx)
+            .map(|x| x.support)
     }
 
     pub fn count(&self) -> usize {
@@ -170,8 +170,8 @@ impl SelectedSupports {
         models.len()
     }
 
-    pub fn support_clicked(&mut self, model: ModelId, support: usize) {
-        let key = SupportId::new(model, support);
+    pub fn support_clicked(&mut self, model: ModelId, support: SupportId) {
+        let key = SelectedSupport::new(model, support);
 
         if self.supports.contains(&key) {
             self.supports.remove(&key);

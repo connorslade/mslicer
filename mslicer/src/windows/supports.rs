@@ -34,9 +34,10 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                 if ui.button(concatcp!(TRASH, " Delete")).clicked() {
                     for support in selected.iter() {
                         let model = app.project.model(support.model).unwrap();
-                        model.supports.remove(support.idx);
+                        model.supports.remove(support.support);
                         model.supports.invalidate_cache();
                     }
+                    selected.clear();
                 }
 
                 ui.button(concatcp!(SELECTION_INVERSE, " Deselect"))

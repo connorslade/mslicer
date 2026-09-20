@@ -147,15 +147,15 @@ fn viewport(app: &mut App, ui: &mut Ui, _ctx: &Context) {
             manual_support_placement(app, true);
         } else if let Some(hover) = app.state.hovered_geometry {
             let shift = ui.input(|x| x.modifiers.shift);
+            // todo: helper functions for this stuff
             if hover.model.raw() & (1 << 31) != 0 {
                 let id = ModelId::from_raw(hover.model.raw() & !(1 << 31));
                 if let Some(model) = app.project.model(id)
                     && let Some((_, ranges)) = model.supports.mesh()
-                    && let Some(support) = ranges.iter().position(|x| x.contains(&hover.face))
+                    && let Some((support_id, _)) =
+                        ranges.iter().find(|(_, r)| r.contains(&hover.face))
                 {
-                    app.state
-                        .selected_supports
-                        .support_clicked(model.id, support);
+                    (app.state.selected_supports).support_clicked(model.id, *support_id);
                 }
             } else {
                 app.state.selected.model_clicked(hover.model, shift);
