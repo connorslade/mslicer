@@ -319,10 +319,6 @@ impl BasePass {
     }
 
     pub fn paint(&self, encoder: &mut CommandEncoder, multi: &MultiStage, app: &mut App) {
-        let Some(bind_group) = &self.bind_group else {
-            return;
-        };
-
         let mut render_pass = encoder.begin_render_pass(&RenderPassDescriptor {
             label: Some("Model"),
             color_attachments: &[
@@ -379,6 +375,10 @@ impl BasePass {
             timestamp_writes: None,
             occlusion_query_set: None,
         });
+
+        let Some(bind_group) = &self.bind_group else {
+            return;
+        };
 
         render_pass.set_pipeline(&self.pipeline);
 
