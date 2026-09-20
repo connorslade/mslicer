@@ -6,18 +6,14 @@ use egui_dock::DockArea;
 use crate::{core::App, interface::panels::Tabs};
 
 pub mod components;
-pub mod drag_and_drop;
+pub mod elements;
 pub mod panels;
 pub mod popup;
 pub mod shortcuts;
 pub mod tools;
-pub mod top_bar;
-pub mod welcome;
 
 pub fn ui(app: &mut App, ctx: &Context) {
-    drag_and_drop::update(app, ctx);
-    welcome::ui(app, ctx);
-    top_bar::ui(app, ctx);
+    elements::ui(app, ctx);
 
     mem::take(&mut app.state.queue_reset_ui).then(|| app.panels.reset_ui());
     CentralPanel::default().frame(Frame::NONE).show(ctx, |ui| {

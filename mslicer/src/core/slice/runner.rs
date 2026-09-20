@@ -7,7 +7,7 @@ use nalgebra::Vector3;
 use tracing::info;
 
 use crate::{
-    core::{App, app::SLICE_PREVIEW_SIZE, slice_operation::SliceOperation},
+    core::{App, SLICE_PREVIEW_SIZE, slice::SliceOperation},
     interface::{
         panels::Tab,
         popup::{Popup, PopupIcon},

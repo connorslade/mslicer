@@ -13,7 +13,7 @@ use slicer::post_process::{
 use crate::{
     app_ref_type,
     core::{
-        app::App,
+        App,
         config::ui::B_PER_MIB,
         project::{
             Collection, CollectionId,

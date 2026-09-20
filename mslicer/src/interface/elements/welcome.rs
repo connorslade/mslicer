@@ -5,7 +5,7 @@ use egui_phosphor::regular::INFO;
 
 use crate::{VERSION, core::App, interface::components::button_row};
 
-const LOGO: ImageSource = include_image!("../../../dist/icon.png");
+const LOGO: ImageSource = include_image!("../../../../dist/icon.png");
 const BACKGROUND_TINT: Color32 = Color32::from_rgba_premultiplied(0, 0, 0, 100);
 
 const DESCRIPTION: &str = "Welcome to mslicer — a high-performance, open-source slicer for MSLA resin printers, created by Connor Slade.";

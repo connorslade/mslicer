@@ -32,9 +32,10 @@ use crate::{
             Config,
             sliced::{Currency, SlicePreviewCoordinateSpace, SlicePreviewView, SlicedConfig},
         },
-        slice_operation::{
-            GenericSliceData, GenericSliceResult, ISLAND_COLOR, PreviewImage, RasterSliceResult,
-            SliceOperation, SliceResult,
+        slice::{
+            PreviewImage, SliceOperation,
+            annotations::ISLAND_COLOR,
+            result::{GenericSliceData, GenericSliceResult, RasterSliceResult, SliceResult},
         },
         state::UiState,
     },

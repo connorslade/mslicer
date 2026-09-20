@@ -8,7 +8,7 @@ use slicer::util;
 use tools::sliced_diff::{Difference, Source, SourceId};
 
 use crate::{
-    core::{App, slice_operation::GenericSliceData},
+    core::{App, slice::result::GenericSliceData},
     generator_tool,
     interface::{
         components::grid,

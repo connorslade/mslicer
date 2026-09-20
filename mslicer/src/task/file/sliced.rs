@@ -13,8 +13,8 @@ use image::RgbaImage;
 
 use crate::{
     core::{
-        app::SLICE_PREVIEW_SIZE,
-        slice_operation::{GenericSliceData, SliceOperation},
+        SLICE_PREVIEW_SIZE,
+        slice::{SliceOperation, result::GenericSliceData},
     },
     interface::panels::Tab,
     task::{PollResult, Task, TaskApp, TaskStatus, thread::TaskThread},

@@ -42,7 +42,7 @@ macro_rules! generator_tool {
 
         use common::progress::{CombinedProgress, Progress};
         use $crate::{
-            core::{app::SLICE_PREVIEW_SIZE, slice_operation::SliceOperation},
+            core::{SLICE_PREVIEW_SIZE, slice::SliceOperation},
             interface::panels::Tab,
         };
 

@@ -6,7 +6,7 @@ use nalgebra::Vector2;
 use slicer::post_process::island_detection::detect_islands;
 
 use crate::{
-    core::slice_operation::{Annotation, Annotations},
+    core::slice::annotations::{Annotation, Annotations},
     task::{PollResult, Task, TaskApp, TaskStatus, thread::TaskThread},
 };
 

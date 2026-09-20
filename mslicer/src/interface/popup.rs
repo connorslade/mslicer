@@ -10,8 +10,8 @@ use remote_print::manager::RemotePrintManager;
 use crate::{
     app_ref_type,
     core::{
-        App, app::is_slicing, config::Config, history::History, project::Project,
-        slice_operation::SliceOperation, state::UiState,
+        App, config::Config, history::History, is_slicing, project::Project, slice::SliceOperation,
+        state::UiState,
     },
     interface::{components::button_row, panels::Panels},
     render::camera::Camera,

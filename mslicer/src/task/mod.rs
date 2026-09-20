@@ -6,8 +6,7 @@ use std::{
 use crate::{
     app_ref_type,
     core::{
-        config::Config, history::History, project::Project, slice_operation::SliceOperation,
-        state::UiState,
+        config::Config, history::History, project::Project, slice::SliceOperation, state::UiState,
     },
     interface::{panels::Panels, popup::PopupManager},
 };
