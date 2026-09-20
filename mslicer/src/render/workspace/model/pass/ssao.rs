@@ -1,4 +1,5 @@
 use encase::{ShaderSize, ShaderType, UniformBuffer};
+use mslicer_core::config::render::Projection;
 use nalgebra::Matrix4;
 use wgpu::{
     BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayout, BindGroupLayoutDescriptor,
@@ -11,9 +12,10 @@ use wgpu::{
 };
 
 use crate::{
-    app::{App, camera::Camera, config::render::Projection},
+    camera::Camera,
     include_shader,
     render::{Gcx, workspace::model::MultiStage},
+    ui::App,
 };
 
 pub struct SsaoPass {

@@ -4,11 +4,11 @@ use common::units::Milimeter;
 use egui::{Context, Key, KeyboardShortcut, Modifiers, ViewportCommand};
 
 use crate::{
-    app::App,
     include_asset,
-    project::Project,
-    task::{AutoLayout, FileDialog, LoadSliced, MeshLoad, MultiFileDialog},
-    ui::popup::confirm_unsaved,
+    task::{
+        AutoLayout, FileDialog, LoadSliced, MeshLoad, MultiFileDialog, ProjectLoad, ProjectSave,
+    },
+    ui::{App, popup::confirm_unsaved},
 };
 
 const COMMAND_SHIFT: Modifiers = Modifiers::COMMAND.plus(Modifiers::SHIFT);
@@ -142,18 +142,36 @@ fn new(app: &mut App, _ctx: &Context) {
     });
 }
 
-fn save(app: &mut App, _ctx: &Context) {
-    let task = app.project.save();
-    app.tasks().add_boxed(task);
+pub fn save(app: &mut App, _ctx: &Context) {
+    if let Some(path) = app.project.path.clone() {
+        let task = ProjectSave::new(app.project.clone(), path.to_path_buf());
+        app.tasks.add(task);
+    } else {
+        save_as(app, _ctx);
+    }
 }
 
 fn save_as(app: &mut App, _ctx: &Context) {
-    let task = app.project.save_as();
-    app.tasks().add(task);
+    app.tasks.add(FileDialog::save_file(
+        ("mslicer project", &["mslicer"]),
+        |app, path, tasks| {
+            let path = path.with_extension("mslicer");
+            tasks.push(Box::new(ProjectSave::new(
+                app.project.clone(),
+                path.to_path_buf(),
+            )));
+            app.project.path = Some(path);
+        },
+    ));
 }
 
 fn load(app: &mut App, _ctx: &Context) {
-    confirm_unsaved(app, |app| app.tasks.add(Project::load()));
+    confirm_unsaved(app, |app| {
+        app.tasks.add(FileDialog::pick_file(
+            ("mslicer project", &["mslicer"]),
+            |_app, path, tasks| tasks.push(Box::new(ProjectLoad::new(path.to_path_buf()))),
+        ));
+    });
 }
 
 fn quit(_app: &mut App, ctx: &Context) {
@@ -187,7 +205,8 @@ fn quick_layout(app: &mut App, _ctx: &Context) {
 
 fn select_all(app: &mut App, _ctx: &Context) {
     app.state.selected.clear();
-    for model in app.project.models.iter() {
+    let core = &mut app.core;
+    for model in core.project.models.iter() {
         app.state.selected.select_model(model.id);
     }
 }

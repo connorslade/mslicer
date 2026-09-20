@@ -7,12 +7,13 @@ use egui::{
 };
 use egui_phosphor::regular::{COPY, CURSOR_TEXT, EYE, EYE_SLASH, FOLDER_DASHED, SELECTION, TRASH};
 
+use mslicer_core::{
+    core::history::{Action, ModelAction},
+    project::{Collection, CollectionId, RenameState},
+};
+
 use crate::{
-    app::{
-        App,
-        history::{Action, ModelAction},
-    },
-    project::{Collection, CollectionId},
+    ui::App,
     windows::models::{
         collection::{collection, collection_entry},
         model::model_properties,
@@ -209,8 +210,11 @@ fn selection_properties(app: &mut App, ui: &mut Ui) {
 
             let selected = app.state.selected.selected_models().collect::<Vec<_>>();
             for model_id in selected {
-                if let Some(model) = app.project.models.iter_mut().find(|x| x.id == model_id) {
-                    app.history
+                if let Some(model) = (app.core.project.models)
+                    .iter_mut()
+                    .find(|x| x.id == model_id)
+                {
+                    (app.core.history)
                         .track_model(model_id, ModelAction::Collection(model.collection));
                     model.collection = Some(collection.id);
                 }
@@ -225,8 +229,8 @@ fn selection_properties(app: &mut App, ui: &mut Ui) {
             for id in app.state.selected.selected_models() {
                 if let Some(model) = app.project.models.iter().find(|x| x.id == id) {
                     let new = model.clone();
-                    app.history.track(Action::ModelAdded { id: new.id });
-                    app.project.models.push(new);
+                    app.core.history.track(Action::ModelAdded { id: new.id });
+                    app.core.project.models.push(new);
                 }
             }
         }
@@ -240,16 +244,15 @@ fn collection_properties(app: &mut App, ui: &mut Ui, id: CollectionId) {
             RENAME_SHORTCUT,
         ) && let Some(collection) = app.project.collection(id)
         {
-            collection.rename = crate::project::RenameState::Starting;
+            collection.rename = RenameState::Starting;
         }
 
         if shortcut(ui.button(concatcp!(TRASH, " Delete")), DELETE_SHORTCUT) {
             app.state.selected.clear();
 
-            for model in app.project.models.iter_mut() {
+            for model in app.core.project.models.iter_mut() {
                 if model.collection == Some(id) {
-                    app.history
-                        .track_model(model.id, ModelAction::Collection(Some(id)));
+                    (app.core.history).track_model(model.id, ModelAction::Collection(Some(id)));
                     model.collection = None;
                 }
             }
@@ -279,7 +282,7 @@ fn collection_properties(app: &mut App, ui: &mut Ui, id: CollectionId) {
             ui.button(concatcp!(SELECTION, " Select Models")),
             SELECT_SHORTCUT,
         ) {
-            (app.project.models.iter())
+            (app.core.project.models.iter())
                 .filter(|x| x.collection == Some(id))
                 .for_each(|x| app.state.selected.select_model(x.id));
         }

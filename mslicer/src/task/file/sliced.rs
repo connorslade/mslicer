@@ -10,15 +10,15 @@ use common::{
     },
 };
 use image::RgbaImage;
-
-use crate::{
-    app::{
+use mslicer_core::{
+    config::ui::Tab,
+    core::{
         SLICE_PREVIEW_SIZE,
         slice_operation::{GenericSliceData, SliceOperation},
     },
-    task::{PollResult, Task, TaskApp, TaskStatus, thread::TaskThread},
-    windows::Tab,
 };
+
+use crate::task::{PollResult, Task, TaskApp, TaskStatus, thread::TaskThread};
 
 pub struct SaveSliced {
     progress: CombinedProgress<2>,

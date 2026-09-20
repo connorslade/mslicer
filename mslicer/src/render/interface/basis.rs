@@ -1,6 +1,7 @@
 use egui::PaintCallbackInfo;
 use egui_wgpu::{CallbackResources, CallbackTrait, ScreenDescriptor};
 use encase::{ShaderSize, ShaderType, UniformBuffer};
+use mslicer_core::misc::render::gpu_mesh_buffers;
 use nalgebra::{Matrix4, Vector3};
 use slicer::{builder::MeshBuilder, mesh::Mesh};
 use wgpu::{
@@ -11,7 +12,7 @@ use wgpu::{
 };
 
 use crate::{
-    app::camera::{Camera, FAR},
+    camera::{Camera, FAR},
     include_shader,
     render::{
         VERTEX_BUFFER_LAYOUT,
@@ -19,7 +20,6 @@ use crate::{
             BASE_BIND_GROUP_LAYOUT_DESCRIPTOR, BASE_UNIFORM_DESCRIPTOR, DEPTH_STENCIL_STATE,
             bind_group,
         },
-        util::gpu_mesh_buffers,
     },
 };
 

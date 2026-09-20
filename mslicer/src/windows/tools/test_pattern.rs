@@ -2,8 +2,8 @@ use egui::{Button, ComboBox, DragValue, Ui, Widget};
 use tools::test_pattern::Pattern;
 
 use crate::{
-    app::App,
     generator_tool,
+    ui::App,
     ui::{
         components::grid,
         popup::{Popup, PopupApp},

@@ -1,4 +1,5 @@
 use encase::{ShaderSize, ShaderType, UniformBuffer};
+use mslicer_core::misc::render::gpu_mesh;
 use nalgebra::{Matrix4, Vector3};
 use wgpu::{
     BindGroup, BlendState, Buffer, BufferDescriptor, BufferUsages, ColorTargetState, ColorWrites,
@@ -7,7 +8,6 @@ use wgpu::{
 };
 
 use crate::{
-    app::App,
     include_shader,
     render::{
         Gcx, VERTEX_BUFFER_LAYOUT,
@@ -15,8 +15,9 @@ use crate::{
             BASE_BIND_GROUP_LAYOUT_DESCRIPTOR, BASE_UNIFORM_DESCRIPTOR, DEPTH_STENCIL_STATE,
             bind_group,
         },
-        util::{ResizingBuffer, gpu_mesh},
+        util::ResizingBuffer,
     },
+    ui::App,
 };
 
 pub struct SupportPipeline {

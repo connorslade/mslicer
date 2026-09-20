@@ -4,9 +4,10 @@ use egui_phosphor::regular::{SELECTION_INVERSE, SPARKLE, TRASH, USER_SWITCH};
 use slicer::builder::MeshBuilder;
 use tools::supports::{SupportGenerator, route_support};
 
-use crate::{app::App, ui::components::dragger};
+use crate::{ui::App, ui::components::dragger};
 
 pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
+    let core = &mut app.core;
     let support_mode = &mut app.state.support_mode;
     ui.horizontal(|ui| {
         *support_mode ^= Button::selectable(!*support_mode, "Place").ui(ui).clicked();
@@ -33,7 +34,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
             ui.horizontal_wrapped(|ui| {
                 if ui.button(concatcp!(TRASH, " Delete")).clicked() {
                     for support in selected.iter() {
-                        let model = app.project.model(support.model).unwrap();
+                        let model = core.project.model(support.model).unwrap();
                         model.supports.remove(support.support);
                         model.supports.invalidate_cache();
                     }
@@ -111,12 +112,13 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
 }
 
 fn generate_support(app: &mut App, model: usize) {
-    let model = &mut app.project.models[model];
+    let core = &mut app.core;
+    let model = &mut core.project.models[model];
     let half_edge = model.half_edge.as_ref().unwrap();
     let bvh = model.bvh.as_ref().unwrap();
 
     let support_config = &app.state.support_config;
-    let platform_size = app.project.slice_config.platform_size.map(|x| x.convert());
+    let platform_size = core.project.slice_config.platform_size.map(|x| x.convert());
 
     let generator = SupportGenerator::new(support_config, platform_size);
     let supports = generator.generate_supports(&model.mesh, half_edge, bvh);
@@ -133,8 +135,9 @@ pub fn manual_support_placement(app: &mut App, clicked: bool) {
         return;
     };
 
+    let core = &mut app.core;
     let mut builder = MeshBuilder::new();
-    for model in app.project.models.iter_mut() {
+    for model in core.project.models.iter_mut() {
         let Some(bvh) = model.bvh.as_ref() else {
             continue;
         };

@@ -10,14 +10,12 @@ use common::{
     progress::Progress,
     serde::{ReaderDeserializer, WriterSerializer},
 };
+use mslicer_core::project::Project;
 use tracing::info;
 
-use crate::{
-    project::Project,
-    task::{
-        BuildAccelerationStructures, MeshDefective, PollResult, Task, TaskApp, TaskStatus,
-        thread::TaskThread,
-    },
+use crate::task::{
+    BuildAccelerationStructures, MeshDefective, PollResult, Task, TaskApp, TaskStatus,
+    thread::TaskThread,
 };
 
 pub struct ProjectLoad {

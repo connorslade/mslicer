@@ -4,9 +4,8 @@ use std::{
 };
 
 use egui::{PointerButton, Response, Ui};
+use mslicer_core::config::render::Projection;
 use nalgebra::{Matrix4, Vector2, Vector3};
-
-use crate::app::config::render::Projection;
 
 pub mod spacenav;
 
@@ -111,17 +110,6 @@ impl Camera {
 
     pub fn up(&self) -> Vector3<f32> {
         Vector3::z() * self.angle.y.cos().signum()
-    }
-}
-
-impl Projection {
-    pub const ALL: [Projection; 2] = [Projection::Perspective, Projection::Orthographic];
-
-    pub fn name(&self) -> &'static str {
-        match self {
-            Projection::Perspective => "Perspective",
-            Projection::Orthographic => "Orthographic",
-        }
     }
 }
 

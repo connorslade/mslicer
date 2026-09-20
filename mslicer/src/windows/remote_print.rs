@@ -11,6 +11,7 @@ use egui::{
 use egui_phosphor::regular::{
     COPY, NETWORK, PAUSE, PLAY, PLUGS, PRINTER, STOP, TRASH_SIMPLE, UPLOAD_SIMPLE,
 };
+use mslicer_core::config::peripherals::ContentType;
 use notify_rust::Notification;
 use remote_print::{
     manager::{Client, ProtocolVersion},
@@ -20,9 +21,9 @@ use rfd::FileDialog;
 use tracing::info;
 
 use crate::{
-    app::{App, config::peripherals::ContentType},
     task::{PrinterConnect, PrinterScan, Webhook},
     ui::{
+        App,
         components::grid,
         popup::{Popup, PopupIcon},
         state::RemotePrintConnectStatus,
@@ -268,11 +269,20 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
                     let scan = ui.button(concatcp!(NETWORK, " Scan"));
                     let height = scan.rect.height();
                     if scan.clicked() {
-                        app.state.remote_print_connecting = RemotePrintConnectStatus::Scanning;
-                        app.tasks.add(PrinterScan::new(
-                            &app.remote_print,
-                            app.config.remote_print.broadcast_address,
-                        ));
+                        if app.remote_print.is_initialized() {
+                            app.state.remote_print_connecting =
+                                RemotePrintConnectStatus::Scanning;
+                            app.tasks.add(PrinterScan::new(
+                                &app.remote_print,
+                                app.config.remote_print.broadcast_address,
+                            ));
+                        } else {
+                            app.popup.open(Popup::simple(
+                                "Remote Print Error",
+                                PopupIcon::Error,
+                                "The remote print client isn't initialized yet. Use Initialize first.",
+                            ));
+                        }
                     }
 
                     ui.add_sized(vec2(2.0, height), Separator::default());
@@ -409,7 +419,8 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
     });
 
     ui.collapsing("Config", |ui| {
-        let config = &mut app.config.remote_print;
+        let core = &mut app.core;
+        let config = &mut core.config.remote_print;
 
         ui.checkbox(&mut config.alert_completion, "Send toast on print complete");
 
@@ -418,8 +429,10 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
         let last_status_proxy = config.status_proxy;
         ui.checkbox(&mut config.status_proxy, "Enable HTTP status proxy");
 
-        if app.remote_print.is_initialized() && last_status_proxy != config.status_proxy {
-            app.remote_print.http.set_proxy_enabled(config.status_proxy);
+        if core.remote_print.is_initialized() && last_status_proxy != config.status_proxy {
+            core.remote_print
+                .http
+                .set_proxy_enabled(config.status_proxy);
         }
 
         let last_timeout = config.timeout;
@@ -434,9 +447,9 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
             ui.label("Network timeout");
         });
 
-        if app.remote_print.is_initialized() && last_timeout != config.timeout {
+        if core.remote_print.is_initialized() && last_timeout != config.timeout {
             let duration = Duration::from_secs_f32(config.timeout);
-            app.remote_print.set_timeout(duration).unwrap();
+            core.remote_print.set_timeout(duration).unwrap();
         }
     });
 }

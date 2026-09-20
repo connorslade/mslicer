@@ -2,9 +2,8 @@ use std::mem;
 
 use egui::Vec2;
 use egui_dock::{DockState, Node, NodeIndex, Tree};
+use mslicer_core::config::{Config, ui::Tab};
 use nalgebra::Vector2;
-
-use crate::{app::config::Config, windows::Tab};
 
 pub struct Panels {
     pub dock_state: DockState<Tab>,

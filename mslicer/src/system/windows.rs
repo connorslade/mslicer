@@ -4,7 +4,9 @@ use anyhow::{Context, Ok, Result};
 use rfd::{MessageButtons, MessageDialog, MessageDialogResult, MessageLevel};
 use windows_registry::LOCAL_MACHINE;
 
-use crate::{app::config::Config, system::arguments::Args};
+use mslicer_core::config::Config;
+
+use crate::system::arguments::Args;
 
 const POPUP_MESSAGE: &str = "mslicer can be installed like a traditional application or run portably. Installing will add it to the start menu and set up file associations.\n\nWhat would you like to do?";
 

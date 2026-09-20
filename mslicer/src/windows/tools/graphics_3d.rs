@@ -2,10 +2,12 @@ use std::f32::consts::TAU;
 
 use egui::{Button, DragValue, Ui, Widget};
 
+use mslicer_core::config::render::Projection;
+
 use crate::{
-    app::{App, config::render::Projection},
     generator_tool,
     ui::{
+        App,
         components::grid,
         popup::{Popup, PopupApp},
     },

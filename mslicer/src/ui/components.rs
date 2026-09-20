@@ -9,9 +9,8 @@ use egui::{
     RichText, Separator, Ui, Widget, emath::Numeric, vec2,
 };
 use egui_phosphor::regular::{LINK, SCALES};
-
-use crate::{
-    app::history::{Action, History, ModelAction},
+use mslicer_core::{
+    core::history::{Action, History, ModelAction},
     project::model::ModelId,
 };
 

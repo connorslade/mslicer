@@ -10,19 +10,17 @@ use egui_phosphor::regular::{CARDS, FILE_TEXT, GIT_DIFF, HAMMER, HOURGLASS, LIFE
 
 #[cfg(windows)]
 use crate::system::windows::launch_install;
+use mslicer_core::{config::ui::Tab, project::Collection};
+
 use crate::{
-    app::App,
-    project::Collection,
     task::ProjectLoad,
+    ui::App,
     ui::{
         components::{labeled_separator, link_button},
         popup::confirm_unsaved,
         shortcuts::{self, Shortcut},
     },
-    windows::{
-        Tab,
-        tools::{self, graphics_3d, sdf_slicer, sliced_diff},
-    },
+    windows::tools::{self, graphics_3d, sdf_slicer, sliced_diff},
 };
 
 const LINK_WEBSITE: &str = "https://mslicer.com";

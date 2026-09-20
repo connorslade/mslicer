@@ -1,9 +1,6 @@
 use std::path::PathBuf;
 
-use crate::{
-    project::model::{Model, ModelId},
-    task::{FileDialog, ProjectLoad, ProjectSave, Task},
-};
+use crate::project::model::{Model, ModelId};
 use common::{
     id_type,
     progress::CombinedProgress,
@@ -71,33 +68,6 @@ impl Project {
 
     pub fn collection(&mut self, id: CollectionId) -> Option<&mut Collection> {
         self.collections.iter_mut().find(|x| x.id == id)
-    }
-}
-
-impl Project {
-    pub fn load() -> FileDialog {
-        FileDialog::pick_file(("mslicer project", &["mslicer"]), |_app, path, tasks| {
-            tasks.push(Box::new(ProjectLoad::new(path.to_path_buf())))
-        })
-    }
-
-    pub fn save(&self) -> Box<dyn Task> {
-        if let Some(path) = self.path.clone() {
-            Box::new(ProjectSave::new(self.clone(), path.to_path_buf()))
-        } else {
-            Box::new(self.save_as())
-        }
-    }
-
-    pub fn save_as(&self) -> FileDialog {
-        FileDialog::save_file(("mslicer project", &["mslicer"]), |app, path, tasks| {
-            let path = path.with_extension("mslicer");
-            tasks.push(Box::new(ProjectSave::new(
-                app.project.clone(),
-                path.to_path_buf(),
-            )));
-            app.project.path = Some(path);
-        })
     }
 }
 

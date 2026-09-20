@@ -3220,17 +3220,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "markdown"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ef3aab6a1d529b112695f72beec5ee80e729cb45af58663ec902c8fac764ecdd"
-dependencies = [
- "lazy_static",
- "pipeline",
- "regex",
-]
-
-[[package]]
 name = "matrixmultiply"
 version = "0.3.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3373,7 +3362,6 @@ version = "0.9.2"
 dependencies = [
  "ab_glyph",
  "anyhow",
- "bitflags 2.9.4",
  "bytemuck",
  "chrono",
  "clone-macro",
@@ -3395,8 +3383,8 @@ dependencies = [
  "image",
  "imageproc",
  "itertools 0.14.0",
- "markdown",
  "mesh_format",
+ "mslicer_core",
  "nalgebra 0.34.1",
  "notify-rust",
  "num-integer",
@@ -3404,13 +3392,11 @@ dependencies = [
  "parking_lot",
  "poll-promise",
  "rand 0.10.2",
- "rayon",
  "remote_print",
  "rfd",
  "serde",
  "serde_json",
  "slicer",
- "toml 0.9.5",
  "tools",
  "tracing",
  "tracing-subscriber",
@@ -3418,6 +3404,38 @@ dependencies = [
  "wgpu",
  "windows-registry",
  "winres",
+]
+
+[[package]]
+name = "mslicer_core"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bitflags 2.9.4",
+ "bytemuck",
+ "chrono",
+ "clone-macro",
+ "common",
+ "concat-idents",
+ "const_format",
+ "egui",
+ "egui-phosphor",
+ "egui-wgpu",
+ "egui_dock",
+ "egui_tracing",
+ "image",
+ "itertools 0.14.0",
+ "nalgebra 0.34.1",
+ "parking_lot",
+ "rand 0.10.2",
+ "rayon",
+ "remote_print",
+ "serde",
+ "slicer",
+ "toml 0.9.5",
+ "tools",
+ "tracing",
+ "wgpu",
 ]
 
 [[package]]
@@ -4269,12 +4287,6 @@ name = "pin-utils"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8b870d8c151b6f2fb93e84a13146138f05d02ed11c7e7c54f8826aaaf7c9f184"
-
-[[package]]
-name = "pipeline"
-version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d15b6607fa632996eb8a17c9041cb6071cb75ac057abd45dece578723ea8c7c0"
 
 [[package]]
 name = "piper"

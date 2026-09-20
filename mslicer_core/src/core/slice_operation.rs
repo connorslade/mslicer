@@ -24,7 +24,7 @@ use rayon::iter::IntoParallelRefIterator;
 use slicer::{slicer::vector::SvgFile, util};
 use tracing::info;
 
-use crate::ui::management::LazyTextureId;
+use crate::misc::management::LazyTextureId;
 
 #[derive(Clone)]
 pub struct SliceOperation {

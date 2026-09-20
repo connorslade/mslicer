@@ -7,12 +7,12 @@ use egui::{
 use egui_dock::{DockArea, TabViewer};
 use egui_wgpu::Callback;
 use nalgebra::Matrix4;
-use serde::{Deserialize, Serialize};
+
+use mslicer_core::{config::ui::Tab, project::model::ModelId};
 
 use crate::{
-    app::App,
-    project::model::ModelId,
     render::{interface::basis::BasisRenderCallback, workspace::WorkspaceRenderCallback},
+    ui::App,
     ui::state::WorkspaceHover,
     windows::supports::manual_support_placement,
 };
@@ -31,43 +31,6 @@ mod workspace;
 struct Tabs<'a> {
     app: &'a mut App,
     ctx: &'a Context,
-}
-
-#[derive(Copy, Clone, Hash, PartialEq, Eq, Serialize, Deserialize)]
-pub enum Tab {
-    Logs,
-    Models,
-    RemotePrint,
-    SliceConfig,
-    Sliced,
-    Supports,
-    Viewport,
-    Workspace,
-}
-
-impl Tab {
-    const ALL: [Tab; 7] = [
-        Tab::Logs,
-        Tab::Models,
-        Tab::RemotePrint,
-        Tab::SliceConfig,
-        Tab::Sliced,
-        Tab::Supports,
-        Tab::Workspace,
-    ];
-
-    pub fn name(&self) -> &'static str {
-        match self {
-            Tab::Logs => "Logs",
-            Tab::Models => "Models",
-            Tab::RemotePrint => "Remote Print",
-            Tab::SliceConfig => "Slice Config",
-            Tab::Sliced => "Sliced",
-            Tab::Supports => "Supports",
-            Tab::Viewport => "Viewport",
-            Tab::Workspace => "Workspace",
-        }
-    }
 }
 
 impl TabViewer for Tabs<'_> {
@@ -150,7 +113,8 @@ fn viewport(app: &mut App, ui: &mut Ui, _ctx: &Context) {
             // todo: helper functions for this stuff
             if hover.model.raw() & (1 << 31) != 0 {
                 let id = ModelId::from_raw(hover.model.raw() & !(1 << 31));
-                if let Some(model) = app.project.model(id)
+                let core = &mut app.core;
+                if let Some(model) = core.project.model(id)
                     && let Some((_, ranges)) = model.supports.mesh()
                     && let Some((support_id, _)) =
                         ranges.iter().find(|(_, r)| r.contains(&hover.face))
@@ -239,8 +203,8 @@ impl App {
     }
 
     pub fn view_projection(&self) -> Matrix4<f32> {
+        let projection = self.core.config.render.projection;
         let aspect = self.state.workspace.aspect;
-        self.camera
-            .view_projection_matrix(self.config.render.projection, aspect)
+        self.camera.view_projection_matrix(projection, aspect)
     }
 }

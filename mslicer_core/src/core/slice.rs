@@ -1,41 +1,26 @@
 use std::{sync::Arc, thread};
 
 use clone_macro::clone;
-use const_format::concatcp;
-use egui_phosphor::regular::CARET_RIGHT;
 use nalgebra::Vector3;
 use tracing::info;
 
-use crate::{
-    app::{App, SLICE_PREVIEW_SIZE, slice_operation::SliceOperation},
-    ui::popup::{Popup, PopupIcon},
-    windows::Tab,
-};
+use crate::core::{Core, slice_operation::SliceOperation};
 use common::{progress::CombinedProgress, slice::SliceMode, units::Milimeter};
 use slicer::{
     mesh::Mesh,
     slicer::{Slicer, SlicerModel},
 };
 
-impl App {
-    pub fn slice(&mut self) {
+impl Core {
+    /// Returns false if there were no models to slice
+    pub fn slice(&mut self) -> bool {
         let meshes = (self.project.models.iter_mut())
             .filter(|x| !x.hidden)
             .map(|x| (x.supports.mesh().clone(), x.clone()))
             .collect::<Vec<_>>();
 
         if meshes.is_empty() {
-            const NO_MODELS_ERROR: &str = concatcp!(
-                "There are no models to slice. Add one by going to File ",
-                CARET_RIGHT,
-                " Import Model or drag and drop a model file into the workspace."
-            );
-            self.popup.open(Popup::simple(
-                "Slicing Error",
-                PopupIcon::Error,
-                NO_MODELS_ERROR,
-            ));
-            return;
+            return false;
         }
 
         info!("Starting slicing operation");
@@ -66,7 +51,6 @@ impl App {
         let post_process = CombinedProgress::new();
         let slice_operation = SliceOperation::new(slicer.progress(), post_process.clone());
         self.slice_operation.replace(slice_operation);
-        self.panels.focus_tab(Tab::Sliced, SLICE_PREVIEW_SIZE);
 
         thread::spawn(clone!(
             [
@@ -89,6 +73,8 @@ impl App {
                 }
             }
         ));
+
+        true
     }
 }
 

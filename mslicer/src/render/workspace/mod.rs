@@ -3,10 +3,10 @@ use egui_wgpu::{CallbackResources, CallbackTrait, ScreenDescriptor};
 use wgpu::{CommandBuffer, CommandEncoder, Device, Queue, RenderPass};
 
 use crate::{
-    app::App,
     render::workspace::{
         line::LineDispatch, model::ModelPipeline, point::PointDispatch, support::SupportPipeline,
     },
+    ui::App,
 };
 
 pub mod line;

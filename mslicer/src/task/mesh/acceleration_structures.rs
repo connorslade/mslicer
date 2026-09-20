@@ -2,12 +2,10 @@ use std::sync::Arc;
 
 use clone_macro::clone;
 use common::progress::Progress;
+use mslicer_core::project::model::Model;
 use slicer::{geometry::bvh::Bvh, half_edge::HalfEdgeMesh, mesh::MeshId};
 
-use crate::{
-    project::model::Model,
-    task::{PollResult, Task, TaskApp, TaskStatus, thread::TaskThread},
-};
+use crate::task::{PollResult, Task, TaskApp, TaskStatus, thread::TaskThread};
 
 pub struct BuildAccelerationStructures {
     mesh_id: MeshId,

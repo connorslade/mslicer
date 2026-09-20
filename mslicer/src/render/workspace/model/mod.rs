@@ -6,7 +6,6 @@ use wgpu::{
 };
 
 use crate::{
-    app::App,
     render::{
         Gcx,
         consts::{FILTERING_SAMPLER, NONFILTERING_SAMPLER},
@@ -19,6 +18,7 @@ use crate::{
             pick::ModelPicker,
         },
     },
+    ui::App,
 };
 
 mod bindings;

@@ -66,6 +66,17 @@ impl RenderStyle {
     }
 }
 
+impl Projection {
+    pub const ALL: [Projection; 2] = [Projection::Perspective, Projection::Orthographic];
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            Projection::Perspective => "Perspective",
+            Projection::Orthographic => "Orthographic",
+        }
+    }
+}
+
 impl Default for RenderConfig {
     fn default() -> Self {
         Self {

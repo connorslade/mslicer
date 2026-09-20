@@ -6,8 +6,8 @@ use std::{
 use tracing::warn;
 
 use crate::{
-    app::App,
     task::{LoadSliced, MeshLoad, ProjectLoad},
+    ui::App,
     ui::popup::confirm_unsaved,
 };
 

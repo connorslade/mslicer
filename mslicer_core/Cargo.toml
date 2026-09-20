@@ -1,0 +1,33 @@
+[package]
+name = "mslicer_core"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+common.workspace = true
+remote_print.workspace = true
+tools.workspace = true
+
+anyhow.workspace = true
+bitflags.workspace = true
+bytemuck.workspace = true
+chrono.workspace = true
+clone-macro.workspace = true
+concat-idents.workspace = true
+const_format.workspace = true
+egui-phosphor.workspace = true
+egui-wgpu.workspace = true
+egui.workspace = true
+egui_dock.workspace = true
+egui_tracing.workspace = true
+image.workspace = true
+itertools.workspace = true
+nalgebra.workspace = true
+parking_lot.workspace = true
+rand.workspace = true
+rayon.workspace = true
+serde.workspace = true
+slicer.workspace = true
+toml.workspace = true
+tracing.workspace = true
+wgpu.workspace = true

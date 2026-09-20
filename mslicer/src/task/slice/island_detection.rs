@@ -2,13 +2,11 @@ use std::sync::Arc;
 
 use clone_macro::clone;
 use common::{progress::Progress, slice::Layer};
+use mslicer_core::core::slice_operation::{Annotation, Annotations};
 use nalgebra::Vector2;
 use slicer::post_process::island_detection::detect_islands;
 
-use crate::{
-    app::slice_operation::{Annotation, Annotations},
-    task::{PollResult, Task, TaskApp, TaskStatus, thread::TaskThread},
-};
+use crate::task::{PollResult, Task, TaskApp, TaskStatus, thread::TaskThread};
 
 pub struct IslandDetection {
     progress: Progress,

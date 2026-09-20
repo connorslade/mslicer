@@ -1,9 +1,9 @@
+use mslicer_core::project::model::{Model, ModelId};
 use nalgebra::{Matrix4, Vector3};
 
 use crate::{
-    app::App,
-    project::model::{Model, ModelId},
     render::workspace::line::{Line, LineGenerator},
+    ui::App,
 };
 
 pub struct NormalsDispatch {

@@ -7,7 +7,7 @@ use tools::supports::{SupportConfig, build_raft_mesh};
 use tracing::info;
 use wgpu::Device;
 
-use crate::{project::model::RenderedMeshBuffers, render::util::gpu_mesh_buffers};
+use crate::{misc::render::gpu_mesh_buffers, project::model::RenderedMeshBuffers};
 
 #[derive(Default)]
 pub struct Supports {

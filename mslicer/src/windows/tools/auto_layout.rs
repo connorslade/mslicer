@@ -11,13 +11,12 @@ use egui_plot::{Line, Plot};
 use nalgebra::{Rotation3, Scale3, Vector2, Vector3};
 use tools::auto_layout::{self, Hull, LayoutCache, Objective, Placement, Rotation};
 
-use crate::{
-    app::App,
-    project::model::Model,
-    ui::{
-        components::grid,
-        popup::{Popup, PopupApp},
-    },
+use mslicer_core::project::model::Model;
+
+use crate::ui::{
+    App,
+    components::grid,
+    popup::{Popup, PopupApp},
 };
 
 pub const DESCRIPTION: &str = "Automatically lays out models on the print bed. Slower than the Quick Layout, but produces better results.";

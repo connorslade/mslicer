@@ -16,15 +16,22 @@ use egui_phosphor::regular::{
 };
 use nalgebra::Vector3;
 
-use crate::{
-    app::{App, config::ui::B_PER_MIB, history::ModelAction},
+use mslicer_core::{
+    config::ui::B_PER_MIB,
+    core::history::ModelAction,
     project::{
         Collection, RenameState,
         model::{MeshUnit, MeshWarnings},
     },
+};
+
+use crate::{
     task::{FileDialog, FlipWinding, MeshRepair, MeshSave, ReloadModel, SplitBodies},
-    ui::components::{
-        being_edited, grid, history_tracked_model, vec3_dragger, vec3_dragger_proportional,
+    ui::{
+        App,
+        components::{
+            being_edited, grid, history_tracked_model, vec3_dragger, vec3_dragger_proportional,
+        },
     },
     windows::models::{
         ALIGN_SHORTCUT, COLLECT_SHORTCUT, DELETE_SHORTCUT, DUPLICATE_SHORTCUT, RENAME_SHORTCUT,
@@ -44,7 +51,8 @@ pub fn model_entry(
     idx: usize,
     dragged: bool,
 ) -> Response {
-    let model = &mut app.project.models[model];
+    let core = &mut app.core;
+    let model = &mut core.project.models[model];
     let id = model.id;
 
     let (rect, response) =
@@ -83,7 +91,7 @@ pub fn model_entry(
                 .on_hover_text(if model.hidden { "Show" } else { "Hide" })
                 .clicked()
             {
-                app.history
+                core.history
                     .track_model(model.id, ModelAction::Hidden(model.hidden));
                 model.hidden ^= true;
             }
@@ -117,7 +125,7 @@ pub fn model_entry(
                 (!editing).then(|| model.ui.rename = RenameState::None);
 
                 history_tracked_model(
-                    (editing, ui, &mut app.history),
+                    (editing, ui, &mut core.history),
                     (id, || ModelAction::Name(model.name.clone())),
                 )
             }
@@ -136,9 +144,9 @@ pub fn model_properties(
     action: &mut UiAction,
     i: usize,
 ) {
-    let model = &mut app.project.models[i];
-
-    let platform = &app.project.slice_config.platform_size;
+    let core = &mut app.core;
+    let model = &mut core.project.models[i];
+    let platform = &core.project.slice_config.platform_size;
     let id = model.id;
 
     ui.horizontal_wrapped(|ui| {
@@ -164,7 +172,7 @@ pub fn model_properties(
         ) {
             let collection = Collection::new_unnamed();
             model.collection = Some(collection.id);
-            app.project.collections.push(collection);
+            core.project.collections.push(collection);
         }
 
         if shortcut(
@@ -172,7 +180,7 @@ pub fn model_properties(
             ALIGN_SHORTCUT,
         ) {
             let old_pos = model.mesh.position();
-            app.history.track_model(id, ModelAction::Position(old_pos));
+            core.history.track_model(id, ModelAction::Position(old_pos));
 
             model.align_to_bed();
             model.update_oob(platform);
@@ -246,7 +254,7 @@ pub fn model_properties(
                     let mut position = model.mesh.position();
                     let editing = vec3_dragger(ui, position.as_mut(), |x| x);
                     history_tracked_model(
-                        (editing, ui, &mut app.history),
+                        (editing, ui, &mut core.history),
                         (id, || ModelAction::Position(model.mesh.position())),
                     );
                     (model.mesh.position() != position)
@@ -271,7 +279,7 @@ pub fn model_properties(
                         })
                     };
                     history_tracked_model(
-                        (editing, ui, &mut app.history),
+                        (editing, ui, &mut core.history),
                         (id, || ModelAction::Scale(model.mesh.scale())),
                     );
 
@@ -288,7 +296,7 @@ pub fn model_properties(
                 let mut rotation = rad_to_deg(model.mesh.rotation());
                 let editing = vec3_dragger(ui, rotation.as_mut(), |x| x.suffix("°"));
                 history_tracked_model(
-                    (editing, ui, &mut app.history),
+                    (editing, ui, &mut core.history),
                     (id, || ModelAction::Rotation(model.mesh.rotation())),
                 );
                 (model.mesh.rotation() != rotation)
@@ -304,12 +312,13 @@ pub fn model_properties(
                         .changed()
                         .then(|| model.color = color);
                     history_tracked_model(
-                        (editing, ui, &mut app.history),
+                        (editing, ui, &mut core.history),
                         (id, || ModelAction::Color(original_color)),
                     );
 
                     if ui.button(concatcp!(DICE_THREE, " Random")).clicked() {
-                        app.history.track_model(id, ModelAction::Color(model.color));
+                        core.history
+                            .track_model(id, ModelAction::Color(model.color));
                         model.randomize_color();
                     }
                 });
@@ -340,7 +349,7 @@ pub fn model_properties(
                 let factor = model.unit.conversion();
                 if factor != last_factor {
                     let scale = model.mesh.scale() * factor / last_factor;
-                    model.set_scale(&app.project.slice_config.platform_size, scale);
+                    model.set_scale(platform, scale);
                 }
             });
 
@@ -357,7 +366,7 @@ pub fn model_properties(
             );
 
             history_tracked_model(
-                (editing, ui, &mut app.history),
+                (editing, ui, &mut core.history),
                 (id, || ModelAction::RelativeExposure(model.exposure)),
             );
             editing.then(|| model.exposure = (value * 2.55).round() as u8);

@@ -1,12 +1,10 @@
 use clone_macro::clone;
 use common::progress::Progress;
+use mslicer_core::project::model::{Model, ModelId};
 use slicer::mesh::Mesh;
 
-use crate::{
-    project::model::{Model, ModelId},
-    task::{
-        BuildAccelerationStructures, PollResult, Task, TaskApp, TaskStatus, thread::TaskThread,
-    },
+use crate::task::{
+    BuildAccelerationStructures, PollResult, Task, TaskApp, TaskStatus, thread::TaskThread,
 };
 
 pub struct FlipWinding {

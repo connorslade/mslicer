@@ -8,7 +8,6 @@ use wgpu::{
 };
 
 use crate::{
-    app::App,
     include_shader,
     render::{
         Gcx,
@@ -22,6 +21,7 @@ use crate::{
             normals::NormalsDispatch,
         },
     },
+    ui::App,
 };
 
 mod build_plate;

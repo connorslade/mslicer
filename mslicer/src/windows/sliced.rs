@@ -25,23 +25,24 @@ use epaint_default_fonts::UBUNTU_LIGHT;
 use image::{ImageFormat, Rgba, RgbaImage, imageops::FilterType};
 use nalgebra::Vector2;
 
-use crate::{
-    app::{
-        App,
-        config::{
-            Config,
-            sliced::{Currency, SlicePreviewCoordinateSpace, SlicePreviewView, SlicedConfig},
-        },
-        slice_operation::{
-            GenericSliceData, GenericSliceResult, ISLAND_COLOR, PreviewImage, RasterSliceResult,
-            SliceOperation, SliceResult,
-        },
+use mslicer_core::{
+    config::{
+        Config,
+        sliced::{Currency, SlicePreviewCoordinateSpace, SlicePreviewView, SlicedConfig},
     },
+    core::slice_operation::{
+        GenericSliceData, GenericSliceResult, ISLAND_COLOR, PreviewImage, RasterSliceResult,
+        SliceOperation, SliceResult,
+    },
+    misc::management::{LazyText, LazyTextureId},
+};
+
+use crate::{
     render::slice_preview::SlicePreviewRenderCallback,
     task::{FileDialog, IslandDetection, ReconstructMesh, SaveSliced, TaskManager},
     ui::{
+        App,
         components::{collapsing_toggle, grid, height_dragger},
-        management::{LazyText, LazyTextureId},
         popup::{Popup, PopupIcon, PopupManager},
         state::UiState,
     },
@@ -68,11 +69,12 @@ const SLICING_DEFECTS: &str = "There were (potential) slicing defects detected o
 const DEFECT_EXPL: &str = "Defective meshes can cause incorrect slicing. See how many defects were detected in each layer.";
 
 pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
-    if let Some(slice_operation) = &app.slice_operation {
+    let core = &mut app.core;
+    if let Some(slice_operation) = &core.slice_operation {
         let progress = &slice_operation.progress;
 
         if let Some(result) = slice_operation.result().as_mut() {
-            let format = app.project.slice_config.mode;
+            let format = core.project.slice_config.mode;
 
             if mem::take(&mut result.fresh) {
                 app.state.preview_layer = 1;
@@ -104,16 +106,16 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
 
                 ui.with_layout(Layout::default().with_cross_align(Align::Max), |ui| {
                     ui.horizontal(|ui| {
-                        sidebar_button(&mut app.config.sliced, ui);
+                        sidebar_button(&mut core.config.sliced, ui);
                         ui.separator();
 
                         let enabled =
-                            app.remote_print.is_initialized() && format == SliceMode::Raster;
+                            core.remote_print.is_initialized() && format == SliceMode::Raster;
                         ui.add_enabled_ui(enabled, |ui| {
                             ui.menu_button(concatcp!(PAPER_PLANE_TILT, " Send to Printer"), |ui| {
                                 ui.set_width(150.0);
 
-                                let clients = app.remote_print.clients();
+                                let clients = core.remote_print.clients();
                                 (clients.is_empty()).then(|| ui.label("No printers connected."));
 
                                 for client in clients.iter() {
@@ -222,13 +224,13 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
 
             SidePanel::new(Side::Right, "sidebar")
                 .resizable(false)
-                .show_animated_inside(ui, app.config.sliced.sidebar, |ui| {
+                .show_animated_inside(ui, core.config.sliced.sidebar, |ui| {
                     ScrollArea::vertical().show(ui, |ui| {
                         sidebar(
                             slice_operation,
                             result,
                             &mut app.state,
-                            &mut app.config,
+                            &mut core.config,
                             &mut app.tasks,
                             &mut app.popup,
                             ui,
@@ -262,7 +264,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                                 ui.add_space(2.0);
                                 ui.label(format!("{CLOCK} {duration}"));
 
-                                if !app.config.sliced.sidebar {
+                                if !core.config.sliced.sidebar {
                                     ui.separator();
                                     let volume = raster.volume.get::<Centimeter>();
                                     ui.label(format!("{DROP} {volume:.2} ml"));
@@ -276,7 +278,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                         // allows you to select between seeing each pixel as a
                         // square or as the actual shape on the printer.
                         let platform = result.config.platform_resolution;
-                        let pixel_aspect = match app.config.sliced.coordinate_space {
+                        let pixel_aspect = match core.config.sliced.coordinate_space {
                             SlicePreviewCoordinateSpace::ScreenSpace => 1.0,
                             SlicePreviewCoordinateSpace::WorldSpace => {
                                 let platform_size = (result.config.platform_size.xy())
@@ -286,8 +288,8 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                             }
                         };
 
-                        let flip = matches!(app.config.sliced.view, SlicePreviewView::Screen);
-                        let multisample = app.config.sliced.multisample;
+                        let flip = matches!(core.config.sliced.view, SlicePreviewView::Screen);
+                        let multisample = core.config.sliced.multisample;
                         slice_preview(state, ui, raster, platform, pixel_aspect, flip, multisample);
                     });
                 }

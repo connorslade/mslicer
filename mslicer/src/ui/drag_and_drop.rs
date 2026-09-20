@@ -1,7 +1,7 @@
 use egui::{Align2, Color32, Context, FontFamily, FontId, Id, LayerId, Order, pos2};
 use egui_phosphor::regular::{FILE_TEXT, FILES};
 
-use crate::{app::App, system::arguments::OpenInto};
+use crate::{system::arguments::OpenInto, ui::App};
 
 const HOVER_BACKGROUND: Color32 = Color32::from_rgba_premultiplied(0, 0, 0, 200);
 

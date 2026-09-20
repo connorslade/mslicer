@@ -1,10 +1,10 @@
 use clone_macro::clone;
 use common::progress::Progress;
+use mslicer_core::project::model::{Model, ModelId};
 use tools::repair::{self, RepairResult};
 use tracing::info;
 
 use crate::{
-    project::model::{Model, ModelId},
     task::{
         BuildAccelerationStructures, MeshDefective, PollResult, Task, TaskApp, TaskStatus,
         thread::TaskThread,

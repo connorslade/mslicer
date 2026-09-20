@@ -7,9 +7,9 @@ use egui_phosphor::regular::{BOUNDING_BOX, EYE, INFO, TRASH};
 use tools::printed_circuit_board::Alignment;
 
 use crate::{
-    app::App,
     generator_tool,
     task::{FileDialog, MultiFileDialog},
+    ui::App,
     ui::{
         components::grid,
         popup::{Popup, PopupApp},

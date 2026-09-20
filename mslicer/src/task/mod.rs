@@ -3,10 +3,14 @@ use std::{
     sync::mpsc::{self, Receiver, SyncSender},
 };
 
-use crate::{
-    app::{config::Config, history::History, slice_operation::SliceOperation},
-    app_ref_type,
+use mslicer_core::{
+    config::Config,
+    core::{history::History, slice_operation::SliceOperation},
     project::Project,
+};
+
+use crate::{
+    app_ref_type,
     ui::{panels::Panels, popup::PopupManager, state::UiState},
 };
 
@@ -114,14 +118,15 @@ impl<'a> TaskManagerRef<'a> {
             this.add_boxed(pending);
         }
 
+        let core = &mut self.app.core;
         let mut app = TaskApp {
             panels: &mut self.app.panels,
             popup: &mut self.app.popup,
-            slice_operation: &mut self.app.slice_operation,
             state: &mut self.app.state,
-            config: &mut self.app.config,
-            project: &mut self.app.project,
-            history: &mut self.app.history,
+            slice_operation: &mut core.slice_operation,
+            config: &mut core.config,
+            project: &mut core.project,
+            history: &mut core.history,
         };
 
         let mut i = 0;

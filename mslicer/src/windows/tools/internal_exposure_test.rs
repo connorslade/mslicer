@@ -2,8 +2,8 @@ use common::units::Milimeter;
 use egui::{Button, DragValue, Ui, Widget};
 
 use crate::{
-    app::App,
     generator_tool,
+    ui::App,
     ui::{
         components::grid,
         popup::{Popup, PopupApp},

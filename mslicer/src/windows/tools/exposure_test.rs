@@ -3,7 +3,7 @@ use egui::{Button, DragValue, Ui, Widget};
 use egui_phosphor::regular::{RULER, SQUARES_FOUR};
 
 use crate::{
-    app::App,
+    ui::App,
     ui::{
         components::grid,
         popup::{Popup, PopupApp},

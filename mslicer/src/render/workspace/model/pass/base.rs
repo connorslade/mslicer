@@ -5,6 +5,10 @@ use common::{
     units::Milimeter,
 };
 use encase::{DynamicUniformBuffer, ShaderSize, ShaderType};
+use mslicer_core::{
+    config::render::{Projection, RenderStyle},
+    project::model::ModelId,
+};
 use nalgebra::{Matrix4, Vector3};
 use wgpu::{
     BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayout, BindGroupLayoutDescriptor,
@@ -18,18 +22,14 @@ use wgpu::{
 };
 
 use crate::{
-    app::{
-        App,
-        camera::Camera,
-        config::render::{Projection, RenderStyle},
-    },
+    camera::Camera,
     include_shader,
-    project::model::ModelId,
     render::{
         Gcx, VERTEX_BUFFER_LAYOUT,
         util::ResizingBuffer,
         workspace::model::{MultiStage, selected::Selected},
     },
+    ui::App,
 };
 
 pub struct BasePass {
@@ -246,7 +246,8 @@ impl BasePass {
             .unwrap_or(f32::from_bits(u32::MAX));
 
         self.write_uniforms(gcx, app, |app, gcx, model_id| {
-            let model = app.project.model(model_id).unwrap();
+            let core = &mut app.core;
+            let model = core.project.model(model_id).unwrap();
             model.get_buffers(&gcx.device);
 
             let model_transform = *model.mesh.transformation_matrix();

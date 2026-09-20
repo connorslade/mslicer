@@ -1,11 +1,9 @@
 use clone_macro::clone;
 use common::progress::Progress;
+use mslicer_core::project::model::{MeshWarnings, Model};
 use slicer::mesh::MeshId;
 
-use crate::{
-    project::model::{MeshWarnings, Model},
-    task::{PollResult, Task, TaskApp, TaskStatus, thread::TaskThread},
-};
+use crate::task::{PollResult, Task, TaskApp, TaskStatus, thread::TaskThread};
 
 pub struct MeshDefective {
     mesh_id: MeshId,

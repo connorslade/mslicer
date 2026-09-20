@@ -2,13 +2,12 @@ use std::sync::Arc;
 
 use egui::Vec2;
 use egui_tracing::EventCollector;
+use mslicer_core::{config::peripherals::Webhook, project::model::ModelId};
 use nalgebra::{Vector2, Vector3};
 use slicer::mesh::Mesh;
 use tools::supports::SupportConfig;
 
 use crate::{
-    app::config::peripherals::Webhook,
-    project::model::ModelId,
     ui::selected::{SelectedModel, SelectedPrinter, SelectedSupports},
     windows::tools::Tools,
 };

@@ -1,7 +1,6 @@
-use crate::{
-    app::config::peripherals::ContentType,
-    task::{PollResult, Task, TaskApp, thread::TaskThread},
-};
+use mslicer_core::config::peripherals::ContentType;
+
+use crate::task::{PollResult, Task, TaskApp, thread::TaskThread};
 
 pub struct Webhook {
     handle: TaskThread<()>,

@@ -5,17 +5,18 @@ use egui::{
     WidgetText, Window, vec2,
 };
 use egui_phosphor::regular::X;
+use mslicer_core::{
+    config::Config,
+    core::{history::History, is_slicing, slice_operation::SliceOperation},
+    project::Project,
+};
 use remote_print::manager::RemotePrintManager;
 
 use crate::{
-    app::{
-        App, camera::Camera, config::Config, history::History, is_slicing,
-        slice_operation::SliceOperation,
-    },
     app_ref_type,
-    project::Project,
-    task::TaskManager,
-    ui::{components::button_row, panels::Panels, state::UiState},
+    camera::Camera,
+    task::{FileDialog, ProjectSave, TaskManager},
+    ui::{App, components::button_row, panels::Panels, state::UiState},
 };
 
 type UiFunction = dyn FnMut(&mut PopupApp, &mut Ui) -> bool;
@@ -72,16 +73,19 @@ impl<'a> PopupManagerRef<'a> {
         let mut close = false;
 
         let this = &mut self.app.popup;
+        // Same disjoin trick as `PopupApp::from_app` — but inlined, since that
+        // constructor takes the whole `App` and would overlap with `this`.
+        let core = &mut self.app.core;
         let mut app = PopupApp {
             panels: &mut self.app.panels,
             tasks: &mut self.app.tasks,
-            remote_print: &mut self.app.remote_print,
-            slice_operation: &mut self.app.slice_operation,
+            remote_print: &mut core.remote_print,
+            slice_operation: &mut core.slice_operation,
             camera: &mut self.app.camera,
             state: &mut self.app.state,
-            config: &mut self.app.config,
-            project: &mut self.app.project,
-            history: &mut self.app.history,
+            config: &mut core.config,
+            project: &mut core.project,
+            history: &mut core.history,
         };
 
         while i < this.popups.len() {
@@ -213,16 +217,17 @@ impl PopupIcon {
 impl<'a> PopupApp<'a> {
     // kinda annoying this has to be duplicated...
     pub fn from_app(app: &'a mut App) -> Self {
+        let core = &mut app.core;
         Self {
             panels: &mut app.panels,
             tasks: &mut app.tasks,
-            remote_print: &mut app.remote_print,
-            slice_operation: &mut app.slice_operation,
+            remote_print: &mut core.remote_print,
+            slice_operation: &mut core.slice_operation,
             camera: &mut app.camera,
             state: &mut app.state,
-            config: &mut app.config,
-            project: &mut app.project,
-            history: &mut app.history,
+            config: &mut core.config,
+            project: &mut core.project,
+            history: &mut core.history,
         }
     }
 
@@ -259,7 +264,7 @@ pub fn confirm_unsaved(app: &mut App, mut callback: impl FnMut(&mut PopupApp) + 
             );
 
             if save {
-                app.tasks.add_boxed(app.project.save());
+                save_project(app);
                 callback(app);
             } else if dont_save {
                 callback(app);
@@ -267,4 +272,23 @@ pub fn confirm_unsaved(app: &mut App, mut callback: impl FnMut(&mut PopupApp) + 
 
             cancel || dont_save || save
         }));
+}
+
+fn save_project(app: &mut PopupApp) {
+    if let Some(path) = app.project.path.clone() {
+        let task = ProjectSave::new(app.project.clone(), path.to_path_buf());
+        app.tasks.add(task);
+    } else {
+        app.tasks.add(FileDialog::save_file(
+            ("mslicer project", &["mslicer"]),
+            |app, path, tasks| {
+                let path = path.with_extension("mslicer");
+                tasks.push(Box::new(ProjectSave::new(
+                    app.project.clone(),
+                    path.to_path_buf(),
+                )));
+                app.project.path = Some(path);
+            },
+        ));
+    }
 }

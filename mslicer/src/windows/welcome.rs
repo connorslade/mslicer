@@ -3,7 +3,7 @@ use egui::{
 };
 use egui_phosphor::regular::INFO;
 
-use crate::{VERSION, app::App, ui::components::button_row};
+use crate::{VERSION, ui::App, ui::components::button_row};
 
 const LOGO: ImageSource = include_image!("../../../dist/icon.png");
 const BACKGROUND_TINT: Color32 = Color32::from_rgba_premultiplied(0, 0, 0, 100);

@@ -1,8 +1,8 @@
 use egui::{Button, Ui, vec2};
 
 use crate::{
-    app::App,
     generator_tool,
+    ui::App,
     ui::popup::{Popup, PopupApp},
 };
 

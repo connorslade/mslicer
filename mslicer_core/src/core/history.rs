@@ -11,8 +11,9 @@ use slicer::post_process::{
 };
 
 use crate::{
-    app::{App, config::ui::B_PER_MIB},
-    app_ref_type,
+    config::ui::B_PER_MIB,
+    core::Core,
+    core_ref_type,
     project::{
         Collection, CollectionId,
         model::{Model, ModelId},
@@ -33,8 +34,6 @@ pub struct ActionDescription {
     pub name: Cow<'static, str>,
     pub extra: Option<Cow<'static, str>>,
 }
-
-app_ref_type!(History, history);
 
 #[derive(Clone, PartialEq)]
 pub enum Action {
@@ -136,16 +135,18 @@ impl History {
     }
 }
 
+core_ref_type!(History, history);
+
 impl<'a> HistoryRef<'a> {
     pub fn undo(&mut self) {
-        if let Some(redo) = (self.history.pop_back()).and_then(|action| action.undo(self.app)) {
+        if let Some(redo) = (self.history.pop_back()).and_then(|action| action.undo(self.core)) {
             self.constrain_size();
             self.future.push_back(redo);
         }
     }
 
     pub fn redo(&mut self) {
-        if let Some(redo) = (self.future.pop_back()).and_then(|action| action.undo(self.app)) {
+        if let Some(redo) = (self.future.pop_back()).and_then(|action| action.undo(self.core)) {
             self.constrain_size();
             self.history.push_back(redo);
         }
@@ -196,7 +197,7 @@ impl Action {
         }
     }
 
-    pub fn undo(self, app: &mut App) -> Option<Action> {
+    pub fn undo(self, app: &mut Core) -> Option<Action> {
         match self {
             Self::Model { id, action } => action
                 .undo(app, id)
@@ -246,7 +247,7 @@ impl SliceConfigAction {
         }
     }
 
-    pub fn undo(self, app: &mut App) -> Option<SliceConfigAction> {
+    pub fn undo(self, app: &mut Core) -> Option<SliceConfigAction> {
         let slice_config = &mut app.project.slice_config;
         let post_processing = &mut app.project.post_processing;
 
@@ -312,7 +313,7 @@ impl ModelAction {
 
     /// Undoes the model action on the specified model, returning an action to
     /// revert the undo (redo) if the model was found.
-    pub fn undo(self, app: &mut App, model_id: ModelId) -> Option<ModelAction> {
+    pub fn undo(self, app: &mut Core, model_id: ModelId) -> Option<ModelAction> {
         let model = app.project.models.iter_mut().find(|x| x.id == model_id)?;
         let platform_size = &app.project.slice_config.platform_size;
 

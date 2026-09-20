@@ -13,8 +13,8 @@ use wgpu::{Buffer, Device};
 use slicer::{geometry::bvh::Bvh, half_edge::HalfEdgeMesh, mesh::Mesh};
 
 use crate::{
+    misc::render::gpu_mesh_buffers,
     project::{CollectionId, RenameState, supports::Supports},
-    render::util::gpu_mesh_buffers,
 };
 
 pub struct Model {
@@ -54,6 +54,7 @@ bitflags! {
     }
 }
 
+// todo(crate_split): move to render.rs and have a method to create Self from a &Mesh
 pub struct RenderedMeshBuffers {
     pub vertex_buffer: Buffer,
     pub index_buffer: Buffer,

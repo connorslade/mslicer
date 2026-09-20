@@ -1,8 +1,8 @@
 use nalgebra::Vector3;
 
 use crate::{
-    app::App,
     render::workspace::line::{Line, LineGenerator},
+    ui::App,
 };
 
 pub struct LineSupportDebugDispatch {

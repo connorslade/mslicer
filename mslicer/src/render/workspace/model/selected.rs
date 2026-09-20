@@ -1,8 +1,7 @@
 use std::range::Range;
 
+use mslicer_core::project::model::Model;
 use num_integer::Integer;
-
-use crate::project::model::Model;
 
 pub struct Selected {
     words: Vec<u32>,

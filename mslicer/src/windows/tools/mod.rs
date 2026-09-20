@@ -41,9 +41,9 @@ macro_rules! generator_tool {
         use image::RgbaImage;
 
         use common::progress::{CombinedProgress, Progress};
-        use $crate::{
-            app::{SLICE_PREVIEW_SIZE, slice_operation::SliceOperation},
-            windows::Tab,
+        use mslicer_core::{
+            config::ui::Tab,
+            core::{SLICE_PREVIEW_SIZE, slice_operation::SliceOperation},
         };
 
         let mut config = $app.project.slice_config.clone();

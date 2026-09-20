@@ -5,15 +5,13 @@ use clone_macro::clone;
 use common::{progress::Progress, serde::ReaderDeserializer};
 use mesh_format::{Format, load_mesh};
 
+use mslicer_core::project::model::ModelId;
 use slicer::mesh::Mesh;
 use tracing::info;
 
-use crate::{
-    project::model::ModelId,
-    task::{
-        BuildAccelerationStructures, MeshDefective, PollResult, Task, TaskApp, TaskStatus,
-        thread::TaskThread,
-    },
+use crate::task::{
+    BuildAccelerationStructures, MeshDefective, PollResult, Task, TaskApp, TaskStatus,
+    thread::TaskThread,
 };
 
 pub struct ReloadModel {

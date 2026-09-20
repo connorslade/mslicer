@@ -11,9 +11,10 @@ use wgpu::{
 };
 
 use crate::{
-    app::{App, camera::Camera},
+    camera::Camera,
     include_shader,
     render::{Gcx, workspace::model::MultiStage},
+    ui::App,
 };
 
 pub struct LightingPass {

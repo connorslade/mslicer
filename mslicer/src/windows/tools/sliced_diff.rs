@@ -7,11 +7,13 @@ use egui_phosphor::regular::{FOLDER_OPEN, STACK_SIMPLE, SWAP};
 use slicer::util;
 use tools::sliced_diff::{Difference, Source, SourceId};
 
+use mslicer_core::core::slice_operation::GenericSliceData;
+
 use crate::{
-    app::{App, slice_operation::GenericSliceData},
     generator_tool,
     task::FileDialog,
     ui::{
+        App,
         components::grid,
         popup::{Popup, PopupApp},
     },

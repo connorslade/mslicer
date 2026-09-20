@@ -5,15 +5,14 @@ use egui_phosphor::regular::{ARROW_COUNTER_CLOCKWISE, ARROWS_CLOCKWISE, FOLDER, 
 use egui_plot::{Line, Plot};
 use tracing::error;
 
-use crate::{
-    app::{
-        App,
-        config::{
-            render::{Projection, RenderStyle},
-            ui::{B_PER_MIB, UpdateCheckFrequency},
-        },
-    },
-    ui::components::{collapsing_toggle, dragger, grid, vec2_dragger, vec3_dragger},
+use mslicer_core::config::{
+    render::{Projection, RenderStyle},
+    ui::{B_PER_MIB, UpdateCheckFrequency},
+};
+
+use crate::ui::{
+    App,
+    components::{collapsing_toggle, dragger, grid, vec2_dragger, vec3_dragger},
 };
 
 const BASIS_TIP: &str = "Set size to 0px to disable.";

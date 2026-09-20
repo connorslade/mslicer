@@ -1,5 +1,6 @@
 use bytemuck::{Pod, Zeroable};
 use encase::{ShaderSize, ShaderType, UniformBuffer};
+use mslicer_core::misc::render::gpu_mesh_buffers;
 use nalgebra::{Matrix4, Vector3, Vector4};
 use slicer::builder::MeshBuilder;
 use wgpu::{
@@ -10,7 +11,6 @@ use wgpu::{
 };
 
 use crate::{
-    app::App,
     include_shader,
     render::{
         Gcx, VERTEX_BUFFER_LAYOUT,
@@ -18,9 +18,10 @@ use crate::{
             BASE_BIND_GROUP_LAYOUT_DESCRIPTOR, BASE_UNIFORM_DESCRIPTOR, DEPTH_STENCIL_STATE,
             bind_group,
         },
-        util::{ResizingBuffer, gpu_mesh_buffers},
+        util::ResizingBuffer,
         workspace::point::target::TargetPointDispatch,
     },
+    ui::App,
 };
 
 mod target;

@@ -14,16 +14,13 @@ use common::{
 };
 use mesh_format::{Format, load_mesh, save_mesh};
 
+use mslicer_core::{core::history::Action, project::model::Model};
 use slicer::mesh::{Mesh, MeshInner};
 use tracing::info;
 
-use crate::{
-    app::history::Action,
-    project::model::Model,
-    task::{
-        BuildAccelerationStructures, MeshDefective, PollResult, Task, TaskApp, TaskStatus,
-        thread::TaskThread,
-    },
+use crate::task::{
+    BuildAccelerationStructures, MeshDefective, PollResult, Task, TaskApp, TaskStatus,
+    thread::TaskThread,
 };
 
 pub struct MeshLoad {

@@ -3,8 +3,8 @@ use egui::{Button, ComboBox, DragValue, RichText, Ui, Widget, vec2};
 use tools::phonograph_record::audio::{Channels, Equalization};
 
 use crate::{
-    app::App,
     task::{FileDialog, MeshLoad},
+    ui::App,
     ui::{
         components::grid,
         popup::{Popup, PopupApp},

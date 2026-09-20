@@ -1,10 +1,8 @@
 use std::borrow::Cow;
 
-use common::{slice::SliceConfig, units::Milimeters};
+use common::units::Milimeters;
 use nalgebra::{Vector2, Vector3};
 use serde::{Deserialize, Serialize};
-
-use crate::{app::config::Config, ui::selected::SelectedPrinter};
 
 #[rustfmt::skip]
 pub const DEFAULT_PRINTERS: &[(&str, &[PrinterProperties])] = &[
@@ -62,26 +60,4 @@ impl Default for PrinterProperties {
             size: Vector3::repeat(100.0).map(Milimeters::new),
         }
     }
-}
-
-pub fn selected_printer(config: &Config, slice_config: &SliceConfig) -> SelectedPrinter {
-    for (i, printer) in config.printers.iter().enumerate() {
-        if printer.resolution == slice_config.platform_resolution
-            && printer.size == slice_config.platform_size
-        {
-            return SelectedPrinter::Custom(i);
-        }
-    }
-
-    for (i, brand) in DEFAULT_PRINTERS.iter().enumerate() {
-        for (j, printer) in brand.1.iter().enumerate() {
-            if printer.resolution == slice_config.platform_resolution
-                && printer.size == slice_config.platform_size
-            {
-                return SelectedPrinter::Preset(i, j);
-            }
-        }
-    }
-
-    SelectedPrinter::Project
 }

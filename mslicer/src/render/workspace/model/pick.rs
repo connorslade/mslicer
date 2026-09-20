@@ -4,15 +4,15 @@ use std::sync::{
 };
 
 use clone_macro::clone;
+use mslicer_core::project::model::ModelId;
 use wgpu::{
     Buffer, BufferDescriptor, BufferUsages, CommandEncoder, Device, Extent3d, MapMode, Origin3d,
     PollType, TexelCopyBufferInfo, TexelCopyBufferLayout, TexelCopyTextureInfo, TextureAspect,
 };
 
 use crate::{
-    app::App,
-    project::model::ModelId,
     render::{Gcx, workspace::model::MultiStage},
+    ui::App,
     ui::state::GeometryHit,
 };
 

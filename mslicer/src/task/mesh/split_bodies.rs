@@ -2,17 +2,15 @@ use std::{collections::HashMap, mem};
 
 use clone_macro::clone;
 use common::{container::ArrayCluster, progress::Progress};
+use mslicer_core::project::{
+    Collection,
+    model::{Model, ModelId},
+};
 use slicer::mesh::Mesh;
 
-use crate::{
-    project::{
-        Collection,
-        model::{Model, ModelId},
-    },
-    task::{
-        BuildAccelerationStructures, MeshDefective, PollResult, Task, TaskApp, TaskStatus,
-        thread::TaskThread,
-    },
+use crate::task::{
+    BuildAccelerationStructures, MeshDefective, PollResult, Task, TaskApp, TaskStatus,
+    thread::TaskThread,
 };
 
 pub struct SplitBodies {

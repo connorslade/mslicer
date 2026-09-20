@@ -4,8 +4,6 @@ use egui::Theme;
 use egui_dock::Tree;
 use serde::{Deserialize, Serialize};
 
-use crate::windows::Tab;
-
 pub const B_PER_MIB: usize = 0x100000;
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -24,12 +22,49 @@ pub struct UiConfig {
     pub ignore_update: Option<String>,
 }
 
+#[derive(Copy, Clone, Hash, PartialEq, Eq, Serialize, Deserialize)]
+pub enum Tab {
+    Logs,
+    Models,
+    RemotePrint,
+    SliceConfig,
+    Sliced,
+    Supports,
+    Viewport,
+    Workspace,
+}
+
 #[derive(Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum UpdateCheckFrequency {
     Never,
     EveryLaunch,
     Daily,
     Weekly,
+}
+
+impl Tab {
+    pub const ALL: [Tab; 7] = [
+        Tab::Logs,
+        Tab::Models,
+        Tab::RemotePrint,
+        Tab::SliceConfig,
+        Tab::Sliced,
+        Tab::Supports,
+        Tab::Workspace,
+    ];
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            Tab::Logs => "Logs",
+            Tab::Models => "Models",
+            Tab::RemotePrint => "Remote Print",
+            Tab::SliceConfig => "Slice Config",
+            Tab::Sliced => "Sliced",
+            Tab::Supports => "Supports",
+            Tab::Viewport => "Viewport",
+            Tab::Workspace => "Workspace",
+        }
+    }
 }
 
 // todo: dropdown enum macro?

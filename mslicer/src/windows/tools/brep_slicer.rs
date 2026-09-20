@@ -2,9 +2,9 @@ use egui::{Button, RichText, Ui, vec2};
 use egui_phosphor::regular::FILE;
 
 use crate::{
-    app::App,
     generator_tool,
     task::FileDialog,
+    ui::App,
     ui::popup::{Popup, PopupApp},
 };
 

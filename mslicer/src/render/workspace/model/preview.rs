@@ -15,7 +15,7 @@ use wgpu::{
 };
 
 use crate::{
-    app::{App, camera::Camera},
+    camera::Camera,
     render::{
         Gcx,
         workspace::{
@@ -23,6 +23,7 @@ use crate::{
             model::{ModelPipeline, bindings::occlusion_size},
         },
     },
+    ui::App,
 };
 
 impl ModelPipeline {

@@ -4,9 +4,10 @@ use egui::{
 };
 use egui_phosphor::regular::{FOLDER, FOLDER_OPEN};
 
+use mslicer_core::project::{CollectionId, RenameState};
+
 use crate::{
-    app::App,
-    project::{CollectionId, RenameState},
+    ui::App,
     ui::components::being_edited,
     windows::models::{DraggedModel, model::model_entry},
 };
@@ -65,7 +66,7 @@ pub fn collection_entry(
     n: &mut usize,
     dragged: bool,
 ) -> Rect {
-    let group = &mut app.project.collections[group];
+    let group = &mut app.core.project.collections[group];
 
     let (rect, response) =
         ui.allocate_exact_size(vec2(ui.available_width(), 18.0), Sense::click_and_drag());

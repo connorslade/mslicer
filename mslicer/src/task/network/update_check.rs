@@ -6,14 +6,15 @@ use std::{
 
 use chrono::Utc;
 use egui::{Grid, RichText};
+use mslicer_core::config::ui::UpdateCheckFrequency;
 use serde::Deserialize;
 use tracing::info;
 
 use crate::{
     VERSION,
-    app::{App, config::ui::UpdateCheckFrequency},
     task::{PollResult, Task, TaskApp, thread::TaskThread},
     ui::{
+        App,
         components::button_row,
         popup::{Popup, PopupIcon},
     },

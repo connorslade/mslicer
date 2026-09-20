@@ -1,8 +1,11 @@
 use std::{collections::HashSet, iter};
 
+use common::slice::SliceConfig;
 use itertools::Either;
-
-use crate::project::{CollectionId, model::ModelId, supports::SupportId};
+use mslicer_core::{
+    config::{Config, printers::DEFAULT_PRINTERS},
+    project::{CollectionId, model::ModelId, supports::SupportId},
+};
 
 pub enum SelectedPrinter {
     Project,
@@ -179,4 +182,26 @@ impl SelectedSupports {
             self.supports.insert(key);
         }
     }
+}
+
+pub fn selected_printer(config: &Config, slice_config: &SliceConfig) -> SelectedPrinter {
+    for (i, printer) in config.printers.iter().enumerate() {
+        if printer.resolution == slice_config.platform_resolution
+            && printer.size == slice_config.platform_size
+        {
+            return SelectedPrinter::Custom(i);
+        }
+    }
+
+    for (i, brand) in DEFAULT_PRINTERS.iter().enumerate() {
+        for (j, printer) in brand.1.iter().enumerate() {
+            if printer.resolution == slice_config.platform_resolution
+                && printer.size == slice_config.platform_size
+            {
+                return SelectedPrinter::Preset(i, j);
+            }
+        }
+    }
+
+    SelectedPrinter::Project
 }

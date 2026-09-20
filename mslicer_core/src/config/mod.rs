@@ -10,7 +10,7 @@ use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use tracing::{info, warn};
 
-use crate::app::config::{
+use crate::config::{
     peripherals::{RemotePrintConfig, SpacenavConfig},
     printers::PrinterProperties,
     render::RenderConfig,

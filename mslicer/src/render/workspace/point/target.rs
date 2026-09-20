@@ -3,8 +3,8 @@ use std::slice;
 use nalgebra::{Vector3, Vector4};
 
 use crate::{
-    app::App,
     render::workspace::point::{Point, PointGenerator},
+    ui::App,
 };
 
 const UNDEFINED: Vector3<f32> = Vector3::new(f32::NAN, f32::NAN, f32::NAN);

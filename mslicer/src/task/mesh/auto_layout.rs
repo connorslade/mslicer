@@ -1,9 +1,9 @@
 use clone_macro::clone;
 use common::{progress::Progress, slice::SliceConfig, units::Milimeter};
+use mslicer_core::project::model::Model;
 use tools::auto_layout::{self, Placement};
 
 use crate::{
-    project::model::Model,
     task::{PollResult, Task, TaskApp, TaskStatus, thread::TaskThread},
     windows::tools::auto_layout::{apply_placement, layout_cache},
 };

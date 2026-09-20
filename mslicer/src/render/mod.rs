@@ -2,7 +2,7 @@ use std::mem;
 
 use eframe::CreationContext;
 use egui_wgpu::RenderState;
-use nalgebra::Vector4;
+use mslicer_core::misc::render::ModelVertex;
 use wgpu::{
     BufferAddress, Device, Queue, TextureFormat, VertexAttribute, VertexBufferLayout, VertexFormat,
     VertexStepMode,
@@ -39,12 +39,6 @@ pub struct Gcx {
     pub texture: TextureFormat,
 }
 
-#[repr(C)]
-#[derive(Default, Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
-pub struct ModelVertex {
-    pub position: [f32; 4],
-}
-
 pub fn init_wgpu(cc: &CreationContext) -> RenderState {
     let render_state = cc.wgpu_render_state.as_ref().unwrap();
     let device = &render_state.device;
@@ -63,12 +57,4 @@ pub fn init_wgpu(cc: &CreationContext) -> RenderState {
     resources.insert(BasisPipeline::new(device, texture));
 
     render_state.clone()
-}
-
-impl ModelVertex {
-    pub fn new(pos: Vector4<f32>) -> Self {
-        Self {
-            position: [pos.x, pos.y, pos.z, pos.w],
-        }
-    }
 }

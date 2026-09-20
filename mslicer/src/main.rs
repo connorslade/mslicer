@@ -12,6 +12,7 @@ use anyhow::{Context, Result};
 use eframe::NativeOptions;
 use egui::{FontDefinitions, Vec2, ViewportBuilder};
 use egui_wgpu::{WgpuConfiguration, WgpuSetup, WgpuSetupCreateNew};
+use mslicer_core::{config::Config, core::Core};
 use tracing::{info, level_filters::LevelFilter};
 use tracing_subscriber::{filter, fmt::layer, layer::SubscriberExt, util::SubscriberInitExt};
 use wgpu::{DeviceDescriptor, Features, Limits, TextureFormat};
@@ -19,17 +20,18 @@ use wgpu::{DeviceDescriptor, Features, Limits, TextureFormat};
 const DEPTH_TEXTURE_FORMAT: TextureFormat = TextureFormat::Depth24PlusStencil8;
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
-mod app;
-mod project;
+mod camera;
 mod render;
 mod system;
 mod task;
 mod ui;
 mod util;
 mod windows;
-use app::{App, config::Config};
 
-use crate::system::{arguments::Args, icon};
+use crate::{
+    system::{arguments::Args, icon},
+    ui::App,
+};
 
 fn main() -> Result<()> {
     // Don't print panics on threads that are handled by the task system.
@@ -121,10 +123,10 @@ fn main() -> Result<()> {
             let mut fonts = FontDefinitions::default();
             egui_phosphor::add_to_fonts(&mut fonts, egui_phosphor::Variant::Regular);
             cc.egui_ctx.set_fonts(fonts);
-
             egui_extras::install_image_loaders(&cc.egui_ctx);
 
-            let mut app = App::init(render::init_wgpu(cc), config_dir, config, collector);
+            let core = Core::init(config_dir, config);
+            let mut app = App::init(core, render::init_wgpu(cc), collector);
             args.open.start(&mut app);
 
             Ok(Box::new(app))
