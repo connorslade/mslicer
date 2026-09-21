@@ -11,5 +11,4 @@ path = "bin/inspect.rs"
 common.workspace = true
 
 anyhow.workspace = true
-clone-macro.workspace = true
 nalgebra.workspace = true

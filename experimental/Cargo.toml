@@ -7,7 +7,6 @@ edition = "2024"
 slicer.workspace = true
 common.workspace = true
 
-anyhow.workspace = true
 clone-macro.workspace = true
 itertools.workspace = true
 nalgebra.workspace = true

@@ -1127,9 +1127,7 @@ dependencies = [
  "crc32fast",
  "criterion",
  "image",
- "itertools 0.14.0",
  "nalgebra 0.34.1",
- "ordered-float",
  "rand 0.10.2",
  "serde",
 ]
@@ -1393,7 +1391,6 @@ dependencies = [
  "common",
  "image",
  "nalgebra 0.34.1",
- "rayon",
  "sha2",
 ]
 
@@ -2002,7 +1999,6 @@ dependencies = [
 name = "experimental"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "clone-macro",
  "common",
  "cxx",
@@ -3274,7 +3270,6 @@ name = "mesh_format"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "clone-macro",
  "common",
  "nalgebra 0.34.1",
 ]
@@ -3348,7 +3343,6 @@ dependencies = [
  "chrono",
  "crc32fast",
  "image",
- "itertools 0.14.0",
  "nalgebra 0.34.1",
  "serde",
  "serde_json",
@@ -5167,7 +5161,6 @@ dependencies = [
  "clap",
  "clone-macro",
  "common",
- "const_format",
  "criterion",
  "ctb_format",
  "goo_format",
@@ -5179,7 +5172,6 @@ dependencies = [
  "nanodlp_format",
  "num-integer",
  "ordered-float",
- "parking_lot",
  "rayon",
  "serde",
  "svg",
@@ -5639,7 +5631,6 @@ name = "tools"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "clone-macro",
  "common",
  "gerber_parser",
  "hound",
