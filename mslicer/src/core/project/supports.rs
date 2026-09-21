@@ -48,7 +48,7 @@ impl Supports {
                 id: SupportId::new(),
                 points,
                 tip_radius: config.tip_radius.get::<Milimeter>(),
-                radius: config.support_radius.get::<Milimeter>(),
+                radius: config.radius.get::<Milimeter>(),
             })
             .collect();
     }
@@ -59,7 +59,7 @@ impl Supports {
             id: SupportId::new(),
             points: support,
             tip_radius: config.tip_radius.get::<Milimeter>(),
-            radius: config.support_radius.get::<Milimeter>(),
+            radius: config.radius.get::<Milimeter>(),
         });
     }
 

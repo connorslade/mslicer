@@ -79,3 +79,15 @@ Features that would be cool, but are a bit out of scope for now.
 - [ ] inconstant winding order
 - [ ] non-manifold (not sure how to fix this thb)
 - [ ] repeated faces?
+
+---
+
+just found it. were back.
+
+- support presets and property configuration
+- generate support mesh / placement in async task
+- task cancellation mechanism
+- mesh hole filling (will the distance metric work?)
+- general mesh repair progress
+- keep thinking abt the crate split...
+- maybe supports and repair should go in slicer?
