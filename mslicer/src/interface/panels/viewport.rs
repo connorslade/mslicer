@@ -1,12 +1,17 @@
 use egui::{
-    Color32, Context, FontId, Painter, Rect, Sense, Stroke, StrokeKind, Theme, Ui, pos2, vec2,
+    Align2, Area, Color32, Context, Frame, Id, Order, Painter, Pos2, Rect, Sense, Stroke,
+    StrokeKind, Theme, Ui, Vec2, pos2, vec2,
 };
 use egui_wgpu::Callback;
 use nalgebra::Matrix4;
 
 use crate::{
-    core::{App, project::model::ModelId, state::WorkspaceHover},
-    interface::panels::supports::manual_support_placement,
+    core::{
+        App,
+        config::ui::HoverOverlay,
+        state::{GeometryHit, WorkspaceHover},
+    },
+    interface::{components::grid, panels::supports::manual_support_placement},
     render::{interface::basis::BasisRenderCallback, workspace::WorkspaceRenderCallback},
 };
 
@@ -34,15 +39,11 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
             manual_support_placement(app, true);
         } else if let Some(hover) = app.state.hovered_geometry {
             let shift = ui.input(|x| x.modifiers.shift);
-            // todo: helper functions for this stuff
-            if hover.model.raw() & (1 << 31) != 0 {
-                let id = ModelId::from_raw(hover.model.raw() & !(1 << 31));
-                if let Some(model) = app.project.model(id)
-                    && let Some((_, ranges)) = model.supports.mesh()
-                    && let Some((support_id, _)) =
-                        ranges.iter().find(|(_, r)| r.contains(&hover.face))
+            if hover.support {
+                if let Some(model) = app.project.model(hover.model)
+                    && let Some(support) = model.supports.support_for_face(hover.face)
                 {
-                    (app.state.selected_supports).support_clicked(model.id, *support_id);
+                    (app.state.selected_supports).support_clicked(model.id, support);
                 }
             } else {
                 app.state.selected.model_clicked(hover.model, shift);
@@ -64,28 +65,11 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
 
     paint_basis_vectors(painter, app, &rect);
 
-    if app.config.ui.hover_overlay
+    if app.config.ui.hover_overlay != HoverOverlay::Off
         && let Some(hover) = app.state.hovered_geometry
         && response.contains_pointer()
     {
-        let (model, face) = (hover.model.raw(), hover.face);
-        let text = if (model >> 31) != 0 {
-            let model = hover.model.raw() & 0x7FFFFFFF;
-            format!("Supported Model: {model}\nFace: {face}")
-        } else {
-            format!("Model: {model}\nFace: {face}")
-        };
-
-        let painter = ui.painter();
-        let galley = painter.layout(text, FontId::proportional(13.0), Color32::WHITE, 300.0);
-
-        let p = vec2(4.0, 4.0);
-        let px = px - vec2(-p.x, galley.size().y + p.y);
-
-        let rect = Rect::from_min_size(px - p, galley.size() + p * 2.0);
-        let color = Color32::BLACK.lerp_to_gamma(Color32::TRANSPARENT, 0.25);
-        painter.rect_filled(rect, ui.visuals().menu_corner_radius, color);
-        painter.galley(px, galley, Color32::WHITE);
+        paint_hover_overlay(ui, app, hover, px);
     }
 }
 
@@ -116,6 +100,51 @@ fn paint_basis_vectors(painter: &Painter, app: &mut App, rect: &Rect) {
             camera: app.camera.clone(),
         },
     ));
+}
+
+fn paint_hover_overlay(ui: &mut Ui, app: &mut App, hover: GeometryHit, px: Pos2) {
+    let p = Vec2::splat(8.0);
+    let detail = app.config.ui.hover_overlay == HoverOverlay::Detailed;
+
+    Area::new(Id::new("hover_overlay"))
+        .order(Order::Tooltip)
+        .fixed_pos(px + vec2(p.x, -p.y))
+        .pivot(Align2::LEFT_BOTTOM)
+        .interactable(false)
+        .show(ui.ctx(), |ui| {
+            Frame::new()
+                .inner_margin(p)
+                .corner_radius(ui.visuals().menu_corner_radius)
+                .fill(Color32::BLACK.lerp_to_gamma(Color32::TRANSPARENT, 0.25))
+                .show(ui, |ui| {
+                    ui.style_mut().visuals.override_text_color = Some(Color32::WHITE);
+                    ui.set_max_width(300.0);
+
+                    let Some(model) = app.project.model(hover.model) else {
+                        return;
+                    };
+
+                    grid("overlay").spacing([4.0, 4.0]).show(ui, |ui| {
+                        ui.label("Model");
+                        ui.label(&model.name);
+                        ui.end_row();
+
+                        if hover.support
+                            && let Some(support) = model.supports.support_for_face(hover.face)
+                        {
+                            ui.label("Support");
+                            ui.label(format!("#{}", support.raw()));
+                            ui.end_row();
+                        }
+
+                        if detail {
+                            ui.label("Face");
+                            ui.label(hover.face.to_string());
+                            ui.end_row();
+                        }
+                    });
+                });
+        });
 }
 
 impl App {

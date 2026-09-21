@@ -128,6 +128,11 @@ impl Supports {
         &self.mesh
     }
 
+    pub fn support_for_face(&mut self, face: u32) -> Option<SupportId> {
+        let (_, map) = self.mesh().as_ref()?;
+        (map.iter().find(|(_, r)| r.contains(&face))).map(|(id, _)| *id)
+    }
+
     pub fn get_buffers(&mut self, device: &Device) -> &Option<RenderedMeshBuffers> {
         if self.buffers.is_none()
             && let Some((mesh, _)) = self.mesh()

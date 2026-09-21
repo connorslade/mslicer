@@ -17,11 +17,18 @@ pub struct UiConfig {
     pub tasks: bool,
     pub history_max_mesh_size: u32, // in MiB
     pub quick_layout_spacing: Milimeters,
-    pub hover_overlay: bool,
+    pub hover_overlay: HoverOverlay,
 
     pub update_check: UpdateCheckFrequency,
     pub last_update_check: Option<DateTime<Utc>>,
     pub ignore_update: Option<String>,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum HoverOverlay {
+    Off,
+    Compact,
+    Detailed,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -30,6 +37,18 @@ pub enum UpdateCheckFrequency {
     EveryLaunch,
     Daily,
     Weekly,
+}
+
+impl HoverOverlay {
+    pub const ALL: [Self; 3] = [Self::Off, Self::Compact, Self::Detailed];
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            HoverOverlay::Off => "Off",
+            HoverOverlay::Compact => "Compact",
+            HoverOverlay::Detailed => "Detailed",
+        }
+    }
 }
 
 // todo: dropdown enum macro?
@@ -64,7 +83,7 @@ impl Default for UiConfig {
             tasks: true,
             history_max_mesh_size: 20,
             quick_layout_spacing: Milimeters::new(2.0),
-            hover_overlay: false,
+            hover_overlay: HoverOverlay::Off,
 
             update_check: UpdateCheckFrequency::EveryLaunch,
             last_update_check: None,

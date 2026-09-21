@@ -10,7 +10,7 @@ use crate::{
         App,
         config::{
             render::{Projection, RenderStyle},
-            ui::{B_PER_MIB, UpdateCheckFrequency},
+            ui::{B_PER_MIB, HoverOverlay, UpdateCheckFrequency},
         },
     },
     interface::components::{collapsing_toggle, dragger, grid, vec2_dragger, vec3_dragger},
@@ -124,13 +124,11 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
 
             ui.label("Hover Overlay");
             ComboBox::from_id_salt("hover_overlay")
-                .selected_text(match app.config.ui.hover_overlay {
-                    true => "Enabled",
-                    false => "Disabled",
-                })
+                .selected_text(app.config.ui.hover_overlay.name())
                 .show_ui(ui, |ui| {
-                    ui.selectable_value(&mut app.config.ui.hover_overlay, true, "Enabled");
-                    ui.selectable_value(&mut app.config.ui.hover_overlay, false, "Disabled");
+                    for mode in HoverOverlay::ALL {
+                        ui.selectable_value(&mut app.config.ui.hover_overlay, mode, mode.name());
+                    }
                 });
             ui.end_row();
         });

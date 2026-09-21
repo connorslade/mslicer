@@ -111,9 +111,14 @@ impl ModelPicker {
         drop(view);
         self.staging.unmap();
 
+        let support = model >> 31 != 0;
         let model = ModelId::from_raw(model & !(1 << 31));
-        app.state.hovered_geometry =
-            (app.project.model(model).is_some()).then(|| GeometryHit { model, face });
+        app.state.hovered_geometry = app.project.model(model).is_some().then_some(GeometryHit {
+            model,
+            support,
+
+            face,
+        });
         self.state = StateMachine::None;
     }
 }

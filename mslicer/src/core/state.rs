@@ -63,6 +63,8 @@ pub struct SharedPrintCompletion {
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub struct GeometryHit {
     pub model: ModelId,
+    pub support: bool,
+
     pub face: u32,
 }
 
