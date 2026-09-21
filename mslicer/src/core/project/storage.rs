@@ -251,6 +251,7 @@ impl Project {
         Ok(Self {
             path: None,
             slice_config,
+            support_config: Default::default(),
             post_processing,
             models,
             collections,

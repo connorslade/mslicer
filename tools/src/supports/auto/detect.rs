@@ -8,9 +8,12 @@ use slicer::{
     mesh::Mesh,
 };
 
-use crate::supports::{SupportGenerator, SupportPlacement, quazirandom::quazirandom_rect_2d};
+use crate::supports::{
+    SupportPlacement,
+    auto::{AutoPlacement, quazirandom::quazirandom_rect_2d},
+};
 
-impl<'a> SupportGenerator<'a> {
+impl<'a> AutoPlacement<'a> {
     pub fn overhanging_faces(&self, mesh: &Mesh) -> Vec<(usize, Vector3<f32>)> {
         let max_angle = self.config.max_angle.to_radians();
         let mut overhangs = Vec::new();

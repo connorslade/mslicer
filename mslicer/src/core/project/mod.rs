@@ -8,6 +8,7 @@ use common::{
     id_type,
     progress::CombinedProgress,
     slice::{Layer, SliceConfig},
+    units::Milimeters,
 };
 use slicer::post_process::{
     elephant_foot_fixer::ElephantFootFixer, variable_layer_height::VariableLayerHeight,
@@ -21,9 +22,18 @@ pub mod supports;
 pub struct Project {
     pub path: Option<PathBuf>,
     pub slice_config: SliceConfig,
+    pub support_config: SupportConfig,
     pub post_processing: PostProcessing,
     pub models: Vec<Model>,
     pub collections: Vec<Collection>,
+}
+
+#[derive(Clone)]
+pub struct SupportConfig {
+    pub mesh_resolution: u32,
+
+    pub raft_height: Milimeters,
+    pub raft_offset: Milimeters,
 }
 
 #[derive(Default, Clone)]
@@ -71,6 +81,11 @@ impl Project {
 
     pub fn collection(&mut self, id: CollectionId) -> Option<&mut Collection> {
         self.collections.iter_mut().find(|x| x.id == id)
+    }
+
+    pub fn update(&mut self) {
+        let res = self.support_config.mesh_resolution;
+        (self.models.iter_mut()).for_each(|x| x.supports.set_resolution(res));
     }
 }
 
@@ -135,5 +150,15 @@ id_type!(CollectionId, u32);
 impl PartialEq for Collection {
     fn eq(&self, other: &Self) -> bool {
         self.id == other.id
+    }
+}
+
+impl Default for SupportConfig {
+    fn default() -> Self {
+        Self {
+            mesh_resolution: 20,
+            raft_height: Milimeters::new(1.0),
+            raft_offset: Milimeters::new(1.0),
+        }
     }
 }

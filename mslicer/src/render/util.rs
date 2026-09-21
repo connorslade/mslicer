@@ -25,6 +25,11 @@ pub struct ResizingBuffer {
     inner: Buffer,
 }
 
+pub struct RenderedMeshBuffers {
+    pub vertex_buffer: Buffer,
+    pub index_buffer: Buffer,
+}
+
 impl ResizingBuffer {
     pub fn new(device: &Device, usage: BufferUsages) -> Self {
         Self {
@@ -70,6 +75,16 @@ impl ResizingBuffer {
         }
 
         false
+    }
+}
+
+impl RenderedMeshBuffers {
+    pub fn get_for(device: &Device, mesh: &Mesh) -> Self {
+        let (vertex_buffer, index_buffer) = gpu_mesh_buffers(device, mesh);
+        Self {
+            vertex_buffer,
+            index_buffer,
+        }
     }
 }
 

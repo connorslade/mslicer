@@ -148,6 +148,7 @@ impl eframe::App for App {
         ctx.request_repaint();
         self.set_title(ctx);
 
+        self.project.update();
         self.panels.update(ctx.viewport_rect().width());
         self.fps.update();
         self.history

@@ -3,11 +3,11 @@ use std::{collections::HashMap, f32::consts::PI, range::Range, time::Instant};
 use common::id_type;
 use nalgebra::{Vector2, Vector3};
 use slicer::{builder::MeshBuilder, mesh::Mesh};
-use tools::supports::{SupportConfig, build_raft_mesh};
+use tools::supports::{SupportConfig, mesh::build_raft};
 use tracing::info;
 use wgpu::Device;
 
-use crate::{core::project::model::RenderedMeshBuffers, render::util::gpu_mesh_buffers};
+use crate::render::util::RenderedMeshBuffers;
 
 #[derive(Default)]
 pub struct Supports {
@@ -15,6 +15,7 @@ pub struct Supports {
     manual: Vec<Support>,
     transform: Transform,
 
+    resolution: u32,
     mesh: Option<(Mesh, FaceMap)>,
     buffers: Option<RenderedMeshBuffers>,
 }
@@ -38,6 +39,10 @@ id_type!(SupportId, u32);
 type FaceMap = HashMap<SupportId, Range<u32>>;
 
 impl Supports {
+    pub fn set_resolution(&mut self, resolution: u32) {
+        self.resolution = resolution;
+    }
+
     pub fn invalidate_cache(&mut self) {
         self.mesh.take();
         self.buffers.take();
@@ -84,7 +89,7 @@ impl Supports {
         let mut map = HashMap::new();
 
         for support in self.auto.iter().chain(self.manual.iter()) {
-            let (r, p) = (support.radius, 20); // todo: make precision follow actual config...
+            let (r, p) = (support.radius, self.resolution);
             let mut points = support.points;
 
             //rotate!?
@@ -117,7 +122,7 @@ impl Supports {
             map.insert(support.id, Range::from(start..end));
         }
 
-        build_raft_mesh(1.0, 1.0, &raft_points, &mut builder);
+        build_raft(1.0, 1.0, &raft_points, &mut builder);
         if !builder.is_empty() {
             let mesh = builder.build();
             let (faces, duration) = (mesh.face_count(), start.elapsed());
@@ -137,11 +142,7 @@ impl Supports {
         if self.buffers.is_none()
             && let Some((mesh, _)) = self.mesh()
         {
-            let (vertex_buffer, index_buffer) = gpu_mesh_buffers(device, mesh);
-            self.buffers = Some(RenderedMeshBuffers {
-                vertex_buffer,
-                index_buffer,
-            });
+            self.buffers = Some(RenderedMeshBuffers::get_for(device, mesh));
         }
 
         &self.buffers

@@ -1,10 +1,14 @@
+use common::units::Milimeter;
 use const_format::concatcp;
-use egui::{Button, Context, Ui, Widget};
+use egui::{Button, Context, DragValue, Ui, Widget};
 use egui_phosphor::regular::{SELECTION_INVERSE, SPARKLE, TRASH, USER_SWITCH};
 use slicer::builder::MeshBuilder;
-use tools::supports::{SupportGenerator, route_support};
+use tools::supports::auto::{AutoPlacement, route_support};
 
-use crate::{core::App, interface::components::dragger};
+use crate::{
+    core::App,
+    interface::components::{dragger, grid},
+};
 
 pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     let support_mode = &mut app.state.support_mode;
@@ -45,6 +49,36 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                     .then(|| selected.clear());
             });
         }
+
+        ui.add_space(8.0);
+        ui.collapsing("Mesh", |ui| {
+            grid("mesh").show(ui, |ui| {
+                ui.label("Resolution");
+                DragValue::new(&mut app.project.support_config.mesh_resolution).ui(ui);
+                ui.end_row();
+            });
+        });
+
+        ui.collapsing("Raft", |ui| {
+            grid("raft").show(ui, |ui| {
+                let config = &mut app.project.support_config;
+
+                ui.label("Height");
+                config.raft_height.with::<Milimeter, _>(|x| {
+                    DragValue::new(x).suffix(" mm").speed(0.1).ui(ui);
+                });
+                ui.end_row();
+
+                ui.label("Offset");
+                ui.horizontal(|ui| {
+                    config.raft_offset.with::<Milimeter, _>(|x| {
+                        DragValue::new(x).suffix(" mm").speed(0.1).ui(ui);
+                    });
+                    ui.take_available_width();
+                });
+                ui.end_row();
+            });
+        });
     } else {
         // place
         ui.horizontal(|ui| {
@@ -97,8 +131,6 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                 ("Support Radius", &mut support.support_radius),
                 ("Tip Length", &mut support.tip_length),
                 ("Tip Radius", &mut support.tip_radius),
-                ("Raft Height", &mut support.raft_height),
-                ("Raft Offset", &mut support.raft_offset),
             ] {
                 dragger(ui, name, value, |x| x.speed(0.1));
             }
@@ -118,7 +150,7 @@ fn generate_support(app: &mut App, model: usize) {
     let support_config = &app.state.support_config;
     let platform_size = app.project.slice_config.platform_size.map(|x| x.convert());
 
-    let generator = SupportGenerator::new(support_config, platform_size);
+    let generator = AutoPlacement::new(support_config, platform_size);
     let supports = generator.generate_supports(&model.mesh, half_edge, bvh);
     model.supports.replace_auto(support_config, supports);
 }

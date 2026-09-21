@@ -8,13 +8,13 @@ use common::{
     units::{CubicMilimeters, Milimeters},
 };
 use nalgebra::Vector3;
-use wgpu::{Buffer, Device};
+use wgpu::Device;
 
 use slicer::{geometry::bvh::Bvh, half_edge::HalfEdgeMesh, mesh::Mesh};
 
 use crate::{
     core::project::{CollectionId, RenameState, supports::Supports},
-    render::util::gpu_mesh_buffers,
+    render::util::RenderedMeshBuffers,
 };
 
 pub struct Model {
@@ -52,11 +52,6 @@ bitflags! {
         const Defective = 1 << 0;
         const OutOfBounds = 1 << 1;
     }
-}
-
-pub struct RenderedMeshBuffers {
-    pub vertex_buffer: Buffer,
-    pub index_buffer: Buffer,
 }
 
 #[derive(Clone, Copy, PartialEq)]
@@ -149,14 +144,8 @@ impl Model {
     }
 
     pub fn get_buffers(&mut self, device: &Device) -> &RenderedMeshBuffers {
-        if self.buffers.is_none() {
-            let (vertex_buffer, index_buffer) = gpu_mesh_buffers(device, &self.mesh);
-            self.buffers = Some(RenderedMeshBuffers {
-                vertex_buffer,
-                index_buffer,
-            });
-        }
-
+        (self.buffers.is_none())
+            .then(|| self.buffers = Some(RenderedMeshBuffers::get_for(device, &self.mesh)));
         self.buffers.as_ref().unwrap()
     }
 
