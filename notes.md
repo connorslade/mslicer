@@ -14,7 +14,6 @@ Feel free to help out :eyes:.
     - for support generation pick less steep angles for the top part of the support
     - support presets, instead of having to mess with all the sliders to change the size
     - dont place supports on points touching the build plate
-        - ask you to raise the model before supporting?
     - options to only generate some combination of point, edge, and face overhangs 
     - don't simplify a cylinder to a segment during intersection testing. either
       use a different algorithm or sample multiple points around the edges.

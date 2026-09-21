@@ -5,10 +5,7 @@ use egui_phosphor::regular::{SELECTION_INVERSE, SPARKLE, TRASH, USER_SWITCH};
 use slicer::builder::MeshBuilder;
 use tools::supports::auto::{AutoPlacement, route_support};
 
-use crate::{
-    core::App,
-    interface::components::{dragger, grid},
-};
+use crate::{core::App, interface::components::grid};
 
 pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     let support_mode = &mut app.state.support_mode;
@@ -102,27 +99,39 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
 
         ui.add_space(8.0);
         let config = &mut app.project.support_config.auto_placement;
-        ui.collapsing("Support Placement", |ui| {
-            dragger(ui, "Max Angle", &mut config.max_angle, |x| x.speed(0.01));
-            dragger(
-                ui,
-                "Face Support Spacing",
-                &mut config.face_support_spacing,
-                |x| x,
-            );
-            dragger(ui, "Edge Angle Delta", &mut config.edge_angle_delta, |x| x);
-            dragger(
-                ui,
-                "Edge Support Spacing",
-                &mut config.edge_support_spacing,
-                |x| x,
-            );
-            dragger(
-                ui,
-                "Minimum Support Spacing",
-                &mut config.min_spacing,
-                |x| x,
-            );
+        ui.collapsing("Auto Placement", |ui| {
+            grid("auto_placement").show(ui, |ui| {
+                ui.label("Default Lift");
+                (app.project.support_config.default_lift)
+                    .with::<Milimeter, _>(|x| DragValue::new(x).suffix(" mm").ui(ui));
+                ui.end_row();
+
+                ui.label("Max Angle");
+                DragValue::new(&mut config.max_angle).speed(0.01).ui(ui);
+                ui.end_row();
+
+                ui.label("Face Support Spacing");
+                DragValue::new(&mut config.face_support_spacing)
+                    .suffix(" mm")
+                    .speed(0.01)
+                    .ui(ui);
+                ui.end_row();
+
+                ui.label("Edge Angle Delta");
+                DragValue::new(&mut config.edge_angle_delta).ui(ui);
+                ui.end_row();
+
+                ui.label("Edge Support Spacing");
+                DragValue::new(&mut config.edge_support_spacing).ui(ui);
+                ui.end_row();
+
+                ui.label("Minimum Support Spacing");
+                ui.horizontal(|ui| {
+                    DragValue::new(&mut config.min_spacing).ui(ui);
+                    ui.take_available_width();
+                });
+                ui.end_row();
+            });
         });
     }
 
@@ -130,7 +139,15 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
 }
 
 fn generate_support(app: &mut App, model: usize) {
+    let default_lift = app.project.support_config.default_lift.get::<Milimeter>();
+
     let model = &mut app.project.models[model];
+    let pos = model.mesh.position();
+    model.set_position(
+        &app.project.slice_config.platform_size,
+        pos.xy().push(pos.z.max(default_lift)),
+    );
+
     let half_edge = model.half_edge.as_ref().unwrap();
     let bvh = model.bvh.as_ref().unwrap();
 

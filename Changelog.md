@@ -66,6 +66,8 @@
   - Supports track parent model transformations
   - Select multiple supports
   - Delete selected supports
+  - Save support config per project
+  - Default model lift when supporting automatically
 - Show slicing speed in layers/sec
 - Support highlighting selected mesh sections
 

@@ -35,6 +35,7 @@ pub struct SupportConfig {
     pub presets: Vec<SupportPreset>,
     pub mesh_resolution: u32,
 
+    pub default_lift: Milimeters,
     pub raft_height: Milimeters,
     pub raft_offset: Milimeters,
 }
@@ -163,6 +164,7 @@ impl Default for SupportConfig {
             presets: vec![SupportPreset::default()],
             mesh_resolution: 20,
 
+            default_lift: Milimeters::new(5.0),
             raft_height: Milimeters::new(1.0),
             raft_offset: Milimeters::new(1.0),
         }
