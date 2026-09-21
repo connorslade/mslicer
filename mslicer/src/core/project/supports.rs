@@ -1,9 +1,12 @@
 use std::{collections::HashMap, f32::consts::PI, range::Range, time::Instant};
 
-use common::id_type;
+use common::units::Milimeter;
 use nalgebra::{Vector2, Vector3};
 use slicer::{builder::MeshBuilder, mesh::Mesh};
-use tools::supports::{SupportConfig, mesh::build_raft};
+use tools::supports::{
+    Support, SupportId,
+    mesh::{FaceMap, SupportPreset, Transform, build_raft},
+};
 use tracing::info;
 use wgpu::Device;
 
@@ -19,24 +22,6 @@ pub struct Supports {
     mesh: Option<(Mesh, FaceMap)>,
     buffers: Option<RenderedMeshBuffers>,
 }
-
-pub struct Support {
-    id: SupportId,
-    points: [Vector3<f32>; 3],
-    tip_radius: f32,
-    radius: f32,
-}
-
-#[derive(Clone, Copy)]
-struct Transform {
-    position: Vector3<f32>,
-    scale: Vector3<f32>,
-    _rotation: f32,
-}
-
-id_type!(SupportId, u32);
-
-type FaceMap = HashMap<SupportId, Range<u32>>;
 
 impl Supports {
     pub fn set_resolution(&mut self, resolution: u32) {
@@ -55,26 +40,26 @@ impl Supports {
         self.invalidate_cache();
     }
 
-    pub fn replace_auto(&mut self, config: &SupportConfig, supports: Vec<[Vector3<f32>; 3]>) {
+    pub fn replace_auto(&mut self, config: &SupportPreset, supports: Vec<[Vector3<f32>; 3]>) {
         self.invalidate_cache();
         self.auto = supports
             .into_iter()
             .map(|points| Support {
                 id: SupportId::new(),
                 points,
-                tip_radius: config.tip_radius,
-                radius: config.support_radius,
+                tip_radius: config.tip_radius.get::<Milimeter>(),
+                radius: config.support_radius.get::<Milimeter>(),
             })
             .collect();
     }
 
-    pub fn add_manual(&mut self, config: &SupportConfig, support: [Vector3<f32>; 3]) {
+    pub fn add_manual(&mut self, config: &SupportPreset, support: [Vector3<f32>; 3]) {
         self.invalidate_cache();
         self.manual.push(Support {
             id: SupportId::new(),
             points: support,
-            tip_radius: config.tip_radius,
-            radius: config.support_radius,
+            tip_radius: config.tip_radius.get::<Milimeter>(),
+            radius: config.support_radius.get::<Milimeter>(),
         });
     }
 
@@ -187,15 +172,5 @@ impl Supports {
     pub fn remove(&mut self, id: SupportId) {
         self.auto.retain(|x| x.id != id);
         self.manual.retain(|x| x.id != id);
-    }
-}
-
-impl Default for Transform {
-    fn default() -> Self {
-        Self {
-            position: Default::default(),
-            scale: Vector3::repeat(1.0),
-            _rotation: 0.0,
-        }
     }
 }

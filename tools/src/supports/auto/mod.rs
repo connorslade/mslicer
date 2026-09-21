@@ -1,21 +1,41 @@
-use common::units::Milimeters;
+use common::units::{Milimeter, Milimeters};
 use nalgebra::Vector3;
 use slicer::{geometry::bvh::Bvh, half_edge::HalfEdgeMesh, mesh::Mesh};
 use tracing::info;
 
-use crate::supports::SupportConfig;
+use crate::supports::mesh::SupportPreset;
 
 pub mod detect;
 pub mod quazirandom;
 
 pub struct AutoPlacement<'a> {
-    pub config: &'a SupportConfig,
+    pub placement: &'a PlacementConfig,
+    pub support: &'a SupportPreset,
+
     pub bed_size: Vector3<Milimeters>,
 }
 
+#[derive(Clone)]
+pub struct PlacementConfig {
+    pub min_spacing: f32,
+    pub max_angle: f32,
+    pub face_support_spacing: f32,
+    pub edge_support_spacing: f32,
+    pub edge_angle_delta: f32,
+}
+
 impl<'a> AutoPlacement<'a> {
-    pub fn new(config: &'a SupportConfig, bed_size: Vector3<Milimeters>) -> Self {
-        Self { config, bed_size }
+    pub fn new(
+        placement: &'a PlacementConfig,
+        support: &'a SupportPreset,
+        bed_size: Vector3<Milimeters>,
+    ) -> Self {
+        Self {
+            placement,
+            support,
+
+            bed_size,
+        }
     }
 
     pub fn generate_supports(
@@ -25,7 +45,7 @@ impl<'a> AutoPlacement<'a> {
         bvh: &Bvh,
     ) -> Vec<[Vector3<f32>; 3]> {
         let mut overhangs = Vec::new();
-        let min_dist = self.config.min_spacing;
+        let min_dist = self.placement.min_spacing;
 
         let overhanging_faces = self.overhanging_faces(mesh);
         let mut faces = self.place_face_supports(mesh, &overhanging_faces);
@@ -53,16 +73,12 @@ impl<'a> AutoPlacement<'a> {
         overhangs
             .into_iter()
             .filter_map(|x| {
-                let tip_start = x.point + x.normal * self.config.tip_length;
+                let tip_start = x.point + x.normal * self.support.tip_length.get::<Milimeter>();
                 let mid = route_support(mesh, bvh, tip_start);
                 mid.map(|mid| [x.point, tip_start, mid])
             })
             .collect()
     }
-
-    // let mut builder = MeshBuilder::new();
-    // let raft_points = self.build_support_mesh(mesh, bvh, &overhangs, &mut builder);
-    // self.build_raft_mesh(&raft_points, &mut builder);
 }
 
 /// Returns the middle of the three points defining a support. The final point
@@ -85,4 +101,16 @@ pub fn route_support(mesh: &Mesh, bvh: &Bvh, position: Vector3<f32>) -> Option<V
     }
 
     None
+}
+
+impl Default for PlacementConfig {
+    fn default() -> Self {
+        Self {
+            min_spacing: 5.0,
+            max_angle: 30.0,
+            face_support_spacing: 50.0,
+            edge_angle_delta: 0.1,
+            edge_support_spacing: 20.0,
+        }
+    }
 }

@@ -101,41 +101,28 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
         });
 
         ui.add_space(8.0);
-        let support = &mut app.state.support_config;
-
+        let config = &mut app.project.support_config.auto_placement;
         ui.collapsing("Support Placement", |ui| {
-            dragger(ui, "Max Angle", &mut support.max_angle, |x| x.speed(0.01));
+            dragger(ui, "Max Angle", &mut config.max_angle, |x| x.speed(0.01));
             dragger(
                 ui,
                 "Face Support Spacing",
-                &mut support.face_support_spacing,
+                &mut config.face_support_spacing,
                 |x| x,
             );
-            dragger(ui, "Edge Angle Delta", &mut support.edge_angle_delta, |x| x);
+            dragger(ui, "Edge Angle Delta", &mut config.edge_angle_delta, |x| x);
             dragger(
                 ui,
                 "Edge Support Spacing",
-                &mut support.edge_support_spacing,
+                &mut config.edge_support_spacing,
                 |x| x,
             );
             dragger(
                 ui,
                 "Minimum Support Spacing",
-                &mut support.min_spacing,
+                &mut config.min_spacing,
                 |x| x,
             );
-        });
-
-        ui.collapsing("Support Generation", |ui| {
-            for (name, value) in [
-                ("Support Radius", &mut support.support_radius),
-                ("Tip Length", &mut support.tip_length),
-                ("Tip Radius", &mut support.tip_radius),
-            ] {
-                dragger(ui, name, value, |x| x.speed(0.1));
-            }
-
-            dragger(ui, "Support Precision", &mut support.precision, |x| x);
         });
     }
 
@@ -147,12 +134,13 @@ fn generate_support(app: &mut App, model: usize) {
     let half_edge = model.half_edge.as_ref().unwrap();
     let bvh = model.bvh.as_ref().unwrap();
 
-    let support_config = &app.state.support_config;
+    let support_placement = &app.project.support_config.auto_placement;
+    let support_preset = &app.project.support_config.presets[0];
     let platform_size = app.project.slice_config.platform_size.map(|x| x.convert());
 
-    let generator = AutoPlacement::new(support_config, platform_size);
+    let generator = AutoPlacement::new(support_placement, support_preset, platform_size);
     let supports = generator.generate_supports(&model.mesh, half_edge, bvh);
-    model.supports.replace_auto(support_config, supports);
+    model.supports.replace_auto(support_preset, supports);
 }
 
 pub fn manual_support_placement(app: &mut App, clicked: bool) {
@@ -175,14 +163,16 @@ pub fn manual_support_placement(app: &mut App, clicked: bool) {
             continue;
         };
 
-        let config = &app.state.support_config;
+        let config = &app.project.support_config.presets[0];
+        let tip_r = config.tip_radius.get::<Milimeter>();
+
         let normal = (model.mesh).transform_normal(&model.mesh.normal(intersection.face));
         let intersection = model.mesh.transform(&intersection.position);
-        let start = intersection + normal * config.tip_length;
+        let start = intersection + normal * config.tip_length.get::<Milimeter>();
 
         if let Some(middle) = route_support(&model.mesh, bvh, start) {
             let (r, p) = (1.0, 100);
-            builder.add_cylinder((intersection, start), (config.tip_radius, r), p);
+            builder.add_cylinder((intersection, start), (tip_r, r), p);
             builder.add_cylinder((start, middle), (r, r), p);
             builder.add_cylinder((middle, middle.xy().push(0.0)), (r, r), p);
 

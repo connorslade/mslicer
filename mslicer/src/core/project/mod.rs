@@ -13,6 +13,7 @@ use common::{
 use slicer::post_process::{
     elephant_foot_fixer::ElephantFootFixer, variable_layer_height::VariableLayerHeight,
 };
+use tools::supports::{auto::PlacementConfig, mesh::SupportPreset};
 
 pub mod model;
 pub mod storage;
@@ -30,6 +31,8 @@ pub struct Project {
 
 #[derive(Clone)]
 pub struct SupportConfig {
+    pub auto_placement: PlacementConfig,
+    pub presets: Vec<SupportPreset>,
     pub mesh_resolution: u32,
 
     pub raft_height: Milimeters,
@@ -156,7 +159,10 @@ impl PartialEq for Collection {
 impl Default for SupportConfig {
     fn default() -> Self {
         Self {
+            auto_placement: PlacementConfig::default(),
+            presets: vec![SupportPreset::default()],
             mesh_resolution: 20,
+
             raft_height: Milimeters::new(1.0),
             raft_offset: Milimeters::new(1.0),
         }

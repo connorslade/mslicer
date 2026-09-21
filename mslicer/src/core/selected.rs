@@ -1,8 +1,9 @@
 use std::{collections::HashSet, iter};
 
 use itertools::Either;
+use tools::supports::SupportId;
 
-use crate::core::project::{CollectionId, model::ModelId, supports::SupportId};
+use crate::core::project::{CollectionId, model::ModelId};
 
 pub enum SelectedPrinter {
     Project,

@@ -8,14 +8,16 @@ use slicer::{
     mesh::Mesh,
 };
 
-use crate::supports::{
-    SupportPlacement,
-    auto::{AutoPlacement, quazirandom::quazirandom_rect_2d},
-};
+use crate::supports::auto::{AutoPlacement, quazirandom::quazirandom_rect_2d};
+
+pub struct SupportPlacement {
+    pub point: Vector3<f32>,
+    pub normal: Vector3<f32>,
+}
 
 impl<'a> AutoPlacement<'a> {
     pub fn overhanging_faces(&self, mesh: &Mesh) -> Vec<(usize, Vector3<f32>)> {
-        let max_angle = self.config.max_angle.to_radians();
+        let max_angle = self.placement.max_angle.to_radians();
         let mut overhangs = Vec::new();
 
         for face in 0..mesh.face_count() {
@@ -52,7 +54,7 @@ impl<'a> AutoPlacement<'a> {
                 let angle_diff = normal.angle(&neighbor_normal);
 
                 // 0.1 rad ≈ 5°
-                if angle_diff > self.config.edge_angle_delta {
+                if angle_diff > self.placement.edge_angle_delta {
                     cluster.union(edge.origin_vertex, edge.vertex);
                 }
             }
@@ -72,7 +74,7 @@ impl<'a> AutoPlacement<'a> {
         let mut out = Vec::new();
         let bed_size = self.bed_size.xy().map(|x| x.raw());
 
-        for pos in quazirandom_rect_2d(bed_size, self.config.face_support_spacing) {
+        for pos in quazirandom_rect_2d(bed_size, self.placement.face_support_spacing) {
             let pos = pos - bed_size / 2.0;
             let mut intersections = Vec::new();
             for (idx, _angle) in overhangs.iter() {
@@ -140,7 +142,7 @@ impl<'a> AutoPlacement<'a> {
                             while t < len {
                                 let point = a + unit * t;
                                 out.push(SupportPlacement { point, normal });
-                                t += self.config.edge_support_spacing;
+                                t += self.placement.edge_support_spacing;
                             }
 
                             stack.push((edge.vertex, t - len));
