@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use ordered_float::OrderedFloat;
+use nalgebra::Vector3;
 
 use crate::repair::{MeshRepair, RepairState};
 
@@ -38,28 +38,50 @@ impl MeshRepair {
             loops.push(edge_loop);
         }
 
-        // Full the hole by forming faces between the existing vertices on the
-        // hole. Optimized for minimum face area, shouldn't cause too many
-        // issues with self-intersections.
+        // Full the hole by forming faces between the existing vertices on the hole.
         for edge_loop in loops.iter() {
-            let mut poly = edge_loop.clone();
-            while poly.len() > 3 {
-                let n = poly.len();
-                let i = (0..n)
-                    .min_by_key(|&idx| {
-                        let face = state.faces[idx];
-                        let [a, b, c] = face.map(|x| state.vertices[x as usize]);
-                        OrderedFloat((a - b).cross(&(c - b)).magnitude()) // minimizes triangle area
-                    })
-                    .unwrap();
-
-                let face = [i, (i + n - 1) % n, (i + 1) % n].map(|k| poly[k]);
-                state.faces.push(face);
-                poly.remove(i);
-            }
-            state.faces.push([poly[1], poly[2], poly[0]]);
+            min_area_triangulation(&state.vertices, edge_loop, &mut state.faces);
         }
 
         loops.len() as u64
+    }
+}
+
+// find a triangulation that gives the smallest sum triangle area
+fn min_area_triangulation(points: &[Vector3<f32>], hole: &[u32], faces: &mut Vec<[u32; 3]>) {
+    let len = hole.len();
+    let mut dp = vec![vec![0.0; len]; len];
+    let mut parent = vec![vec![None; len]; len];
+
+    // calculate total cost of sub polygons
+    for n in 2..len {
+        for i in 0..len - n {
+            let j = i + n;
+            let [vi, vj] = [i, j].map(|i| points[hole[i] as usize]);
+
+            dp[i][j] = f32::INFINITY;
+            for k in i + 1..j {
+                let vk = points[hole[k] as usize];
+                let cost = (vi - vj).cross(&(vk - vj)).magnitude();
+                let total_cost = cost + dp[i][k] + dp[k][j];
+
+                if total_cost < dp[i][j] {
+                    dp[i][j] = total_cost;
+                    parent[i][j] = Some(k);
+                }
+            }
+        }
+    }
+
+    // reconstruct best solution from dp table
+    let mut stack = vec![[0, len - 1]];
+    while let Some([i, j]) = stack.pop() {
+        if j > i + 1
+            && let Some(k) = parent[i][j]
+        {
+            faces.push([j, k, i].map(|x| hole[x]));
+            stack.push([i, k]);
+            stack.push([k, j]);
+        }
     }
 }
