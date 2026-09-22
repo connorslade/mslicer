@@ -3,8 +3,10 @@ use std::sync::Arc;
 use nalgebra::Vector3;
 use slicer::{half_edge::HalfEdgeMesh, mesh::Mesh};
 
+mod degenerative;
 mod holes;
 mod unwelded_vertices;
+mod winding_order;
 
 // todo: separate and faster detection pass?
 
@@ -17,6 +19,8 @@ pub struct RepairResult {
 
     pub unwelded_vertices: u64,
     pub holes: u64,
+    pub degenerative_faces: u64,
+    pub flipped_winding: u64,
 }
 
 struct RepairState {
@@ -35,8 +39,10 @@ impl MeshRepair {
             half_edge,
         };
 
-        let holes = self.repair_holes(&mut state);
+        let holes = self.repair_holes(&mut state); // todo: should run after welding
         let unwelded_vertices = self.repair_unwelded_vertices(&mut state);
+        let degenerative_faces = self.repair_degenerative_faces(&mut state);
+        let flipped_winding = self.repair_winding_order(&mut state);
 
         let mut out = Mesh::new(state.vertices, state.faces);
         out.set_position(mesh.position());
@@ -46,6 +52,17 @@ impl MeshRepair {
             mesh: out,
             unwelded_vertices,
             holes,
+            degenerative_faces,
+            flipped_winding,
         }
+    }
+}
+
+impl RepairResult {
+    pub fn any_defects(&self) -> bool {
+        self.degenerative_faces > 0
+            || self.holes > 0
+            || self.degenerative_faces > 0
+            || self.flipped_winding > 0
     }
 }

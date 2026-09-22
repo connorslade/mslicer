@@ -47,6 +47,10 @@
 - Rename non manifold mesh to defective mesh since some kinds of non-manifold meshes will slice correctly
 - Sliced file diff tool
 - Mesh repair tool
+  - Unwelded vertices
+  - Holes
+  - Degenerate faces
+  - Inconsistent winding order
 - Detect and report slicing defects (caused by mesh defects)
 - Added more CLI debugging tools
 - More robust mesh deserialization

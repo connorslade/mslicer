@@ -75,8 +75,7 @@ Features that would be cool, but are a bit out of scope for now.
 
 - [x] non-welded verts
 - [x] holes
-  - find edge loop and triangulate (somehow...)
-- [ ] inconstant winding order
+- [x] inconstant winding order
 - [ ] non-manifold (not sure how to fix this thb)
 - [ ] repeated faces?
 

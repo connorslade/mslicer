@@ -59,24 +59,36 @@ impl Task for MeshRepair {
                     return PollResult::complete();
                 };
 
-                model.replace_mesh(result.mesh, None, &platform);
+                let has_defects = result.any_defects();
+                has_defects.then(|| model.replace_mesh(result.mesh, None, &platform));
                 app.popup.open(Popup::new("Repair Report", move |_app, ui| {
                     let mut close = false;
-                    ui.label("Mesh repaired successfully, the following defects were found:");
+                    if has_defects {
+                        ui.label("Mesh repaired successfully, the following defects were found:");
 
-                    ui.add_space(8.0);
-                    grid("repair").show(ui, |ui| {
-                        ui.label("Unwelded Vertices");
-                        ui.horizontal(|ui| {
-                            ui.label(result.unwelded_vertices.to_string());
-                            ui.take_available_width();
+                        ui.add_space(8.0);
+                        grid("repair").show(ui, |ui| {
+                            for (name, value) in [
+                                ("Unwelded Vertices", result.unwelded_vertices),
+                                ("Holes", result.holes),
+                                ("Degenerative Faces", result.degenerative_faces),
+                                ("Flipped Winding", result.flipped_winding),
+                            ]
+                            .into_iter()
+                            .filter(|(_, v)| *v > 0)
+                            {
+                                ui.label(name);
+                                ui.horizontal(|ui| {
+                                    ui.label(value.to_string());
+                                    ui.take_available_width();
+                                });
+                                ui.end_row();
+                            }
                         });
-                        ui.end_row();
+                    } else {
+                        ui.label("No defects found.");
+                    }
 
-                        ui.label("Holes");
-                        ui.label(result.holes.to_string());
-                        ui.end_row();
-                    });
                     ui.add_space(8.0);
 
                     ui.add_space(5.0);
