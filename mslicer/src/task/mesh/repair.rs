@@ -22,7 +22,6 @@ pub struct MeshRepair {
 impl MeshRepair {
     pub fn new(model: &Model) -> Self {
         let mesh = model.mesh.clone();
-        let half_edge = model.half_edge.clone().unwrap();
         let model = model.id;
 
         let progress = Progress::new();
@@ -31,7 +30,7 @@ impl MeshRepair {
             let result = repair::MeshRepair {
                 vertex_epsilon: 1e-4,
             }
-            .repair(&mesh, half_edge);
+            .repair(&mesh);
             progress.set_finished();
 
             info!(
@@ -70,8 +69,9 @@ impl Task for MeshRepair {
                         grid("repair").show(ui, |ui| {
                             for (name, value) in [
                                 ("Unwelded Vertices", result.unwelded_vertices),
-                                ("Holes", result.holes),
                                 ("Degenerative Faces", result.degenerative_faces),
+                                ("Repeated Faces", result.repeated_faces),
+                                ("Holes", result.holes),
                                 ("Flipped Winding", result.flipped_winding),
                             ]
                             .into_iter()

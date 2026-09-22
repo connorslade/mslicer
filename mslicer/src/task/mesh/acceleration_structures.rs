@@ -26,7 +26,7 @@ impl BuildAccelerationStructures {
             name: model.name.clone(),
             handle: TaskThread::spawn(clone!([progress], move || {
                 let bvh = Bvh::build(&mesh, progress);
-                let half_edge = HalfEdgeMesh::build(&mesh);
+                let half_edge = HalfEdgeMesh::build_from_mesh(&mesh);
                 (Arc::new(bvh), Arc::new(half_edge))
             })),
             progress,

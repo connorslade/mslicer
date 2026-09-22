@@ -1,16 +1,34 @@
+use std::collections::HashSet;
+
 use crate::repair::{MeshRepair, RepairState};
 
 impl MeshRepair {
-    pub(super) fn repair_degenerative_faces(&self, state: &mut RepairState) -> u64 {
-        // Check if any face has zero area (any two vertices are the same)
+    // check if any face has zero area (any two vertices are the same) or
+    // the face was defined previously.
+    pub(super) fn repair_degenerative_faces(&self, state: &mut RepairState) -> (u64, u64) {
+        let mut seen = HashSet::new();
 
-        let mut count = 0;
-        state.faces.retain(|[a, b, c]| {
-            let degenerative = a == b || b == c || a == c;
-            count += degenerative as u64;
-            !degenerative
+        let mut degenerative_count = 0;
+        let mut repeated_count = 0;
+        state.faces.retain(|f @ [a, b, c]| {
+            if a == b || b == c || a == c {
+                degenerative_count += 1;
+                return false;
+            }
+
+            if !seen.insert(key(*f)) {
+                repeated_count += 1;
+                return false;
+            }
+
+            true
         });
 
-        count
+        (repeated_count, degenerative_count)
     }
+}
+
+fn key(mut face: [u32; 3]) -> [u32; 3] {
+    face.sort();
+    face
 }

@@ -24,12 +24,16 @@ pub struct HalfEdge {
 }
 
 impl HalfEdgeMesh {
-    pub fn build(mesh: &Arc<MeshInner>) -> Self {
+    pub fn build_from_mesh(mesh: &Arc<MeshInner>) -> Self {
+        Self::build(mesh.faces.iter())
+    }
+
+    pub fn build<'a>(faces: impl Iterator<Item = &'a [u32; 3]>) -> Self {
         let mut half_edges = Vec::new();
         let mut edge_map = HashMap::new();
         let mut incident_edge = HashMap::new();
 
-        for (face_idx, face) in mesh.faces.iter().enumerate() {
+        for (face_idx, face) in faces.enumerate() {
             let first_edge = half_edges.len() as u32;
             for i in 0..3 {
                 let next = first_edge + (i as u32 + 1) % 3;

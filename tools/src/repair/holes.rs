@@ -1,13 +1,14 @@
 use std::collections::HashMap;
 
 use nalgebra::Vector3;
+use slicer::half_edge::HalfEdgeMesh;
 
 use crate::repair::{MeshRepair, RepairState};
 
 impl MeshRepair {
-    pub(super) fn repair_holes(&self, state: &mut RepairState) -> u64 {
+    pub(super) fn repair_holes(&self, state: &mut RepairState, half_edge: &HalfEdgeMesh) -> u64 {
         let mut map = HashMap::new();
-        for edge in state.half_edge.half_edges() {
+        for edge in half_edge.half_edges() {
             // if edge only has one face, edge is on a hole. Add it as a
             // directed edge to the loop map.
             if edge.twin.is_none() {
