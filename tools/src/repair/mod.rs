@@ -1,5 +1,6 @@
 use std::fmt::Debug;
 
+use common::progress::Progress;
 use nalgebra::Vector3;
 use slicer::{half_edge::HalfEdgeMesh, mesh::Mesh};
 
@@ -31,7 +32,9 @@ struct RepairState {
 }
 
 impl MeshRepair {
-    pub fn repair(&self, mesh: &Mesh) -> RepairResult {
+    pub fn repair(&self, mesh: &Mesh, progress: &Progress) -> RepairResult {
+        progress.set_total(6);
+
         // mesh must be cloned since it will be modified
         let mut state = RepairState {
             vertices: mesh.vertices().to_vec(),
@@ -39,16 +42,23 @@ impl MeshRepair {
         };
 
         let unwelded_vertices = self.repair_unwelded_vertices(&mut state);
+        progress.add_complete(1);
         let (repeated_faces, degenerative_faces) = self.repair_degenerative_faces(&mut state);
+        progress.add_complete(1);
         let flipped_winding = self.repair_winding_order(&mut state);
+        progress.add_complete(1);
 
         let half_edge = HalfEdgeMesh::build(state.faces.iter());
+        progress.add_complete(1);
         let holes = self.repair_holes(&mut state, &half_edge);
+        progress.add_complete(1);
 
         let mut out = Mesh::new(state.vertices, state.faces);
         out.set_position(mesh.position());
         out.set_rotation(mesh.rotation());
         out.set_scale(mesh.scale());
+        progress.set_finished();
+
         RepairResult {
             mesh: out,
 

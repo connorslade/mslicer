@@ -28,7 +28,7 @@ fn main() -> Result<()> {
     let result = MeshRepair {
         vertex_epsilon: 1e-4,
     }
-    .repair(&mesh);
+    .repair(&mesh, &Progress::new());
 
     println!("{result:?}");
 

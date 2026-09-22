@@ -26,12 +26,10 @@ impl MeshRepair {
 
         let progress = Progress::new();
         let handle = TaskThread::spawn(clone!([progress], move || {
-            progress.set_total(1);
             let result = repair::MeshRepair {
                 vertex_epsilon: 1e-4,
             }
-            .repair(&mesh);
-            progress.set_finished();
+            .repair(&mesh, &progress);
 
             info!(
                 "{{ unwelded_vertices: {}, holes: {} }}",

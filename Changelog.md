@@ -49,7 +49,7 @@
 - Mesh repair tool
   - Unwelded vertices
   - Holes
-  - Degenerate faces
+  - Degenerate and repeated faces
   - Inconsistent winding order
 - Detect and report slicing defects (caused by mesh defects)
 - Added more CLI debugging tools
