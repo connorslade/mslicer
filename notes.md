@@ -23,7 +23,6 @@ Feel free to help out :eyes:.
   like just ignore the broken values.
 - phonographic record generator (it might be possible :eyes:)
   - apply RAII pre-emphasis
-  - generate async
   - create manifold mesh
 - add well documented .zip and .bin output formats (closes #29)
 - task cancellation mechanism
@@ -63,11 +62,6 @@ Features that would be cool, but are a bit out of scope for now.
 - resample sliced file to different sizes / resolutions?
 - multiple workspaces per project
 - optimize elephant foot post processing (deprecated post processor)
-- split mslicer crate?
-  - mslicer (startup + system stuff)
-  - mslicer_core (app + project + task?)
-  - mslicer_render (render)
-  - mslicer_ui (window + ui)
 - slice b-rep?
   - at what point of mesh resolution is polygon intersection slower 
 

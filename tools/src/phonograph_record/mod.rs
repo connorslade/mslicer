@@ -12,7 +12,10 @@ use std::{
 };
 
 use anyhow::Result;
-use common::units::{Micrometers, Milimeter, Milimeters};
+use common::{
+    progress::Progress,
+    units::{Micrometers, Milimeter, Milimeters},
+};
 use nalgebra::{Rotation3, Vector2, Vector3};
 use slicer::{
     builder::{MeshBuilder, orthogonal_basis},
@@ -42,7 +45,7 @@ pub struct PhonographRecord {
 
 impl PhonographRecord {
     // todo: generate manifold mesh
-    pub fn generate(&self) -> Result<Mesh> {
+    pub fn generate(&self, progress: &Progress) -> Result<Mesh> {
         let reader = BufReader::new(File::open(&self.audio)?);
         let audio = AudioBuffer::load(reader, self.channels)?;
 
@@ -57,6 +60,7 @@ impl PhonographRecord {
         let resolution = (self.groove_resolution * duration).round() as u32;
         let b = pitch / TAU;
 
+        progress.set_total(resolution as u64);
         for i in 0..resolution {
             let t = i as f32 / (resolution - 1) as f32;
             let theta = (outer_radius - inner_radius) / b * t;
@@ -81,6 +85,8 @@ impl PhonographRecord {
                     builder.add_quad([a, c, b, d]);
                 }
             }
+
+            progress.set_complete(i as u64);
         }
 
         for j in 1..2 {
@@ -102,6 +108,7 @@ impl PhonographRecord {
 
         add_cylinder_inner(&mut builder, Vector3::zeros(), thickness, 3.62, 100);
 
+        progress.set_finished();
         Ok(builder.build())
     }
 

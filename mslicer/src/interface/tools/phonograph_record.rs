@@ -8,7 +8,7 @@ use crate::{
         components::grid,
         popup::{Popup, PopupApp},
     },
-    task::{FileDialog, MeshLoad},
+    task::{FileDialog, GenerateMesh},
 };
 
 pub const DESCRIPTION: &str = "Generates a phonograph record mesh from an audio file.";
@@ -145,9 +145,12 @@ fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
     ui.vertical_centered(|ui| {
         let button = Button::new("Generate").min_size(vec2(ui.available_width(), 0.0));
         if ui.add_enabled(!slicing && audio_loaded, button).clicked() {
-            // todo: generate async
-            let mesh = tool.generate().unwrap();
-            app.tasks.add(MeshLoad::complete("Record".to_owned(), mesh));
+            let tool = tool.clone();
+            let task = GenerateMesh::new("Record".into(), move |progress| {
+                tool.generate(progress).unwrap()
+            });
+
+            app.tasks.add(task);
         }
     });
 

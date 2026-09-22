@@ -20,6 +20,7 @@
   - mslicer has been my main project for a little while, so I guess anything
     remotely related to resin printing is just getting included in the software.
     But having more features is always good… right?
+  - Async mesh generation system
 - Make max storage buffer binding size match the max buffer size
 - Fix GPU RLE decompression failing on layers with a huge number of runs
 - Fix potential crash in remote print
