@@ -4,12 +4,7 @@
 // - https://en.wikipedia.org/wiki/RIAA_equalization
 // - https://www.kabusa.com/frameset.htm?/needbelt.htm
 
-use std::{
-    f32::consts::{PI, TAU},
-    fs::File,
-    io::BufReader,
-    path::PathBuf,
-};
+use std::{f32::consts::TAU, fs::File, io::BufReader, path::PathBuf};
 
 use anyhow::Result;
 use common::{
@@ -17,20 +12,29 @@ use common::{
     units::{Micrometers, Milimeter, Milimeters},
 };
 use nalgebra::{Rotation3, Vector2, Vector3};
-use slicer::{
-    builder::{MeshBuilder, orthogonal_basis},
-    mesh::Mesh,
+use slicer::{builder::MeshBuilder, mesh::Mesh};
+
+use crate::phonograph_record::{
+    audio::{AudioBuffer, Channels, Equalization},
+    mesh::{add_cylinder_inner, ear_clipping},
 };
 
-use crate::phonograph_record::audio::{AudioBuffer, Channels, Equalization};
-
 pub mod audio;
+mod mesh;
+
+// todo:
+// - allow configuring inner hole size
+// - clip audio gain to [0, 1]
+// - ensure groove can't self intersect (pitch * modulation > width)
+// - generate closed mesh (optionally)
+// - either implement RIAA or remove the option
 
 #[derive(Clone)]
 pub struct PhonographRecord {
     pub outer_radius: Milimeters,
     pub inner_radius: Milimeters,
     pub thickness: Milimeters,
+    pub close: bool,
 
     pub pitch: Milimeters, // must be >width
     pub width: Milimeters,
@@ -50,6 +54,7 @@ impl PhonographRecord {
         let audio = AudioBuffer::load(reader, self.channels)?;
 
         let mut builder = MeshBuilder::new();
+        let (mut hole_a, mut hole_b) = (Vec::new(), Vec::new());
 
         let pitch = self.pitch.get::<Milimeter>();
         let outer_radius = self.outer_radius.get::<Milimeter>();
@@ -72,9 +77,15 @@ impl PhonographRecord {
 
             let (l, r) = audio.get(t * duration);
             let profile = self.profile((self.pitch - self.width) * 0.5 * self.modulation, l, r);
-            for point in profile.iter() {
+            for (i, point) in profile.iter().enumerate() {
                 let vertex = rotation * point + offset.push(thickness);
-                builder.add_vertex(vertex);
+                let idx = builder.add_vertex(vertex);
+
+                if i == 0 {
+                    hole_a.push(idx);
+                } else if i + 1 == profile.len() {
+                    hole_b.push(idx);
+                }
             }
 
             if i < resolution - 1 {
@@ -108,6 +119,13 @@ impl PhonographRecord {
 
         add_cylinder_inner(&mut builder, Vector3::zeros(), thickness, 3.62, 100);
 
+        // close mesh
+        let (vertices, faces) = builder.raw_mut();
+        let hole = (hole_a.into_iter())
+            .chain(hole_b.into_iter().rev())
+            .collect::<Vec<_>>();
+        ear_clipping(&hole, vertices, faces);
+
         progress.set_finished();
         Ok(builder.build())
     }
@@ -133,6 +151,7 @@ impl Default for PhonographRecord {
             outer_radius: Milimeters::new(60.0),
             inner_radius: Milimeters::new(50.0),
             thickness: Milimeters::new(2.0),
+            close: false,
 
             pitch: Micrometers::new(150.0).convert(),
             width: Micrometers::new(80.0).convert(),
@@ -144,39 +163,5 @@ impl Default for PhonographRecord {
             channels: Default::default(),
             equalization: Default::default(),
         }
-    }
-}
-
-fn add_cylinder_inner(
-    builder: &mut MeshBuilder,
-    bottom: Vector3<f32>,
-    height: f32,
-    radius: f32,
-    precision: u32,
-) {
-    let (a, b) = (bottom, bottom + Vector3::z() * height);
-    let [u, v] = orthogonal_basis((a - b).normalize());
-
-    let mut first = None;
-    let mut last = None;
-    for i in 0..(precision * 2) {
-        let angle = i as f32 / precision as f32 * PI;
-        let normal = u * angle.sin() + v * angle.cos();
-
-        let top = builder.add_vertex(b + normal * radius);
-        let bottom = builder.add_vertex(a + normal * radius);
-
-        if let Some((last_top, last_bottom)) = last {
-            builder.add_quad_flipped([last_bottom, last_top, bottom, top]);
-        }
-
-        last = Some((top, bottom));
-        first.is_none().then(|| first = last);
-    }
-
-    if let Some((last_top, last_bottom)) = last
-        && let Some((first_top, first_bottom)) = first
-    {
-        builder.add_quad_flipped([last_bottom, last_top, first_bottom, first_top]);
     }
 }

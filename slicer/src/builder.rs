@@ -17,6 +17,10 @@ impl MeshBuilder {
         }
     }
 
+    pub fn raw_mut(&mut self) -> (&mut Vec<Vector3<f32>>, &mut Vec<[u32; 3]>) {
+        (&mut self.vertices, &mut self.faces)
+    }
+
     pub fn next_idx(&self) -> u32 {
         self.vertices.len() as u32
     }
