@@ -16,7 +16,7 @@ use slicer::{builder::MeshBuilder, mesh::Mesh};
 
 use crate::phonograph_record::{
     audio::{AudioBuffer, Channels, Equalization},
-    mesh::{add_cylinder_inner, ear_clipping},
+    mesh::add_cylinder_inner,
 };
 
 pub mod audio;
@@ -61,16 +61,19 @@ impl PhonographRecord {
         let inner_radius = self.inner_radius.get::<Milimeter>();
         let thickness = self.thickness.get::<Milimeter>();
 
-        let duration = (outer_radius - inner_radius) / pitch * 60.0 / self.rpm;
+        let delta_radius = outer_radius - inner_radius;
+        let duration = delta_radius / pitch * 60.0 / self.rpm;
         let resolution = (self.groove_resolution * duration).round() as u32;
+        let n = (resolution - 1) as f32;
+        let points_per_disk = (n * pitch / delta_radius) as u32;
         let b = pitch / TAU;
 
         progress.set_total(resolution as u64);
         for i in 0..resolution {
-            let t = i as f32 / (resolution - 1) as f32;
-            let theta = (outer_radius - inner_radius) / b * t;
-            let rotation = Rotation3::new(Vector3::z() * theta);
+            let t = i as f32 / n;
+            let theta = delta_radius / b * t;
 
+            let rotation = Rotation3::new(Vector3::z() * theta);
             let unit = Vector2::new(theta.cos(), theta.sin());
             let r = outer_radius - b * theta;
             let offset = unit * r;
@@ -94,6 +97,13 @@ impl PhonographRecord {
                     let (a, b) = (base + j, base + j + 1);
                     let (c, d) = (a + 3, b + 3);
                     builder.add_quad([a, c, b, d]);
+                }
+
+                let across = i + points_per_disk;
+                if self.close && across + 1 < resolution {
+                    let (a, c) = (i * 3, across * 3);
+                    let (b, d) = (a + 3, c + 3);
+                    builder.add_quad_flipped([a, b, c + 2, d + 2]);
                 }
             }
 
@@ -119,29 +129,20 @@ impl PhonographRecord {
 
         add_cylinder_inner(&mut builder, Vector3::zeros(), thickness, 3.62, 100);
 
-        // close mesh
-        let (vertices, faces) = builder.raw_mut();
-        let hole = (hole_a.into_iter())
-            .chain(hole_b.into_iter().rev())
-            .collect::<Vec<_>>();
-        ear_clipping(&hole, vertices, faces);
-
         progress.set_finished();
         Ok(builder.build())
     }
 
-    fn profile(&self, modulation: Milimeters, l: f32, r: f32) -> Vec<Vector3<f32>> {
-        let mut points = Vec::new();
-
+    fn profile(&self, modulation: Milimeters, l: f32, r: f32) -> [Vector3<f32>; 3] {
         let modulation = modulation.get::<Milimeter>();
         let half_width = self.width.get::<Milimeter>() / 2.0;
-
         let (l, r) = (l * modulation, r * modulation);
 
-        points.push(Vector3::new(-half_width + l, 0.0, 0.0));
-        points.push(Vector3::new((l + r) / 2.0, 0.0, -half_width));
-        points.push(Vector3::new(half_width + r, 0.0, 0.0));
-        points
+        [
+            Vector3::new(-half_width + l, 0.0, 0.0),
+            Vector3::new((l + r) / 2.0, 0.0, -half_width),
+            Vector3::new(half_width + r, 0.0, 0.0),
+        ]
     }
 }
 

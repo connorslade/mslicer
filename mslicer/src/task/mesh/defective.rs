@@ -47,7 +47,7 @@ impl Task for MeshDefective {
 
     fn status(&self) -> Option<TaskStatus<'_>> {
         Some(TaskStatus {
-            name: "Is Detective".into(),
+            name: "Is Defective".into(),
             details: None,
             progress: self.progress.progress(),
         })
