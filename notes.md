@@ -40,6 +40,8 @@ Feel free to help out :eyes:.
 - sliced post processing
   - remove islands
   - exposure remap
+- make task status give an (optional) model/mesh? id and group them in the ui
+  - will be great for MeshDefective, MeshVolume, and BuildAccelerationStructures
 
 ## Documentation
 

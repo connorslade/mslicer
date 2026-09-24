@@ -381,10 +381,11 @@ pub fn model_properties(
             });
             ui.end_row();
 
-            ui.label("Volume");
-            let volume = model.volume().convert::<Centimeter>().raw();
-            ui.label(format!("{volume:.2} cm³"));
-            ui.end_row();
+            if let Some(volume) = model.volume().map(|v| v.get::<Centimeter>()) {
+                ui.label("Volume");
+                ui.label(format!("{volume:.2} cm³"));
+                ui.end_row();
+            }
         });
     });
 }

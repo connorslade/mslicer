@@ -26,7 +26,7 @@ pub struct Model {
     pub bvh: Option<Arc<Bvh>>,
     pub half_edge: Option<Arc<HalfEdgeMesh>>,
     pub supports: Supports,
-    base_volume: CubicMilimeters,
+    base_volume: Option<CubicMilimeters>,
 
     pub unit: MeshUnit,
     pub color: LinearRgb<f32>,
@@ -70,7 +70,7 @@ impl Model {
             id: ModelId::new(),
             collection: None,
 
-            base_volume: mesh_volume(&mesh),
+            base_volume: None,
             bvh: None,
             half_edge: None,
             supports: Supports::default(),
@@ -88,9 +88,9 @@ impl Model {
         }
     }
 
-    pub fn volume(&self) -> CubicMilimeters {
+    pub fn volume(&self) -> Option<CubicMilimeters> {
         let scale = self.mesh.scale();
-        self.base_volume * scale.x * scale.y * scale.z
+        self.base_volume.map(|v| v * scale.x * scale.y * scale.z)
     }
 
     pub fn with_name(mut self, name: String) -> Self {
@@ -172,6 +172,10 @@ impl Model {
         self.half_edge = None;
         self.buffers = None;
         self.update_oob(platform);
+    }
+
+    pub fn set_base_volume(&mut self, volume: CubicMilimeters) {
+        self.base_volume.get_or_insert(volume);
     }
 }
 
@@ -324,15 +328,3 @@ impl PartialEq for Model {
 }
 
 id_type!(ModelId, u32);
-
-// Reference: https://stackoverflow.com/a/13927691
-fn mesh_volume(mesh: &Mesh) -> CubicMilimeters {
-    let mut volume = 0.0;
-
-    for face in 0..mesh.face_count() {
-        let [a, b, c] = mesh.face_verts(face);
-        volume += a.dot(&b.cross(&c)) / 6.0;
-    }
-
-    CubicMilimeters::new(volume.abs())
-}

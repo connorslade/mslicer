@@ -1,4 +1,4 @@
-use std::{f32::consts::TAU, mem};
+use std::f32::consts::TAU;
 
 use nalgebra::Vector3;
 use slicer::builder::MeshBuilder;
@@ -13,18 +13,14 @@ pub fn add_disk(
     outer_radius: f32,
     inner_radius: f32,
     sagitta: f32,
-) {
-    // todo
-    // - faces around cylinders
-    // faces to groove
-
+) -> [u32; 3] {
     let bo = builder.next_idx();
     let outer_points = circle_points(sagitta as f64, outer_radius as f64);
     for i in 0..outer_points {
         let point = disk_point(i as f32 / outer_points as f32) * outer_radius;
         builder.add_vertex(point);
         builder.add_vertex(point + Vector3::z() * height);
-        builder.add_quad_flipped(QUAD.map(|x| bo + (i * 2 + x) % (outer_points * 2)));
+        builder.add_quad(QUAD.map(|x| bo + (i * 2 + x) % (outer_points * 2)));
     }
 
     let bi = builder.next_idx();
@@ -34,43 +30,79 @@ pub fn add_disk(
         builder.add_vertex(point);
         builder.add_vertex(point + Vector3::z() * height);
 
-        builder.add_quad(QUAD.map(|x| bi + (i * 2 + x) % (inner_points * 2)));
+        builder.add_quad_flipped(QUAD.map(|x| bi + (i * 2 + x) % (inner_points * 2)));
     }
 
     let be = builder.next_idx();
-    triangulate_gap(builder, (bo, (bi - bo) / 2), (bi, (be - bi) / 2));
+    triangulate_gap(
+        builder,
+        VertexRing::new(bo, outer_points).with_step(2),
+        VertexRing::new(bi, inner_points).with_step(2),
+    );
+
+    [bo, bi, be]
 }
 
 fn disk_point(t: f32) -> Vector3<f32> {
-    let (x, y) = (t * TAU).sin_cos();
+    let (y, x) = (t * TAU).sin_cos();
     Vector3::new(x, y, 0.0)
 }
 
-fn triangulate_gap(
-    builder: &mut MeshBuilder,
-    (mut a0, mut an): (u32, u32),
-    (mut b0, mut bn): (u32, u32),
-) {
-    if an < bn {
-        mem::swap(&mut a0, &mut b0);
-        mem::swap(&mut an, &mut bn);
+pub struct VertexRing {
+    start: u32,
+    len: u32,
+    step: u32,
+    offset: u32,
+}
+
+impl VertexRing {
+    pub fn new(start: u32, len: u32) -> Self {
+        Self {
+            start,
+            len,
+            step: 1,
+            offset: 0,
+        }
     }
 
-    let a_per_b = an as f32 / bn as f32;
+    pub fn with_step(self, step: u32) -> Self {
+        Self { step, ..self }
+    }
+
+    pub fn with_offset(self, offset: u32) -> Self {
+        Self { offset, ..self }
+    }
+}
+
+pub fn triangulate_gap(builder: &mut MeshBuilder, a: VertexRing, b: VertexRing) {
+    let (a, b) = if a.len < b.len { (b, a) } else { (a, b) };
+    let a_per_b = a.len as f32 / b.len as f32;
 
     let mut remaining = 0.0;
-    let mut a = 0;
-    for b in 0..bn {
+    let mut ai = 0;
+    for bi in 0..b.len {
         remaining += a_per_b;
 
         while remaining >= 1.0 {
             remaining -= 1.0;
-            builder.add_face([b0 + b * 2, a0 + a * 2, a0 + (a + 1) % an * 2]);
-            a += 1;
+            builder.add_face([
+                b.start + (bi + b.offset) % b.len * b.step,
+                a.start + (ai + a.offset + 1) % a.len * a.step,
+                a.start + (ai + a.offset) % a.len * a.step,
+            ]);
+            ai += 1;
         }
 
-        builder.add_face([b0 + b * 2, a0 + a * 2, b0 + (b + 1) % bn * 2]);
+        builder.add_face([
+            b.start + (bi + b.offset) % b.len * b.step,
+            b.start + (bi + b.offset + 1) % b.len * b.step,
+            a.start + (ai + a.len) % a.len * a.step,
+        ]);
     }
 
-    builder.add_face([a0, b0, b0 + (bn - 1) * 2]);
+    builder.add_face([
+        a.start + a.offset % a.len,
+        b.start + (b.len + b.offset - 1) % b.len * b.step,
+        b.start + b.offset % b.len,
+    ]);
 }

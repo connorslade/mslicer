@@ -20,8 +20,8 @@ use tracing::info;
 use crate::{
     core::{history::Action, project::model::Model},
     task::{
-        BuildAccelerationStructures, MeshDefective, PollResult, Task, TaskApp, TaskStatus,
-        thread::TaskThread,
+        BuildAccelerationStructures, MeshDefective, MeshVolume, PollResult, Task, TaskApp,
+        TaskStatus, thread::TaskThread,
     },
 };
 
@@ -72,7 +72,7 @@ impl MeshLoad {
     pub fn complete(name: String, mesh: Mesh) -> Self {
         Self {
             progress: Progress::already_complete(),
-            handle: TaskThread::spawn(|| mesh),
+            handle: TaskThread::complete(mesh),
 
             name,
             file: None,
@@ -96,6 +96,7 @@ impl Task for MeshLoad {
             model.update_oob(&app.project.slice_config.platform_size);
             let result = PollResult::complete()
                 .with_task(MeshDefective::new(&model))
+                .with_task(MeshVolume::new(&model))
                 .with_task(BuildAccelerationStructures::new(&model));
             app.history.track(Action::ModelAdded { id: model.id });
             app.project.models.push(model);

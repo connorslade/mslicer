@@ -16,7 +16,7 @@ use slicer::{builder::MeshBuilder, mesh::Mesh};
 
 use crate::phonograph_record::{
     audio::{AudioBuffer, Channels, Equalization},
-    mesh::add_disk,
+    mesh::{VertexRing, add_disk, triangulate_gap},
 };
 
 pub mod audio;
@@ -36,6 +36,7 @@ pub struct PhonographRecord {
     pub hole_radius: Milimeters,
     pub thickness: Milimeters,
     pub watertight: bool,
+    pub sagitta: Milimeters,
 
     pub pitch: Milimeters, // must be >width
     pub width: Milimeters,
@@ -116,24 +117,31 @@ impl PhonographRecord {
         builder.add_face([0, 2, 1]);
         builder.add_face([base, base + 2, base + 1]);
 
-        add_disk(
+        let sagitta = self.sagitta.get::<Milimeter>();
+        let [bo, bi, be] = add_disk(
             &mut builder,
             thickness,
             outer_radius + pitch,
             hole_radius,
-            0.1,
+            sagitta,
         );
 
-        // if self.watertight {
-        //     // fill to outer cylinder
-        //     for i in 0..points_per_disk {
-        //         let t = i as f32 / points_per_disk as f32;
-        //         let (a, b) = (i * 3 + 2, (i + 1) * 3 + 2);
-        //         let across = x + (t * p as f32) as u32 * 4;
+        if self.watertight {
+            // to outer edge
+            triangulate_gap(
+                &mut builder,
+                VertexRing::new(bo + 1, (bi - bo) / 2).with_step(2),
+                VertexRing::new(2, points_per_disk).with_step(3),
+            );
 
-        //         builder.add_face([a, across, b]);
-        //     }
-        // }
+            // tinner edge
+            triangulate_gap(
+                &mut builder,
+                VertexRing::new(bi + 1, (be - bi) / 2).with_step(2),
+                VertexRing::new((resolution - points_per_disk) * 3 + 2, points_per_disk)
+                    .with_step(3),
+            );
+        }
 
         progress.set_finished();
         Ok(builder.build())
@@ -160,6 +168,7 @@ impl Default for PhonographRecord {
             hole_radius: Milimeters::new(3.62),
             thickness: Milimeters::new(2.0),
             watertight: true,
+            sagitta: Micrometers::new(10.0).convert(),
 
             pitch: Micrometers::new(150.0).convert(),
             width: Micrometers::new(80.0).convert(),
