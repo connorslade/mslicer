@@ -34,11 +34,11 @@ pub fn add_disk(
     }
 
     let be = builder.next_idx();
-    triangulate_gap(
-        builder,
+    TriangulateGap::new(
         VertexRing::new(bo, outer_points).with_step(2),
         VertexRing::new(bi, inner_points).with_step(2),
-    );
+    )
+    .build(builder);
 
     [bo, bi, be]
 }
@@ -74,35 +74,69 @@ impl VertexRing {
     }
 }
 
-pub fn triangulate_gap(builder: &mut MeshBuilder, a: VertexRing, b: VertexRing) {
-    let (a, b) = if a.len < b.len { (b, a) } else { (a, b) };
-    let a_per_b = a.len as f32 / b.len as f32;
+pub struct TriangulateGap {
+    a: VertexRing,
+    b: VertexRing,
 
-    let mut remaining = 0.0;
-    let mut ai = 0;
-    for bi in 0..b.len {
-        remaining += a_per_b;
+    flip_fan: bool,
+    flip_bridge: bool,
+}
 
-        while remaining >= 1.0 {
-            remaining -= 1.0;
-            builder.add_face([
-                b.start + (bi + b.offset) % b.len * b.step,
-                a.start + (ai + a.offset + 1) % a.len * a.step,
-                a.start + (ai + a.offset) % a.len * a.step,
-            ]);
-            ai += 1;
+impl TriangulateGap {
+    pub fn new(a: VertexRing, b: VertexRing) -> Self {
+        Self {
+            a,
+            b,
+            flip_fan: false,
+            flip_bridge: false,
         }
-
-        builder.add_face([
-            b.start + (bi + b.offset) % b.len * b.step,
-            b.start + (bi + b.offset + 1) % b.len * b.step,
-            a.start + (ai + a.len) % a.len * a.step,
-        ]);
     }
 
-    builder.add_face([
-        a.start + a.offset % a.len,
-        b.start + (b.len + b.offset - 1) % b.len * b.step,
-        b.start + b.offset % b.len,
-    ]);
+    pub fn flip_fan(mut self) -> Self {
+        self.flip_fan ^= true;
+        self
+    }
+
+    pub fn flip_bridge(mut self) -> Self {
+        self.flip_bridge ^= true;
+        self
+    }
+
+    pub fn build(self, builder: &mut MeshBuilder) {
+        let Self { a, b, .. } = self;
+        let (a, b) = if a.len < b.len { (b, a) } else { (a, b) };
+        let a_per_b = a.len as f32 / b.len as f32;
+
+        let mut face = |flip: bool, f @ [a, b, c]: [u32; 3]| {
+            builder.add_face(if flip { [a, c, b] } else { f })
+        }; // this ones for u branch predictor <3
+
+        let mut remaining = 0.0;
+        let mut ai = 0;
+        for bi in 0..b.len {
+            remaining += a_per_b;
+
+            while remaining >= 1.0 {
+                remaining -= 1.0;
+                face(
+                    self.flip_fan,
+                    [
+                        b.start + (bi + b.offset) % b.len * b.step,
+                        a.start + (ai + a.offset + 1) % a.len * a.step,
+                        a.start + (ai + a.offset) % a.len * a.step,
+                    ],
+                );
+                ai += 1;
+            }
+
+            face(
+                self.flip_bridge,
+                [
+                    b.start + (bi + b.offset) % b.len * b.step,
+                    b.start + (bi + b.offset + 1) % b.len * b.step,
+                    a.start + (ai + a.len) % a.len * a.step,
+                ],
+            );
+        }
+    }
 }

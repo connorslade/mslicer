@@ -145,6 +145,7 @@ impl File {
 
         drop(zip);
         ser.write_bytes(&bytes);
+        progress.set_finished();
         Ok(())
     }
 

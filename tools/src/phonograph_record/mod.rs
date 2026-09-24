@@ -16,7 +16,7 @@ use slicer::{builder::MeshBuilder, mesh::Mesh};
 
 use crate::phonograph_record::{
     audio::{AudioBuffer, Channels, Equalization},
-    mesh::{VertexRing, add_disk, triangulate_gap},
+    mesh::{TriangulateGap, VertexRing, add_disk},
 };
 
 pub mod audio;
@@ -128,19 +128,26 @@ impl PhonographRecord {
 
         if self.watertight {
             // to outer edge
-            triangulate_gap(
-                &mut builder,
+            TriangulateGap::new(
                 VertexRing::new(bo + 1, (bi - bo) / 2).with_step(2),
                 VertexRing::new(2, points_per_disk).with_step(3),
-            );
+            )
+            .build(&mut builder);
 
             // tinner edge
-            triangulate_gap(
-                &mut builder,
-                VertexRing::new(bi + 1, (be - bi) / 2).with_step(2),
-                VertexRing::new((resolution - points_per_disk) * 3 + 2, points_per_disk)
-                    .with_step(3),
-            );
+            let inner_len = (be - bi) / 2;
+            let last_disk = (resolution - points_per_disk) * 3 + 2;
+            let last_disk_offset = (delta_radius / b / TAU).fract();
+
+            TriangulateGap::new(
+                VertexRing::new(last_disk, points_per_disk).with_step(3),
+                VertexRing::new(bi + 1, inner_len)
+                    .with_step(2)
+                    .with_offset((inner_len as f32 * last_disk_offset) as u32),
+            )
+            .flip_bridge()
+            .flip_fan()
+            .build(&mut builder);
         }
 
         progress.set_finished();
