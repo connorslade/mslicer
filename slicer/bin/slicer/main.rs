@@ -1,7 +1,7 @@
 use std::{
     fs::{self, File},
-    io::{BufReader, Read, Seek, Write, stdout},
-    thread::{self, JoinHandle},
+    io::{BufReader, BufWriter, Read, Seek, Write, stdout},
+    thread,
     time::{Duration, Instant},
 };
 
@@ -24,6 +24,9 @@ use slicer::{
 };
 
 mod args;
+
+/// Terminal escape sequence to clear the line and move the cursor to the start.
+const RESET_LINE: &str = "\u{001b}[0G\u{001b}[K";
 
 fn main() -> Result<()> {
     let matches = Args::command().get_matches();
@@ -75,9 +78,10 @@ fn main() -> Result<()> {
     }
 
     let slicer = Slicer::new(slice_config.clone(), meshes);
-    let progress = slicer.progress();
+    let slicing_progress = slicer.progress();
+    let encoding_progress = Progress::new();
     let total = slicer.layer_count();
-    progress.set_total(total as u64);
+    encoding_progress.set_total(total as u64);
 
     let now = Instant::now();
     let preview = if let Some(path) = args.preview {
@@ -86,26 +90,26 @@ fn main() -> Result<()> {
         RgbaImage::new(290, 290)
     };
 
-    let file = thread::spawn(clone!([progress], move || {
-        export_raster(
-            &progress,
-            &slicer.slice_config,
-            slicer.slice_raster(),
-            0,
-            format,
-        )
+    let handle = thread::spawn(clone!([{ encoding_progress } as p], move || {
+        let layers = slicer.slice_raster();
+        let voxels = (layers.iter())
+            .flat_map(|x| x.data.iter().filter(|x| x.value != 0).map(|x| x.length))
+            .sum::<u64>();
+        export_raster(&p, &slicer.slice_config, layers, voxels, format)
     }));
-    let mut file = monitor_progress(file, progress, |progress| {
-        format!(
-            "\rLayer: {}/{total}, {:.1}%",
-            progress.get_complete(),
-            progress.progress() * 100.0
-        )
-    })?;
 
+    if !args.quiet {
+        monitor_progress(slicing_progress, |p, n| {
+            format!("[1/3] Slicing: {n}/{total}, {p:.1}%")
+        })?;
+        monitor_progress(encoding_progress, |p, n| {
+            format!("[2/3] Encoding: {n}/{total}, {p:.1}%")
+        })?;
+    }
+
+    let mut file = handle.join().unwrap();
     file.set_preview(&preview);
 
-    println!();
     let progress = Progress::new();
     let handle = thread::spawn(clone!([progress], move || {
         let mut serializer = DynamicSerializer::new();
@@ -113,12 +117,12 @@ fn main() -> Result<()> {
         fs::write(args.output, serializer.into_inner()).unwrap();
     }));
 
-    monitor_progress(handle, progress, |progress| {
-        format!("\rSaving {:.1}%", progress.progress() * 100.0)
-    })?;
+    if !args.quiet {
+        monitor_progress(progress, |p, _n| format!("[3/3] Saving: {p:.1}%"))?;
+    }
+    handle.join().unwrap();
 
-    println!("\nDone. Elapsed: {:.1}s", now.elapsed().as_secs_f32());
-
+    println!("{RESET_LINE}Finished in {:.1?}", now.elapsed());
     Ok(())
 }
 
@@ -139,18 +143,15 @@ fn is_oob(mesh: &Mesh, slice_config: &SliceConfig) -> bool {
         || max.z > slice_config.platform_size.z.get::<Milimeter>()
 }
 
-fn monitor_progress<T>(
-    handle: JoinHandle<T>,
-    progress: Progress,
-    callback: impl Fn(&Progress) -> String,
-) -> Result<T> {
-    let mut stdout = stdout();
-    while !handle.is_finished() {
+fn monitor_progress(progress: Progress, callback: impl Fn(f32, u64) -> String) -> Result<()> {
+    let mut stdout = BufWriter::new(stdout());
+    while !progress.complete() {
         thread::sleep(Duration::from_millis(50));
-        let msg = callback(&progress);
+        let msg = callback(progress.progress() * 100.0, progress.get_complete());
+        stdout.write_all(RESET_LINE.as_bytes())?;
         stdout.write_all(msg.as_bytes())?;
         stdout.flush()?;
     }
 
-    Ok(handle.join().unwrap())
+    Ok(())
 }

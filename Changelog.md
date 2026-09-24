@@ -78,6 +78,7 @@
 - Hide Auto Layout annealing settings by default
 - Calculate mesh volume asynchronously (helps on models with ~ >10M faces)
 - Reduce unnecessary cross-thread memory copies
+- Update slicer CLI progress reporting
 
 ## v0.9.2 &mdash; August 30th, 2026
 
