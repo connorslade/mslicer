@@ -15,8 +15,8 @@ use tracing::info;
 use crate::{
     core::project::Project,
     task::{
-        BuildAccelerationStructures, MeshDefective, PollResult, Task, TaskApp, TaskStatus,
-        thread::TaskThread,
+        BuildAccelerationStructures, MeshDefective, MeshVolume, PollResult, Task, TaskApp,
+        TaskStatus, thread::TaskThread,
     },
 };
 
@@ -90,6 +90,7 @@ impl Task for ProjectLoad {
                 if seen_meshes.insert(model.mesh.mesh_id()) {
                     result = result
                         .with_task(MeshDefective::new(model))
+                        .with_task(MeshVolume::new(model))
                         .with_task(BuildAccelerationStructures::new(model));
                 }
 

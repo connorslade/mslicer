@@ -10,8 +10,8 @@ use crate::{
         model::{Model, ModelId},
     },
     task::{
-        BuildAccelerationStructures, MeshDefective, PollResult, Task, TaskApp, TaskStatus,
-        thread::TaskThread,
+        BuildAccelerationStructures, MeshDefective, MeshVolume, PollResult, Task, TaskApp,
+        TaskStatus, thread::TaskThread,
     },
 };
 
@@ -91,6 +91,7 @@ impl Task for SplitBodies {
                     model.update_oob(&app.project.slice_config.platform_size);
                     result = result
                         .with_task(MeshDefective::new(&model))
+                        .with_task(MeshVolume::new(&model))
                         .with_task(BuildAccelerationStructures::new(&model));
                     app.project.models.push(model);
                 }

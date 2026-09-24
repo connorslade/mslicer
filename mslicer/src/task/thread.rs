@@ -1,4 +1,7 @@
-use std::thread::{self, JoinHandle};
+use std::{
+    any::Any,
+    thread::{self, JoinHandle},
+};
 
 use crate::{
     interface::popup::{Popup, PopupIcon},
@@ -6,7 +9,12 @@ use crate::{
 };
 
 pub struct TaskThread<T> {
-    handle: Option<JoinHandle<T>>,
+    handle: Handle<T>,
+}
+
+enum Handle<T> {
+    Thread(Option<JoinHandle<T>>),
+    Dummy(Option<T>),
 }
 
 pub enum TaskResult<T> {
@@ -22,15 +30,19 @@ impl<T: Send + 'static> TaskThread<T> {
             .spawn(f)
             .unwrap();
         Self {
-            handle: Some(handle),
+            handle: Handle::Thread(Some(handle)),
+        }
+    }
+
+    pub fn complete(value: T) -> Self {
+        Self {
+            handle: Handle::Dummy(Some(value)),
         }
     }
 
     pub fn poll(&mut self, app: &mut TaskApp, failure: &str) -> TaskResult<T> {
-        let handle = self.handle.as_ref().unwrap();
-        if handle.is_finished() {
-            let handle = self.handle.take().unwrap();
-            match handle.join() {
+        if self.handle.is_finished() {
+            match self.handle.join() {
                 Ok(value) => TaskResult::Completed(value),
                 Err(err) => {
                     let body = if let Some(err) = err.downcast_ref::<String>() {
@@ -54,15 +66,29 @@ impl<T: Send + 'static> TaskThread<T> {
     /// Polls the task thread without any special handing of errors, they are
     /// just ignored.
     pub fn poll_ignore_err(&mut self) -> TaskResult<T> {
-        let handle = self.handle.as_ref().unwrap();
-        if handle.is_finished() {
-            let handle = self.handle.take().unwrap();
-            match handle.join() {
+        if self.handle.is_finished() {
+            match self.handle.join() {
                 Ok(value) => TaskResult::Completed(value),
                 Err(_) => TaskResult::Failed,
             }
         } else {
             TaskResult::Pending
+        }
+    }
+}
+
+impl<T> Handle<T> {
+    pub fn is_finished(&self) -> bool {
+        match self {
+            Handle::Thread(handle) => handle.as_ref().unwrap().is_finished(),
+            Handle::Dummy(_) => true,
+        }
+    }
+
+    pub fn join(&mut self) -> Result<T, Box<dyn Any + Send + 'static>> {
+        match self {
+            Handle::Thread(handle) => handle.take().unwrap().join(),
+            Handle::Dummy(value) => Ok(value.take().unwrap()),
         }
     }
 }

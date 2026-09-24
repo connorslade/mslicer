@@ -11,8 +11,8 @@ use tracing::info;
 use crate::{
     core::project::model::ModelId,
     task::{
-        BuildAccelerationStructures, MeshDefective, PollResult, Task, TaskApp, TaskStatus,
-        thread::TaskThread,
+        BuildAccelerationStructures, MeshDefective, MeshVolume, PollResult, Task, TaskApp,
+        TaskStatus, thread::TaskThread,
     },
 };
 
@@ -62,6 +62,7 @@ impl Task for ReloadModel {
                 model.replace_mesh(mesh, Some(mem::take(&mut self.path)), &platform_size);
                 PollResult::complete()
                     .with_task(MeshDefective::new(model))
+                    .with_task(MeshVolume::new(model))
                     .with_task(BuildAccelerationStructures::new(model))
             } else {
                 PollResult::complete()
