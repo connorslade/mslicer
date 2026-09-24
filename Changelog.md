@@ -76,6 +76,7 @@
 - Show slicing speed in layers/sec
 - Support highlighting selected mesh sections
 - Hide Auto Layout annealing settings by default
+- Update slicer CLI progress reporting
 
 ## v0.9.2 &mdash; August 30th, 2026
 

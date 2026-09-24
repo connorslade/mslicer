@@ -86,6 +86,9 @@ pub struct Args {
     /// File to save sliced result to. The extension must be .goo, .ctb, or
     /// .nanodlp.
     pub output: PathBuf,
+    #[arg(long, short)]
+    /// Don't show the animated progress bars or the timing breakdown.
+    pub quiet: bool,
 }
 
 #[derive(clap::Args, Debug)]
