@@ -1,4 +1,4 @@
-use std::f64::consts::{PI, TAU};
+use std::f64::consts::TAU;
 
 use nalgebra::Vector2;
 use svg::{
@@ -6,7 +6,7 @@ use svg::{
     node::element::{Path, path::Data},
 };
 
-use crate::misc::bounds::Bounds2D;
+use crate::misc::{bounds::Bounds2D, circle_points};
 
 pub struct Polygons {
     pub polygons: Vec<Vec<Vector2<f64>>>,
@@ -71,13 +71,9 @@ impl Polygons {
     }
 
     pub fn circle(&mut self, center: Vector2<f64>, r: f64) {
-        // Reference: https://en.wikipedia.org/wiki/Sagitta_(geometry)
-        // self.sagitta = r (1 - cos θ/2)
-        // 2 cos⁻¹(-(self.sagitta / r - 1)) = θ
-        // n = π / cos⁻¹(1 - self.sagitta / r)
-        let points = ((PI / (1.0 - self.sagitta / r).acos()).ceil() as usize).max(3);
-
+        let points = circle_points(self.sagitta, r) as usize;
         let mut circle = Vec::with_capacity(points);
+
         for i in 0..points {
             let f = i as f64 / points as f64 * TAU;
             circle.push(center + Vector2::new(f.cos(), f.sin()) * r);

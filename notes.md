@@ -7,6 +7,11 @@ Feel free to help out :eyes:.
 
 - open slice preview as tab next to 3d view by default
 - check if slicing with spacemouse button causes crash
+- freeze on model load
+  - make volume calculation async?
+- crash on quick layout with no models
+- clamp model idx read back
+  - `Copy of Y 1080..1081 would end up overrunning the bounds of the Source texture of Y size 1080`
 
 ## Features
 
@@ -32,6 +37,9 @@ Feel free to help out :eyes:.
 - plot voxel error across different triangulations
 - lower render resolution?
 - different support colors (also diff default styles)
+- sliced post processing
+  - remove islands
+  - exposure remap
 
 ## Documentation
 
@@ -64,6 +72,7 @@ Features that would be cool, but are a bit out of scope for now.
 - optimize elephant foot post processing (deprecated post processor)
 - slice b-rep?
   - at what point of mesh resolution is polygon intersection slower 
+- scripting???
 
 ---
 

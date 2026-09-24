@@ -75,6 +75,7 @@
   - Default model lift when supporting automatically
 - Show slicing speed in layers/sec
 - Support highlighting selected mesh sections
+- Hide Auto Layout annealing settings by default
 
 ## v0.9.2 &mdash; August 30th, 2026
 

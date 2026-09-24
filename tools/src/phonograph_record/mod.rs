@@ -16,7 +16,7 @@ use slicer::{builder::MeshBuilder, mesh::Mesh};
 
 use crate::phonograph_record::{
     audio::{AudioBuffer, Channels, Equalization},
-    mesh::add_cylinder_inner,
+    mesh::add_disk,
 };
 
 pub mod audio;
@@ -33,8 +33,9 @@ mod mesh;
 pub struct PhonographRecord {
     pub outer_radius: Milimeters,
     pub inner_radius: Milimeters,
+    pub hole_radius: Milimeters,
     pub thickness: Milimeters,
-    pub close: bool,
+    pub watertight: bool,
 
     pub pitch: Milimeters, // must be >width
     pub width: Milimeters,
@@ -48,7 +49,6 @@ pub struct PhonographRecord {
 }
 
 impl PhonographRecord {
-    // todo: generate manifold mesh
     pub fn generate(&self, progress: &Progress) -> Result<Mesh> {
         let reader = BufReader::new(File::open(&self.audio)?);
         let audio = AudioBuffer::load(reader, self.channels)?;
@@ -59,6 +59,7 @@ impl PhonographRecord {
         let pitch = self.pitch.get::<Milimeter>();
         let outer_radius = self.outer_radius.get::<Milimeter>();
         let inner_radius = self.inner_radius.get::<Milimeter>();
+        let hole_radius = self.hole_radius.get::<Milimeter>();
         let thickness = self.thickness.get::<Milimeter>();
 
         let delta_radius = outer_radius - inner_radius;
@@ -100,7 +101,7 @@ impl PhonographRecord {
                 }
 
                 let across = i + points_per_disk;
-                if self.close && across + 1 < resolution {
+                if self.watertight && across + 1 < resolution {
                     let (a, c) = (i * 3, across * 3);
                     let (b, d) = (a + 3, c + 3);
                     builder.add_quad_flipped([a, b, c + 2, d + 2]);
@@ -110,24 +111,29 @@ impl PhonographRecord {
             progress.set_complete(i as u64);
         }
 
-        for j in 1..2 {
-            builder.add_face([0, j, j + 1]);
-        }
-
+        // grove end caps
         let base = (resolution - 1) * 3;
-        for j in 1..2 {
-            builder.add_face([base, base + j + 1, base + j]);
-        }
+        builder.add_face([0, 2, 1]);
+        builder.add_face([base, base + 2, base + 1]);
 
-        let radius = outer_radius + pitch;
-        builder._add_cylinder(
-            (Vector3::zeros(), Vector3::z() * thickness),
-            (radius, radius),
-            (false, true),
-            1000,
+        add_disk(
+            &mut builder,
+            thickness,
+            outer_radius + pitch,
+            hole_radius,
+            0.1,
         );
 
-        add_cylinder_inner(&mut builder, Vector3::zeros(), thickness, 3.62, 100);
+        // if self.watertight {
+        //     // fill to outer cylinder
+        //     for i in 0..points_per_disk {
+        //         let t = i as f32 / points_per_disk as f32;
+        //         let (a, b) = (i * 3 + 2, (i + 1) * 3 + 2);
+        //         let across = x + (t * p as f32) as u32 * 4;
+
+        //         builder.add_face([a, across, b]);
+        //     }
+        // }
 
         progress.set_finished();
         Ok(builder.build())
@@ -151,8 +157,9 @@ impl Default for PhonographRecord {
         Self {
             outer_radius: Milimeters::new(60.0),
             inner_radius: Milimeters::new(50.0),
+            hole_radius: Milimeters::new(3.62),
             thickness: Milimeters::new(2.0),
-            close: false,
+            watertight: true,
 
             pitch: Micrometers::new(150.0).convert(),
             width: Micrometers::new(80.0).convert(),

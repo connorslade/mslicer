@@ -75,34 +75,32 @@ fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
     });
 
     ui.add_space(8.0);
-    CollapsingHeader::new("Annealing")
-        .default_open(true)
-        .show(ui, |ui| {
-            grid("annealing").show(ui, |ui| {
-                ui.label("Start Temperature");
-                ui.add_enabled(edit, DragValue::new(&mut tool.config.start_temp));
-                ui.end_row();
+    ui.collapsing("Annealing", |ui| {
+        grid("annealing").show(ui, |ui| {
+            ui.label("Start Temperature");
+            ui.add_enabled(edit, DragValue::new(&mut tool.config.start_temp));
+            ui.end_row();
 
-                ui.label("End Temperature");
-                ui.add_enabled(edit, DragValue::new(&mut tool.config.end_temp));
-                ui.end_row();
+            ui.label("End Temperature");
+            ui.add_enabled(edit, DragValue::new(&mut tool.config.end_temp));
+            ui.end_row();
 
-                ui.label("Iterations");
-                ui.add_enabled(edit, DragValue::new(&mut tool.config.iters));
-                ui.end_row();
+            ui.label("Iterations");
+            ui.add_enabled(edit, DragValue::new(&mut tool.config.iters));
+            ui.end_row();
 
-                ui.label("Cooling");
-                ui.horizontal(|ui| {
-                    ui.add_enabled(edit, DragValue::new(&mut tool.config.cooling));
-                    ui.take_available_width();
-                });
-                ui.end_row();
-
-                ui.label("Bounds Penalty");
-                ui.add_enabled(edit, DragValue::new(&mut tool.config.bounds_penalty));
-                ui.end_row();
+            ui.label("Cooling");
+            ui.horizontal(|ui| {
+                ui.add_enabled(edit, DragValue::new(&mut tool.config.cooling));
+                ui.take_available_width();
             });
+            ui.end_row();
+
+            ui.label("Bounds Penalty");
+            ui.add_enabled(edit, DragValue::new(&mut tool.config.bounds_penalty));
+            ui.end_row();
         });
+    });
 
     ui.add_space(8.0);
     if let Some(running) = &tool.running {

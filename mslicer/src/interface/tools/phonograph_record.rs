@@ -1,5 +1,6 @@
 use common::units::Mircometer;
 use egui::{Button, ComboBox, DragValue, RichText, Ui, Widget, vec2};
+use egui_phosphor::regular::INFO;
 use tools::phonograph_record::audio::{Channels, Equalization};
 
 use crate::{
@@ -12,6 +13,7 @@ use crate::{
 };
 
 pub const DESCRIPTION: &str = "Generates a phonograph record mesh from an audio file.";
+pub const MESH_GEN_TIP: &str = "The mesh generation mode. A minimal mesh may not slice in other programs or when rotated (excluding yaw).";
 
 pub fn open(app: &mut App) {
     app.popup
@@ -78,6 +80,18 @@ fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
 
     ui.collapsing("Disk", |ui| {
         grid("disk").show(ui, |ui| {
+            ui.horizontal(|ui| {
+                ui.label("Mesh Generation");
+                ui.label(INFO).on_hover_text(MESH_GEN_TIP);
+            });
+            ComboBox::from_id_salt("mesh")
+                .selected_text(["Minimal", "Watertight"][tool.watertight as usize])
+                .show_ui(ui, |ui| {
+                    ui.selectable_value(&mut tool.watertight, false, "Minimal");
+                    ui.selectable_value(&mut tool.watertight, true, "Watertight");
+                });
+            ui.end_row();
+
             ui.label("Outer Radius");
             DragValue::new(tool.outer_radius.raw_mut())
                 .suffix(" mm")
@@ -86,6 +100,13 @@ fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
 
             ui.label("Inner Radius");
             DragValue::new(tool.inner_radius.raw_mut())
+                .suffix(" mm")
+                .ui(ui);
+            ui.end_row();
+
+            // todo: make a dropdown
+            ui.label("Hole Radius");
+            DragValue::new(tool.hole_radius.raw_mut())
                 .suffix(" mm")
                 .ui(ui);
             ui.end_row();

@@ -5637,6 +5637,7 @@ dependencies = [
  "itertools 0.14.0",
  "mesh_format",
  "nalgebra 0.34.1",
+ "num-traits",
  "ordered-float",
  "parking_lot",
  "rand 0.10.2",
