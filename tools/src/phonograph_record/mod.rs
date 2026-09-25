@@ -136,7 +136,7 @@ impl PhonographRecord {
 
             // tinner edge
             let inner_len = (be - bi) / 2;
-            let last_disk = (resolution - points_per_disk) * 3 + 2;
+            let last_disk = (resolution - points_per_disk) * 3;
             let last_disk_offset = (delta_radius / b / TAU).fract();
 
             TriangulateGap::new(

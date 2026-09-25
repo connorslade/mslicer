@@ -8,8 +8,6 @@ Feel free to help out :eyes:.
 - open slice preview as tab next to 3d view by default
 - check if slicing with spacemouse button causes crash
 - freeze on model load
-  - make volume calculation async?
-- crash on quick layout with no models
 - clamp model idx read back
   - `Copy of Y 1080..1081 would end up overrunning the bounds of the Source texture of Y size 1080`
 

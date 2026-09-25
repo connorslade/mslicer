@@ -79,6 +79,7 @@
 - Calculate mesh volume asynchronously (helps on models with ~ >10M faces)
 - Reduce unnecessary cross-thread memory copies
 - Update slicer CLI progress reporting ([#39](https://github.com/connorslade/mslicer/pull/39))
+- Fix crash when running auto-layout with no models
 
 ## v0.9.2 &mdash; August 30th, 2026
 

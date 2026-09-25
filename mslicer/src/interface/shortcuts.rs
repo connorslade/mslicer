@@ -176,6 +176,10 @@ fn select_none(app: &mut App, _ctx: &Context) {
 }
 
 fn quick_layout(app: &mut App, _ctx: &Context) {
+    if app.project.models.is_empty() {
+        return;
+    }
+
     let padding = app.config.ui.quick_layout_spacing.get::<Milimeter>();
     app.tasks.add(AutoLayout::new(
         &app.project.slice_config,

@@ -33,7 +33,7 @@ impl App {
                 " Import Model or drag and drop a model file into the workspace."
             );
             self.popup.open(Popup::simple(
-                "Slicing Error",
+                "Empty Workspace",
                 PopupIcon::Error,
                 NO_MODELS_ERROR,
             ));
