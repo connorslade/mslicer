@@ -14,7 +14,7 @@ use slicer::{geometry::bvh::Bvh, half_edge::HalfEdgeMesh, mesh::Mesh};
 
 use crate::{
     core::project::{CollectionId, RenameState, supports::Supports},
-    render::util::RenderedMeshBuffers,
+    render::util::MeshBuffers,
 };
 
 pub struct Model {
@@ -36,7 +36,7 @@ pub struct Model {
 
     // Not serialized
     pub warnings: MeshWarnings,
-    buffers: Option<RenderedMeshBuffers>,
+    buffers: Option<MeshBuffers>,
     pub file: Option<PathBuf>,
 }
 
@@ -139,13 +139,13 @@ impl Model {
         self
     }
 
-    pub fn try_get_buffers(&self) -> Option<&RenderedMeshBuffers> {
+    pub fn try_get_buffers(&self) -> Option<&MeshBuffers> {
         self.buffers.as_ref()
     }
 
-    pub fn get_buffers(&mut self, device: &Device) -> &RenderedMeshBuffers {
+    pub fn get_buffers(&mut self, device: &Device) -> &MeshBuffers {
         (self.buffers.is_none())
-            .then(|| self.buffers = Some(RenderedMeshBuffers::get_for(device, &self.mesh)));
+            .then(|| self.buffers = Some(MeshBuffers::get_for(device, &self.mesh)));
         self.buffers.as_ref().unwrap()
     }
 

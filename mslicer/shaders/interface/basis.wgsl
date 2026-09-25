@@ -12,7 +12,7 @@ struct Context {
 
 struct VertexInput {
     @builtin(vertex_index) index: u32,
-    @location(0) position: vec4f
+    @location(0) position: vec3f
 }
 
 struct VertexOutput {
@@ -23,7 +23,10 @@ struct VertexOutput {
 
 @vertex
 fn vert(in: VertexInput) -> VertexOutput {
-    return VertexOutput(ctx.transform * in.position, in.index);
+    return VertexOutput(
+        ctx.transform * vec4(in.position, 1.0),
+        in.index
+    );
 }
 
 @fragment

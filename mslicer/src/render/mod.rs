@@ -1,11 +1,7 @@
-use std::mem;
-
 use eframe::CreationContext;
 use egui_wgpu::RenderState;
-use nalgebra::Vector4;
 use wgpu::{
-    BufferAddress, Device, Queue, TextureFormat, VertexAttribute, VertexBufferLayout, VertexFormat,
-    VertexStepMode,
+    Device, Queue, TextureFormat, VertexAttribute, VertexBufferLayout, VertexFormat, VertexStepMode,
 };
 
 use crate::render::{
@@ -25,10 +21,10 @@ pub mod util;
 pub mod workspace;
 
 pub const VERTEX_BUFFER_LAYOUT: VertexBufferLayout = VertexBufferLayout {
-    array_stride: mem::size_of::<ModelVertex>() as BufferAddress,
+    array_stride: 4 * 3,
     step_mode: VertexStepMode::Vertex,
     attributes: &[VertexAttribute {
-        format: VertexFormat::Float32x4,
+        format: VertexFormat::Float32x3,
         offset: 0,
         shader_location: 0,
     }],
@@ -43,7 +39,7 @@ pub struct Gcx {
 #[repr(C)]
 #[derive(Default, Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct ModelVertex {
-    pub position: [f32; 4],
+    pub position: [f32; 3], // implicit w=1
 }
 
 pub fn init_wgpu(cc: &CreationContext) -> RenderState {
@@ -64,12 +60,4 @@ pub fn init_wgpu(cc: &CreationContext) -> RenderState {
     resources.insert(BasisPipeline::new(device, texture));
 
     render_state.clone()
-}
-
-impl ModelVertex {
-    pub fn new(pos: Vector4<f32>) -> Self {
-        Self {
-            position: [pos.x, pos.y, pos.z, pos.w],
-        }
-    }
 }

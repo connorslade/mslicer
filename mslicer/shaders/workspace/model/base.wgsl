@@ -33,7 +33,8 @@ struct FragmentOutput {
 }
 
 @vertex
-fn vert(@location(0) position: vec4f) -> VertexOutput {
+fn vert(@location(0) xyz: vec3f) -> VertexOutput {
+    let position = vec4(xyz, 1.0);
     return VertexOutput(
         context.transform * position,
         (context.model_transform * position).xyz,

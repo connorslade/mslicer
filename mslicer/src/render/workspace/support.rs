@@ -117,9 +117,10 @@ impl SupportPipeline {
         };
 
         let (vertices, indices) = gpu_mesh(mesh);
-        self.vertex_buffer.write_slice(gcx, &vertices);
-        self.index_buffer.write_slice(gcx, &indices);
-        self.index_count = indices.len() as u32;
+        self.vertex_buffer
+            .write_slice(gcx, bytemuck::cast_slice::<_, u8>(vertices));
+        self.index_buffer.write_slice(gcx, indices);
+        self.index_count = mesh.face_count() as u32 * 3;
     }
 
     pub fn paint(&self, render_pass: &mut RenderPass, _app: &mut App) {

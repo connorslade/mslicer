@@ -1,13 +1,14 @@
-use std::ops::Deref;
+use std::{mem, ops::Deref};
 
 use bytemuck::NoUninit;
+use nalgebra::Vector3;
 use slicer::mesh::Mesh;
 use wgpu::{
     Buffer, BufferDescriptor, BufferUsages, Device,
     util::{BufferInitDescriptor, DeviceExt},
 };
 
-use crate::render::{Gcx, ModelVertex};
+use crate::render::Gcx;
 
 #[macro_export]
 macro_rules! include_shader {
@@ -25,7 +26,7 @@ pub struct ResizingBuffer {
     inner: Buffer,
 }
 
-pub struct RenderedMeshBuffers {
+pub struct MeshBuffers {
     pub vertex_buffer: Buffer,
     pub index_buffer: Buffer,
 }
@@ -78,7 +79,7 @@ impl ResizingBuffer {
     }
 }
 
-impl RenderedMeshBuffers {
+impl MeshBuffers {
     pub fn get_for(device: &Device, mesh: &Mesh) -> Self {
         let (vertex_buffer, index_buffer) = gpu_mesh_buffers(device, mesh);
         Self {
@@ -96,26 +97,25 @@ impl Deref for ResizingBuffer {
     }
 }
 
-pub fn gpu_mesh(mesh: &Mesh) -> (Vec<ModelVertex>, Vec<u32>) {
-    let index = mesh.faces().iter().flatten().copied().collect::<Vec<_>>();
-    let vertices = (mesh.vertices().iter())
-        .map(|vert| ModelVertex::new(vert.push(1.0)))
-        .collect::<Vec<_>>();
-    (vertices, index)
+pub fn gpu_mesh(mesh: &Mesh) -> (&[u8], &[u8]) {
+    let vertices = unsafe { mem::transmute::<&[Vector3<f32>], &[[f32; 3]]>(mesh.vertices()) };
+    (
+        bytemuck::cast_slice(vertices),
+        bytemuck::cast_slice(mesh.faces()),
+    )
 }
 
 pub fn gpu_mesh_buffers(device: &Device, mesh: &Mesh) -> (Buffer, Buffer) {
-    let (vertices, indices) = gpu_mesh(mesh);
-
+    let (vertex, index) = gpu_mesh(mesh);
     let vertex_buffer = device.create_buffer_init(&BufferInitDescriptor {
         label: None,
-        contents: bytemuck::cast_slice(&vertices),
+        contents: bytemuck::cast_slice(vertex),
         usage: BufferUsages::VERTEX,
     });
 
     let index_buffer = device.create_buffer_init(&BufferInitDescriptor {
         label: None,
-        contents: bytemuck::cast_slice(&indices),
+        contents: index,
         usage: BufferUsages::INDEX,
     });
 
