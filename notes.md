@@ -7,9 +7,7 @@ Feel free to help out :eyes:.
 
 - open slice preview as tab next to 3d view by default
 - check if slicing with spacemouse button causes crash
-- freeze on model load
-- clamp model idx read back
-  - `Copy of Y 1080..1081 would end up overrunning the bounds of the Source texture of Y size 1080`
+- hover overlay flickers sometimes
 
 ## Features
 
@@ -81,5 +79,4 @@ just found it. were back.
 - support presets and property configuration
 - generate support mesh / placement in async task
 - task cancellation mechanism
-- general mesh repair progress
 - maybe supports and repair should go in slicer?

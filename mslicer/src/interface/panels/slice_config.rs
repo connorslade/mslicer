@@ -30,6 +30,7 @@ use crate::{
         },
         popup::{Popup, PopupApp},
     },
+    util::ext::FloatExt,
 };
 use common::{
     slice::{ExposureConfig, ExposureRemap, SliceMode, Supersample},
@@ -591,8 +592,8 @@ fn exposure_remapping(
                 points.push([p.x, p.y]);
             }
 
-            pointer = (plot.pointer_coordinate())
-                .map(|x| Vector2::new(x.x, x.y).map(|x| x.clamp(0.0, 1.0)));
+            pointer =
+                (plot.pointer_coordinate()).map(|x| Vector2::new(x.x, x.y).map(|x| x.saturate()));
             if let Some(selected_remap_point) = selected_remap_point
                 && let Some(pointer) = pointer
             {

@@ -12,6 +12,7 @@ use wgpu::{
 use crate::{
     core::{App, project::model::ModelId, state::GeometryHit},
     render::{Gcx, workspace::model::MultiStage},
+    util::ext::FloatExt,
 };
 
 pub struct ModelPicker {
@@ -68,7 +69,7 @@ impl ModelPicker {
         let texture = multi.model_target.texture();
         let size = texture.size();
 
-        let uv = app.state.workspace.uv;
+        let uv = app.state.workspace.uv.map(|x| x.saturate());
         if !(0.0..1.0).contains(&uv.x) || !(0.0..1.0).contains(&uv.y) {
             app.state.hovered_geometry = None;
             return;

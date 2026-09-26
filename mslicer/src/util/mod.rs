@@ -1,3 +1,4 @@
+pub mod ext;
 pub mod fps_tracker;
 pub mod management;
 
