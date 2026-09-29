@@ -27,6 +27,7 @@ impl SdfSlicer {
         let offset = Vector3::new(size.x / 2.0, size.y / 2.0, 0.0);
 
         // find [0, ?] Z bounds
+        // let layers = (20_f32 / 0.05 / (8.9 / 20.0)).ceil() as u32;
         let layers = (config.platform_size.z / config.slice_height) as u32;
         let rows = config.platform_resolution.y;
 
@@ -95,11 +96,11 @@ impl SdfSlicer {
 
 // From: https://jbaker.graphics/writings/DEC.html
 fn sdf(p: Vector3<f32>) -> f32 {
+    let p = p * (8.9 / 20.0);
+
     let gyroid = p.map(|x| x.sin()).dot(&p.map(|x| x.cos()).yzx()) * 0.6;
-    let bounds = (p - Vector3::new(0.0, 0.0, 10.0)).magnitude() - 10.0;
+    let d = 8.9;
+    let bounds = (p - Vector3::new(0.0, 0.0, d - 0.05)).abs().max() - d;
 
     gyroid.max(bounds)
 }
-
-// == Evaluations
-// 157,835,923

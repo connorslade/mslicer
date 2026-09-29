@@ -1,6 +1,7 @@
 use egui::IconData;
 
 pub mod arguments;
+pub mod memory;
 #[cfg(windows)]
 pub mod windows;
 

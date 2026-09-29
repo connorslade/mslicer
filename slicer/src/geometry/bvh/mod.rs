@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{mem, sync::Arc};
 
 use common::progress::Progress;
 use nalgebra::Vector3;
@@ -39,6 +39,10 @@ impl Bvh {
         Self {
             nodes: Arc::new(arena),
         }
+    }
+
+    pub fn memory_size(&self) -> usize {
+        self.nodes.capacity() * mem::size_of::<BvhNode>()
     }
 
     fn intersect<Type: Primitive>(&self, mesh: &Mesh, ray: Ray) -> Option<Hit> {

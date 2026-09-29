@@ -8,6 +8,14 @@ Feel free to help out :eyes:.
 - open slice preview as tab next to 3d view by default
 - check if slicing with spacemouse button causes crash
 - hover overlay flickers sometimes
+- is antialiasing correct on anisotropic displays?
+- remote print crash
+
+```plain
+thread 'main' (344389) panicked at mslicer/src/interface/panels/remote_print.rs:308:70:
+called `Result::unwrap()` on an `Err` value: Broken pipe (os error 32)
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+```
 
 ## Features
 
@@ -29,7 +37,6 @@ Feel free to help out :eyes:.
 - task cancellation mechanism
 - release updated msla_format
 - game style camera (arrow keys to move)
-- organize tools menu with categories?
 - plot voxel error across different triangulations
 - lower render resolution?
 - different support colors (also diff default styles)
@@ -53,6 +60,12 @@ Feel free to help out :eyes:.
 - add phosphor icons in doc pages (like i did on the pcb photolithography page)
 - update mesh repair page (previously repairing non-manifold meshes)
 - ultimate slicer benchmark (slice Thingi10K dataset)
+- switch between multiple sliced files in slice preview?
+- memory usage chart (custom allocators?)
+  - models
+  - history
+  - sliced
+  - misc
 
 ## Maybe
 

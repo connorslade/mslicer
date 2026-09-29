@@ -1,5 +1,6 @@
 use std::{
     collections::{HashMap, HashSet},
+    mem,
     sync::Arc,
 };
 
@@ -67,6 +68,12 @@ impl HalfEdgeMesh {
             edge_map,
             incident_edge,
         }
+    }
+
+    pub fn memory_size(&self) -> usize {
+        self.half_edges.capacity() * mem::size_of::<HalfEdge>()
+            + self.edge_map.capacity() * mem::size_of::<((u32, u32), u32)>()
+            + self.incident_edge.capacity() * mem::size_of::<(u32, u32)>()
     }
 
     pub fn half_edges(&self) -> &[HalfEdge] {

@@ -14,6 +14,7 @@ use crate::{
         },
     },
     interface::components::{collapsing_toggle, dragger, grid, vec2_dragger, vec3_dragger},
+    system::memory::MemoryBreakdown,
 };
 
 const BASIS_TIP: &str = "Set size to 0px to disable.";
@@ -338,7 +339,10 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
         .header_response
         .on_hover_text("Only supported on Linux systems at the moment.");
 
-    ui.collapsing("Stats", |ui| {
+    ui.add_space(8.0);
+    ui.heading("Stats");
+
+    ui.collapsing("Rendering", |ui| {
         ui.label(format!(
             "Frame Time: {:.2}ms",
             app.fps.frame_time() * 1000.0
@@ -364,5 +368,25 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                 plot.add(Line::new("", series).color(Color32::WHITE));
             });
         ui.add_space(4.0);
+    });
+
+    ui.collapsing("Memory", |ui| {
+        let report = MemoryBreakdown::create(app);
+        let mib = |bytes| bytes as f32 / B_PER_MIB as f32;
+
+        grid("memory").show(ui, |ui| {
+            ui.label("Models");
+            ui.horizontal(|ui| {
+                ui.label(format!("{:.2} MiB", mib(report.models)));
+                ui.take_available_width();
+            });
+            ui.end_row();
+
+            ui.label("Other");
+            ui.label(format!("{:.2} MiB", mib(report.misc())));
+            ui.end_row();
+        });
+
+        // todo: pie chart
     });
 }

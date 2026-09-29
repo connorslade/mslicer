@@ -81,6 +81,7 @@
 - Update slicer CLI progress reporting ([#39](https://github.com/connorslade/mslicer/pull/39))
 - Fix crash when running auto-layout with no models
 - Don't make unnecessary copies of mesh when uploading to GPU
+- Show memory usage breakdown
 
 ## v0.9.2 &mdash; August 30th, 2026
 
