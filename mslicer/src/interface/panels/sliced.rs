@@ -49,6 +49,7 @@ use crate::{
     util::management::{LazyText, LazyTextureId},
 };
 use common::{
+    container::Run,
     misc::{IMAGE_FORMATS, human_duration, separate_thousands},
     progress::Progress,
     serde::DynamicSerializer,
@@ -830,7 +831,7 @@ fn sidebar(
                 ui.label(separate_thousands(layer.data.len()));
                 ui.end_row();
 
-                let memory = (layer.data.len() * 16) as f32 / 1024.0; // in KiB
+                let memory = (layer.data.len() * mem::size_of::<Run>()) as f32 / 1024.0; // in KiB
                 ui.label("Memory Usage");
                 ui.horizontal(|ui| {
                     if memory > 1024.0 {

@@ -1,8 +1,14 @@
-use common::units::Milimeter;
+use std::f32::consts::TAU;
+
+use common::{color::START_COLOR, units::Milimeter};
 use const_format::concatcp;
-use egui::{CollapsingHeader, Color32, ComboBox, Context, DragValue, Grid, Theme, Ui, Widget};
+use egui::{
+    Align2, CollapsingHeader, Color32, ComboBox, Context, DragValue, FontId, Grid, Mesh, Sense,
+    Theme, Ui, Vec2, Widget, vec2,
+};
 use egui_phosphor::regular::{ARROW_COUNTER_CLOCKWISE, ARROWS_CLOCKWISE, FOLDER, INFO};
 use egui_plot::{Line, Plot};
+use tools::misc::circle_points;
 use tracing::error;
 
 use crate::{
@@ -382,11 +388,73 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
             });
             ui.end_row();
 
+            ui.label("Sliced");
+            ui.label(format!("{:.2} MiB", mib(report.sliced)));
+            ui.end_row();
+
             ui.label("Other");
             ui.label(format!("{:.2} MiB", mib(report.misc())));
             ui.end_row();
         });
 
-        // todo: pie chart
+        let size = 100.0;
+        let (rect, _) = ui.allocate_exact_size(Vec2::splat(size), Sense::empty());
+        let p = ui.painter_at(rect);
+
+        let base = rect.min + Vec2::splat(size / 2.0);
+
+        let names = ["Models", "Sliced", "Other"];
+        let mut text = vec![None; names.len()];
+
+        let mut mesh = Mesh::default();
+        let mut theta = 0.0;
+        let mut n = 0;
+        for (i, value) in [report.models, report.sliced, report.misc()]
+            .into_iter()
+            .enumerate()
+        {
+            let t = i as f32 / names.len() as f32;
+            let shift = t * TAU;
+            let color = START_COLOR.hue_shift(shift).to_linear_srgb();
+            let color = Color32::from_rgb(
+                (color.r * 255.0) as u8,
+                (color.g * 255.0) as u8,
+                (color.b * 255.0) as u8,
+            );
+
+            let delta_theta = TAU * value as f32 / report.total as f32;
+            mesh.colored_vertex(base, color);
+
+            let points = circle_points(0.1, size as f64 / 2.0);
+            for i in 0..points {
+                let t = i as f32 / (points - 1) as f32;
+                let theta = theta + delta_theta * t;
+                let point = vec2(theta.cos(), theta.sin()) * size / 2.0;
+                mesh.colored_vertex(base + point, color);
+            }
+
+            if delta_theta > 0.0 {
+                let theta_half = theta + delta_theta / 2.0;
+                let center = vec2(theta_half.cos(), theta_half.sin()) * size / 4.0;
+                text[i] = Some(base + center);
+            }
+
+            (1..points).for_each(|i| mesh.add_triangle(n, n + i, n + i + 1));
+            theta += delta_theta;
+            n += points + 1;
+        }
+
+        p.add(mesh);
+
+        for (name, pos) in names.iter().zip(text.iter()) {
+            let Some(pos) = pos else { continue };
+            p.text(
+                *pos,
+                Align2::CENTER_CENTER,
+                name,
+                FontId::proportional(12.0),
+                Color32::WHITE,
+            );
+        }
     });
 }

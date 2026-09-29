@@ -41,10 +41,11 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 - lower render resolution?
 - different support colors (also diff default styles)
 - sliced post processing
-  - remove islands
+  - remove islands ←
   - exposure remap
 - make task status give an (optional) model/mesh? id and group them in the ui
   - will be great for MeshDefective, MeshVolume, and BuildAccelerationStructures
+- switch between multiple sliced files in slice preview?
 
 ## Documentation
 
@@ -60,12 +61,6 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 - add phosphor icons in doc pages (like i did on the pcb photolithography page)
 - update mesh repair page (previously repairing non-manifold meshes)
 - ultimate slicer benchmark (slice Thingi10K dataset)
-- switch between multiple sliced files in slice preview?
-- memory usage chart (custom allocators?)
-  - models
-  - history
-  - sliced
-  - misc
 
 ## Maybe
 

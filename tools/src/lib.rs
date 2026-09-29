@@ -1,7 +1,7 @@
 pub mod auto_layout;
 mod exposure;
 pub mod graphics_3d;
-mod misc;
+pub mod misc;
 pub mod phonograph_record;
 pub mod printed_circuit_board;
 pub mod reconstruct_mesh;
