@@ -8,7 +8,7 @@ Feel free to help out :eyes:.
 - open slice preview as tab next to 3d view by default
 - check if slicing with spacemouse button causes crash
 - hover overlay flickers sometimes
-- is antialiasing correct on anisotropic displays?
+- does the 'File › Install' button on windows close your project without saving?
 - remote print crash
 
 ```plain
@@ -46,6 +46,10 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 - make task status give an (optional) model/mesh? id and group them in the ui
   - will be great for MeshDefective, MeshVolume, and BuildAccelerationStructures
 - switch between multiple sliced files in slice preview?
+- look into reducing memory usage
+  - boxed slices
+  - Run u32
+- optimize high poly model rendering
 
 ## Documentation
 
