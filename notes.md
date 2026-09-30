@@ -43,13 +43,12 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 - sliced post processing
   - remove islands ←
   - exposure remap
-- make task status give an (optional) model/mesh? id and group them in the ui
-  - will be great for MeshDefective, MeshVolume, and BuildAccelerationStructures
+- combine MeshDefective, MeshVolume, and BuildAccelerationStructures into one task
 - switch between multiple sliced files in slice preview?
 - look into reducing memory usage
   - boxed slices
   - Run u32
-- optimize high poly model rendering
+- reduce power usage (dont always re-render, don't re-do work)
 
 ## Documentation
 

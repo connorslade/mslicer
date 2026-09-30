@@ -3,8 +3,6 @@ use std::{
     ops::{Deref, DerefMut},
 };
 
-use egui::Vec2;
-
 mod logs;
 mod models;
 pub mod remote_print;
@@ -16,7 +14,6 @@ mod viewport;
 mod workspace;
 
 use egui_dock::{DockState, Node, NodeIndex, Tree};
-use nalgebra::Vector2;
 
 use crate::core::config::Config;
 pub use tabs::{Tab, Tabs};
@@ -54,18 +51,14 @@ impl Panels {
         (self.dock_state.is_none()).then(|| self.dock_state = Some(state));
     }
 
-    pub fn focus_tab(&mut self, tab: Tab, size: Vector2<f32>) {
+    /// Focuses a tab, adding it as a sibling to the viewport if it doesn't
+    /// already exist
+    pub fn focus_tab(&mut self, tab: Tab) {
         if let Some(panel) = self.find_tab(&tab) {
             self.set_active_tab(panel);
         } else {
-            self.add_tab(tab, size);
+            self.main_surface_mut().push_to_first_leaf(tab);
         }
-    }
-
-    pub fn add_tab(&mut self, tab: Tab, size: Vector2<f32>) {
-        let window_id = self.add_window(vec![tab]);
-        let window = self.get_window_state_mut(window_id).unwrap();
-        window.set_size(Vec2::new(size.x, size.y));
     }
 
     pub fn reset_ui(&mut self) {

@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use egui::{Theme, ViewportCommand, Visuals};
 use egui_tracing::EventCollector;
 use egui_wgpu::RenderState;
-use nalgebra::{Vector2, Vector3};
+use nalgebra::Vector3;
 use remote_print::manager::RemotePrintManager;
 use tracing::{info, warn};
 
@@ -28,8 +28,6 @@ use crate::{
     task::{PrinterScan, TaskManager, update_check_if_scheduled},
     util::fps_tracker::FpsTracker,
 };
-
-pub const SLICE_PREVIEW_SIZE: Vector2<f32> = Vector2::new(700.0, 400.0);
 
 pub mod config;
 pub mod history;

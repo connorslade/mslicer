@@ -42,7 +42,7 @@ macro_rules! generator_tool {
 
         use common::progress::{CombinedProgress, Progress};
         use $crate::{
-            core::{SLICE_PREVIEW_SIZE, slice::SliceOperation},
+            core::slice::SliceOperation,
             interface::panels::Tab,
         };
 
@@ -57,6 +57,6 @@ macro_rules! generator_tool {
             operation.add_raster_result(config, layers);
         }));
         $app.slice_operation.replace(operation);
-        $app.panels.focus_tab(Tab::Sliced, SLICE_PREVIEW_SIZE);
+        $app.panels.focus_tab(Tab::Sliced);
     }};
 }

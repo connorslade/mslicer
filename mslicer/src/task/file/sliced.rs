@@ -12,10 +12,7 @@ use common::{
 use image::RgbaImage;
 
 use crate::{
-    core::{
-        SLICE_PREVIEW_SIZE,
-        slice::{SliceOperation, result::GenericSliceData},
-    },
+    core::slice::{SliceOperation, result::GenericSliceData},
     interface::panels::Tab,
     task::{PollResult, Task, TaskApp, TaskStatus, thread::TaskThread},
 };
@@ -106,7 +103,7 @@ impl Task for LoadSliced {
                 operation.set_loaded();
 
                 app.slice_operation.replace(operation);
-                app.panels.focus_tab(Tab::Sliced, SLICE_PREVIEW_SIZE);
+                app.panels.focus_tab(Tab::Sliced);
 
                 PollResult::complete()
             })
