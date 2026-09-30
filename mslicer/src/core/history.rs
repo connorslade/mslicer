@@ -1,4 +1,8 @@
-use std::{borrow::Cow, collections::VecDeque, mem};
+use std::{
+    borrow::Cow,
+    collections::{HashMap, VecDeque},
+    mem,
+};
 
 use common::{
     color::LinearRgb,
@@ -6,8 +10,11 @@ use common::{
     units::Milimeters,
 };
 use nalgebra::{Vector2, Vector3};
-use slicer::post_process::{
-    elephant_foot_fixer::ElephantFootFixer, variable_layer_height::VariableLayerHeight,
+use slicer::{
+    mesh::MeshId,
+    post_process::{
+        elephant_foot_fixer::ElephantFootFixer, variable_layer_height::VariableLayerHeight,
+    },
 };
 
 use crate::{
@@ -136,6 +143,19 @@ impl History {
 
     pub fn track_model(&mut self, id: ModelId, action: ModelAction) {
         self.track(Action::Model { id, action });
+    }
+
+    pub fn memory_size(&self, loaded_models: &HashMap<MeshId, usize>) -> usize {
+        let mut models = 0;
+        for action in self.history.iter().chain(self.future.iter()) {
+            if let Action::ModelRemoved { model, .. } = action
+                && !loaded_models.contains_key(&model.mesh.mesh_id())
+            {
+                models += model.mesh_memory_size();
+            }
+        }
+
+        (self.future.capacity() + self.history.capacity()) * mem::size_of::<Action>() + models
     }
 }
 

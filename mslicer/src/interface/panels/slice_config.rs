@@ -25,8 +25,7 @@ use crate::{
     },
     interface::{
         components::{
-            BeingEditedExt, being_edited, collapsing_toggle, grid, height_dragger,
-            history_tracked_value, vec2_dragger,
+            BeingEditedExt, being_edited, collapsing_toggle, dragger, grid, history_tracked_value,
         },
         popup::{Popup, PopupApp},
     },
@@ -104,7 +103,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
             SelectedPrinter::Project => {
                 ui.label("Platform Resolution");
                 let old_resolution = slice_config.platform_resolution;
-                let editing = vec2_dragger(ui, slice_config.platform_resolution.as_mut(), |x| x);
+                let editing = dragger::vec2(ui, slice_config.platform_resolution.as_mut(), |x| x);
                 history_tracked_value(
                     (editing, ui, &mut app.history),
                     ("platform_resolution", || {
@@ -238,7 +237,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
 
         ui.label("Bottom Layers");
         let old_first_layers = slice_config.first_layers;
-        let changed = height_dragger(
+        let changed = dragger::height(
             ui,
             slice_config.slice_height,
             &mut slice_config.first_layers,
@@ -256,7 +255,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
             ui.label(INFO).on_hover_text(TRANSITION_LAYER_TIP);
         });
         let old_transition_layers = slice_config.transition_layers;
-        let changed = height_dragger(
+        let changed = dragger::height(
             ui,
             slice_config.slice_height,
             &mut slice_config.transition_layers,
@@ -534,7 +533,7 @@ fn edit_presets(app: &mut PopupApp, ui: &mut Ui) -> bool {
                     });
 
                     row.col(|ui| {
-                        vec2_dragger(ui, preset.resolution.as_mut(), |x| x);
+                        dragger::vec2(ui, preset.resolution.as_mut(), |x| x);
                     });
 
                     row.col(|ui| {

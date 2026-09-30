@@ -27,9 +27,7 @@ use crate::{
         },
     },
     interface::{
-        components::{
-            being_edited, grid, history_tracked_model, vec3_dragger, vec3_dragger_proportional,
-        },
+        components::{being_edited, dragger, grid, history_tracked_model},
         panels::models::{
             ALIGN_SHORTCUT, COLLECT_SHORTCUT, DELETE_SHORTCUT, DUPLICATE_SHORTCUT, RENAME_SHORTCUT,
             SPLIT_SHORTCUT, UiAction, shortcut,
@@ -250,7 +248,7 @@ pub fn model_properties(
                 ui.label("Position");
                 ui.horizontal(|ui| {
                     let mut position = model.mesh.position();
-                    let editing = vec3_dragger(ui, position.as_mut(), |x| x);
+                    let editing = dragger::vec3(ui, position.as_mut(), |x| x);
                     history_tracked_model(
                         (editing, ui, &mut app.history),
                         (id, || ModelAction::Position(model.mesh.position())),
@@ -268,11 +266,11 @@ pub fn model_properties(
                     let mut scale = model.mesh.scale() / factor;
 
                     let editing = if model.ui.locked_scale {
-                        vec3_dragger_proportional(ui, scale.as_mut(), |x| {
+                        dragger::vec3_proportional(ui, scale.as_mut(), |x| {
                             x.speed(0.01).range(0.001..=f32::MAX)
                         })
                     } else {
-                        vec3_dragger(ui, scale.as_mut(), |x| {
+                        dragger::vec3(ui, scale.as_mut(), |x| {
                             x.speed(0.01).range(0.001..=f32::MAX)
                         })
                     };
@@ -292,7 +290,7 @@ pub fn model_properties(
 
                 ui.label("Rotation");
                 let mut rotation = rad_to_deg(model.mesh.rotation());
-                let editing = vec3_dragger(ui, rotation.as_mut(), |x| x.suffix("°"));
+                let editing = dragger::vec3(ui, rotation.as_mut(), |x| x.suffix("°"));
                 history_tracked_model(
                     (editing, ui, &mut app.history),
                     (id, || ModelAction::Rotation(model.mesh.rotation())),

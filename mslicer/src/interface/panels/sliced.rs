@@ -40,7 +40,7 @@ use crate::{
         state::UiState,
     },
     interface::{
-        components::{collapsing_toggle, grid, height_dragger},
+        components::{collapsing_toggle, dragger, grid},
         panels::slice_config::exposure_config,
         popup::{Popup, PopupIcon, PopupManager},
     },
@@ -701,7 +701,7 @@ fn sidebar(
     ui.collapsing("Config", |ui| {
         grid("exposure").show(ui, |ui| {
             ui.label("First Layers");
-            exposure_changed |= height_dragger(
+            exposure_changed |= dragger::height(
                 ui,
                 result.config.slice_height,
                 &mut result.config.first_layers,
@@ -710,7 +710,7 @@ fn sidebar(
 
             ui.label("Transition Layers");
             ui.horizontal(|ui| {
-                exposure_changed |= height_dragger(
+                exposure_changed |= dragger::height(
                     ui,
                     result.config.slice_height,
                     &mut result.config.transition_layers,

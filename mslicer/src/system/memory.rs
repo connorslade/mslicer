@@ -35,15 +35,28 @@ unsafe impl GlobalAlloc for TrackedAllocator {
         unsafe { System.alloc(layout) }
     }
 
+    unsafe fn alloc_zeroed(&self, layout: Layout) -> *mut u8 {
+        self.usage.fetch_add(layout.size(), Ordering::Relaxed);
+        unsafe { System.alloc_zeroed(layout) }
+    }
+
     unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
         self.usage.fetch_sub(layout.size(), Ordering::Relaxed);
         unsafe { System.dealloc(ptr, layout) };
+    }
+
+    unsafe fn realloc(&self, ptr: *mut u8, layout: Layout, new_size: usize) -> *mut u8 {
+        self.usage.fetch_sub(layout.size(), Ordering::Relaxed);
+        self.usage.fetch_add(new_size, Ordering::Relaxed);
+        unsafe { System.realloc(ptr, layout, new_size) }
     }
 }
 
 pub struct MemoryBreakdown {
     pub total: usize,
+
     pub models: usize,
+    pub history: usize,
     pub sliced: usize,
 }
 
@@ -51,11 +64,8 @@ impl MemoryBreakdown {
     pub fn create(app: &mut App) -> Self {
         let mut mesh = HashMap::new();
         for model in app.project.models.iter() {
-            mesh.entry(model.mesh.mesh_id()).or_insert_with(|| {
-                model.mesh.memory_size()
-                    + (model.bvh.as_ref().map(|x| x.memory_size())).unwrap_or_default()
-                    + (model.half_edge.as_ref().map(|x| x.memory_size())).unwrap_or_default()
-            });
+            mesh.entry(model.mesh.mesh_id())
+                .or_insert_with(|| model.mesh_memory_size());
         }
 
         let sliced = if let Some(slice_operation) = &app.slice_operation
@@ -76,12 +86,14 @@ impl MemoryBreakdown {
 
         Self {
             total: ALLOCATOR.usage(),
+            history: app.history.memory_size(&mesh),
             models: mesh.values().sum(),
             sliced,
         }
     }
 
-    pub fn misc(&self) -> usize {
-        self.total - self.models - self.sliced
+    pub fn remaining(&self) -> usize {
+        let tracked = self.models + self.history + self.sliced;
+        self.total.saturating_sub(tracked)
     }
 }

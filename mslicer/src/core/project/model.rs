@@ -177,6 +177,12 @@ impl Model {
     pub fn set_base_volume(&mut self, volume: CubicMilimeters) {
         self.base_volume.get_or_insert(volume);
     }
+
+    pub fn mesh_memory_size(&self) -> usize {
+        self.mesh.memory_size()
+            + (self.bvh.as_ref().map(|x| x.memory_size())).unwrap_or_default()
+            + (self.half_edge.as_ref().map(|x| x.memory_size())).unwrap_or_default()
+    }
 }
 
 impl Model {
