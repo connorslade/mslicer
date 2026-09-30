@@ -14,10 +14,10 @@ use egui_phosphor::regular::{
 use notify_rust::Notification;
 use remote_print::{
     manager::{Client, ProtocolVersion},
-    shared::{FileTransferStatus, PrintInfoStatus},
+    shared::{FileTransferStatus, PrintInfoStatus, TIMEOUT_S},
 };
 use rfd::FileDialog;
-use tracing::info;
+use tracing::{info, warn};
 
 use crate::{
     core::{App, config::peripherals::ContentType, state::RemotePrintConnectStatus},
@@ -124,7 +124,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
                     );
 
                 let last_update = DateTime::from_timestamp(client.last_update, 0).unwrap();
-                if (Utc::now() - last_update).num_seconds() > 15 {
+                if (Utc::now() - last_update).num_seconds() > TIMEOUT_S {
                     RichText::new(concatcp!("  ", PLUGS)).strong().append_to(
                         &mut job,
                         &Style::default(),
@@ -304,19 +304,18 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
             },
         );
 
-        match action {
-            Action::Remove(c) => app.remote_print.remove_printer(&c).unwrap(),
-            Action::UploadFile { mainboard_id } => upload_file(app, mainboard_id),
-            Action::Pause(c) => {
-                let _ = app.remote_print.pause_print(&c);
+        if let Err(e) = match action {
+            Action::Remove(c) => app.remote_print.remove_printer(&c),
+            Action::UploadFile { mainboard_id } => {
+                upload_file(app, mainboard_id);
+                Ok(())
             }
-            Action::Resume(c) => {
-                let _ = app.remote_print.resume_print(&c);
-            }
-            Action::Stop(c) => {
-                let _ = app.remote_print.stop_print(&c);
-            }
-            Action::None => {}
+            Action::Pause(c) => app.remote_print.pause_print(&c),
+            Action::Resume(c) => app.remote_print.resume_print(&c),
+            Action::Stop(c) => app.remote_print.stop_print(&c),
+            Action::None => Ok(()),
+        } {
+            warn!("Failed to execute action: {e:?}");
         }
     }
 

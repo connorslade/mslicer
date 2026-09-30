@@ -9,13 +9,7 @@ Feel free to help out :eyes:.
 - check if slicing with spacemouse button causes crash
 - hover overlay flickers sometimes
 - does the 'File › Install' button on windows close your project without saving?
-- remote print crash
-
-```plain
-thread 'main' (344389) panicked at mslicer/src/interface/panels/remote_print.rs:308:70:
-called `Result::unwrap()` on an `Err` value: Broken pipe (os error 32)
-note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
-```
+- disable manual placement mode when supports window not visible or edit mode selected
 
 ## Features
 
@@ -49,6 +43,8 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
   - boxed slices
   - Run u32
 - reduce power usage (dont always re-render, don't re-do work)
+- avg fps so its readable, or update it 1 Hz
+- orient to face tool
 
 ## Documentation
 
@@ -64,6 +60,7 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 - add phosphor icons in doc pages (like i did on the pcb photolithography page)
 - update mesh repair page (previously repairing non-manifold meshes)
 - ultimate slicer benchmark (slice Thingi10K dataset)
+- cleanup changelog
 
 ## Maybe
 

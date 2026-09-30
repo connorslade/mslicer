@@ -2,8 +2,8 @@ use std::{
     collections::HashMap,
     ops::Deref,
     sync::{
-        atomic::{AtomicBool, AtomicI64, AtomicU16, Ordering},
         Arc, Weak,
+        atomic::{AtomicBool, AtomicI64, AtomicU16, Ordering},
     },
 };
 
@@ -15,6 +15,7 @@ use tracing::{info, trace, warn};
 
 use crate::{
     mqtt::{
+        ClientId, MqttHandler, MqttServer,
         packets::{
             connect::ConnectPacket,
             connect_ack::{ConnectAckFlags, ConnectAckPacket, ConnectReturnCode},
@@ -23,9 +24,8 @@ use crate::{
             subscribe::SubscribePacket,
             subscribe_ack::{SubscribeAckPacket, SubscribeReturnCode},
         },
-        ClientId, MqttHandler, MqttServer,
     },
-    shared::{epoch, Response},
+    shared::{Response, epoch},
     v1::{
         commands::{Command, CommandTrait, DisconnectCommand},
         status::{Attributes, FullStatusData, Status, StatusData},
@@ -39,7 +39,7 @@ pub struct MqttInner {
     /// mainboard_id -> MqttClient
     pub(crate) clients: RwLock<HashMap<String, MqttClient>>,
     /// client_id -> mainboard_id
-    client_ids: RwLock<HashMap<ClientId, String>>,
+    pub(crate) client_ids: RwLock<HashMap<ClientId, String>>,
     callback: Option<Callback>,
 }
 

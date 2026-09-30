@@ -6,6 +6,7 @@ use std::{
 };
 
 use anyhow::{Context, Result};
+use chrono::{DateTime, Utc};
 use parking_lot::{Mutex, RwLockReadGuard};
 use tracing::{info, warn};
 
@@ -13,7 +14,7 @@ use crate::{
     http::HttpServer,
     manager::Client,
     mqtt::MqttServer,
-    shared::{Response, addr},
+    shared::{Response, TIMEOUT_S, addr},
     v1::{
         commands::{DisconnectCommand, StartPrinting, StopPrinting, UploadFile},
         mqtt_server::{Mqtt, MqttClient},
@@ -121,8 +122,25 @@ impl Services {
         Ok(())
     }
 
+    fn unresponsive(&self, mainboard: &str) -> bool {
+        if let Some(client) = self.clients().get(mainboard) {
+            let epoch = client.last_update.load(Ordering::Relaxed);
+            let elapsed = (Utc::now() - DateTime::from_timestamp(epoch, 0).unwrap()).num_seconds();
+            return elapsed > TIMEOUT_S;
+        }
+
+        true
+    }
+
     pub fn remove_printer(&self, mainboard: &str) -> Result<()> {
-        self.mqtt.send_command(mainboard, DisconnectCommand)
+        if self.unresponsive(mainboard) {
+            self.mqtt.clients.write().remove(mainboard);
+            self.mqtt.client_ids.write().retain(|_k, v| v != mainboard);
+        } else {
+            self.mqtt.send_command(mainboard, DisconnectCommand)?;
+        }
+
+        Ok(())
     }
 
     pub fn upload(&self, mainboard: &str, data: Arc<Vec<u8>>, filename: String) -> Result<()> {

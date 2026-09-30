@@ -83,6 +83,8 @@
 - Don't make unnecessary copies of mesh when uploading to GPU
 - Show memory usage breakdown and pie chart
 - Open sliced panel as tab next to viewport instead of floating
+- Print warning instead of crashing on remote print network failure
+- Allow removing unresponsive printers (don't wait for confirmation if printer is unresponsive)
 
 ## v0.9.2 &mdash; August 30th, 2026
 

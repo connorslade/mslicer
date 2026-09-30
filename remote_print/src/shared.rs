@@ -4,6 +4,8 @@ use anyhow::Result;
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_repr::Deserialize_repr;
 
+pub const TIMEOUT_S: i64 = 15;
+
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct Response<Data> {
