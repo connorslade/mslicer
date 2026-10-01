@@ -9,6 +9,13 @@ Feel free to help out :eyes:.
 - hover overlay flickers sometimes
 - does the 'File › Install' button on windows close your project without saving?
 - resizing the window is laggy (bc of all the texture reallocs!)
+- fix model buffer download bounds (again):
+
+```
+Caused by:
+  In a CommandEncoder
+    Copy of X 1920..1921 would end up overrunning the bounds of the Source texture of X size 1920
+```
 
 ## Features
 

@@ -8,8 +8,8 @@ use common::{
     slice::{Layer, SliceConfig},
 };
 
-mod greedy_rle;
 mod marching_cubes;
+mod voxel;
 
 use slicer::mesh::Mesh;
 use tracing::info;
@@ -32,7 +32,7 @@ pub fn marching_cubes(
 
 pub fn greedy_rle(progress: &Progress, config: &SliceConfig, result: &[Layer]) -> Mesh {
     let start = Instant::now();
-    let (vertices, faces) = greedy_rle::reconstruct_mesh(progress, config, result);
+    let (vertices, faces) = voxel::reconstruct_mesh(progress, config, result);
     info!("Reconstructed mesh (greedy_rle) in {:?}", start.elapsed());
     Mesh::new(vertices, faces)
 }

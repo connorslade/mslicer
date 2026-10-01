@@ -133,14 +133,18 @@ pub struct BitRun {
 
 impl<'a> BitRunQueue<'a> {
     pub fn new(runs: &'a [u64]) -> Self {
-        Self {
-            runs,
-            next: 1,
-            active: if runs[0] == 0 && runs.len() > 1 {
-                BitRun::new(runs[1], true)
-            } else {
-                BitRun::new(runs[0], false)
-            },
+        if runs[0] == 0 && runs.len() > 1 {
+            Self {
+                runs,
+                next: 2,
+                active: BitRun::new(runs[1], true),
+            }
+        } else {
+            Self {
+                runs,
+                next: 1,
+                active: BitRun::new(runs[0], false),
+            }
         }
     }
 

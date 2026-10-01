@@ -10,7 +10,7 @@ use common::{
 };
 use nalgebra::{Vector2, Vector3};
 
-pub struct GreedyRle {
+pub struct VoxelReconstruction {
     verts: CanonicalVerts,
     faces: Vec<[u32; 3]>,
 
@@ -25,7 +25,7 @@ struct CanonicalVerts {
     next_id: u32,
 }
 
-impl GreedyRle {
+impl VoxelReconstruction {
     fn new(config: &SliceConfig) -> Self {
         let px = config.pixel_size().map(|x| x.get::<Milimeter>());
         let slice_height = config.slice_height.get::<Milimeter>();
@@ -58,14 +58,7 @@ impl GreedyRle {
         progress.set_total(masks.len() as u64);
         for (z, rows) in masks.iter().enumerate() {
             let z = z as u32;
-
-            let row_or_empty = |y: usize| -> &[u64] {
-                if y > 0 && y < rows.len() {
-                    &rows[y]
-                } else {
-                    &[]
-                }
-            };
+            let row_or_empty = |y: usize| -> &[u64] { if y < rows.len() { &rows[y] } else { &[] } };
 
             for (y, row) in rows.iter().enumerate() {
                 let mut x = 0;
@@ -74,20 +67,26 @@ impl GreedyRle {
                 let mut prev =
                     BitRunQueue::new_fallback(row_or_empty(y.wrapping_sub(1) as usize), width);
                 let mut row = BitRunQueue::new(row);
+
+                let mut last = false;
                 while row.remaining() {
                     let n = row.active.length.min(prev.active.length);
                     let prev_dir = prev.take_up_to(n).value;
                     let dir = row.take_up_to(n).value;
 
-                    x += n;
-                    if x != width {
-                        self.row_face(x as u32, y, z, dir);
-
-                        // if dir & !prev_dir {
-                        //     self.edge_face(x as u32, y, z, n as u32, true);
-                        // }
+                    if dir ^ last {
+                        last = dir;
+                        self.row_face(x as u32, y, z, !dir);
                     }
+
+                    if dir ^ prev_dir {
+                        self.edge_face(x as u32, y, z, n as u32, dir);
+                    }
+
+                    x += n;
                 }
+
+                last.then(|| self.row_face(x as u32, y, z, true));
             }
 
             progress.add_complete(1);
@@ -95,7 +94,7 @@ impl GreedyRle {
     }
 }
 
-impl GreedyRle {
+impl VoxelReconstruction {
     fn row_face(&mut self, x: u32, y: u32, z: u32, flip: bool) {
         let a = self.verts.vertex(Vector3::new(x, y, z));
         let b = self.verts.vertex(Vector3::new(x, y + 1, z));
@@ -155,7 +154,7 @@ pub fn reconstruct_mesh(
     config: &SliceConfig,
     layers: &[Layer],
 ) -> (Vec<Vector3<f32>>, Vec<[u32; 3]>) {
-    let mut reconstruct = GreedyRle::new(config);
+    let mut reconstruct = VoxelReconstruction::new(config);
     reconstruct.process(progress, layers);
     progress.set_finished();
     reconstruct.into_inner()
