@@ -1,7 +1,7 @@
 use common::units::Milimeter;
 use const_format::concatcp;
 use egui::{Button, Context, DragValue, Ui, Widget};
-use egui_phosphor::regular::{SELECTION_INVERSE, SPARKLE, TRASH, USER_SWITCH};
+use egui_phosphor::regular::{SELECTION_INVERSE, SPARKLE, TRASH};
 use slicer::builder::MeshBuilder;
 use tools::supports::auto::{AutoPlacement, route_support};
 
@@ -79,22 +79,15 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     } else {
         // place
         ui.horizontal(|ui| {
-            let placement = &mut app.state.support_placement;
-            *placement ^= Button::selectable(*placement, concatcp!(USER_SWITCH, " Manual"))
-                .ui(ui)
-                .clicked();
-            app.state.support_placement &= !ui
-                .menu_button(concatcp!(SPARKLE, " Auto"), |ui| {
-                    ui.set_width(200.0);
+            ui.menu_button(concatcp!(SPARKLE, " Auto"), |ui| {
+                ui.set_width(200.0);
 
-                    for idx in 0..app.project.models.len() {
-                        if ui.button(&app.project.models[idx].name).clicked() {
-                            generate_support(app, idx);
-                        }
+                for idx in 0..app.project.models.len() {
+                    if ui.button(&app.project.models[idx].name).clicked() {
+                        generate_support(app, idx);
                     }
-                })
-                .response
-                .clicked();
+                }
+            });
         });
 
         ui.add_space(8.0);
@@ -134,8 +127,6 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
             });
         });
     }
-
-    (app.state.support_placement).then(|| manual_support_placement(app, false));
 }
 
 fn generate_support(app: &mut App, model: usize) {

@@ -208,6 +208,17 @@ impl Model {
         self.warnings.set(MeshWarnings::OutOfBounds, oob);
     }
 
+    pub fn get_bounds_center(&self) -> Vector3<f32> {
+        let (min, max) = self.mesh.bounds();
+        (max + min) / 2.0
+    }
+
+    pub fn set_bounds_center(&mut self, platform: &Vector3<Milimeters>, center: Vector3<f32>) {
+        let current = self.get_bounds_center();
+        let delta = center - current;
+        self.set_position(platform, self.mesh.position() + delta);
+    }
+
     pub fn set_position(&mut self, platform: &Vector3<Milimeters>, pos: Vector3<f32>) {
         self.mesh.set_position(pos);
         self.update_oob(platform);

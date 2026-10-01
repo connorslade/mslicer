@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use egui::Vec2;
+use egui_phosphor::regular::{CURSOR_CLICK, LINE_SEGMENT, TRIANGLE};
 use egui_tracing::EventCollector;
 use nalgebra::{Vector2, Vector3};
 use slicer::mesh::Mesh;
@@ -19,11 +20,11 @@ pub struct UiState {
     pub event_collector: EventCollector,
     pub line_support_debug: Vec<[Vector3<f32>; 2]>,
     pub queue_reset_ui: bool,
+    pub tool: Tool,
 
     // support stuff
     pub workspace: WorkspaceHover,
     pub hovered_geometry: Option<GeometryHit>,
-    pub support_placement: bool,
     pub support_mode: bool,
 
     pub selected: SelectedModel,
@@ -50,6 +51,14 @@ pub struct UiState {
 
     pub tools: Tools,
     pub move_timeout: u32,
+}
+
+#[derive(Default, PartialEq, Eq)]
+pub enum Tool {
+    #[default]
+    Select,
+    Support,
+    Orient,
 }
 
 #[derive(Default)]
@@ -92,5 +101,25 @@ impl WorkspaceHover {
 
     pub fn hovered(&self) -> bool {
         self.uv.x >= 0.0 && self.uv.y >= 0.0
+    }
+}
+
+impl Tool {
+    pub const ALL: [Self; 3] = [Self::Select, Self::Support, Self::Orient];
+
+    pub fn icon(&self) -> &str {
+        match self {
+            Tool::Select => CURSOR_CLICK,
+            Tool::Support => LINE_SEGMENT,
+            Tool::Orient => TRIANGLE,
+        }
+    }
+
+    pub fn name(&self) -> &str {
+        match self {
+            Tool::Select => "Select (Default)",
+            Tool::Support => "Support Placement",
+            Tool::Orient => "Orient to Face",
+        }
     }
 }

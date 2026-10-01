@@ -5,11 +5,9 @@ Feel free to help out :eyes:.
 
 ## Bugs
 
-- open slice preview as tab next to 3d view by default
 - check if slicing with spacemouse button causes crash
 - hover overlay flickers sometimes
 - does the 'File › Install' button on windows close your project without saving?
-- disable manual placement mode when supports window not visible or edit mode selected
 
 ## Features
 
@@ -44,7 +42,6 @@ Feel free to help out :eyes:.
   - Run u32
 - reduce power usage (dont always re-render, don't re-do work)
 - avg fps so its readable, or update it 1 Hz
-- orient to face tool
 
 ## Documentation
 
@@ -56,6 +53,7 @@ Feel free to help out :eyes:.
   - moved update check freq
   - Rename 'First Layers' to 'Bottom Layers'
   - note where to find quick layout spacing
+  - just go through the whole thing a lot of its probably outdated now...
 - document on generating and printing phonograph records
 - add phosphor icons in doc pages (like i did on the pcb photolithography page)
 - update mesh repair page (previously repairing non-manifold meshes)

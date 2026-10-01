@@ -173,6 +173,7 @@ impl Mesh {
     /// Get the minimum and maximum of each component of every vertex in the
     /// model. These points define the bounding box of the model.
     pub fn bounds(&self) -> (Vector3<f32>, Vector3<f32>) {
+        // todo: this should be optimized!!
         vertex_bounds(self.vertices(), &self.transform)
     }
 

@@ -22,6 +22,7 @@ use crate::{
         App,
         config::render::{Projection, RenderStyle},
         project::model::ModelId,
+        state::Tool,
     },
     include_shader,
     render::{
@@ -261,7 +262,16 @@ impl BasePass {
                 selected_offset: 0,
             };
 
-            let mut out = vec![(base.clone(), Selected::for_model(model).into_inner())];
+            let mut selected = Selected::for_model(model);
+            if app.state.tool == Tool::Orient
+                && let Some(hover) = app.state.hovered_geometry
+                && hover.model == model.id
+            {
+                selected.set_selected(hover.face as usize);
+            }
+
+            let mut out = vec![(base.clone(), selected.into_inner())];
+
             if model.supports.get_buffers(&gcx.device).is_some() {
                 let (mesh, support_faces) = model.supports.mesh().as_ref().unwrap();
                 let model_transform = mesh.transformation_matrix();

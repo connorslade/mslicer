@@ -1,19 +1,22 @@
 use egui::{
-    Align2, Area, Color32, Context, Frame, Id, Order, Painter, Pos2, Rect, Sense, Stroke,
-    StrokeKind, Theme, Ui, Vec2, pos2, vec2,
+    Align2, Area, Button, Color32, Context, Frame, Id, Key, Order, Painter, Pos2, Rect, RichText,
+    Sense, Stroke, StrokeKind, Theme, Ui, Vec2, Widget, pos2, vec2,
 };
 use egui_wgpu::Callback;
-use nalgebra::Matrix4;
+use nalgebra::{Matrix4, Rotation3, Vector3};
 
 use crate::{
     core::{
         App,
         config::ui::HoverOverlay,
-        state::{GeometryHit, WorkspaceHover},
+        state::{GeometryHit, Tool, WorkspaceHover},
     },
     interface::{components::grid, panels::supports::manual_support_placement},
     render::{interface::basis::BasisRenderCallback, workspace::WorkspaceRenderCallback},
 };
+
+#[rustfmt::skip]
+const NUMBER_KEYS: [Key; 10] = [Key::Num0, Key::Num1, Key::Num2, Key::Num3, Key::Num4, Key::Num5, Key::Num6, Key::Num7, Key::Num8, Key::Num9];
 
 pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     let (rect, response) = ui.allocate_exact_size(ui.available_size(), Sense::click_and_drag());
@@ -34,19 +37,45 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     let uv = (px - rect.min) / rect.size();
     app.state.workspace = WorkspaceHover::new(is_moving, aspect, uv);
 
+    (app.state.tool == Tool::Support).then(|| manual_support_placement(app, false));
     if response.clicked() && !is_moving {
-        if app.state.support_placement {
-            manual_support_placement(app, true);
-        } else if let Some(hover) = app.state.hovered_geometry {
-            let shift = ui.input(|x| x.modifiers.shift);
-            if hover.support {
-                if let Some(model) = app.project.model(hover.model)
-                    && let Some(support) = model.supports.support_for_face(hover.face)
-                {
-                    (app.state.selected_supports).support_clicked(model.id, support);
+        match app.state.tool {
+            Tool::Select => {
+                if let Some(hover) = app.state.hovered_geometry {
+                    let shift = ui.input(|x| x.modifiers.shift);
+                    if hover.support {
+                        if let Some(model) = app.project.model(hover.model)
+                            && let Some(support) = model.supports.support_for_face(hover.face)
+                        {
+                            (app.state.selected_supports).support_clicked(model.id, support);
+                        }
+                    } else {
+                        app.state.selected.model_clicked(hover.model, shift);
+                    }
                 }
-            } else {
-                app.state.selected.model_clicked(hover.model, shift);
+            }
+            Tool::Support => manual_support_placement(app, true),
+            Tool::Orient => {
+                let platform = app.project.slice_config.platform_size;
+                if let Some(hover) = app.state.hovered_geometry
+                    && let Some(model) = app.project.model(hover.model)
+                {
+                    let normal = model.mesh.normal(hover.face as usize);
+                    let down = Vector3::new(0.0, 0.0, -1.0);
+                    let matrix = Rotation3::rotation_between(&normal, &down);
+
+                    let rotation = if let Some(matrix) = matrix {
+                        let (roll, pitch, yaw) = matrix.euler_angles();
+                        Vector3::new(roll, pitch, yaw)
+                    } else {
+                        Vector3::zeros()
+                    };
+
+                    let center = model.get_bounds_center();
+                    model.set_rotation(&platform, rotation);
+                    model.set_bounds_center(&platform, center);
+                    model.align_to_bed();
+                }
             }
         }
     }
@@ -62,6 +91,28 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
         rect,
         app.get_workspace_render_callback(),
     ));
+
+    Area::new(Id::new("toolbar"))
+        .anchor(Align2::LEFT_TOP, Vec2::splat(10.0))
+        .constrain_to(rect)
+        .show(ui.ctx(), |ui| {
+            Frame::new()
+                .inner_margin(Vec2::splat(8.0))
+                .corner_radius(ui.visuals().menu_corner_radius)
+                .fill(Color32::BLACK.lerp_to_gamma(Color32::TRANSPARENT, 0.25))
+                .show(ui, |ui| {
+                    for (i, tool) in Tool::ALL.into_iter().enumerate() {
+                        let button = Button::new(RichText::new(tool.icon()).size(20.0))
+                            .selected(tool == app.state.tool)
+                            .min_size(Vec2::splat(30.0))
+                            .ui(ui)
+                            .on_hover_text(format!("{}\nShortcut: {}", tool.name(), i + 1));
+
+                        let shortcut = ui.input(|x| x.key_pressed(NUMBER_KEYS[i + 1]));
+                        (button.clicked() || shortcut).then(|| app.state.tool = tool);
+                    }
+                })
+        });
 
     paint_basis_vectors(painter, app, &rect);
 
@@ -139,7 +190,22 @@ fn paint_hover_overlay(ui: &mut Ui, app: &mut App, hover: GeometryHit, px: Pos2)
 
                         if detail {
                             ui.label("Face");
-                            ui.label(hover.face.to_string());
+                            let face = model.mesh.face(hover.face as usize);
+                            ui.label(format!("{} {face:?}", hover.face));
+                            ui.end_row();
+
+                            ui.label("Normal");
+                            let normal = model.mesh.normal(hover.face as usize);
+                            let transformed_normal = model.mesh.transform_normal(&normal);
+                            ui.label(format!(
+                                "‹{:.2}, {:.2}, {:.2}› → ‹{:.2}, {:.2}, {:.2}›",
+                                normal.x,
+                                normal.y,
+                                normal.z,
+                                transformed_normal.x,
+                                transformed_normal.y,
+                                transformed_normal.z
+                            ));
                             ui.end_row();
                         }
                     });
