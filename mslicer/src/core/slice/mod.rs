@@ -71,7 +71,12 @@ impl SliceOperationInner {
         self.previews.lock().as_ref().unwrap().image.clone()
     }
 
-    pub fn add_raster_result(&self, config: SliceConfig, layers: Vec<Layer>) {
+    pub fn add_raster_result(
+        &self,
+        config: SliceConfig,
+        layers: Vec<Layer>,
+        triangles: Option<u64>,
+    ) {
         let heights = iter::once(Milimeters::new(0.0))
             .chain(layers.iter().map(|x| x.height))
             .tuple_windows()
@@ -109,13 +114,19 @@ impl SliceOperationInner {
             elapsed,
             fresh: true,
             sliced: true,
+            triangles,
 
             variable_layer_height,
             inner: raster.into(),
         });
     }
 
-    pub fn add_vector_result(&self, config: SliceConfig, layers: Arc<Vec<VectorLayer>>) {
+    pub fn add_vector_result(
+        &self,
+        config: SliceConfig,
+        layers: Arc<Vec<VectorLayer>>,
+        triangles: Option<u64>,
+    ) {
         let elapsed = self.start_time.elapsed();
         info!("Vector slice operation completed in {:?}", elapsed);
 
@@ -124,6 +135,7 @@ impl SliceOperationInner {
             elapsed,
             fresh: true,
             sliced: true,
+            triangles,
 
             variable_layer_height: false,
             inner: VectorSliceResult { layers }.into(),

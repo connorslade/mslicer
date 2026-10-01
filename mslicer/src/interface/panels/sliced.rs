@@ -10,10 +10,10 @@ use std::{
 
 use const_format::concatcp;
 use egui::{
-    Align, Align2, Button, CollapsingHeader, Color32, ComboBox, Context, DragValue, FontId,
-    FontSelection, Frame, Grid, Id, ImageSource, Layout, ProgressBar, Rect, RichText, ScrollArea,
-    Sense, SidePanel, Slider, StrokeKind, Style, Ui, Vec2, Widget, load::SizedTexture, panel::Side,
-    style::HandleShape, text::LayoutJob, vec2,
+    Align, Align2, Button, CollapsingHeader, Color32, ComboBox, Context, CursorIcon, DragValue,
+    FontId, FontSelection, Frame, Grid, Id, ImageSource, Layout, ProgressBar, Rect, RichText,
+    ScrollArea, Sense, SidePanel, Slider, StrokeKind, Style, Ui, Vec2, Widget, load::SizedTexture,
+    panel::Side, style::HandleShape, text::LayoutJob, vec2,
 };
 use egui_phosphor::regular::{
     CAMERA, CARET_DOWN, CARET_UP, CLOCK, CORNERS_IN, CROSSHAIR, CUBE_TRANSPARENT, DROP,
@@ -97,12 +97,26 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
             }
 
             ui.horizontal(|ui| {
-                ui.label(format!(
-                    "{} completed in {}! ({:.1} layer/s)",
-                    ["Loading", "Slicing"][result.sliced as usize],
-                    result.completion(),
-                    result.layers() as f32 / result.elapsed.as_secs_f32()
-                ));
+                ui.horizontal(|ui| {
+                    ui.spacing_mut().item_spacing.x = 0.0;
+                    ui.label(format!(
+                        "{} completed in ",
+                        ["Loading", "Slicing"][result.sliced as usize],
+                    ));
+                    ui.label(RichText::new(result.completion()).underline())
+                        .on_hover_cursor(CursorIcon::Default)
+                        .on_hover_ui(|ui| {
+                            ui.vertical(|ui| {
+                                let secs = result.elapsed.as_secs_f32();
+                                ui.label(format!("{:.1} layer/s", result.layers() as f32 / secs));
+
+                                if let Some(triangles) = result.triangles {
+                                    ui.label(format!("{:.1} triangle/s", triangles as f32 / secs));
+                                }
+                            });
+                        });
+                    ui.label("!");
+                });
 
                 ui.with_layout(Layout::default().with_cross_align(Align::Max), |ui| {
                     ui.horizontal(|ui| {

@@ -51,15 +51,18 @@ impl App {
 
         // Transform models from world-space to platform-space
         let mut out = Vec::new();
+        let mut triangles = 0;
         for (supports, model) in meshes.into_iter() {
             let (mut mesh, exposure) = (model.mesh, model.exposure);
             let offset = (platform / 2.0).push(-slice_height / 2.0);
 
             transform_mesh(&mut mesh, mm_to_px, offset);
+            triangles += mesh.face_count() as u64;
             out.push(SlicerModel { mesh, exposure });
 
             if let Some((mut mesh, _)) = supports {
                 transform_mesh(&mut mesh, mm_to_px, offset);
+                triangles += mesh.face_count() as u64;
                 out.push(SlicerModel { mesh, exposure });
             }
         }
@@ -70,6 +73,7 @@ impl App {
         self.slice_operation.replace(slice_operation);
         self.panels.focus_tab(Tab::Sliced);
 
+        let triangles = Some(triangles);
         thread::spawn(clone!(
             [
                 { self.slice_operation } as slice_operation,
@@ -82,11 +86,15 @@ impl App {
                     SliceMode::Raster => {
                         let mut layers = slicer.slice_raster();
                         post_processing.process(&slicer.slice_config, &mut layers, post_process);
-                        slice_operation.add_raster_result(slicer.slice_config, layers);
+                        slice_operation.add_raster_result(slicer.slice_config, layers, triangles);
                     }
                     SliceMode::Vector => {
                         let layers = slicer.slice_vector();
-                        slice_operation.add_vector_result(slicer.slice_config, Arc::new(layers));
+                        slice_operation.add_vector_result(
+                            slicer.slice_config,
+                            Arc::new(layers),
+                            triangles,
+                        );
                     }
                 }
             }

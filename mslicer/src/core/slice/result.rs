@@ -17,6 +17,7 @@ pub struct SliceResult {
     pub elapsed: Duration,
     pub fresh: bool,
     pub sliced: bool,
+    pub triangles: Option<u64>,
 
     pub variable_layer_height: bool,
     pub inner: GenericSliceResult,

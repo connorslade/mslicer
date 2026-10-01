@@ -98,7 +98,7 @@ impl Task for LoadSliced {
             .poll(app, "Failed to Load Sliced File")
             .into_poll_result(|(config, layers, image)| {
                 let operation = self.operation.take().unwrap();
-                operation.add_raster_result(config, layers);
+                operation.add_raster_result(config, layers, None);
                 (image.into_iter()).for_each(|x| operation.add_preview(x));
                 operation.set_loaded();
 

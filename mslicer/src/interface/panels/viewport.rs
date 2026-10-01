@@ -175,7 +175,7 @@ fn paint_hover_overlay(ui: &mut Ui, app: &mut App, hover: GeometryHit, px: Pos2)
                         return;
                     };
 
-                    grid("overlay").spacing([4.0, 4.0]).show(ui, |ui| {
+                    grid("overlay").spacing([8.0, 4.0]).show(ui, |ui| {
                         ui.label("Model");
                         ui.label(&model.name);
                         ui.end_row();
@@ -190,27 +190,41 @@ fn paint_hover_overlay(ui: &mut Ui, app: &mut App, hover: GeometryHit, px: Pos2)
 
                         if detail {
                             ui.label("Face");
-                            let face = model.mesh.face(hover.face as usize);
-                            ui.label(format!("{} {face:?}", hover.face));
+                            let [a, b, c] = model.mesh.face(hover.face as usize);
+                            ui.label(format!("{} ({a}, {b}, {c})", hover.face));
                             ui.end_row();
 
                             ui.label("Normal");
                             let normal = model.mesh.normal(hover.face as usize);
                             let transformed_normal = model.mesh.transform_normal(&normal);
-                            ui.label(format!(
-                                "‹{:.2}, {:.2}, {:.2}› → ‹{:.2}, {:.2}, {:.2}›",
-                                normal.x,
-                                normal.y,
-                                normal.z,
-                                transformed_normal.x,
-                                transformed_normal.y,
-                                transformed_normal.z
-                            ));
+                            ui.vertical(|ui| {
+                                ui.label(format_normal(&normal));
+
+                                if transformed_normal != normal {
+                                    ui.horizontal(|ui| {
+                                        ui.label(format_normal(&transformed_normal));
+                                        ui.label("(Transformed)");
+                                    });
+                                }
+                            });
                             ui.end_row();
                         }
                     });
                 });
         });
+}
+
+fn format_normal(normal: &Vector3<f32>) -> String {
+    const SIGN: [&str; 2] = ["", "+"];
+    format!(
+        "‹{}{:.2}, {}{:.2}, {}{:.2}›",
+        SIGN[(normal.x > 0.0) as usize],
+        normal.x,
+        SIGN[(normal.y > 0.0) as usize],
+        normal.y,
+        SIGN[(normal.z > 0.0) as usize],
+        normal.z,
+    )
 }
 
 impl App {

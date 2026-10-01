@@ -1,72 +1,21 @@
+// why use marching cubes when the RLE already gives us adjacency information!
+
 use std::collections::HashMap;
 
 use common::{
-    container::rle::bits,
+    container::rle::bits::{self, BitRunQueue},
     progress::Progress,
     slice::{Layer, SliceConfig},
     units::Milimeter,
 };
-use itertools::Itertools;
-use nalgebra::Vector3;
+use nalgebra::{Vector2, Vector3};
 
-pub fn reconstruct_mesh(
-    progress: &Progress,
-    config: &SliceConfig,
-    result: &[Layer],
-    subsample: u8, // todo: bit-rle downsampling???
-) -> (Vec<Vector3<f32>>, Vec<[u32; 3]>) {
-    let mut verts = CanonicalVerts::new();
-    let mut faces = Vec::new();
+pub struct GreedyRle {
+    verts: CanonicalVerts,
+    faces: Vec<[u32; 3]>,
 
-    let mut row_face = |x, y, z, flip| {
-        let a = verts.vertex(Vector3::new(x, y, z));
-        let b = verts.vertex(Vector3::new(x, y + 1, z));
-        let c = verts.vertex(Vector3::new(x, y + 1, z + 1));
-        let d = verts.vertex(Vector3::new(x, y, z + 1));
-        if flip {
-            faces.extend_from_slice(&[[a, b, c], [c, d, a]]);
-        } else {
-            faces.extend_from_slice(&[[a, c, b], [c, a, d]]);
-        }
-    };
-
-    progress.set_total(result.len() as u64);
-    for (z, layer) in result.iter().enumerate() {
-        let z = z as u32;
-        let mask = bits::from_runs(&layer.data);
-        let rows = bits::chunks(&mask, config.platform_resolution.x as u64);
-
-        for (y, row) in rows.into_iter().enumerate() {
-            let mut x = 0;
-            let y = y as u32;
-
-            for (black, white) in row.iter().tuples() {
-                x += black;
-                row_face(x as u32, y, z, false);
-                x += white;
-                row_face(x as u32, y, z, true);
-            }
-        }
-
-        progress.add_complete(1);
-    }
-
-    // for screen space → world space
-    let px = config.pixel_size().map(|x| x.get::<Milimeter>());
-    let slice_height = config.slice_height.get::<Milimeter>();
-    let voxel_size = Vector3::new(px.x, px.y, slice_height);
-
-    let world = verts
-        .into_inner()
-        .into_iter()
-        .map(|x| x.cast::<f32>().component_mul(&voxel_size))
-        .collect::<Vec<_>>();
-
-    progress.set_finished();
-
-    println!("{{ face: {}, vert: {} }}", faces.len(), world.len());
-
-    (world, faces)
+    voxel_size: Vector3<f32>,
+    platform: Vector2<u32>,
 }
 
 struct CanonicalVerts {
@@ -74,6 +23,103 @@ struct CanonicalVerts {
     map: HashMap<Vector3<u32>, u32>,
     vertices: Vec<Vector3<u32>>, // todo: only store transformed float version?
     next_id: u32,
+}
+
+impl GreedyRle {
+    fn new(config: &SliceConfig) -> Self {
+        let px = config.pixel_size().map(|x| x.get::<Milimeter>());
+        let slice_height = config.slice_height.get::<Milimeter>();
+        let voxel_size = Vector3::new(px.x, px.y, slice_height);
+
+        Self {
+            verts: CanonicalVerts::new(),
+            faces: Vec::new(),
+
+            voxel_size,
+            platform: config.platform_resolution,
+        }
+    }
+
+    pub fn into_inner(self) -> (Vec<Vector3<f32>>, Vec<[u32; 3]>) {
+        let world = (self.verts.into_inner().into_iter())
+            .map(|x| x.cast::<f32>().component_mul(&self.voxel_size))
+            .collect::<Vec<_>>();
+
+        (world, self.faces)
+    }
+
+    pub fn process(&mut self, progress: &Progress, layers: &[Layer]) {
+        // layers → rows → runs
+        let width = self.platform.x as u64;
+        let masks = (layers.iter())
+            .map(|layer| bits::chunks(&bits::from_runs(&layer.data), width))
+            .collect::<Vec<_>>();
+
+        progress.set_total(masks.len() as u64);
+        for (z, rows) in masks.iter().enumerate() {
+            let z = z as u32;
+
+            let row_or_empty = |y: usize| -> &[u64] {
+                if y > 0 && y < rows.len() {
+                    &rows[y]
+                } else {
+                    &[]
+                }
+            };
+
+            for (y, row) in rows.iter().enumerate() {
+                let mut x = 0;
+                let y = y as u32;
+
+                let mut prev =
+                    BitRunQueue::new_fallback(row_or_empty(y.wrapping_sub(1) as usize), width);
+                let mut row = BitRunQueue::new(row);
+                while row.remaining() {
+                    let n = row.active.length.min(prev.active.length);
+                    let prev_dir = prev.take_up_to(n).value;
+                    let dir = row.take_up_to(n).value;
+
+                    x += n;
+                    if x != width {
+                        self.row_face(x as u32, y, z, dir);
+
+                        // if dir & !prev_dir {
+                        //     self.edge_face(x as u32, y, z, n as u32, true);
+                        // }
+                    }
+                }
+            }
+
+            progress.add_complete(1);
+        }
+    }
+}
+
+impl GreedyRle {
+    fn row_face(&mut self, x: u32, y: u32, z: u32, flip: bool) {
+        let a = self.verts.vertex(Vector3::new(x, y, z));
+        let b = self.verts.vertex(Vector3::new(x, y + 1, z));
+        let c = self.verts.vertex(Vector3::new(x, y + 1, z + 1));
+        let d = self.verts.vertex(Vector3::new(x, y, z + 1));
+        self.face([a, b, c, d], flip);
+    }
+
+    fn edge_face(&mut self, x: u32, y: u32, z: u32, width: u32, flip: bool) {
+        let a = self.verts.vertex(Vector3::new(x, y, z));
+        let b = self.verts.vertex(Vector3::new(x + width, y, z));
+        let c = self.verts.vertex(Vector3::new(x + width, y, z + 1));
+        let d = self.verts.vertex(Vector3::new(x, y, z + 1));
+
+        self.face([a, b, c, d], flip);
+    }
+
+    fn face(&mut self, [a, b, c, d]: [u32; 4], flip: bool) {
+        if flip {
+            self.faces.extend_from_slice(&[[a, b, c], [c, d, a]]);
+        } else {
+            self.faces.extend_from_slice(&[[a, c, b], [c, a, d]]);
+        }
+    }
 }
 
 impl CanonicalVerts {
@@ -102,4 +148,15 @@ impl CanonicalVerts {
     pub fn into_inner(self) -> Vec<Vector3<u32>> {
         self.vertices
     }
+}
+
+pub fn reconstruct_mesh(
+    progress: &Progress,
+    config: &SliceConfig,
+    layers: &[Layer],
+) -> (Vec<Vector3<f32>>, Vec<[u32; 3]>) {
+    let mut reconstruct = GreedyRle::new(config);
+    reconstruct.process(progress, layers);
+    progress.set_finished();
+    reconstruct.into_inner()
 }

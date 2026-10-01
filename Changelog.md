@@ -73,7 +73,7 @@
   - Delete selected supports
   - Save support config per project
   - Default model lift when supporting automatically
-- Show slicing speed in layers/sec
+- Show slicing speed in layers/sec and triangles/sec
 - Support highlighting selected mesh sections
 - Hide Auto Layout annealing settings by default
 - Calculate mesh volume asynchronously (helps on models with ~ >10M faces)

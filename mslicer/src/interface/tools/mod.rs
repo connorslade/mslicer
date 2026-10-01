@@ -54,7 +54,7 @@ macro_rules! generator_tool {
 
         std::thread::spawn(clone!([operation], move || {
             let layers = tool.generate(&config, &operation.progress $(, $extra)*);
-            operation.add_raster_result(config, layers);
+            operation.add_raster_result(config, layers, None);
         }));
         $app.slice_operation.replace(operation);
         $app.panels.focus_tab(Tab::Sliced);

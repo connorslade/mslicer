@@ -118,3 +118,71 @@ pub fn cluster_row_adjacency(
         b_pos += b;
     }
 }
+
+pub struct BitRunQueue<'a> {
+    pub runs: &'a [u64],
+    pub next: usize,
+    pub active: BitRun,
+}
+
+#[derive(Clone, Copy)]
+pub struct BitRun {
+    pub value: bool,
+    pub length: u64,
+}
+
+impl<'a> BitRunQueue<'a> {
+    pub fn new(runs: &'a [u64]) -> Self {
+        Self {
+            runs,
+            next: 1,
+            active: if runs[0] == 0 && runs.len() > 1 {
+                BitRun::new(runs[1], true)
+            } else {
+                BitRun::new(runs[0], false)
+            },
+        }
+    }
+
+    pub fn new_fallback(runs: &'a [u64], width: u64) -> Self {
+        if runs.is_empty() {
+            Self {
+                runs,
+                next: 1,
+                active: BitRun::new(width, false),
+            }
+        } else {
+            Self::new(runs)
+        }
+    }
+
+    pub fn advance(&mut self) -> BitRun {
+        let out = self.active;
+        if self.next < self.runs.len() {
+            self.active = BitRun::new(self.runs[self.next], self.next % 2 != 0);
+            self.next += 1;
+        } else {
+            self.active.length = 0;
+        }
+        out
+    }
+
+    pub fn take_up_to(&mut self, n: u64) -> BitRun {
+        if self.active.length <= n {
+            self.advance()
+        } else {
+            self.active.length -= n;
+            BitRun::new(n, self.active.value)
+        }
+    }
+
+    pub fn remaining(&self) -> bool {
+        self.active.length > 0
+    }
+}
+
+impl BitRun {
+    pub fn new(length: u64, value: bool) -> Self {
+        Self { value, length }
+    }
+}
