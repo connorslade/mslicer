@@ -18,7 +18,8 @@ use itertools::Itertools;
 use nalgebra::{Vector2, Vector3};
 use ordered_float::OrderedFloat;
 
-use super::table::{EDGE_TABLE, TRIANGULATION_TABLE};
+mod table;
+use table::{EDGE_TABLE, TRIANGULATION_TABLE};
 
 #[rustfmt::skip]
 const EDGE_CONNECTIONS: [(usize, usize); 12] = [
@@ -39,7 +40,7 @@ const GRID_POINTS: [Vector3<u32>; 8] = [
 ];
 
 // todo: consider non-uniform layer heights
-pub fn marching_cubes(
+pub fn reconstruct_mesh(
     progress: &Progress,
     iso_level: f32,
     config: &SliceConfig,

@@ -4,7 +4,7 @@ use common::{
     slice::{Layer, SliceConfig},
 };
 use slicer::mesh::Mesh;
-use tools::reconstruct_mesh::marching_cubes;
+use tools::reconstruct_mesh;
 
 use crate::task::{MeshLoad, PollResult, Task, TaskApp, TaskStatus, thread::TaskThread};
 
@@ -17,7 +17,8 @@ impl ReconstructMesh {
     pub fn new(config: SliceConfig, result: Vec<Layer>, subsample: u8) -> Self {
         let progress = Progress::new();
         let handle = TaskThread::spawn(clone!([progress], move || {
-            marching_cubes(&progress, &config, &result, subsample)
+            // reconstruct_mesh::greedy_rle(&progress, &config, &result, subsample)
+            reconstruct_mesh::marching_cubes(&progress, &config, &result, subsample)
         }));
 
         Self { progress, handle }

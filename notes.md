@@ -8,6 +8,7 @@ Feel free to help out :eyes:.
 - check if slicing with spacemouse button causes crash
 - hover overlay flickers sometimes
 - does the 'File › Install' button on windows close your project without saving?
+- resizing the window is laggy (bc of all the texture reallocs!)
 
 ## Features
 
