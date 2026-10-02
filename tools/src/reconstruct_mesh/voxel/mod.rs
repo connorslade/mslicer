@@ -59,6 +59,13 @@ impl VoxelReconstruction {
         for (z, rows) in masks.iter().enumerate() {
             let z = z as u32;
             let row_or_empty = |y: usize| -> &[u64] { if y < rows.len() { &rows[y] } else { &[] } };
+            let mask_or_empty = |z: usize, y: usize| -> &[u64] {
+                if z < masks.len() && y < rows.len() {
+                    &masks[z][y]
+                } else {
+                    &[]
+                }
+            };
 
             for (y, row) in rows.iter().enumerate() {
                 let mut x = 0;
@@ -66,27 +73,38 @@ impl VoxelReconstruction {
 
                 let mut prev =
                     BitRunQueue::new_fallback(row_or_empty(y.wrapping_sub(1) as usize), width);
+                let mut above =
+                    BitRunQueue::new_fallback(mask_or_empty(z as usize + 1, y as usize), width);
                 let mut row = BitRunQueue::new(row);
 
                 let mut last = false;
                 while row.remaining() {
-                    let n = row.active.length.min(prev.active.length);
+                    let n = (row.active.length)
+                        .min(prev.active.length)
+                        .min(above.active.length);
                     let prev_dir = prev.take_up_to(n).value;
+                    let above_dir = above.take_up_to(n).value;
                     let dir = row.take_up_to(n).value;
 
                     if dir ^ last {
                         last = dir;
-                        self.row_face(x as u32, y, z, !dir);
+                        self.x_face(x as u32, y, z, !dir);
                     }
 
                     if dir ^ prev_dir {
-                        self.edge_face(x as u32, y, z, n as u32, dir);
+                        self.y_face(x as u32, y, z, n as u32, dir);
+                    }
+
+                    if z == 0 && dir {
+                        self.z_face(x as u32, y, 0, n as u32, false);
+                    } else if dir ^ above_dir {
+                        self.z_face(x as u32, y, z + 1, n as u32, dir);
                     }
 
                     x += n;
                 }
 
-                last.then(|| self.row_face(x as u32, y, z, true));
+                last.then(|| self.x_face(x as u32, y, z, true));
             }
 
             progress.add_complete(1);
@@ -95,7 +113,7 @@ impl VoxelReconstruction {
 }
 
 impl VoxelReconstruction {
-    fn row_face(&mut self, x: u32, y: u32, z: u32, flip: bool) {
+    fn x_face(&mut self, x: u32, y: u32, z: u32, flip: bool) {
         let a = self.verts.vertex(Vector3::new(x, y, z));
         let b = self.verts.vertex(Vector3::new(x, y + 1, z));
         let c = self.verts.vertex(Vector3::new(x, y + 1, z + 1));
@@ -103,12 +121,19 @@ impl VoxelReconstruction {
         self.face([a, b, c, d], flip);
     }
 
-    fn edge_face(&mut self, x: u32, y: u32, z: u32, width: u32, flip: bool) {
+    fn y_face(&mut self, x: u32, y: u32, z: u32, width: u32, flip: bool) {
         let a = self.verts.vertex(Vector3::new(x, y, z));
         let b = self.verts.vertex(Vector3::new(x + width, y, z));
         let c = self.verts.vertex(Vector3::new(x + width, y, z + 1));
         let d = self.verts.vertex(Vector3::new(x, y, z + 1));
+        self.face([a, b, c, d], flip);
+    }
 
+    fn z_face(&mut self, x: u32, y: u32, z: u32, width: u32, flip: bool) {
+        let a = self.verts.vertex(Vector3::new(x, y, z));
+        let b = self.verts.vertex(Vector3::new(x + width, y, z));
+        let c = self.verts.vertex(Vector3::new(x + width, y + 1, z));
+        let d = self.verts.vertex(Vector3::new(x, y + 1, z));
         self.face([a, b, c, d], flip);
     }
 
