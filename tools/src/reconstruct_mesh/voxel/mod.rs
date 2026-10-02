@@ -1,14 +1,23 @@
 // why use marching cubes when the RLE already gives us adjacency information!
 
-use std::collections::HashMap;
-
 use common::{
-    container::rle::bits::{self, BitRunQueue},
+    container::{
+        Run,
+        rle::{
+            bits::{self, BitRunQueue},
+            downsample::{chunks, downsample, downsample_adjacent, pad_2d},
+        },
+    },
     progress::Progress,
     slice::{Layer, SliceConfig},
     units::Milimeter,
 };
 use nalgebra::{Vector2, Vector3};
+use rayon::iter::{IndexedParallelIterator, IntoParallelRefIterator, ParallelIterator};
+
+use crate::reconstruct_mesh::voxel::mesh::CanonicalVerts;
+
+mod mesh;
 
 pub struct VoxelReconstruction {
     verts: CanonicalVerts,
@@ -16,20 +25,15 @@ pub struct VoxelReconstruction {
 
     voxel_size: Vector3<f32>,
     platform: Vector2<u32>,
-}
-
-struct CanonicalVerts {
-    // maps vert to an existing index
-    map: HashMap<Vector3<u32>, u32>,
-    vertices: Vec<Vector3<u32>>, // todo: only store transformed float version?
-    next_id: u32,
+    subsample: u8,
 }
 
 impl VoxelReconstruction {
-    fn new(config: &SliceConfig) -> Self {
+    fn new(config: &SliceConfig, subsample: u8) -> Self {
         let px = config.pixel_size().map(|x| x.get::<Milimeter>());
         let slice_height = config.slice_height.get::<Milimeter>();
-        let voxel_size = Vector3::new(px.x, px.y, slice_height);
+        let voxel_size = Vector3::new(px.x, px.y, slice_height)
+            .component_mul(&Vector3::repeat(subsample as f32));
 
         Self {
             verts: CanonicalVerts::new(),
@@ -37,6 +41,7 @@ impl VoxelReconstruction {
 
             voxel_size,
             platform: config.platform_resolution,
+            subsample,
         }
     }
 
@@ -49,17 +54,32 @@ impl VoxelReconstruction {
     }
 
     pub fn process(&mut self, progress: &Progress, layers: &[Layer]) {
+        let width = self.platform.x.div_ceil(self.subsample as u32) as u64;
+
         // layers → rows → runs
-        let width = self.platform.x as u64;
-        let masks = (layers.iter())
-            .map(|layer| bits::chunks(&bits::from_runs(&layer.data), width))
-            .collect::<Vec<_>>();
+        let masks = if self.subsample <= 1 {
+            (layers.par_iter())
+                .map(|layer| bits::chunks(&bits::from_runs(&layer.data), width))
+                .collect::<Vec<_>>()
+        } else {
+            let voxels = self.platform.x as u64 * self.platform.y as u64;
+            (layers.par_iter())
+                .map(|layer| subsample(self.platform, self.subsample, layer))
+                .chunks(self.subsample as usize)
+                .map(|layers| {
+                    let mut out = Vec::new();
+                    downsample(layers.iter(), voxels, &mut out);
+                    out
+                })
+                .map(|data| bits::chunks(&bits::from_runs(&data), width))
+                .collect::<Vec<_>>()
+        };
 
         progress.set_total(masks.len() as u64);
         for (z, rows) in masks.iter().enumerate() {
             let z = z as u32;
-            let row_or_empty = |y: usize| -> &[u64] { if y < rows.len() { &rows[y] } else { &[] } };
-            let mask_or_empty = |z: usize, y: usize| -> &[u64] {
+            let get_row = |y: usize| -> &[u64] { if y < rows.len() { &rows[y] } else { &[] } };
+            let get_mask = |z: usize, y: usize| -> &[u64] {
                 if z < masks.len() && y < rows.len() {
                     &masks[z][y]
                 } else {
@@ -71,10 +91,9 @@ impl VoxelReconstruction {
                 let mut x = 0;
                 let y = y as u32;
 
-                let mut prev =
-                    BitRunQueue::new_fallback(row_or_empty(y.wrapping_sub(1) as usize), width);
-                let mut above =
-                    BitRunQueue::new_fallback(mask_or_empty(z as usize + 1, y as usize), width);
+                let (prev_y, next_z) = ((y as usize).wrapping_sub(1), z as usize + 1);
+                let mut prev = BitRunQueue::new_fallback(get_row(prev_y), width);
+                let mut above = BitRunQueue::new_fallback(get_mask(next_z, y as usize), width);
                 let mut row = BitRunQueue::new(row);
 
                 let mut last = false;
@@ -91,15 +110,9 @@ impl VoxelReconstruction {
                         self.x_face(x as u32, y, z, !dir);
                     }
 
-                    if dir ^ prev_dir {
-                        self.y_face(x as u32, y, z, n as u32, dir);
-                    }
-
-                    if z == 0 && dir {
-                        self.z_face(x as u32, y, 0, n as u32, false);
-                    } else if dir ^ above_dir {
-                        self.z_face(x as u32, y, z + 1, n as u32, dir);
-                    }
+                    (dir ^ prev_dir).then(|| self.y_face(x as u32, y, z, n as u32, dir));
+                    (z == 0 && dir).then(|| self.z_face(x as u32, y, 0, n as u32, false));
+                    (dir ^ above_dir).then(|| self.z_face(x as u32, y, z + 1, n as u32, dir));
 
                     x += n;
                 }
@@ -112,74 +125,28 @@ impl VoxelReconstruction {
     }
 }
 
-impl VoxelReconstruction {
-    fn x_face(&mut self, x: u32, y: u32, z: u32, flip: bool) {
-        let a = self.verts.vertex(Vector3::new(x, y, z));
-        let b = self.verts.vertex(Vector3::new(x, y + 1, z));
-        let c = self.verts.vertex(Vector3::new(x, y + 1, z + 1));
-        let d = self.verts.vertex(Vector3::new(x, y, z + 1));
-        self.face([a, b, c, d], flip);
+fn subsample(res: Vector2<u32>, factor: u8, layer: &Layer) -> Vec<Run> {
+    let (data, size) = pad_2d(&layer.data, res, factor, 0);
+
+    let mut out = Vec::new();
+    downsample_adjacent(factor, &data, &mut out);
+    let chunks = chunks(&out, size.x as u64 / factor as u64);
+
+    let mut out = Vec::new();
+    for y in chunks.chunks(factor as usize) {
+        downsample(y.iter(), size.x as u64 / factor as u64, &mut out);
     }
 
-    fn y_face(&mut self, x: u32, y: u32, z: u32, width: u32, flip: bool) {
-        let a = self.verts.vertex(Vector3::new(x, y, z));
-        let b = self.verts.vertex(Vector3::new(x + width, y, z));
-        let c = self.verts.vertex(Vector3::new(x + width, y, z + 1));
-        let d = self.verts.vertex(Vector3::new(x, y, z + 1));
-        self.face([a, b, c, d], flip);
-    }
-
-    fn z_face(&mut self, x: u32, y: u32, z: u32, width: u32, flip: bool) {
-        let a = self.verts.vertex(Vector3::new(x, y, z));
-        let b = self.verts.vertex(Vector3::new(x + width, y, z));
-        let c = self.verts.vertex(Vector3::new(x + width, y + 1, z));
-        let d = self.verts.vertex(Vector3::new(x, y + 1, z));
-        self.face([a, b, c, d], flip);
-    }
-
-    fn face(&mut self, [a, b, c, d]: [u32; 4], flip: bool) {
-        if flip {
-            self.faces.extend_from_slice(&[[a, b, c], [c, d, a]]);
-        } else {
-            self.faces.extend_from_slice(&[[a, c, b], [c, a, d]]);
-        }
-    }
-}
-
-impl CanonicalVerts {
-    pub fn new() -> Self {
-        Self {
-            map: HashMap::new(),
-            vertices: Vec::new(),
-            next_id: 0,
-        }
-    }
-
-    // Returns the vertex idx for some point, reusing an existing one if
-    // possible
-    pub fn vertex(&mut self, position: Vector3<u32>) -> u32 {
-        if let Some(&idx) = self.map.get(&position) {
-            return idx;
-        }
-
-        let idx = self.vertices.len() as u32;
-        self.vertices.push(position);
-        self.map.insert(position, self.next_id);
-        self.next_id += 1;
-        idx
-    }
-
-    pub fn into_inner(self) -> Vec<Vector3<u32>> {
-        self.vertices
-    }
+    out
 }
 
 pub fn reconstruct_mesh(
     progress: &Progress,
     config: &SliceConfig,
     layers: &[Layer],
+    subsample: u8,
 ) -> (Vec<Vector3<f32>>, Vec<[u32; 3]>) {
-    let mut reconstruct = VoxelReconstruction::new(config);
+    let mut reconstruct = VoxelReconstruction::new(config, subsample);
     reconstruct.process(progress, layers);
     progress.set_finished();
     reconstruct.into_inner()

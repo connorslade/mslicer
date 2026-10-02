@@ -3,12 +3,9 @@
 use std::collections::HashMap;
 
 use common::{
-    container::{
-        Run,
-        rle::{
-            decode_into,
-            downsample::{chunks, downsample, downsample_adjacent},
-        },
+    container::rle::{
+        decode_into,
+        downsample::{chunks, downsample, downsample_adjacent, pad_2d},
     },
     progress::Progress,
     slice::{Layer, SliceConfig},
@@ -142,40 +139,8 @@ pub fn reconstruct_mesh(
     (vertices, faces)
 }
 
-fn pad_layer(
-    runs: &[Run],
-    size: Vector2<u32>,
-    factor: u8,
-    pad_value: u8,
-) -> (Vec<Run>, Vector2<u32>) {
-    let factor = factor as u32;
-    let padded_x = size.x.div_ceil(factor) * factor;
-    let padded_y = size.y.div_ceil(factor) * factor;
-
-    let mut out = Vec::new();
-    for mut row in chunks(runs, size.x as u64) {
-        let row_len: u64 = row.iter().map(|r| r.length).sum();
-        if row_len < padded_x as u64 {
-            row.push(Run {
-                length: padded_x as u64 - row_len,
-                value: pad_value,
-            });
-        }
-        out.extend(row);
-    }
-
-    if size.y < padded_y {
-        out.push(Run {
-            length: (padded_y - size.y) as u64 * padded_x as u64,
-            value: pad_value,
-        });
-    }
-
-    (out, Vector2::new(padded_x, padded_y))
-}
-
 fn decode(res: Vector2<u32>, factor: u8, layer: &Layer) -> Vec<u8> {
-    let (data, size) = pad_layer(&layer.data, res, factor, 10);
+    let (data, size) = pad_2d(&layer.data, res, factor, 0);
 
     let mut out = Vec::new();
     downsample_adjacent(factor, &data, &mut out);

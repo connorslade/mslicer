@@ -87,6 +87,7 @@
 - Allow removing unresponsive printers (don't wait for confirmation if printer is unresponsive)
 - Toolbar for selecting between regular cursor, support placement, and orient to face
 - Orient to face tool. No need to fiddle with the rotation settings now!
+- Reconstruct mesh with greedy RLE meshing
 
 ## v0.9.2 &mdash; August 30th, 2026
 

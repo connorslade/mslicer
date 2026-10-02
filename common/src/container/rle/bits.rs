@@ -38,6 +38,9 @@ pub fn chunks(runs: &[u64], width: u64) -> Vec<Vec<u64>> {
 
     for (i, mut run) in runs.iter().copied().enumerate() {
         while run > 0 {
+            // Start the row with a zero if the next value to be inserted is non zero.
+            (row.is_empty() && i % 2 != 0).then(|| row.push(0));
+
             // Add as much of the current run to the active row as will fit.
             let clamped = run.min(width - row_length);
             row.push(clamped);
@@ -45,12 +48,9 @@ pub fn chunks(runs: &[u64], width: u64) -> Vec<Vec<u64>> {
             run -= clamped;
 
             // If the current run is now full, flush it and initialize the next.
-            // Start the row with a zero if the next value to be inserted is non
-            // zero.
             if row_length >= width {
                 rows.push(mem::take(&mut row));
                 row_length = 0;
-                ((i % 2 == 0) ^ (run > 0)).then(|| row.push(0));
             }
         }
     }
@@ -163,7 +163,7 @@ impl<'a> BitRunQueue<'a> {
     pub fn advance(&mut self) -> BitRun {
         let out = self.active;
         if self.next < self.runs.len() {
-            self.active = BitRun::new(self.runs[self.next], self.next % 2 != 0);
+            self.active = BitRun::new(self.runs[self.next], !self.next.is_multiple_of(2));
             self.next += 1;
         } else {
             self.active.length = 0;

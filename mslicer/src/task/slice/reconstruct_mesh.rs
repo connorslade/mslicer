@@ -18,7 +18,7 @@ impl ReconstructMesh {
         let progress = Progress::new();
         let handle = TaskThread::spawn(clone!([progress], move || {
             // reconstruct_mesh::marching_cubes(&progress, &config, &result, subsample)
-            reconstruct_mesh::greedy_rle(&progress, &config, &result)
+            reconstruct_mesh::greedy_rle(&progress, &config, &result, subsample)
         }));
 
         Self { progress, handle }

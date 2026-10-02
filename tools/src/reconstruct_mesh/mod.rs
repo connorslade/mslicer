@@ -30,9 +30,14 @@ pub fn marching_cubes(
     Mesh::new(vertices, faces)
 }
 
-pub fn greedy_rle(progress: &Progress, config: &SliceConfig, result: &[Layer]) -> Mesh {
+pub fn greedy_rle(
+    progress: &Progress,
+    config: &SliceConfig,
+    result: &[Layer],
+    subsample: u8,
+) -> Mesh {
     let start = Instant::now();
-    let (vertices, faces) = voxel::reconstruct_mesh(progress, config, result);
+    let (vertices, faces) = voxel::reconstruct_mesh(progress, config, result, subsample);
     info!("Reconstructed mesh (greedy_rle) in {:?}", start.elapsed());
     Mesh::new(vertices, faces)
 }

@@ -1,5 +1,7 @@
 use std::mem;
 
+use nalgebra::Vector2;
+
 use crate::container::Run;
 
 #[derive(Clone)]
@@ -91,6 +93,38 @@ pub fn chunks(runs: &[Run], width: u64) -> Vec<Vec<Run>> {
 
     (!working.is_empty()).then(|| out.push(working));
     out
+}
+
+pub fn pad_2d(
+    runs: &[Run],
+    size: Vector2<u32>,
+    factor: u8,
+    pad_value: u8,
+) -> (Vec<Run>, Vector2<u32>) {
+    let factor = factor as u32;
+    let padded_x = size.x.div_ceil(factor) * factor;
+    let padded_y = size.y.div_ceil(factor) * factor;
+
+    let mut out = Vec::new();
+    for mut row in chunks(runs, size.x as u64) {
+        let row_len: u64 = row.iter().map(|r| r.length).sum();
+        if row_len < padded_x as u64 {
+            row.push(Run {
+                length: padded_x as u64 - row_len,
+                value: pad_value,
+            });
+        }
+        out.extend(row);
+    }
+
+    if size.y < padded_y {
+        out.push(Run {
+            length: (padded_y - size.y) as u64 * padded_x as u64,
+            value: pad_value,
+        });
+    }
+
+    (out, Vector2::new(padded_x, padded_y))
 }
 
 impl<'a, T: Copy + Default> RunQueue<'a, T> {

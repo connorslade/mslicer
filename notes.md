@@ -9,6 +9,7 @@ Feel free to help out :eyes:.
 - hover overlay flickers sometimes
 - does the 'File › Install' button on windows close your project without saving?
 - resizing the window is laggy (bc of all the texture reallocs!)
+- only handle 1, 2, 3 keybind if not editing a text field...
 - fix model buffer download bounds (again):
 
 ```
