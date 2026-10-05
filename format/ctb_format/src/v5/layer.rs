@@ -8,7 +8,10 @@ use common::{
     units::{Milimeters, MilimetersPerMinute, Seconds},
 };
 
-use crate::{LayerDecoder, Section, decrypt_in_place};
+use crate::{
+    shared::{LayerDecoder, Section, xor_cypher},
+    v5::decrypt_in_place,
+};
 
 #[derive(Debug)]
 pub struct LayerRef {
@@ -151,27 +154,6 @@ impl Layer {
             retract_speed: self.retract_speed.convert(),
         };
         common::slice::Layer::new(data, self.position_z, exposure)
-    }
-}
-
-fn xor_cypher(data: &mut [u8], seed: u32, layer: u32) {
-    let init = seed.wrapping_mul(0x2D83CDAC).wrapping_add(0xD8A83423);
-    let mut key = layer
-        .wrapping_mul(0x1E1530CD)
-        .wrapping_add(0xEC3D47CD)
-        .wrapping_mul(init);
-
-    let mut index = 0;
-    for byte in data.iter_mut() {
-        let k = (key >> (8 * index)) as u8;
-        index += 1;
-
-        if index & 3 == 0 {
-            key = key.wrapping_add(init);
-            index = 0;
-        }
-
-        *byte ^= k;
     }
 }
 

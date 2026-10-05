@@ -3,7 +3,7 @@ use nalgebra::Vector4;
 
 use common::serde::{Deserializer, Serializer, SliceDeserializer};
 
-use crate::{Section, read_string};
+use crate::shared::{Section, read_string};
 
 /// Describes the resin used for this job.
 #[derive(Debug)]
@@ -35,9 +35,9 @@ impl ResinParameters {
 
         Ok(Self {
             resin_color: Vector4::new(color_r, color_g, color_b, color_a),
-            machine_name: read_string(des, machine_name),
-            resin_type: read_string(des, resin_type),
-            resin_name: read_string(des, resin_name),
+            machine_name: read_string(des, machine_name).into_owned(),
+            resin_type: read_string(des, resin_type).into_owned(),
+            resin_name: read_string(des, resin_name).into_owned(),
             resin_density,
         })
     }

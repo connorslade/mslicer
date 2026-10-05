@@ -5,7 +5,7 @@ use common::{
 };
 use nalgebra::Vector2;
 
-use crate::layer::Layer;
+use crate::v5::layer::Layer;
 
 /// Decodes the internal layer format to a series of runs.
 pub struct LayerDecoder<'a> {
@@ -138,5 +138,26 @@ impl EncodableLayer for LayerEncoder {
             light_pwm: exposure.pwm as f32,
             data: self.data,
         }
+    }
+}
+
+pub fn xor_cypher(data: &mut [u8], seed: u32, layer: u32) {
+    let init = seed.wrapping_mul(0x2D83CDAC).wrapping_add(0xD8A83423);
+    let mut key = layer
+        .wrapping_mul(0x1E1530CD)
+        .wrapping_add(0xEC3D47CD)
+        .wrapping_mul(init);
+
+    let mut index = 0;
+    for byte in data.iter_mut() {
+        let k = (key >> (8 * index)) as u8;
+        index += 1;
+
+        if index & 3 == 0 {
+            key = key.wrapping_add(init);
+            index = 0;
+        }
+
+        *byte ^= k;
     }
 }

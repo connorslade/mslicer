@@ -112,7 +112,7 @@ impl<'a> Deserializer for SliceDeserializer<'a> {
         let offset = self.offset;
         self.jump_to(pos);
         let result = func(self);
-        self.offset = offset;
+        self.jump_to(offset);
         result
     }
 

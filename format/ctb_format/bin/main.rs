@@ -12,7 +12,10 @@ use common::{
     container::rle::png::{ColorType, PngEncoder},
     serde::{DynamicSerializer, SliceDeserializer},
 };
-use ctb_format::{File, LayerDecoder, PreviewImage};
+use ctb_format::{
+    shared::{LayerDecoder, PreviewImage},
+    v5::File,
+};
 
 #[derive(Parser)]
 struct Args {

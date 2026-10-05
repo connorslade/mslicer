@@ -3,6 +3,10 @@ name = "goo_format"
 version = "0.1.0"
 edition = "2024"
 
+[[bin]]
+name = "goo_format"
+path = "bin/main.rs"
+
 [dependencies]
 common.workspace = true
 

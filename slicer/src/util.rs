@@ -17,6 +17,9 @@ use common::{
     },
 };
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
+use {
+    ctb_format::shared as ctb, ctb_format::v5 as ctb5, goo_format as goo, nanodlp_format as nanodlp,
+};
 
 use crate::slicer::vector::SvgFile;
 
@@ -32,17 +35,17 @@ where
     Layer: Borrow<slice::Layer>,
 {
     match format {
-        RasterFormat::Goo => Box::new(goo_format::File::from_layers(
+        RasterFormat::Goo => Box::new(goo::File::from_layers(
             config,
-            encode_raster_layers::<goo_format::LayerEncoder, _, _>(progress, config, layers),
+            encode_raster_layers::<goo::LayerEncoder, _, _>(progress, config, layers),
         )),
-        RasterFormat::Ctb => Box::new(ctb_format::File::from_layers(
+        RasterFormat::Ctb => Box::new(ctb5::File::from_layers(
             config,
-            encode_raster_layers::<ctb_format::LayerEncoder, _, _>(progress, config, layers),
+            encode_raster_layers::<ctb::LayerEncoder, _, _>(progress, config, layers),
         )),
-        RasterFormat::NanoDLP => Box::new(nanodlp_format::File::from_layers(
+        RasterFormat::NanoDLP => Box::new(nanodlp::File::from_layers(
             config,
-            encode_raster_layers::<nanodlp_format::LayerEncoder, _, _>(progress, config, layers),
+            encode_raster_layers::<nanodlp::LayerEncoder, _, _>(progress, config, layers),
             voxels,
         )),
     }
@@ -106,13 +109,13 @@ pub fn load_sliced(
         RasterFormat::Goo => {
             let data = data(file)?;
             let mut des = SliceDeserializer::new(&data);
-            Box::new(goo_format::File::deserialize(&mut des)?)
+            Box::new(goo::File::deserialize(&mut des)?)
         }
         RasterFormat::Ctb => {
             let data = data(file)?;
             let mut des = SliceDeserializer::new(&data);
-            Box::new(ctb_format::File::deserialize(&mut des)?)
+            Box::new(ctb5::File::deserialize(&mut des)?)
         }
-        RasterFormat::NanoDLP => Box::new(nanodlp_format::File::deserialize(file)?),
+        RasterFormat::NanoDLP => Box::new(nanodlp::File::deserialize(file)?),
     })
 }

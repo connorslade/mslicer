@@ -9,7 +9,7 @@ use common::serde::{Deserializer, Serializer, SliceDeserializer};
 use image::RgbaImage;
 use nalgebra::{Vector2, Vector3};
 
-use crate::Section;
+use crate::shared::Section;
 
 /// RGB bitmap image.
 #[derive(Default)]

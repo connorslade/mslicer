@@ -1,10 +1,9 @@
 use std::{
-    fmt::Debug,
+    fmt::{self, Debug},
     time::{SystemTime, UNIX_EPOCH},
 };
 
 use anyhow::{Result, ensure};
-
 use common::{
     progress::Progress,
     serde::{Deserializer, DynamicSerializer, Serializer, SliceDeserializer},
@@ -16,10 +15,12 @@ use nalgebra::{Vector2, Vector3, Vector4};
 use sha2::{Digest, Sha256};
 
 use crate::{
-    Section, decrypt, encrypt, encrypt_in_place,
-    layer::{Layer, LayerRef},
-    preview::PreviewImage,
-    resin::ResinParameters,
+    shared::{PreviewImage, Section, read_string},
+    v5::{
+        decrypt, encrypt, encrypt_in_place,
+        layer::{Layer, LayerRef},
+        resin::ResinParameters,
+    },
 };
 
 const FORMAT_VERSION: u32 = 5;
@@ -182,10 +183,9 @@ impl File {
             rest_time_after_lift: Seconds::new(des.read_f32_le()),
             machine_name: {
                 let section = Section::deserialize(&mut des)?;
-                let machine_name = main_des.execute_at(section.offset as usize, |des| {
-                    String::from_utf8_lossy(des.read_slice(section.size as usize))
-                });
-                machine_name.trim_end_matches('\0').to_owned()
+                read_string(&mut des, section)
+                    .trim_end_matches('\0')
+                    .to_owned()
             },
             anti_alias_flag: des.read_u8(),
             per_layer_settings: {
@@ -213,9 +213,7 @@ impl File {
             disclaimer: {
                 des.advance_by(4 * 4);
                 let section = Section::deserialize(&mut des)?;
-                main_des.execute_at(section.offset as usize, |des| {
-                    String::from_utf8_lossy(des.read_slice(section.size as usize)).into_owned()
-                })
+                read_string(&mut des, section).into_owned()
             },
             resin_parameters: {
                 des.advance_by(4);
@@ -511,13 +509,14 @@ impl SlicedFile for File {
 }
 
 impl Debug for File {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("File")
+            .field("layers", &self.layers.len())
             .field("checksum", &self.checksum)
             .field("disclaimer", &self.disclaimer)
             .field("modified", &self.modified)
-            .field("size", &self.size)
-            .field("resolution", &self.resolution)
+            .field("size", &self.size.as_slice())
+            .field("resolution", &self.resolution.as_slice())
             .field("machine_name", &self.machine_name)
             .field("projector_type", &self.projector_type)
             .field("resin_parameters", &self.resin_parameters)
