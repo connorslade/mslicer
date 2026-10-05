@@ -16,7 +16,7 @@ pub struct StatusData {
     pub status: Status,
     #[serde(rename = "MainboardID")]
     pub mainboard_id: String,
-    pub time_stamp: u64,
+    pub time_stamp: f64,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]

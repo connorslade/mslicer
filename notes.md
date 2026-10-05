@@ -10,6 +10,7 @@ Feel free to help out :eyes:.
 - does the 'File › Install' button on windows close your project without saving?
 - resizing the window is laggy (bc of all the texture reallocs!)
 - only handle 1, 2, 3 keybind if not editing a text field...
+- fix long file names in remote print causing problems...
 - fix model buffer download bounds (again):
 
 ```
@@ -51,6 +52,7 @@ Caused by:
   - Run u32
 - reduce power usage (dont always re-render, don't re-do work)
 - avg fps so its readable, or update it 1 Hz
+- optimize island detection
 
 ## Documentation
 
