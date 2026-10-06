@@ -1,4 +1,8 @@
-use std::{marker::PhantomData, ops};
+use std::{
+    fmt::{self, Debug},
+    marker::PhantomData,
+    ops,
+};
 
 use crate::units::{LengthUnit, Meter, TimeUnit, defs::Second};
 
@@ -176,12 +180,6 @@ macro_rules! quantity {
                 }
             }
 
-            impl<$($param: $constraint),+> std::fmt::Debug for $name<$($param),+> {
-                fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                    f.write_fmt(format_args!("{:?}", self.value))
-                }
-            }
-
             impl<$($param: $constraint),+> Default for $name<$($param),+> {
                 fn default() -> Self {
                     Self::new(0.0)
@@ -313,3 +311,47 @@ quantity! [
     Time<U: TimeUnit = Second>,
     Velocity<L: LengthUnit, T: TimeUnit>
 ];
+
+impl<U: LengthUnit> Debug for Length<U> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_fmt(format_args!("{} ", self.raw()))?;
+        U::write_unit(f)?;
+        Ok(())
+    }
+}
+
+impl<U: TimeUnit> Debug for Time<U> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_fmt(format_args!("{} ", self.raw()))?;
+        U::write_unit(f)?;
+        Ok(())
+    }
+}
+
+impl<L: LengthUnit, T: TimeUnit> Debug for Velocity<L, T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_fmt(format_args!("{} ", self.raw()))?;
+        L::write_unit(f)?;
+        f.write_str("/")?;
+        T::write_unit(f)?;
+        Ok(())
+    }
+}
+
+impl<U: LengthUnit> Debug for Area<U> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_fmt(format_args!("{} ", self.raw()))?;
+        U::write_unit(f)?;
+        f.write_str("²")?;
+        Ok(())
+    }
+}
+
+impl<U: LengthUnit> Debug for Volume<U> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_fmt(format_args!("{} ", self.raw()))?;
+        U::write_unit(f)?;
+        f.write_str("³")?;
+        Ok(())
+    }
+}

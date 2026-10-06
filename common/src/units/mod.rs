@@ -2,8 +2,11 @@
 //!
 //! Probably should have just used the uom create but it's whatever.
 
+use std::fmt;
+
 mod defs;
 mod value;
+
 pub use defs::{Base, Centi, Kilo, Meter, Micro, Milli, Minute, Second};
 pub use value::{Length, Time, Velocity};
 
@@ -36,6 +39,10 @@ pub trait Unit {
     fn apply(val: f64, power: i32) -> f64 {
         val * Self::FACTOR.powi(power)
     }
+
+    fn write_unit(_fmt: &mut fmt::Formatter) -> fmt::Result {
+        Ok(())
+    }
 }
 
 pub trait LengthUnit: Unit {}
@@ -43,4 +50,5 @@ pub trait TimeUnit: Unit {}
 
 pub trait MetricPrefix {
     const FACTOR: f64;
+    const UNIT: &str;
 }
