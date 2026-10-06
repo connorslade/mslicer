@@ -12,6 +12,8 @@ pub use {
     preview::PreviewImage,
 };
 
+pub const PAGE_SIZE: u64 = 1 << 32;
+
 #[derive(Debug)]
 pub struct Section {
     pub size: u32,
@@ -34,7 +36,7 @@ impl Section {
         })
     }
 
-    // Size, Offset
+    /// Size, Offset
     pub fn deserialize_rev(des: &mut SliceDeserializer) -> Result<Self> {
         Ok(Self {
             size: des.read_u32_le(),

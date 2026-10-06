@@ -1,10 +1,9 @@
 /target
-/*output
 /working
-/notes.txt
-*.goo
-*.stl
-*.ctb
-*.svg
-codebook.toml
 .DS_Store
+
+*.stl
+*.obj
+*.ctb
+*.goo
+*.nanodlp

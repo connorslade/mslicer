@@ -15,7 +15,7 @@ use nalgebra::{Vector2, Vector3, Vector4};
 use sha2::{Digest, Sha256};
 
 use crate::{
-    shared::{PreviewImage, Section, read_string},
+    shared::{PAGE_SIZE, PreviewImage, Section, read_string},
     v5::{
         decrypt, encrypt, encrypt_in_place,
         layer::{Layer, LayerRef},
@@ -24,7 +24,6 @@ use crate::{
 };
 
 const FORMAT_VERSION: u32 = 5;
-const PAGE_SIZE: u64 = 1 << 32;
 const DEFAULT_XOR_KEY: u32 = 0x67;
 const DISCLAIMER: &str = "Layout and record format for the ctb and cbddlp file types are the copyrighted programs or codes of CBD Technology (China) Inc..The Customer or User shall not in any manner reproduce, distribute, modify, decompile, disassemble, decrypt, extract, reverse engineer, lease, assign, or sublicense the said programs or codes.";
 

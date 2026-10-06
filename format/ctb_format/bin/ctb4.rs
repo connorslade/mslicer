@@ -16,7 +16,7 @@ fn main() -> Result<()> {
     println!("{file:#?}");
 
     let layer_count = file.layers.len();
-    for (i, layer) in file.layers.into_iter().enumerate() {
+    for (i, layer) in file.layers.iter().enumerate() {
         let decoder = LayerDecoder::new(&layer.data);
         let runs = decoder.filter(|x| x.length > 0).collect();
 
@@ -28,6 +28,10 @@ fn main() -> Result<()> {
         fs::write(format!("working/layers/layer-{i}.png"), ser.into_inner())?;
         print!("\r{}/{layer_count}", i + 1);
     }
+
+    let mut ser = DynamicSerializer::new();
+    file.serialize(&mut ser);
+    fs::write("working/CTBv4-rencode.ctb", ser.inner_mut())?;
 
     println!();
     Ok(())
