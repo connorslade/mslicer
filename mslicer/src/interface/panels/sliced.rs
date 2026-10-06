@@ -16,8 +16,8 @@ use egui::{
     panel::Side, style::HandleShape, text::LayoutJob, vec2,
 };
 use egui_phosphor::regular::{
-    CAMERA, CARET_DOWN, CARET_UP, CLOCK, CORNERS_IN, CROSSHAIR, CUBE_TRANSPARENT, DROP,
-    FLOPPY_DISK_BACK, PAPER_PLANE_TILT, SIDEBAR, SWAP, TEXT_AA,
+    ARROW_CLOCKWISE, ARROW_COUNTER_CLOCKWISE, CAMERA, CARET_DOWN, CARET_UP, CLOCK, CORNERS_IN,
+    CROSSHAIR, CUBE_TRANSPARENT, DROP, FLOPPY_DISK_BACK, PAPER_PLANE_TILT, SIDEBAR, SWAP, TEXT_AA,
 };
 use egui_plot::{Line, LineStyle, Plot, VLine};
 use egui_wgpu::Callback;
@@ -715,10 +715,18 @@ fn sidebar(
                 ui.end_row();
 
                 ui.label("Rotation");
-                DragValue::new(&mut sliced.rotation)
-                    .range(-180.0..=180.0)
-                    .suffix("°")
-                    .ui(ui);
+                ui.horizontal(|ui| {
+                    DragValue::new(&mut sliced.rotation)
+                        .range(-180.0..=180.0)
+                        .suffix("°")
+                        .ui(ui);
+
+                    let mut rotate_by =
+                        |angle: f32| sliced.rotation = (sliced.rotation + angle) % 360.0 - 180.0;
+
+                    (ui.button(ARROW_CLOCKWISE).clicked()).then(|| rotate_by(270.0));
+                    (ui.button(ARROW_COUNTER_CLOCKWISE).clicked()).then(|| rotate_by(450.0));
+                });
                 ui.end_row();
 
                 ui.label("Anti-Aliasing");
