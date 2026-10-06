@@ -20,6 +20,7 @@ pub const DEFAULT_PRINTERS: &[(&str, &[PrinterProperties])] = &[
         PrinterProperties::new("Mars 5 Ultra",          [8_520,  4_320], [153.36,  77.76,   165.0]),
         PrinterProperties::new("Mars 4",                [8_520,  4_320], [153.36,  77.76,   175.0]),
         PrinterProperties::new("Mars 4 Ultra",          [8_520,  4_320], [153.36,  77.76,   165.0]),
+        PrinterProperties::new("Mars 2 Pro",            [1_620,  2_560], [82.62,   130.56,  160.0]),
     ]),
     ("Phrozen", &[
         PrinterProperties::new("Sonic Mini 4K",         [3_840,  2_160], [134.40,  75.600,  130.0]),
