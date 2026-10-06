@@ -1,15 +1,20 @@
 use std::fmt::{self, Debug};
 
-use anyhow::{Ok, Result};
+use anyhow::{Ok, Result, ensure};
 use common::{
     serde::{Deserializer, Serializer, SliceDeserializer},
-    units::{Milimeter, Milimeters, MilimetersPerMinute, Milliliters, Minute, Second, Seconds},
+    units::{
+        Milimeter, Milimeters, MilimetersPerMinute, Milliliters, Minute, Minutes, Second, Seconds,
+    },
 };
 use nalgebra::{Vector2, Vector3};
 
 use crate::{
     shared::{PAGE_SIZE, PreviewImage, Section, read_string},
-    v4::Layer,
+    v4::{
+        Layer,
+        layer::{LAYER_DEF_EXT_SIZE, LAYER_DEF_SIZE},
+    },
 };
 
 const MAGIC: u32 = 0x12FD0106;
@@ -27,7 +32,7 @@ pub struct File {
     pub small_preview: PreviewImage,
 
     pub total_height: Milimeters,
-    pub print_time: u32, // what unit??
+    pub print_time: Minutes,
 
     pub layer_height: Milimeters,
     pub exposure_time: Seconds,
@@ -70,20 +75,33 @@ pub struct SlicerParameters {
     pub retract_speed_2: MilimetersPerMinute,
     pub rest_time_after_lift: Seconds,
     pub machine_name: String,
-    pub anti_alias_flag: u8,
+    pub anti_alias_flag: u8, // 0x07 no AA, 0x0F AA
     pub per_layer_settings: u8,
     pub timestamp: u32,
-    pub anti_alias_level: u8,
+    pub anti_alias_level: u32,
     pub software_version: u32,
     pub rest_time_after_retract: Seconds,
     pub rest_time_after_lift_2: Seconds,
     pub transition_layers: u32,
+    pub ext: PrinterParametersExt,
+}
+
+#[derive(Debug)]
+pub struct PrinterParametersExt {
+    pub bottom_retract_speed: MilimetersPerMinute,
+    pub bottom_retract_speed_2: MilimetersPerMinute,
+    pub rest_time_after_retract: Seconds,
+    pub rest_time_after_lift: Seconds,
+    pub rest_time_before_lift: Seconds,
+    pub bottom_retract_height_2: Milimeters,
+    pub last_layer_idx: u32,
+    pub disclaimer: String,
 }
 
 impl File {
     pub fn deserialize(des: &mut SliceDeserializer) -> Result<Self> {
-        assert_eq!(des.read_u32_le(), MAGIC);
-        assert_eq!(des.read_u32_le(), VERSION);
+        ensure!(des.read_u32_le() == MAGIC);
+        ensure!(des.read_u32_le() == VERSION);
 
         let layers; // (offset, count)
         Ok(Self {
@@ -108,7 +126,7 @@ impl File {
                 let offset = des.read_u32_le() as usize;
                 des.execute_at(offset, |des| PreviewImage::deserialize(des))?
             },
-            print_time: des.read_u32_le(),
+            print_time: Minutes::new(des.read_u32_le() as f32),
             projector_type: des.read_u32_le(),
             print_parameters: {
                 let section = Section::deserialize(des)?;
@@ -160,7 +178,7 @@ impl File {
         let large_preview = ser.reserve(4);
         let layers = ser.reserve(8);
         let small_preview = ser.reserve(4);
-        ser.write_u32_le(self.print_time);
+        ser.write_u32_le(self.print_time.get::<Minute>().ceil() as u32);
         ser.write_u32_le(self.projector_type);
         let print_parameters = ser.reserve(8);
         ser.write_u32_le(self.anti_alias);
@@ -189,18 +207,17 @@ impl File {
 
         let section = Section::new(ser.pos(), self.layers.len());
         ser.execute_at(layers, |ser| section.serialize(ser));
-        let layer_refs = ser.reserve(36 * self.layers.len());
+        let layer_refs = ser.reserve(LAYER_DEF_SIZE * self.layers.len());
 
         for (i, layer) in self.layers.iter().enumerate() {
-            let offset = ser.pos() as u64;
-            ser.execute_at(layer_refs + 36 * i, |ser| {
-                layer.serialize_ref(
-                    ser,
-                    (offset / PAGE_SIZE) as u32,
-                    (offset % PAGE_SIZE) as u32,
-                )
-            });
+            let data = (ser.pos() + LAYER_DEF_EXT_SIZE) as u64;
+            let (page, offset) = ((data / PAGE_SIZE) as u32, (data % PAGE_SIZE) as u32);
+
+            layer.serialize_ext(ser, page, offset);
             ser.write_bytes(&layer.data);
+            ser.execute_at(layer_refs + LAYER_DEF_SIZE * i, |ser| {
+                layer.serialize_ref(ser, page, offset)
+            });
         }
     }
 }
@@ -253,13 +270,21 @@ impl SlicerParameters {
                 read_string(des, section).into_owned()
             },
             anti_alias_flag: des.read_u8(),
-            per_layer_settings: des.read_u8(),
-            timestamp: des.read_u32_be(),
-            anti_alias_level: des.read_u8(),
+            per_layer_settings: {
+                des.advance_by(2);
+                des.read_u8()
+            },
+            timestamp: des.read_u32_le(),
+            anti_alias_level: des.read_u32_le(),
             software_version: des.read_u32_le(),
             rest_time_after_retract: Seconds::new(des.read_f32_le()),
             rest_time_after_lift_2: Seconds::new(des.read_f32_le()),
             transition_layers: des.read_u32_le(),
+            ext: {
+                let ext = des.read_u32_le() as usize;
+                des.execute_at(ext, |des| PrinterParametersExt::deserialize(des))?
+            },
+            // 8 bytes of padding
         })
     }
 
@@ -273,18 +298,75 @@ impl SlicerParameters {
         ser.write_f32_le(self.rest_time_after_lift.get::<Second>());
         let machine_name = ser.reserve(8);
         ser.write_u8(self.anti_alias_flag);
+        ser.reserve(2);
         ser.write_u8(self.per_layer_settings);
         ser.write_u32_le(self.timestamp);
-        ser.write_u8(self.anti_alias_level);
+        ser.write_u32_le(self.anti_alias_level);
         ser.write_u32_le(self.software_version);
         ser.write_f32_le(self.rest_time_after_retract.get::<Second>());
         ser.write_f32_le(self.rest_time_after_lift_2.get::<Second>());
         ser.write_u32_le(self.transition_layers);
-        ser.reserve(4 * 3);
+        let ext_offset = ser.reserve(4);
+        ser.reserve(4 * 2);
 
         let section = Section::new(ser.pos(), self.machine_name.len());
         ser.execute_at(machine_name, |ser| section.serialize(ser));
         ser.write_bytes(self.machine_name.as_bytes());
+
+        let offset = ser.pos() as u32;
+        ser.execute_at(ext_offset, |ser| ser.write_u32_le(offset));
+        self.ext.serialize(ser);
+    }
+}
+
+impl PrinterParametersExt {
+    pub fn deserialize(des: &mut SliceDeserializer) -> Result<Self> {
+        {
+            Ok(Self {
+                bottom_retract_speed: MilimetersPerMinute::new(des.read_f32_le()),
+                bottom_retract_speed_2: MilimetersPerMinute::new(des.read_f32_le()),
+                rest_time_after_retract: {
+                    des.advance_by(4 * 4);
+                    Seconds::new(des.read_f32_le())
+                },
+                rest_time_after_lift: Seconds::new(des.read_f32_le()),
+                rest_time_before_lift: Seconds::new(des.read_f32_le()),
+                bottom_retract_height_2: Milimeters::new(des.read_f32_le()),
+                last_layer_idx: {
+                    des.advance_by(4 * 3);
+                    des.read_u32_le()
+                },
+                disclaimer: {
+                    des.advance_by(4 * 4);
+                    let section = Section::deserialize(des)?;
+                    read_string(des, section).into_owned()
+                },
+            })
+        }
+    }
+
+    pub fn serialize<T: Serializer>(&self, ser: &mut T) {
+        ser.write_f32_le(self.bottom_retract_speed.get::<Milimeter, Minute>());
+        ser.write_f32_le(self.bottom_retract_speed_2.get::<Milimeter, Minute>());
+        ser.reserve(4);
+        ser.write_f32_le(4.0);
+        ser.reserve(4);
+        ser.write_f32_le(4.0);
+        ser.write_f32_le(self.rest_time_after_retract.get::<Second>());
+        ser.write_f32_le(self.rest_time_after_lift.get::<Second>());
+        ser.write_f32_le(self.rest_time_before_lift.get::<Second>());
+        ser.write_f32_le(self.bottom_retract_height_2.get::<Milimeter>());
+        ser.write_f32_le(2955.996);
+        ser.reserve(4);
+        ser.write_u32_le(5);
+        ser.write_u32_le(self.last_layer_idx);
+        ser.reserve(4 * 4);
+        let disclaimer = ser.reserve(8);
+        ser.reserve(384 + 4);
+
+        let section = Section::new(ser.pos(), self.disclaimer.len());
+        ser.execute_at(disclaimer, |ser| section.serialize(ser));
+        ser.write_bytes(self.disclaimer.as_bytes());
     }
 }
 
