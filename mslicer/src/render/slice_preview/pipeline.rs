@@ -42,6 +42,7 @@ struct SlicePreviewUniforms {
     dimensions: Vector2<u32>,
     offset: Vector2<f32>,
     scale: Vector2<f32>,
+    rotation: f32,
     aspect: f32,
     pixel_aspect: f32,
     multisample: u32,
@@ -163,6 +164,7 @@ impl SlicePreviewPipeline {
                 pixel_aspect: resources.pixel_aspect,
                 scale: resources.scale,
                 offset: resources.offset,
+                rotation: resources.rotation,
                 aspect: resources.aspect,
                 multisample: resources.multisample,
             })

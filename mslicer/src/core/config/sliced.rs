@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 pub struct SlicedConfig {
     pub coordinate_space: SlicePreviewCoordinateSpace,
     pub view: SlicePreviewView,
+    pub rotation: f32,
     pub multisample: u32,
     pub sidebar: bool,
 
@@ -85,6 +86,7 @@ impl Default for SlicedConfig {
         Self {
             coordinate_space: Default::default(),
             view: Default::default(),
+            rotation: 0.0,
             multisample: 8,
             sidebar: true,
 

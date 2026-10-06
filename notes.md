@@ -11,6 +11,7 @@ Feel free to help out :eyes:.
 - resizing the window is laggy (bc of all the texture reallocs!)
 - only handle 1, 2, 3 keybind if not editing a text field...
 - fix long file names in remote print causing problems...
+- don't use currently selected printer resolution for sliced diff. Fail if the two files have differing resolutions.
 - fix model buffer download bounds (again):
 
 ```

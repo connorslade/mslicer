@@ -11,7 +11,6 @@ const SAMPLE_OFFSETS = array(
     vec2f( 0.25,  0.25),
 );
 
-const BACKGROUND_COLOR = vec3f(0.106);
 const ANNOTATION_COLORS = array(
     vec3f(1.000, 1.000, 1.000), // (00) No annotation
     vec3f(0.624, 0.176, 0.212), // (01) Island
@@ -23,6 +22,7 @@ struct Context {
     dimensions: vec2u,
     offset: vec2f,
     scale: vec2f,
+    rotation: f32,
     aspect: f32, // width / height
     pixel_aspect: f32,
     multisample: u32
@@ -54,15 +54,15 @@ fn frag(in: VertexOutput) -> @location(0) vec4f {
 
 fn sample(position: vec2f) -> vec3f {
     let dimensions = vec2f(context.dimensions);
-    let aspect = context.aspect * (dimensions.y / dimensions.x) * context.pixel_aspect;
-    let uv = vec2(position.x * aspect, position.y) / context.scale / 2.0 + 0.5;
-    let pos = vec2i(uv * dimensions + context.offset * sign(context.scale));
+    let p = vec2(position.x * context.aspect, position.y) * dimensions.y / context.scale / 2.0;
+    let offset = rotate2(context.offset, context.rotation) * sign(context.scale);
+    let pos = vec2i(rotate2(p, context.rotation) * vec2(context.pixel_aspect, 1.0) + 0.5 * dimensions + offset);
 
     let upos = vec2u(pos);
     if pos.x < 0 || pos.y < 0
         || upos.x >= context.dimensions.x
         || upos.y >= context.dimensions.y {
-        return BACKGROUND_COLOR;
+        discard;
     }
 
     let brightness = index_slice(upos);
@@ -90,4 +90,16 @@ fn index_annotation(pos: vec2u) -> vec3f {
     let index = index(pos);
     let value = (annotations[index.array_idx] >> index.shift) & 0xFF;
     return ANNOTATION_COLORS[value];
+}
+
+// (Px + jPy)∙e^(jΘ)
+// ⇒ (Px cos(Θ) - Py sin(Θ)) + j(Px sin(Θ) + Py cos(Θ))
+fn rotate2(p: vec2f, angle: f32) -> vec2f {
+    let cos_t = cos(angle);
+    let sin_t = sin(angle);
+
+    return vec2(
+        p.x * cos_t - p.y * sin_t,
+        p.x * sin_t + p.y * cos_t
+    );
 }

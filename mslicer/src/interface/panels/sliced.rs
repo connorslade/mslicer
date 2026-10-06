@@ -306,9 +306,14 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                             }
                         };
 
-                        let flip = matches!(app.config.sliced.view, SlicePreviewView::Screen);
-                        let multisample = app.config.sliced.multisample;
-                        slice_preview(state, ui, raster, platform, pixel_aspect, flip, multisample);
+                        slice_preview(
+                            state,
+                            ui,
+                            raster,
+                            platform,
+                            pixel_aspect,
+                            &app.config.sliced,
+                        );
                     });
                 }
                 GenericSliceResult::Vector(_) => {
@@ -354,9 +359,12 @@ fn slice_preview(
     result: &mut RasterSliceResult,
     platform: Vector2<u32>,
     pixel_aspect: f32,
-    flip: bool,
-    multisample: u32,
+    sliced: &SlicedConfig,
 ) {
+    let flip = matches!(sliced.view, SlicePreviewView::Screen);
+    let multisample = sliced.multisample;
+    let rotation = sliced.rotation.to_radians();
+
     ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
         layer_slider(state, ui, result);
 
@@ -421,6 +429,7 @@ fn slice_preview(
                     SlicePreviewRenderCallback {
                         dimensions: platform,
                         offset: state.preview_offset,
+                        rotation,
                         aspect: rect.width() / rect.height(),
                         pixel_aspect,
                         scale,
@@ -703,6 +712,13 @@ fn sidebar(
                             ui.selectable_value(&mut sliced.view, *view, view.name());
                         }
                     });
+                ui.end_row();
+
+                ui.label("Rotation");
+                DragValue::new(&mut sliced.rotation)
+                    .range(-180.0..=180.0)
+                    .suffix("°")
+                    .ui(ui);
                 ui.end_row();
 
                 ui.label("Anti-Aliasing");
