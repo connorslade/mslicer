@@ -6,13 +6,14 @@ use common::serde::{Deserializer, Serializer, SliceDeserializer};
 mod encoding;
 mod preview;
 
-pub(crate) use encoding::xor_cypher;
+pub(crate) use {encoding::xor_cypher, preview::scale_preview};
 pub use {
-    encoding::{LayerDecoder, LayerEncoder},
+    encoding::{LayerDecoder, LayerEncoder, LayerEncoderV4, LayerEncoderV5},
     preview::PreviewImage,
 };
 
 pub const PAGE_SIZE: u64 = 1 << 32;
+pub const DISCLAIMER: &str = "Layout and record format for the ctb and cbddlp file types are the copyrighted programs or codes of CBD Technology (China) Inc..The Customer or User shall not in any manner reproduce, distribute, modify, decompile, disassemble, decrypt, extract, reverse engineer, lease, assign, or sublicense the said programs or codes.";
 
 #[derive(Debug)]
 pub struct Section {

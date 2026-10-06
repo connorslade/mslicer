@@ -1,7 +1,7 @@
 use anyhow::{Result, bail};
 use serde::{Deserialize, Serialize};
 
-use crate::serde::{Deserializer, Serializer};
+use crate::serde::{Deserializer, Serializer, SliceDeserializer};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum SliceMode {
@@ -12,8 +12,15 @@ pub enum SliceMode {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum RasterFormat {
     Goo,
-    Ctb,
+    Ctb(CtbFormat),
     NanoDLP,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub enum CtbFormat {
+    Encrypted, // v5
+    Legacy,    // v4
+    Unknown,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -54,20 +61,32 @@ impl SliceMode {
 }
 
 impl RasterFormat {
-    pub const ALL: [Self; 3] = [Self::Goo, Self::Ctb, Self::NanoDLP];
+    pub const ALL: [Self; 4] = [
+        Self::Goo,
+        Self::Ctb(CtbFormat::Encrypted),
+        Self::Ctb(CtbFormat::Legacy),
+        Self::NanoDLP,
+    ];
 
     pub fn name(&self) -> &str {
         match self {
             Self::Goo => "Elegoo",
-            Self::Ctb => "Chitu Encrypted",
+            Self::Ctb(ctb) => ctb.name(),
             Self::NanoDLP => "NanoDLP",
+        }
+    }
+
+    pub fn tip(&self) -> Option<&str> {
+        match self {
+            Self::Ctb(ctb) => ctb.tip(),
+            Self::Goo | Self::NanoDLP => None,
         }
     }
 
     pub fn extension(&self) -> &str {
         match self {
             Self::Goo => "goo",
-            Self::Ctb => "ctb",
+            Self::Ctb(..) => "ctb",
             Self::NanoDLP => "nanodlp",
         }
     }
@@ -75,10 +94,42 @@ impl RasterFormat {
     pub fn from_extension(extension: &str) -> Option<Self> {
         Some(match extension.to_lowercase().as_str() {
             "goo" => Self::Goo,
-            "ctb" => Self::Ctb,
+            "ctb" => Self::Ctb(CtbFormat::Unknown),
             "nanodlp" => Self::NanoDLP,
             _ => return None,
         })
+    }
+}
+
+impl CtbFormat {
+    pub fn name(&self) -> &str {
+        match self {
+            Self::Encrypted => "Chitu Encrypted",
+            Self::Legacy => "Chitu Legacy",
+            Self::Unknown => unreachable!(),
+        }
+    }
+
+    pub fn tip(&self) -> Option<&str> {
+        Some(match self {
+            Self::Encrypted => "Encrypted v5 CTB",
+            Self::Legacy => "Unencrypted v4 CTB",
+            Self::Unknown => unreachable!(),
+        })
+    }
+
+    pub fn resolve_with_magic(self, des: &mut SliceDeserializer) -> Self {
+        match self {
+            Self::Unknown => {
+                let magic = des.execute_at(0, |des| des.read_u32_le());
+                match magic {
+                    0x12FD0106 => Self::Legacy,
+                    0x12FD0107 => Self::Encrypted,
+                    _ => Self::Unknown,
+                }
+            }
+            x => x,
+        }
     }
 }
 
@@ -100,10 +151,11 @@ impl VectorFormat {
 
 impl Format {
     pub const VECTOR: [Format; 1] = [Format::Vector(VectorFormat::Svg)];
-    pub const RASTER: [Format; 3] = [
-        Format::Raster(RasterFormat::Ctb),
+    pub const RASTER: [Format; 4] = [
+        Format::Raster(RasterFormat::Ctb(CtbFormat::Encrypted)),
         Format::Raster(RasterFormat::Goo),
         Format::Raster(RasterFormat::NanoDLP),
+        Format::Raster(RasterFormat::Ctb(CtbFormat::Legacy)),
     ];
 
     pub fn extension(&self) -> &str {
@@ -117,6 +169,13 @@ impl Format {
         match self {
             Format::Raster(format) => format!("{} (.{})", format.name(), format.extension()),
             Format::Vector(format) => format!("{} (.{})", format.name(), format.extension()),
+        }
+    }
+
+    pub fn tip(&self) -> Option<&str> {
+        match self {
+            Format::Raster(format) => format.tip(),
+            Format::Vector(..) => None,
         }
     }
 

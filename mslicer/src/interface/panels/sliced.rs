@@ -55,7 +55,7 @@ use common::{
     serde::DynamicSerializer,
     slice::{
         Layer, SliceConfig, SliceMode,
-        format::{Format, RasterFormat},
+        format::{CtbFormat, Format, RasterFormat},
         print_time,
     },
     units::{Centimeter, Milimeter, Mircometer},
@@ -152,7 +152,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                                             &Progress::new(),
                                             &result.config,
                                             &slice_operation.preview(),
-                                            RasterFormat::Ctb.into(),
+                                            RasterFormat::Ctb(CtbFormat::Encrypted).into(),
                                         );
 
                                         let mut serializer = DynamicSerializer::new();
@@ -176,10 +176,14 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                                 let disabled = result.variable_layer_height
                                     && matches!(format, Format::Raster(RasterFormat::NanoDLP));
 
-                                if ui
-                                    .add_enabled(!disabled, Button::new(format.name()))
-                                    .clicked()
-                                {
+                                let mut response =
+                                    ui.add_enabled(!disabled, Button::new(format.name()));
+
+                                if let Some(tip) = format.tip() {
+                                    response = response.on_hover_text(tip);
+                                }
+
+                                if response.clicked() {
                                     app.tasks.add(save_file(
                                         result.config.clone(),
                                         slice_operation.preview(),
@@ -510,7 +514,12 @@ fn name_popup(mainboard_id: String, data: Arc<Vec<u8>>) -> Popup {
                             .replace([' ', '/'], "_")
                             .replace("..", "");
                         app.remote_print
-                            .upload(&mainboard_id, data.clone(), name, RasterFormat::Ctb)
+                            .upload(
+                                &mainboard_id,
+                                data.clone(),
+                                name,
+                                RasterFormat::Ctb(CtbFormat::Encrypted),
+                            )
                             .unwrap();
                     }
                 });

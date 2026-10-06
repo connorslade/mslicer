@@ -3,10 +3,11 @@ use std::fmt::Debug;
 use anyhow::{Ok, Result, ensure};
 use common::{
     serde::{Deserializer, Serializer, SliceDeserializer},
+    slice::{self, ExposureConfig},
     units::{Milimeter, Milimeters, MilimetersPerMinute, Minute, Second, Seconds},
 };
 
-use crate::shared::{PAGE_SIZE, xor_cypher};
+use crate::shared::{LayerDecoder, PAGE_SIZE, xor_cypher};
 
 pub const LAYER_DEF_SIZE: usize = 0x24;
 pub const LAYER_DEF_EXT_SIZE: usize = 0x54;
@@ -94,6 +95,19 @@ impl Layer {
         ser.write_f32_le(self.rest_time_after_lift.get::<Second>());
         ser.write_f32_le(self.rest_time_after_retract.get::<Second>());
         ser.write_f32_le(self.light_pwm);
+    }
+
+    pub fn into_layer(&self) -> slice::Layer {
+        let data = LayerDecoder::new(&self.data).collect();
+        let exposure = ExposureConfig {
+            exposure_time: self.exposure_time,
+            exposure_delay: self.rest_time_after_retract,
+            pwm: self.light_pwm as u8,
+            lift_distance: self.lift_height,
+            lift_speed: self.lift_speed.convert(),
+            retract_speed: self.retract_speed.convert(),
+        };
+        slice::Layer::new(data, self.position_z, exposure)
     }
 }
 

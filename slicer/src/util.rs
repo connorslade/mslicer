@@ -6,22 +6,25 @@ use std::{
     sync::Arc,
 };
 
-use anyhow::{Ok, Result};
+use anyhow::{Ok, Result, bail};
 use common::{
     container::rle::downsample::RunFlattenExt,
     progress::Progress,
     serde::SliceDeserializer,
     slice::{
         self, DynSlicedFile, EncodableLayer, SliceConfig, SlicedFile, VectorLayer,
-        format::{RasterFormat, VectorFormat},
+        format::{CtbFormat, RasterFormat, VectorFormat},
     },
 };
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use {
-    ctb_format::shared as ctb, ctb_format::v5 as ctb5, goo_format as goo, nanodlp_format as nanodlp,
+    ctb_format::shared as ctb, ctb_format::v4 as ctb4, ctb_format::v5 as ctb5, goo_format as goo,
+    nanodlp_format as nanodlp,
 };
 
 use crate::slicer::vector::SvgFile;
+
+// todo: make a new format crate that has all this
 
 pub fn export_raster<Layers, Layer>(
     progress: &Progress,
@@ -39,10 +42,17 @@ where
             config,
             encode_raster_layers::<goo::LayerEncoder, _, _>(progress, config, layers),
         )),
-        RasterFormat::Ctb => Box::new(ctb5::File::from_layers(
-            config,
-            encode_raster_layers::<ctb::LayerEncoder, _, _>(progress, config, layers),
-        )),
+        RasterFormat::Ctb(ctb) => match ctb {
+            CtbFormat::Encrypted => Box::new(ctb5::File::from_layers(
+                config,
+                encode_raster_layers::<ctb::LayerEncoderV5, _, _>(progress, config, layers),
+            )),
+            CtbFormat::Legacy => Box::new(ctb4::File::from_layers(
+                config,
+                encode_raster_layers::<ctb::LayerEncoderV4, _, _>(progress, config, layers),
+            )),
+            CtbFormat::Unknown => unreachable!(),
+        },
         RasterFormat::NanoDLP => Box::new(nanodlp::File::from_layers(
             config,
             encode_raster_layers::<nanodlp::LayerEncoder, _, _>(progress, config, layers),
@@ -111,11 +121,17 @@ pub fn load_sliced(
             let mut des = SliceDeserializer::new(&data);
             Box::new(goo::File::deserialize(&mut des)?)
         }
-        RasterFormat::Ctb => {
+        RasterFormat::Ctb(ctb) => {
             let data = data(file)?;
             let mut des = SliceDeserializer::new(&data);
-            Box::new(ctb5::File::deserialize(&mut des)?)
+
+            match ctb.resolve_with_magic(&mut des) {
+                CtbFormat::Encrypted => Box::new(ctb5::File::deserialize(&mut des)?),
+                CtbFormat::Legacy => Box::new(ctb4::File::deserialize(&mut des)?),
+                CtbFormat::Unknown => bail!("Unsupported CTB format version."),
+            }
         }
+
         RasterFormat::NanoDLP => Box::new(nanodlp::File::deserialize(file)?),
     })
 }

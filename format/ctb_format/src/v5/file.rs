@@ -10,12 +10,12 @@ use common::{
     slice::{self, ExposureConfig, Height, SliceConfig, SliceMode, SlicedFile},
     units::{Milimeters, MilimetersPerMinute, Seconds},
 };
-use image::{RgbaImage, imageops::FilterType};
+use image::RgbaImage;
 use nalgebra::{Vector2, Vector3, Vector4};
 use sha2::{Digest, Sha256};
 
 use crate::{
-    shared::{PAGE_SIZE, PreviewImage, Section, read_string},
+    shared::{DISCLAIMER, PAGE_SIZE, PreviewImage, Section, read_string, scale_preview},
     v5::{
         decrypt, encrypt, encrypt_in_place,
         layer::{Layer, LayerRef},
@@ -23,9 +23,9 @@ use crate::{
     },
 };
 
-const FORMAT_VERSION: u32 = 5;
-const DEFAULT_XOR_KEY: u32 = 0x67;
-const DISCLAIMER: &str = "Layout and record format for the ctb and cbddlp file types are the copyrighted programs or codes of CBD Technology (China) Inc..The Customer or User shall not in any manner reproduce, distribute, modify, decompile, disassemble, decrypt, extract, reverse engineer, lease, assign, or sublicense the said programs or codes.";
+const MAGIC: u32 = 0x12FD0107;
+const VERSION: u32 = 5;
+const DEFAULT_XOR_KEY: u32 = 0x67; // todo: can this just be zero?
 
 /// A ChituBox file.
 pub struct File {
@@ -94,12 +94,12 @@ pub struct File {
 
 impl File {
     pub fn deserialize(main_des: &mut SliceDeserializer) -> Result<Self> {
-        assert_eq!(main_des.read_u32_le(), 0x12FD0107);
+        assert_eq!(main_des.read_u32_le(), MAGIC);
         let settings = Section::deserialize_rev(main_des)?;
 
         main_des.advance_by(4);
         let version = main_des.read_u32_le();
-        ensure!(version == FORMAT_VERSION);
+        ensure!(version == VERSION);
         let signature = Section::deserialize_rev(main_des)?;
 
         main_des.jump_to(settings.offset as usize);
@@ -182,7 +182,7 @@ impl File {
             rest_time_after_lift: Seconds::new(des.read_f32_le()),
             machine_name: {
                 let section = Section::deserialize(&mut des)?;
-                read_string(&mut des, section)
+                read_string(main_des, section)
                     .trim_end_matches('\0')
                     .to_owned()
             },
@@ -212,7 +212,7 @@ impl File {
             disclaimer: {
                 des.advance_by(4 * 4);
                 let section = Section::deserialize(&mut des)?;
-                read_string(&mut des, section).into_owned()
+                read_string(main_des, section).into_owned()
             },
             resin_parameters: {
                 des.advance_by(4);
@@ -226,7 +226,7 @@ impl File {
         main_ser.write_u32_le(0x12FD0107);
         let settings_section = main_ser.reserve(8);
         main_ser.write_u32_le(0);
-        main_ser.write_u32_le(FORMAT_VERSION);
+        main_ser.write_u32_le(VERSION);
         let signature = main_ser.reserve(8);
         main_ser.write_u32_le(0);
         main_ser.write_u16_le(1);
@@ -400,7 +400,7 @@ impl File {
                 resin_name: "Standard".into(),
                 resin_density: 1.1,
             },
-            total_height: config.slice_height * layer_count as f32,
+            total_height: config.slice_height * layer_count as f32, // WRONG!
             layer_height: config.slice_height,
             last_layer_index: layer_count.saturating_sub(1) as u32,
             transition_layer_count: transition_layers,
@@ -446,17 +446,15 @@ impl File {
 
 impl SlicedFile for File {
     fn serialize(&self, ser: &mut DynamicSerializer, progress: &Progress) {
-        self.serialize(ser);
         progress.set_total(1);
+        self.serialize(ser);
         progress.set_finished();
     }
 
     fn set_preview(&mut self, preview: &image::RgbaImage) {
-        self.large_preview = PreviewImage::from_image(preview);
-
-        let (width, height) = (preview.width() * 3 / 4, preview.height() * 3 / 4);
-        let small_preview = image::imageops::resize(preview, width, height, FilterType::Nearest);
-        self.small_preview = PreviewImage::from_image(&small_preview);
+        let (large, small) = scale_preview(preview);
+        self.large_preview = large;
+        self.small_preview = small;
     }
 
     fn slice_config(&self) -> SliceConfig {

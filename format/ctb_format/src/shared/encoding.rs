@@ -5,7 +5,7 @@ use common::{
 };
 use nalgebra::Vector2;
 
-use crate::v5::layer::Layer;
+use crate::{v4::Layer as LayerV4, v5::layer::Layer as LayerV5};
 
 /// Decodes the internal layer format to a series of runs.
 pub struct LayerDecoder<'a> {
@@ -104,15 +104,25 @@ impl LayerEncoder {
     }
 }
 
-impl EncodableLayer for LayerEncoder {
-    type Output = Layer;
+#[derive(Default)]
+pub struct LayerEncoderV5 {
+    encoder: LayerEncoder,
+}
+
+#[derive(Default)]
+pub struct LayerEncoderV4 {
+    encoder: LayerEncoder,
+}
+
+impl EncodableLayer for LayerEncoderV5 {
+    type Output = LayerV5;
 
     fn new(_platform: Vector2<u32>) -> Self {
         Self::default()
     }
 
     fn add_run(&mut self, length: u64, value: u8) {
-        self.add_run(length, value);
+        self.encoder.add_run(length, value);
     }
 
     fn finish(
@@ -121,7 +131,7 @@ impl EncodableLayer for LayerEncoder {
         exposure: &ExposureConfig,
         height: Milimeters,
     ) -> Self::Output {
-        Layer {
+        LayerV5 {
             position_z: height,
             exposure_time: exposure.exposure_time,
             light_off_delay: Seconds::new(0.0),
@@ -136,7 +146,44 @@ impl EncodableLayer for LayerEncoder {
             rest_time_after_lift: Seconds::new(0.0),
             rest_time_after_retract: exposure.exposure_delay,
             light_pwm: exposure.pwm as f32,
-            data: self.data,
+            data: self.encoder.data,
+        }
+    }
+}
+
+impl EncodableLayer for LayerEncoderV4 {
+    type Output = LayerV4;
+
+    fn new(_platform: Vector2<u32>) -> Self {
+        Self::default()
+    }
+
+    fn add_run(&mut self, length: u64, value: u8) {
+        self.encoder.add_run(length, value);
+    }
+
+    fn finish(
+        self,
+        _config: &SliceConfig,
+        exposure: &ExposureConfig,
+        height: Milimeters,
+    ) -> Self::Output {
+        LayerV4 {
+            position_z: height,
+            exposure_time: exposure.exposure_time,
+            light_off_delay: Seconds::new(0.0),
+            lift_height: exposure.lift_distance,
+            lift_speed: exposure.lift_speed.convert(),
+            lift_height_2: Milimeters::new(0.0),
+            lift_speed_2: MilimetersPerMinute::new(0.0),
+            retract_speed: exposure.retract_speed.convert(),
+            retract_height_2: Milimeters::new(0.0),
+            retract_speed_2: MilimetersPerMinute::new(0.0),
+            rest_time_before_lift: Seconds::new(0.0),
+            rest_time_after_lift: Seconds::new(0.0),
+            rest_time_after_retract: exposure.exposure_delay,
+            light_pwm: exposure.pwm as f32,
+            data: self.encoder.data,
         }
     }
 }

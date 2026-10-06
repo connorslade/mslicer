@@ -6,7 +6,7 @@ use std::{
 use anyhow::Result;
 
 use common::serde::{Deserializer, Serializer, SliceDeserializer};
-use image::RgbaImage;
+use image::{RgbaImage, imageops::FilterType};
 use nalgebra::{Vector2, Vector3};
 
 use crate::shared::Section;
@@ -167,6 +167,16 @@ impl PreviewImage {
 
         out
     }
+}
+
+pub fn scale_preview(preview: &RgbaImage) -> (PreviewImage, PreviewImage) {
+    let large = PreviewImage::from_image(preview);
+
+    let (width, height) = (preview.width() * 3 / 4, preview.height() * 3 / 4);
+    let small_preview = image::imageops::resize(preview, width, height, FilterType::Nearest);
+    let small = PreviewImage::from_image(&small_preview);
+
+    (large, small)
 }
 
 impl Debug for PreviewImage {

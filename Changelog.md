@@ -90,6 +90,7 @@
 - Reconstruct mesh with greedy RLE meshing
 - Fix remote print (SDCP v1) crashing when timestamp is reported in scientific notation
   (i dont even know... how did they make such a bad protocol before AI?)
+- Added support for unencrypted CTBv4 files (called 'Chitu Legacy' in the UI)
 
 ## v0.9.2 &mdash; August 30th, 2026
 
