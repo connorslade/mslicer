@@ -83,6 +83,7 @@ impl PreviewImage {
         ser.write_u32_le(size.x);
         ser.write_u32_le(size.y);
         let section = ser.reserve(8);
+        ser.reserve(4 * 4);
 
         let data = self.to_bytes();
         let offset = ser.pos();

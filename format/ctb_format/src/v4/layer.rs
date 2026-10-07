@@ -103,7 +103,7 @@ impl Layer {
             exposure_time: self.exposure_time,
             exposure_delay: self.rest_time_after_retract,
             pwm: self.light_pwm as u8,
-            lift_distance: self.lift_height,
+            lift_distance: self.lift_height - self.lift_height_2,
             lift_speed: self.lift_speed.convert(),
             retract_speed: self.retract_speed.convert(),
         };

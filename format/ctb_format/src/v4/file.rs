@@ -14,7 +14,9 @@ use image::RgbaImage;
 use nalgebra::{Vector2, Vector3};
 
 use crate::{
-    shared::{DISCLAIMER, PAGE_SIZE, PreviewImage, Section, scale_preview},
+    shared::{
+        DEFAULT_XOR_KEY, DISCLAIMER, PAGE_SIZE, PreviewImage, Section, scale_preview, xor_cypher,
+    },
     v4::{
         Layer,
         layer::{LAYER_DEF_EXT_SIZE, LAYER_DEF_SIZE},
@@ -139,7 +141,7 @@ impl File {
         ser.write_u32_le(self.anti_alias);
         ser.write_u16_le(self.light_pwm);
         ser.write_u16_le(self.bottom_light_pwm);
-        ser.write_u32_le(0); // cypher key (because layer data needs to be encrypted??)
+        ser.write_u32_le(DEFAULT_XOR_KEY); // (because layer data needs to be encrypted??)
         let slice_parameters = ser.reserve(8);
 
         let offset = ser.pos() as u32;
@@ -155,9 +157,8 @@ impl File {
         let section = Section::new(offset, ser.pos() - offset);
         ser.execute_at(print_parameters, |ser| section.serialize(ser));
 
-        let offset = ser.pos();
+        let section = Section::new(ser.pos(), 76);
         self.slicer_parameters.serialize(ser);
-        let section = Section::new(offset, ser.pos() - offset);
         ser.execute_at(slice_parameters, |ser| section.serialize(ser));
 
         let section = Section::new(ser.pos(), self.layers.len());
@@ -169,7 +170,12 @@ impl File {
             let (page, offset) = ((data / PAGE_SIZE) as u32, (data % PAGE_SIZE) as u32);
 
             layer.serialize_ext(ser, page, offset);
+
+            let data = ser.pos();
             ser.write_bytes(&layer.data);
+            let buffer = ser.view_mut(data, layer.data.len());
+            xor_cypher(buffer, DEFAULT_XOR_KEY, i as u32);
+
             ser.execute_at(layer_refs + LAYER_DEF_SIZE * i, |ser| {
                 layer.serialize_ref(ser, page, offset)
             });
@@ -219,7 +225,7 @@ impl File {
                 bottom_layer_count,
             },
             slicer_parameters: SlicerParameters {
-                bottom_lift_height_2: Milimeters::new(4.0), // make a setting
+                bottom_lift_height_2: Milimeters::new(0.0), // make a setting
                 bottom_lift_speed_2: MilimetersPerMinute::new(320.0), // make a setting
                 lift_height_2: Milimeters::new(0.0),
                 lift_speed_2: MilimetersPerMinute::new(0.0),
@@ -241,7 +247,7 @@ impl File {
                     rest_time_after_retract: config.exposure_config.exposure_delay,
                     rest_time_after_lift: Seconds::new(0.0),
                     rest_time_before_lift: Seconds::new(0.0),
-                    bottom_retract_height_2: Milimeters::new(1.5),
+                    bottom_retract_height_2: Milimeters::new(0.0),
                     last_layer_idx,
                     disclaimer: DISCLAIMER.into(),
                 },
@@ -275,7 +281,8 @@ impl SlicedFile for File {
                 exposure_time: self.exposure_time,
                 exposure_delay: self.slicer_parameters.ext.rest_time_after_retract,
                 pwm: self.light_pwm as u8,
-                lift_distance: self.print_parameters.lift_height,
+                lift_distance: self.print_parameters.lift_height
+                    - self.slicer_parameters.lift_height_2,
                 lift_speed: self.print_parameters.lift_speed.convert(),
                 retract_speed: self.print_parameters.retract_speed.convert(),
             },
@@ -283,9 +290,10 @@ impl SlicedFile for File {
                 exposure_time: self.bottom_exposure_time,
                 exposure_delay: self.slicer_parameters.ext.rest_time_after_retract, // idk
                 pwm: self.bottom_light_pwm as u8,
-                lift_distance: self.print_parameters.bottom_lift_height,
+                lift_distance: self.print_parameters.bottom_lift_height
+                    - self.slicer_parameters.bottom_lift_height_2,
                 lift_speed: self.print_parameters.bottom_lift_speed.convert(),
-                retract_speed: self.slicer_parameters.retract_speed_2.convert(),
+                retract_speed: self.slicer_parameters.ext.bottom_retract_speed.convert(),
             },
             first_layers: Height::Layers(self.bottom_layer_count),
             transition_layers: Height::Layers(self.slicer_parameters.transition_layers),

@@ -15,7 +15,9 @@ use nalgebra::{Vector2, Vector3, Vector4};
 use sha2::{Digest, Sha256};
 
 use crate::{
-    shared::{DISCLAIMER, PAGE_SIZE, PreviewImage, Section, read_string, scale_preview},
+    shared::{
+        DEFAULT_XOR_KEY, DISCLAIMER, PAGE_SIZE, PreviewImage, Section, read_string, scale_preview,
+    },
     v5::{
         decrypt, encrypt, encrypt_in_place,
         layer::{Layer, LayerRef},
@@ -25,7 +27,6 @@ use crate::{
 
 const MAGIC: u32 = 0x12FD0107;
 const VERSION: u32 = 5;
-const DEFAULT_XOR_KEY: u32 = 0x67; // todo: can this just be zero?
 
 /// A ChituBox file.
 pub struct File {

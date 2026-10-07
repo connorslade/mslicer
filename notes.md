@@ -54,6 +54,7 @@ Caused by:
 - reduce power usage (dont always re-render, don't re-do work)
 - avg fps so its readable, or update it 1 Hz
 - optimize island detection
+- two stage lift config!! (how have i left this unimplemented for so long!)
 
 ## Documentation
 

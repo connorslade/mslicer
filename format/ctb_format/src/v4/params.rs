@@ -198,7 +198,8 @@ impl PrinterParametersExt {
         ser.write_u32_le(self.last_layer_idx);
         ser.reserve(4 * 4);
         let disclaimer = ser.reserve(8);
-        ser.reserve(384 + 4);
+        ser.write_u32_le(0);
+        ser.reserve(380);
 
         let section = Section::new(ser.pos(), self.disclaimer.len());
         ser.execute_at(disclaimer, |ser| section.serialize(ser));
