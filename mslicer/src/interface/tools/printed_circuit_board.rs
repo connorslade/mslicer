@@ -1,6 +1,6 @@
 use std::{fs::File, io::Write};
 
-use common::units::Mircometer;
+use common::units::Micrometer;
 use egui::{Align, Button, ComboBox, DragValue, Layout, Ui, Widget, vec2};
 use egui_extras::{Column, TableBuilder};
 use egui_phosphor::regular::{BOUNDING_BOX, EYE, INFO, TRASH};
@@ -151,7 +151,7 @@ fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
         ui.end_row();
 
         ui.label("Circle Error");
-        tool.max_circle_error.with::<Mircometer, _>(|x| {
+        tool.max_circle_error.with::<Micrometer, _>(|x| {
             DragValue::new(x)
                 .suffix(" μm")
                 .speed(1.0)

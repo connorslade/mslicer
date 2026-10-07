@@ -90,9 +90,10 @@
 - Reconstruct mesh with greedy RLE meshing
 - Fix remote print (SDCP v1) crashing when timestamp is reported in scientific notation
   (i dont even know... how did they make such a bad protocol before AI?)
-- Added support for unencrypted CTBv4 files (called 'Chitu Legacy' in the UI)
-- Added Mars 2 Pro printer preset
+- Added support for unencrypted CTBv4 files (called 'Chitu Legacy' in the UI) ([#40](https://github.com/connorslade/mslicer/issues/40))
+- Added a ton of printer presets
 - Allow rotating the slice preview
+- Mark on the printer presets which printers are known to work with mslicer
 
 ## v0.9.2 &mdash; August 30th, 2026
 

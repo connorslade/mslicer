@@ -58,7 +58,7 @@ use common::{
         format::{CtbFormat, Format, RasterFormat},
         print_time,
     },
-    units::{Centimeter, Milimeter, Mircometer},
+    units::{Centimeter, Micrometer, Milimeter},
 };
 
 const FILENAME_POPUP_TEXT: &str =
@@ -893,7 +893,7 @@ fn sidebar(
 
     ui.collapsing("File Properties", |ui| {
         grid("file").show(ui, |ui| {
-            let slice_height = result.config.slice_height.get::<Mircometer>();
+            let slice_height = result.config.slice_height.get::<Micrometer>();
             ui.label("Slice Height");
             ui.label(format!("{slice_height:.0} μm"));
             ui.end_row();

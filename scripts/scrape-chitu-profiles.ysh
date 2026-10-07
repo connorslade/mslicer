@@ -1,0 +1,86 @@
+#!/usr/bin/ysh
+
+source $LIB_YSH/args.ysh
+
+func parse_config(brand, config) {
+    var info = config.printerinfo
+    if (info.output_slice_suffixs !~ / '.' ('goo' | 'ctb') /) {
+        return (null);
+    }
+
+    var printer = {
+        "name": info.machinename.defaultvalue => trimStart(brand ++ ' '),
+        "formats": info.output_slice_suffixs,
+        "resolution": [
+            info.resolutionx.defaultvalue,
+            info.resolutiony.defaultvalue
+        ],
+        "size": [
+            info.machinewidth.defaultvalue,
+            info.machinedepth.defaultvalue,
+            info.machineheight.defaultvalue
+        ]
+    }
+
+    return (printer)
+}
+
+parser (&spec) {
+    flag -r --rust (help='Generate rust code')
+    flag -m --markdown (help='List compatible printers in markdown')
+    flag -v --verbose
+    arg src (help='Chitu install location')
+}
+
+var args = parseArgs(spec, ARGV)
+var printer_config = args.src ++ '/bin/Resources/Conf/MachineConfig'
+var brands = {}
+
+cd $printer_config {
+    for brand in */ {
+        setvar brand = brand => trimEnd('/')
+        if (args.verbose) { echo $brand }
+
+        cd $brand {
+            var printers = []
+            for printer in *.cfgx {
+                json read < $printer (&raw)
+                var config = parse_config(brand, raw)
+                if (config === null) {
+                    continue
+                }
+
+                if (args.verbose) { echo "    " $[config.name] }
+                call printers->append(config)
+            }
+
+            if (len(printers) > 0) {
+                setvar brands[brand] = printers
+            }
+        }
+    }
+}
+
+if (args.rust) {
+    for brand in (brands) {
+        echo "(\"$brand\", &["
+        for printer in (brands[brand]) {
+            echo "    Printer::new(\"$[printer.name]\", [$[printer.resolution[0]], $[printer.resolution[1]]], [$[printer.size[0]], $[printer.size[1]], $[printer.size[2]]]),"
+        }
+        echo "]),"
+    }
+}
+
+if (args.markdown) {
+    for brand in (brands) {
+        echo '###' $[brand] b'\n'
+        for printer in (brands[brand]) {
+            echo "- $[printer.name]"
+        }
+        echo
+    }
+}
+
+if (not args.rust and not args.markdown) {
+    = brands
+}

@@ -12,7 +12,7 @@ use tracing::{info, warn};
 
 use crate::core::config::{
     peripherals::{RemotePrintConfig, SpacenavConfig},
-    printers::PrinterProperties,
+    printers::Printer,
     render::RenderConfig,
     sliced::SlicedConfig,
     ui::UiConfig,
@@ -35,7 +35,7 @@ pub struct Config {
     pub default_slice_config: SliceConfig,
 
     pub recent_projects: Vec<PathBuf>,
-    pub printers: Vec<PrinterProperties>,
+    pub printers: Vec<Printer>,
     #[cfg(windows)]
     pub portable: bool,
 }
@@ -97,7 +97,7 @@ impl Default for Config {
             default_slice_config: Default::default(),
 
             recent_projects: Vec::new(),
-            printers: vec![PrinterProperties::new(
+            printers: vec![Printer::new(
                 "Custom Printer",
                 [11_520, 5_120],
                 [218.88, 122.904, 260.0],

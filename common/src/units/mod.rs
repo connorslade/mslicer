@@ -12,11 +12,11 @@ pub use value::{Length, Time, Velocity};
 
 use crate::units::value::{Area, Volume};
 
-pub type Mircometer = Meter<Micro>;
+pub type Micrometer = Meter<Micro>;
 pub type Milimeter = Meter<Milli>;
 pub type Centimeter = Meter<Centi>;
 pub type Meters = Length<Meter>;
-pub type Micrometers = Length<Mircometer>;
+pub type Micrometers = Length<Micrometer>;
 pub type Milimeters = Length<Milimeter>;
 pub type Centimeters = Length<Centimeter>;
 

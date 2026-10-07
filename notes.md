@@ -12,6 +12,13 @@ Feel free to help out :eyes:.
 - only handle 1, 2, 3 keybind if not editing a text field...
 - fix long file names in remote print causing problems...
 - don't use currently selected printer resolution for sliced diff. Fail if the two files have differing resolutions.
+- overlay elements (hover tooltip / mode buttons) can render over welcome screen
+- dont make 'Saturn 3 Ultra' the default profile
+  - add an unselected option to force users to pick the right printer?
+- printer usage analytics?
+  - or just like ask people...
+- figure out how other slicers size the preview images
+  - is it per printer or one set of sizes used everywhere?
 - fix model buffer download bounds (again):
 
 ```
@@ -55,6 +62,7 @@ Caused by:
 - avg fps so its readable, or update it 1 Hz
 - optimize island detection
 - two stage lift config!! (how have i left this unimplemented for so long!)
+- configurable preview image size
 
 ## Documentation
 

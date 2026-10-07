@@ -1,4 +1,4 @@
-use common::units::Mircometer;
+use common::units::Micrometer;
 use egui::{Button, ComboBox, DragValue, RichText, Ui, Widget, vec2};
 use egui_phosphor::regular::INFO;
 use tools::phonograph_record::audio::{Channels, Equalization};
@@ -125,13 +125,13 @@ fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
     ui.collapsing("Groove", |ui| {
         grid("groove").show(ui, |ui| {
             ui.label("Pitch");
-            tool.pitch.with::<Mircometer, _>(|x| {
+            tool.pitch.with::<Micrometer, _>(|x| {
                 DragValue::new(x).suffix(" μm").ui(ui);
             });
             ui.end_row();
 
             ui.label("Width");
-            tool.width.with::<Mircometer, _>(|x| {
+            tool.width.with::<Micrometer, _>(|x| {
                 DragValue::new(x).suffix(" μm").ui(ui);
             });
             ui.end_row();

@@ -4,8 +4,8 @@ use const_format::concatcp;
 use egui::{Color32, ComboBox, Context, DragValue, Grid, Ui, Widget, emath::OrderedFloat};
 use egui_extras::{Column, TableBuilder};
 use egui_phosphor::regular::{
-    ARROW_COUNTER_CLOCKWISE, ARROW_LINE_DOWN, ARROW_LINE_UP, INFO, LINK_BREAK, LINK_SIMPLE,
-    NOTE_PENCIL, PENCIL, PLUS, TIMER, TRASH, WARNING,
+    ARROW_COUNTER_CLOCKWISE, ARROW_LINE_DOWN, ARROW_LINE_UP, CHECK_CIRCLE, INFO, LINK_BREAK,
+    LINK_SIMPLE, NOTE_PENCIL, PENCIL, PLUS, TIMER, TRASH, WARNING,
 };
 use egui_plot::{Line, MarkerShape, Plot, Points};
 use itertools::Itertools;
@@ -18,7 +18,10 @@ use slicer::post_process::{
 use crate::{
     core::{
         App,
-        config::{Config, printers::DEFAULT_PRINTERS},
+        config::{
+            Config,
+            printers::{DEFAULT_PRINTERS, Printer},
+        },
         history::SliceConfigAction,
         selected::SelectedPrinter,
         state::UiState,
@@ -33,9 +36,10 @@ use crate::{
 };
 use common::{
     slice::{ExposureConfig, ExposureRemap, SliceMode, Supersample},
-    units::{Milimeter, Minute, Mircometer},
+    units::{Micrometer, Milimeter, Minute},
 };
 
+const VALIDATED_TIP: &str = "This printer has been tested and verified to work with with mslicer.";
 const ANTI_ALIAS_TIP: &str = "Uses supersampling anti-aliasing (SSAA) to pick grayscale values that more accurately represent the actual model geometry. The actual value of this setting is the number of effective samples per voxel.";
 const TRANSITION_LAYER_TIP: &str = "Transition layers interpolate between the first exposure settings and the normal exposure settings.";
 
@@ -167,7 +171,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
         ui.horizontal(|ui| {
             let old_slice_height = slice_config.slice_height;
             let mut editing = false;
-            slice_config.slice_height.with::<Mircometer, _>(|value| {
+            slice_config.slice_height.with::<Micrometer, _>(|value| {
                 let response = DragValue::new(value)
                     .suffix(" μm")
                     .range(1.0..=f32::MAX)
@@ -359,47 +363,68 @@ fn printer_presets(ui: &mut Ui, config: &mut Config, state: &mut UiState) {
         state.selected_printer = SelectedPrinter::Project;
     }
 
-    ui.menu_button("Your Presets", |ui| {
-        for (i, printer) in config.printers.iter().enumerate() {
-            let res = printer.resolution;
-            let size = printer.size.map(|x| x.get::<Milimeter>());
-
-            let this_selected =
-                matches!(state.selected_printer, SelectedPrinter::Custom(x) if x == i);
-            if ui
-                .selectable_label(this_selected, &*printer.name)
-                .on_hover_text(format!(
-                    "{}x{} ({}x{}x{})",
-                    res.x, res.y, size.x, size.y, size.z
-                ))
-                .clicked()
-            {
-                state.selected_printer = SelectedPrinter::Custom(i);
+    ui.add_enabled_ui(!config.printers.is_empty(), |ui| {
+        ui.menu_button("Your Presets", |ui| {
+            for (i, printer) in config.printers.iter().enumerate() {
+                let this_selected =
+                    matches!(state.selected_printer, SelectedPrinter::Custom(x) if x == i);
+                if ui
+                    .selectable_label(this_selected, &*printer.name)
+                    .on_hover_ui(|ui| preset_hover(ui, printer))
+                    .clicked()
+                {
+                    state.selected_printer = SelectedPrinter::Custom(i);
+                }
             }
-        }
+        });
     });
 
     ui.separator();
-    for (i, (brand, models)) in DEFAULT_PRINTERS.iter().enumerate() {
+    for (i, (brand, printers)) in DEFAULT_PRINTERS.iter().enumerate() {
         ui.menu_button(*brand, |ui| {
-            for (j, model) in models.iter().enumerate() {
-                let res = model.resolution;
-                let size = model.size.map(|x| x.get::<Milimeter>());
-
+            for (j, printer) in printers.iter().enumerate() {
                 let this_selected = matches!(state.selected_printer,
                     SelectedPrinter::Preset(brand, model) if brand == i && model == j);
+
+                let icon = ["     ", concatcp!(CHECK_CIRCLE, " ")][printer.validated as usize];
+                let name = format!("{icon}{}", &*printer.name);
                 if ui
-                    .selectable_label(this_selected, &*model.name)
-                    .on_hover_text(format!(
-                        "{}x{} ({}x{}x{})",
-                        res.x, res.y, size.x, size.y, size.z
-                    ))
+                    .selectable_label(this_selected, name)
+                    .on_hover_ui(|ui| preset_hover(ui, printer))
                     .clicked()
                 {
                     state.selected_printer = SelectedPrinter::Preset(i, j);
                 }
             }
         });
+    }
+}
+
+fn preset_hover(ui: &mut Ui, preset: &Printer) {
+    let res = preset.resolution;
+    let size = preset.size.map(|x| x.get::<Milimeter>());
+
+    grid("preset_hover").show(ui, |ui| {
+        ui.label("Build Volume (mm)");
+        ui.label(format!("{}×{}×{}", size.x, size.y, size.z));
+        ui.end_row();
+
+        ui.label("Resolution");
+        ui.label(format!("{}×{}", res.x, res.y));
+        ui.end_row();
+
+        ui.label("Pixel Size (μm)");
+        let px = (preset.size.xy())
+            .map(|x| x.get::<Micrometer>())
+            .component_div(&res.cast::<f32>());
+        ui.label(format!("{}×{}", px.x, px.y));
+        ui.end_row();
+    });
+
+    if preset.validated {
+        ui.shrink_width_to_current();
+        ui.add_space(8.0);
+        ui.label(VALIDATED_TIP);
     }
 }
 
@@ -503,55 +528,59 @@ pub fn exposure_config(ui: &mut Ui, config: &mut ExposureConfig) -> bool {
 }
 
 fn edit_presets(app: &mut PopupApp, ui: &mut Ui) -> bool {
-    TableBuilder::new(ui)
-        .striped(true)
-        .column(Column::auto())
-        .column(Column::exact(150.0))
-        .column(Column::auto())
-        .column(Column::auto())
-        .header(16.0, |mut row| {
-            row.col(|_ui| {});
-            for label in ["Name", "Resolution", "Size"] {
-                row.col(|ui| {
-                    ui.label(label);
-                });
-            }
-        })
-        .body(|mut body| {
-            let mut delete = None;
-            for (i, preset) in app.config.printers.iter_mut().enumerate() {
-                body.row(16.0, |mut row| {
+    if app.config.printers.is_empty() {
+        ui.vertical_centered(|ui| ui.label("No custom printers added yet."));
+    } else {
+        TableBuilder::new(ui)
+            .striped(true)
+            .column(Column::auto())
+            .column(Column::exact(150.0))
+            .column(Column::auto())
+            .column(Column::auto())
+            .header(16.0, |mut row| {
+                row.col(|_ui| {});
+                for label in ["Name", "Resolution", "Size"] {
                     row.col(|ui| {
-                        ui.visuals_mut().button_frame = false;
-                        if ui.button(TRASH).clicked() {
-                            delete = Some(i);
-                        }
+                        ui.label(label);
                     });
+                }
+            })
+            .body(|mut body| {
+                let mut delete = None;
+                for (i, preset) in app.config.printers.iter_mut().enumerate() {
+                    body.row(16.0, |mut row| {
+                        row.col(|ui| {
+                            ui.visuals_mut().button_frame = false;
+                            if ui.button(TRASH).clicked() {
+                                delete = Some(i);
+                            }
+                        });
 
-                    row.col(|ui| {
-                        ui.text_edit_singleline(&mut preset.name);
-                    });
+                        row.col(|ui| {
+                            ui.text_edit_singleline(&mut preset.name);
+                        });
 
-                    row.col(|ui| {
-                        dragger::vec2(ui, preset.resolution.as_mut(), |x| x);
-                    });
+                        row.col(|ui| {
+                            dragger::vec2(ui, preset.resolution.as_mut(), |x| x);
+                        });
 
-                    row.col(|ui| {
-                        ui.horizontal(|ui| {
-                            ui.add(DragValue::new(preset.size.x.raw_mut()).fixed_decimals(2));
-                            ui.label("×");
-                            ui.add(DragValue::new(preset.size.y.raw_mut()).fixed_decimals(2));
-                            ui.label("×");
-                            ui.add(DragValue::new(preset.size.z.raw_mut()).fixed_decimals(2));
+                        row.col(|ui| {
+                            ui.horizontal(|ui| {
+                                ui.add(DragValue::new(preset.size.x.raw_mut()).fixed_decimals(2));
+                                ui.label("×");
+                                ui.add(DragValue::new(preset.size.y.raw_mut()).fixed_decimals(2));
+                                ui.label("×");
+                                ui.add(DragValue::new(preset.size.z.raw_mut()).fixed_decimals(2));
+                            });
                         });
                     });
-                });
-            }
+                }
 
-            if let Some(delete) = delete {
-                app.config.printers.remove(delete);
-            }
-        });
+                if let Some(delete) = delete {
+                    app.config.printers.remove(delete);
+                }
+            });
+    }
 
     ui.add_space(8.0);
     ui.vertical_centered(|ui| {
