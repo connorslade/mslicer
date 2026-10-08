@@ -11,19 +11,20 @@ use std::{
 use const_format::concatcp;
 use egui::{
     Align, Align2, Button, CollapsingHeader, Color32, ComboBox, Context, CursorIcon, DragValue,
-    FontId, FontSelection, Frame, Grid, Id, ImageSource, Layout, ProgressBar, Rect, RichText,
-    ScrollArea, Sense, SidePanel, Slider, StrokeKind, Style, Ui, Vec2, Widget, load::SizedTexture,
-    panel::Side, style::HandleShape, text::LayoutJob, vec2,
+    FontId, FontSelection, Frame, Grid, Id, Layout, ProgressBar, Rect, RichText, ScrollArea, Sense,
+    SidePanel, Slider, StrokeKind, Style, Ui, Vec2, Widget, panel::Side, style::HandleShape,
+    text::LayoutJob, vec2,
 };
 use egui_phosphor::regular::{
     ARROW_CLOCKWISE, ARROW_COUNTER_CLOCKWISE, CAMERA, CARET_DOWN, CARET_UP, CLOCK, CORNERS_IN,
     CROSSHAIR, CUBE_TRANSPARENT, DROP, FLOPPY_DISK_BACK, PAPER_PLANE_TILT, SIDEBAR, SWAP, TEXT_AA,
+    TRASH,
 };
 use egui_plot::{Line, LineStyle, Plot, VLine};
 use egui_wgpu::Callback;
 use epaint_default_fonts::UBUNTU_LIGHT;
 use image::{ImageFormat, Rgba, RgbaImage, imageops::FilterType};
-use nalgebra::Vector2;
+use nalgebra::{Vector2, Vector3};
 
 use crate::{
     core::{
@@ -44,9 +45,11 @@ use crate::{
         panels::slice_config::exposure_config,
         popup::{Popup, PopupIcon, PopupManager},
     },
-    render::slice_preview::SlicePreviewRenderCallback,
+    render::{
+        camera::Camera, slice_preview::SlicePreviewRenderCallback, workspace::PreviewRenderCallback,
+    },
     task::{FileDialog, IslandDetection, ReconstructMesh, SaveSliced, TaskManager},
-    util::management::{LazyText, LazyTextureId},
+    util::management::LazyTextureId,
 };
 use common::{
     container::Run,
@@ -70,6 +73,13 @@ const SLICING_DEFECTS: &str = "There were (potential) slicing defects detected o
 const DEFECT_EXPL: &str = "Defective meshes can cause incorrect slicing. See how many defects were detected in each layer.";
 
 pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
+    // idk man
+    let preview = PreviewRenderCallback {
+        app: app as *mut _,
+        viewport: Default::default(),
+    };
+
+    let mut discard = false;
     if let Some(slice_operation) = &app.slice_operation {
         let progress = &slice_operation.progress;
 
@@ -92,8 +102,26 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                         .open(Popup::simple("Slicing Defects", PopupIcon::Warning, body));
                 }
 
+                let mut meshes = Vec::new();
+                let (mut min, mut max) = (Vector3::repeat(f32::MAX), Vector3::repeat(f32::MIN));
+                for model in app.project.models.iter() {
+                    let (model_min, model_max) = model.mesh.bounds();
+                    min = min.zip_map(&model_min, f32::min);
+                    max = max.zip_map(&model_max, f32::max);
+
+                    meshes.push(model.mesh.clone());
+                }
+
                 let layers = result.inner.layers();
+                let fov = app.config.render.preview.fov;
                 app.state.layer_count = (layers, layers.to_string().len() as u8);
+                app.state.preview_camera = Camera {
+                    target: (max + min) / 2.0,
+                    distance: (max + min).magnitude() / 4.0 / (fov / 2.0).tan(),
+                    fov,
+                    ..Default::default()
+                };
+                app.state.preview_meshes = meshes;
             }
 
             ui.horizontal(|ui| {
@@ -194,6 +222,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                             }
                         });
 
+                        discard = ui.button(concatcp!(TRASH, " Unload")).clicked();
                         ui.separator();
 
                         // todo: these functions shouldn't available if slice is
@@ -251,6 +280,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                             &mut app.config,
                             &mut app.tasks,
                             &mut app.popup,
+                            preview,
                             ui,
                         );
                     })
@@ -351,6 +381,8 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
             ui.label("keyboard shortcut.");
         });
     }
+
+    discard.then(|| app.slice_operation = None);
 }
 
 fn slice_preview(
@@ -592,6 +624,7 @@ fn sidebar(
     config: &mut Config,
     tasks: &mut TaskManager,
     popups: &mut PopupManager,
+    mut preview_callback: PreviewRenderCallback,
     ui: &mut Ui,
 ) {
     CollapsingHeader::new("Preview Image")
@@ -677,16 +710,33 @@ fn sidebar(
             });
 
             let available = ui.available_width();
-            let (width, height) = (preview.image.width(), preview.image.height());
+            // let (width, height) = (preview.image.width(), preview.image.height());
 
-            let size = vec2(available, available / width as f32 * height as f32);
-            let texture = SizedTexture::new(preview.texture.get(ui.ctx(), &preview.image), size);
+            // let size = vec2(available, available / width as f32 * height as f32);
+            // let texture = SizedTexture::new(preview.texture.get(ui.ctx(), &preview.image), size);
+
+            // ui.image(ImageSource::Texture(texture))
+            //     .on_hover_text(LazyText::new(move || format!("{width}×{height}")))
 
             reset_preview.then(|| previews.take());
 
             ui.add_space(4.0);
-            ui.image(ImageSource::Texture(texture))
-                .on_hover_text(LazyText::new(move || format!("{width}×{height}")))
+
+            let app = &mut unsafe { &mut *preview_callback.app };
+
+            let size = app.config.render.preview.large;
+            let large_aspect = size.x as f32 / size.y as f32;
+            let (response, painter) = ui.allocate_painter(
+                vec2(available, available / large_aspect),
+                Sense::click_and_drag(),
+            );
+
+            app.state.preview_camera.handle_movement(&response, ui);
+            preview_callback.viewport = Vector2::new(size.x, size.y);
+            let cursor = [CursorIcon::Grab, CursorIcon::Grabbing]
+                [ui.input(|i| i.pointer.primary_down()) as usize];
+            let rect = response.on_hover_cursor(cursor).rect;
+            painter.add(Callback::new_paint_callback(rect, preview_callback));
         });
 
     CollapsingHeader::new("Slice Preview")

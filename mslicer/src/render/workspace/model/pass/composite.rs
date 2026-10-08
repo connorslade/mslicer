@@ -1,9 +1,10 @@
 use wgpu::{
     BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayout, BindGroupLayoutDescriptor,
     BindGroupLayoutEntry, BindingResource, BindingType, BlendState, Buffer, ColorTargetState,
-    ColorWrites, Device, FragmentState, IndexFormat, MultisampleState, PipelineLayoutDescriptor,
-    RenderPass, RenderPipeline, RenderPipelineDescriptor, Sampler, SamplerBindingType,
-    ShaderStages, TextureFormat, TextureSampleType, TextureViewDimension, VertexState,
+    ColorWrites, CompareFunction, DepthStencilState, Device, FragmentState, IndexFormat,
+    MultisampleState, PipelineLayoutDescriptor, RenderPass, RenderPipeline,
+    RenderPipelineDescriptor, Sampler, SamplerBindingType, ShaderStages, TextureFormat,
+    TextureSampleType, TextureViewDimension, VertexState,
 };
 
 use crate::{
@@ -82,7 +83,10 @@ impl CompositePass {
                 })],
             }),
             primitive: Default::default(),
-            depth_stencil: Some(DEPTH_STENCIL_STATE),
+            depth_stencil: Some(DepthStencilState {
+                depth_compare: CompareFunction::LessEqual,
+                ..DEPTH_STENCIL_STATE
+            }),
             multisample: MultisampleState {
                 count: 4,
                 ..Default::default()

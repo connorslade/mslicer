@@ -1,5 +1,6 @@
 use common::color::SRgb;
 use egui_wgpu::ScreenDescriptor;
+use nalgebra::Vector2;
 use wgpu::{
     BindGroup, Buffer, BufferUsages, CommandEncoder, Device, Origin3d, RenderPass, Sampler,
     TexelCopyTextureInfo, TextureAspect, TextureFormat, TextureView,
@@ -149,9 +150,10 @@ impl ModelPipeline {
     ) {
         let size = screen.size_in_pixels.into();
         let occlusion_size = occlusion_size(app, size);
+        let view_projection = app.view_projection();
 
         self.base.prepare(gcx, app);
-        self.ssao.prepare(gcx, app, None);
+        self.ssao.prepare(gcx, app, view_projection);
         self.blur.prepare(gcx, app, occlusion_size);
         self.lighting.prepare(gcx, app, None);
         self.fxaa.prepare(gcx, app, size);
@@ -163,10 +165,36 @@ impl ModelPipeline {
         self.picker.update(gcx, encoder, multi, app);
     }
 
+    pub fn prepare_preview(
+        &mut self,
+        gcx: &Gcx,
+        encoder: &mut CommandEncoder,
+        app: &mut App,
+        size: Vector2<u32>,
+    ) {
+        let aspect = size.x as f32 / size.y as f32;
+        let camera = app.state.preview_camera.clone();
+
+        let preview = &app.config.render.preview;
+        let background = preview.background_color;
+        let view_projection =
+            (app.state.preview_camera).view_projection_matrix(preview.projection, aspect);
+
+        // Switch out the multi stage state just for this operation
+        self.size_textures(gcx, app, Target::Preview, size);
+
+        self.base.prepare_preview(gcx, app, view_projection);
+        self.ssao.prepare(gcx, app, view_projection);
+        self.blur.prepare(gcx, app, occlusion_size(app, size));
+        self.lighting.prepare(gcx, app, Some(&camera));
+        self.fxaa.prepare(gcx, app, size);
+        self.render(encoder, app, Target::Preview, Some(background.to_srgb()));
+    }
+
     // Runs the post-processing pipeline, copying the data from the intermediary
     // buffers to the output surface.
-    pub fn paint(&self, render_pass: &mut RenderPass, _app: &mut App) {
-        let bindings = &self.viewport.as_ref().unwrap().composite_bindings;
+    pub fn paint(&self, render_pass: &mut RenderPass, _app: &mut App, target: Target) {
+        let bindings = &self.get_target(target).as_ref().unwrap().composite_bindings;
         self.composite
             .paint(render_pass, &self.post_index_buffer, bindings);
     }

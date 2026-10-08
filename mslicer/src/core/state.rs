@@ -13,6 +13,7 @@ use crate::{
         selected::{SelectedModel, SelectedPrinter, SelectedSupports},
     },
     interface::tools::Tools,
+    render::camera::Camera,
 };
 
 #[derive(Default)]
@@ -46,6 +47,9 @@ pub struct UiState {
     pub preview_offset: Vector2<f32>,
     pub preview_scale: f32,
     pub layer_count: (usize, u8),
+
+    pub preview_camera: Camera,
+    pub preview_meshes: Vec<Mesh>,
 
     pub anisotropic_aa: bool,
 

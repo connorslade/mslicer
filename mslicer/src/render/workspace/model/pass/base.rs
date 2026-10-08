@@ -18,16 +18,10 @@ use wgpu::{
 };
 
 use crate::{
-    core::{
-        App,
-        config::render::{Projection, RenderStyle},
-        project::model::ModelId,
-        state::Tool,
-    },
+    core::{App, config::render::RenderStyle, project::model::ModelId, state::Tool},
     include_shader,
     render::{
         Gcx, VERTEX_BUFFER_LAYOUT,
-        camera::Camera,
         util::ResizingBuffer,
         workspace::model::{MultiStage, selected::Selected},
     },
@@ -294,8 +288,7 @@ impl BasePass {
         });
     }
 
-    pub fn prepare_preview(&mut self, gcx: &Gcx, app: &mut App, camera: &Camera, aspect: f32) {
-        let view_projection = camera.view_projection_matrix(Projection::Perspective, aspect);
+    pub fn prepare_preview(&mut self, gcx: &Gcx, app: &mut App, view_projection: Matrix4<f32>) {
         self.write_uniforms(gcx, app, |app, gcx, model_id| {
             let model = app.project.model(model_id).unwrap();
             model.get_buffers(&gcx.device);

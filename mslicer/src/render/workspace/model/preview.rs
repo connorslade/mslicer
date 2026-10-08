@@ -8,9 +8,9 @@ use nalgebra::{Vector2, Vector3};
 use parking_lot::MappedRwLockWriteGuard;
 use tracing::{error, info};
 use wgpu::{
-    BufferAddress, BufferDescriptor, BufferUsages, COPY_BYTES_PER_ROW_ALIGNMENT, CommandEncoder,
-    Extent3d, MapMode, Origin3d, PollType, TexelCopyBufferInfo, TexelCopyBufferLayout,
-    TexelCopyTextureInfo, Texture, TextureAspect, TextureFormat, TextureView,
+    BufferAddress, BufferDescriptor, BufferUsages, COPY_BYTES_PER_ROW_ALIGNMENT, Extent3d, MapMode,
+    Origin3d, PollType, TexelCopyBufferInfo, TexelCopyBufferLayout, TexelCopyTextureInfo, Texture,
+    TextureAspect, TextureFormat,
 };
 
 use crate::{
@@ -18,40 +18,9 @@ use crate::{
     render::{
         Gcx,
         camera::Camera,
-        workspace::{
-            WorkspaceRenderResources,
-            model::{ModelPipeline, Target, bindings::occlusion_size},
-        },
+        workspace::{WorkspaceRenderResources, model::ModelPipeline},
     },
 };
-
-impl ModelPipeline {
-    // Similar to `Self::prepare`, but render target buffers are only held for
-    // the single operation.
-    fn render_preview(
-        &mut self,
-        gcx: &Gcx,
-        encoder: &mut CommandEncoder,
-        app: &mut App,
-        size: Vector2<u32>,
-        camera: Camera,
-    ) -> TextureView {
-        let background = app.config.render.preview_background_color;
-        let aspect = size.x as f32 / size.y as f32;
-
-        // Switch out the multi stage state just for this operation
-        self.size_textures(gcx, app, Target::Preview, size);
-
-        self.base.prepare_preview(gcx, app, &camera, aspect);
-        self.ssao.prepare(gcx, app, Some(&camera));
-        self.blur.prepare(gcx, app, occlusion_size(app, size));
-        self.lighting.prepare(gcx, app, Some(&camera));
-        self.fxaa.prepare(gcx, app, size);
-        self.render(encoder, app, Target::Preview, Some(background.to_srgb()));
-
-        self.preview.as_ref().unwrap().target_a.clone()
-    }
-}
 
 pub fn process_previews(app: &mut App) {
     if let Some(operation) = &app.slice_operation
@@ -59,8 +28,8 @@ pub fn process_previews(app: &mut App) {
     {
         // yes i know im downloading a texture from the gpu and then immediately
         // reuploading it... sue me.
-        let render = &app.config.render;
-        let image = render_preview_image(app, render.large_preview);
+        let preview = &app.config.render.preview;
+        let image = render_preview_image(app, preview.large);
         let operation = app.slice_operation.as_ref().unwrap();
         operation.add_preview(image);
     }
@@ -88,9 +57,11 @@ fn render_preview_image(app: &mut App, size: Vector2<u32>) -> RgbaImage {
     let render_state = app.render_state.clone();
 
     let mut encoder = gcx.device.create_command_encoder(&Default::default());
-    let texture = pipeline(&render_state).render_preview(&gcx, &mut encoder, app, size, camera);
-    gcx.queue.submit(std::iter::once(encoder.finish()));
+    let mut pipeline = pipeline(&render_state);
+    pipeline.prepare_preview(&gcx, &mut encoder, app, size);
+    let texture = pipeline.preview.as_ref().unwrap().target_a.clone();
 
+    gcx.queue.submit(std::iter::once(encoder.finish()));
     download_preview(&gcx, texture.texture(), size)
 }
 
