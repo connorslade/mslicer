@@ -1,7 +1,7 @@
 use common::color::SRgb;
 use egui_wgpu::ScreenDescriptor;
 use wgpu::{
-    Buffer, BufferUsages, CommandEncoder, Device, Origin3d, RenderPass, Sampler,
+    BindGroup, Buffer, BufferUsages, CommandEncoder, Device, Origin3d, RenderPass, Sampler,
     TexelCopyTextureInfo, TextureAspect, TextureFormat, TextureView,
     util::{BufferInitDescriptor, DeviceExt},
 };
@@ -30,7 +30,9 @@ mod selected;
 pub use preview::process_previews;
 
 pub struct ModelPipeline {
-    multi_stage: Option<MultiStage>,
+    viewport: Option<MultiStage>,
+    preview: Option<MultiStage>,
+
     picker: ModelPicker,
     base: BasePass,
     ssao: SsaoPass,
@@ -42,6 +44,12 @@ pub struct ModelPipeline {
     post_index_buffer: Buffer,
     sampler: Sampler,
     filtering_sampler: Sampler,
+}
+
+#[derive(Clone, Copy)]
+pub enum Target {
+    Viewport,
+    Preview,
 }
 
 struct MultiStage {
@@ -56,6 +64,13 @@ struct MultiStage {
     model_target: TextureView,
     normal_target: TextureView,
     world_target: TextureView,
+
+    //bind groups!
+    ssao_bindings: BindGroup,
+    blur_bindings: BindGroup,
+    lighting_bindings: BindGroup,
+    fxaa_bindings: BindGroup,
+    composite_bindings: BindGroup,
 }
 
 impl ModelPipeline {
@@ -70,7 +85,8 @@ impl ModelPipeline {
         });
 
         Self {
-            multi_stage: None,
+            viewport: None,
+            preview: None,
             picker: ModelPicker::new(device),
             base: BasePass::create(device, texture),
             ssao: SsaoPass::create(device),
@@ -89,20 +105,22 @@ impl ModelPipeline {
         &mut self,
         encoder: &mut CommandEncoder,
         app: &mut App,
+        target: Target,
         background: Option<SRgb<f32>>,
     ) {
-        let multi = self.multi_stage.as_ref().unwrap();
+        let multi = self.get_target(target).as_ref().unwrap();
         let index = &self.post_index_buffer;
 
         self.base.paint(encoder, multi, app);
         if app.config.render.ambient_occlusion.enabled {
-            self.ssao.paint(encoder, multi, index);
-            self.blur.paint(encoder, multi, index);
+            self.ssao.paint(encoder, multi, index, &multi.ssao_bindings);
+            self.blur.paint(encoder, multi, index, &multi.blur_bindings);
         }
 
-        self.lighting.paint(encoder, multi, index, background);
+        self.lighting
+            .paint(encoder, multi, index, background, &multi.lighting_bindings);
         if app.config.render.anti_aliasing.enabled {
-            self.fxaa.paint(encoder, multi, index);
+            self.fxaa.paint(encoder, multi, index, &multi.fxaa_bindings);
         } else {
             encoder.copy_texture_to_texture(
                 TexelCopyTextureInfo {
@@ -138,16 +156,32 @@ impl ModelPipeline {
         self.lighting.prepare(gcx, app, None);
         self.fxaa.prepare(gcx, app, size);
 
-        self.size_textures(gcx, app, screen.size_in_pixels.into());
-        self.render(encoder, app, None);
+        self.size_textures(gcx, app, Target::Viewport, screen.size_in_pixels.into());
+        self.render(encoder, app, Target::Viewport, None);
 
-        let multi = self.multi_stage.as_ref().unwrap();
+        let multi = self.viewport.as_ref().unwrap();
         self.picker.update(gcx, encoder, multi, app);
     }
 
     // Runs the post-processing pipeline, copying the data from the intermediary
     // buffers to the output surface.
     pub fn paint(&self, render_pass: &mut RenderPass, _app: &mut App) {
-        self.composite.paint(render_pass, &self.post_index_buffer);
+        let bindings = &self.viewport.as_ref().unwrap().composite_bindings;
+        self.composite
+            .paint(render_pass, &self.post_index_buffer, bindings);
+    }
+
+    fn get_target_mut(&mut self, target: Target) -> &mut Option<MultiStage> {
+        match target {
+            Target::Viewport => &mut self.viewport,
+            Target::Preview => &mut self.preview,
+        }
+    }
+
+    fn get_target(&self, target: Target) -> &Option<MultiStage> {
+        match target {
+            Target::Viewport => &self.viewport,
+            Target::Preview => &self.preview,
+        }
     }
 }

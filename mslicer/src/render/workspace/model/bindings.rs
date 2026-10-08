@@ -1,16 +1,18 @@
 use nalgebra::Vector2;
-use wgpu::{Extent3d, TextureDescriptor, TextureDimension, TextureFormat, TextureUsages};
+use wgpu::{
+    Extent3d, TextureDescriptor, TextureDimension, TextureFormat, TextureUsages, TextureView,
+};
 
 use crate::{
     core::App,
     render::{
         Gcx,
-        workspace::model::{ModelPipeline, MultiStage},
+        workspace::model::{ModelPipeline, MultiStage, Target},
     },
 };
 
 impl ModelPipeline {
-    pub fn size_textures(&mut self, gcx: &Gcx, app: &App, size: Vector2<u32>) {
+    pub fn size_textures(&mut self, gcx: &Gcx, app: &App, target: Target, size: Vector2<u32>) {
         let extent = Extent3d {
             width: size.x,
             height: size.y,
@@ -24,7 +26,7 @@ impl ModelPipeline {
             depth_or_array_layers: 1,
         };
 
-        if let Some(multi_stage) = &self.multi_stage
+        if let Some(multi_stage) = &self.get_target(target)
             && multi_stage.target_a.texture().size() == extent
             && multi_stage.occlusion_target_a.texture().size() == occlusion_extent
         {
@@ -114,7 +116,9 @@ impl ModelPipeline {
         let normal_target_view = normal_target.create_view(&Default::default());
         let world_target_view = world_target.create_view(&Default::default());
 
-        self.multi_stage = Some(MultiStage {
+        let sampler = &self.sampler;
+        let bi_sampler = &self.filtering_sampler;
+        let textures = TextureViews {
             target_a: target_a_view,
             target_b: target_b_view,
 
@@ -125,25 +129,41 @@ impl ModelPipeline {
             model_target: model_target_view,
             normal_target: normal_target_view,
             world_target: world_target_view,
+        };
+
+        *self.get_target_mut(target) = Some(MultiStage {
+            ssao_bindings: self.ssao.recreate_bind_group(gcx, &textures, sampler),
+            blur_bindings: self.blur.recreate_bind_group(gcx, &textures, sampler),
+            lighting_bindings: self.lighting.recreate_bind_group(gcx, &textures, sampler),
+            fxaa_bindings: self.fxaa.recreate_bind_group(gcx, &textures, bi_sampler),
+            composite_bindings: self.composite.recreate_bind_group(gcx, &textures, sampler),
+
+            target_a: textures.target_a,
+            target_b: textures.target_b,
+            occlusion_target_a: textures.occlusion_target_a,
+            occlusion_target_b: textures.occlusion_target_b,
+            depth_target: textures.depth_target,
+            model_target: textures.model_target,
+            normal_target: textures.normal_target,
+            world_target: textures.world_target,
         });
-        self.recreate_bind_groups(gcx);
-    }
-
-    pub fn recreate_bind_groups(&mut self, gcx: &Gcx) {
-        let multi = self.multi_stage.as_ref().unwrap();
-
-        let sampler = &self.sampler;
-        let filtering_sampler = &self.filtering_sampler;
-
-        self.ssao.recreate_bind_group(gcx, multi, sampler);
-        self.blur.recreate_bind_group(gcx, multi, sampler);
-        self.lighting.recreate_bind_group(gcx, multi, sampler);
-        self.fxaa.recreate_bind_group(gcx, multi, filtering_sampler);
-        self.composite.recreate_bind_group(gcx, multi, sampler);
     }
 }
 
 pub fn occlusion_size(app: &App, size: Vector2<u32>) -> Vector2<u32> {
     let scale = app.config.render.ambient_occlusion.scale.clamp(0.1, 1.0);
     (size.cast::<f32>() * scale).map(|x| x.ceil() as u32)
+}
+
+pub struct TextureViews {
+    pub target_a: TextureView,
+    pub target_b: TextureView,
+
+    pub occlusion_target_a: TextureView,
+    pub occlusion_target_b: TextureView,
+
+    pub depth_target: TextureView,
+    pub model_target: TextureView,
+    pub normal_target: TextureView,
+    pub world_target: TextureView,
 }

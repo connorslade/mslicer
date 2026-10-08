@@ -1,7 +1,6 @@
 // TODO: Will need to be updated again to run the post processing shader.
 
 use std::f32::consts::PI;
-use std::mem;
 
 use egui_wgpu::RenderState;
 use image::{Rgba, RgbaImage, imageops};
@@ -21,7 +20,7 @@ use crate::{
         camera::Camera,
         workspace::{
             WorkspaceRenderResources,
-            model::{ModelPipeline, bindings::occlusion_size},
+            model::{ModelPipeline, Target, bindings::occlusion_size},
         },
     },
 };
@@ -41,20 +40,16 @@ impl ModelPipeline {
         let aspect = size.x as f32 / size.y as f32;
 
         // Switch out the multi stage state just for this operation
-        let mut old = self.multi_stage.take();
-        self.size_textures(gcx, app, size);
+        self.size_textures(gcx, app, Target::Preview, size);
 
         self.base.prepare_preview(gcx, app, &camera, aspect);
         self.ssao.prepare(gcx, app, Some(&camera));
         self.blur.prepare(gcx, app, occlusion_size(app, size));
         self.lighting.prepare(gcx, app, Some(&camera));
         self.fxaa.prepare(gcx, app, size);
-        self.render(encoder, app, Some(background.to_srgb()));
+        self.render(encoder, app, Target::Preview, Some(background.to_srgb()));
 
-        mem::swap(&mut self.multi_stage, &mut old);
-        self.recreate_bind_groups(gcx);
-
-        old.unwrap().target_a
+        self.preview.as_ref().unwrap().target_a.clone()
     }
 }
 

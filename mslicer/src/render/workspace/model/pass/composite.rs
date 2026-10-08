@@ -8,14 +8,12 @@ use wgpu::{
 
 use crate::{
     include_shader,
-    render::{Gcx, consts::DEPTH_STENCIL_STATE, workspace::model::MultiStage},
+    render::{Gcx, consts::DEPTH_STENCIL_STATE, workspace::model::bindings::TextureViews},
 };
 
 pub struct CompositePass {
     pipeline: RenderPipeline,
     group_layout: BindGroupLayout,
-
-    bind_group: Option<BindGroup>,
 }
 
 impl CompositePass {
@@ -96,35 +94,38 @@ impl CompositePass {
         Self {
             pipeline,
             group_layout,
-            bind_group: None,
         }
     }
 
-    pub fn recreate_bind_group(&mut self, gcx: &Gcx, multi: &MultiStage, sampler: &Sampler) {
-        self.bind_group
-            .replace(gcx.device.create_bind_group(&BindGroupDescriptor {
-                label: None,
-                layout: &self.group_layout,
-                entries: &[
-                    BindGroupEntry {
-                        binding: 0,
-                        resource: BindingResource::TextureView(&multi.target_a),
-                    },
-                    BindGroupEntry {
-                        binding: 1,
-                        resource: BindingResource::TextureView(&multi.depth_target),
-                    },
-                    BindGroupEntry {
-                        binding: 2,
-                        resource: BindingResource::Sampler(sampler),
-                    },
-                ],
-            }));
+    pub fn recreate_bind_group(
+        &mut self,
+        gcx: &Gcx,
+        textures: &TextureViews,
+        sampler: &Sampler,
+    ) -> BindGroup {
+        gcx.device.create_bind_group(&BindGroupDescriptor {
+            label: None,
+            layout: &self.group_layout,
+            entries: &[
+                BindGroupEntry {
+                    binding: 0,
+                    resource: BindingResource::TextureView(&textures.target_a),
+                },
+                BindGroupEntry {
+                    binding: 1,
+                    resource: BindingResource::TextureView(&textures.depth_target),
+                },
+                BindGroupEntry {
+                    binding: 2,
+                    resource: BindingResource::Sampler(sampler),
+                },
+            ],
+        })
     }
 
-    pub fn paint(&self, render_pass: &mut RenderPass, index: &Buffer) {
+    pub fn paint(&self, render_pass: &mut RenderPass, index: &Buffer, bind_group: &BindGroup) {
         render_pass.set_pipeline(&self.pipeline);
-        render_pass.set_bind_group(0, self.bind_group.as_ref().unwrap(), &[]);
+        render_pass.set_bind_group(0, bind_group, &[]);
         render_pass.set_index_buffer(index.slice(..), IndexFormat::Uint32);
         render_pass.draw_indexed(0..3, 0, 0..1);
     }

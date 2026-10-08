@@ -68,6 +68,7 @@ pub fn selected_printer(config: &Config, slice_config: &SliceConfig) -> Selected
 }
 
 #[rustfmt::skip]
+#[allow(clippy::excessive_precision)]
 /// Many of these constants were taken from ChituBox v2.3.0 with
 /// `scripts/scrape-chitu-profiles.ysh`. Validated printers are known to work
 /// with mslicer.
