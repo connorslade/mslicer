@@ -4,14 +4,14 @@ use std::f32::consts::PI;
 use std::mem;
 
 use egui_wgpu::RenderState;
-use image::{Rgba, RgbaImage};
+use image::{Rgba, RgbaImage, imageops};
 use nalgebra::{Vector2, Vector3};
 use parking_lot::MappedRwLockWriteGuard;
 use tracing::{error, info};
 use wgpu::{
-    BufferAddress, BufferDescriptor, BufferUsages, CommandEncoder, Extent3d, MapMode, Origin3d,
-    PollType, TexelCopyBufferInfo, TexelCopyBufferLayout, TexelCopyTextureInfo, Texture,
-    TextureAspect, TextureFormat, TextureView,
+    BufferAddress, BufferDescriptor, BufferUsages, COPY_BYTES_PER_ROW_ALIGNMENT, CommandEncoder,
+    Extent3d, MapMode, Origin3d, PollType, TexelCopyBufferInfo, TexelCopyBufferLayout,
+    TexelCopyTextureInfo, Texture, TextureAspect, TextureFormat, TextureView,
 };
 
 use crate::{
@@ -37,16 +37,19 @@ impl ModelPipeline {
         size: Vector2<u32>,
         camera: Camera,
     ) -> TextureView {
+        let background = app.config.render.preview_background_color;
+        let aspect = size.x as f32 / size.y as f32;
+
         // Switch out the multi stage state just for this operation
         let mut old = self.multi_stage.take();
         self.size_textures(gcx, app, size);
 
-        self.base.prepare_preview(gcx, app, &camera);
+        self.base.prepare_preview(gcx, app, &camera, aspect);
         self.ssao.prepare(gcx, app, Some(&camera));
         self.blur.prepare(gcx, app, occlusion_size(app, size));
         self.lighting.prepare(gcx, app, Some(&camera));
         self.fxaa.prepare(gcx, app, size);
-        self.render(encoder, app);
+        self.render(encoder, app, Some(background.to_srgb()));
 
         mem::swap(&mut self.multi_stage, &mut old);
         self.recreate_bind_groups(gcx);
@@ -61,7 +64,8 @@ pub fn process_previews(app: &mut App) {
     {
         // yes i know im downloading a texture from the gpu and then immediately
         // reuploading it... sue me.
-        let image = render_preview_image(app, Vector2::repeat(512));
+        let render = &app.config.render;
+        let image = render_preview_image(app, render.large_preview);
         let operation = app.slice_operation.as_ref().unwrap();
         operation.add_preview(image);
     }
@@ -92,13 +96,15 @@ fn render_preview_image(app: &mut App, size: Vector2<u32>) -> RgbaImage {
     let texture = pipeline(&render_state).render_preview(&gcx, &mut encoder, app, size, camera);
     gcx.queue.submit(std::iter::once(encoder.finish()));
 
-    download_preview(&gcx, texture.texture())
+    download_preview(&gcx, texture.texture(), size)
 }
 
-fn download_preview(gcx: &Gcx, texture: &Texture) -> RgbaImage {
+fn download_preview(gcx: &Gcx, texture: &Texture, size: Vector2<u32>) -> RgbaImage {
+    let width = size.x.next_multiple_of(COPY_BYTES_PER_ROW_ALIGNMENT);
+
     let mut download_encoder = gcx.device.create_command_encoder(&Default::default());
     let texture_extent = texture.size();
-    let texture_size = (texture_extent.width * texture_extent.height * 4) as BufferAddress;
+    let texture_size = (width * texture_extent.height * 4) as BufferAddress;
 
     let staging_buffer = gcx.device.create_buffer(&BufferDescriptor {
         label: None,
@@ -118,7 +124,7 @@ fn download_preview(gcx: &Gcx, texture: &Texture) -> RgbaImage {
             buffer: &staging_buffer,
             layout: TexelCopyBufferLayout {
                 offset: 0,
-                bytes_per_row: Some(4 * texture_extent.width),
+                bytes_per_row: Some(4 * width),
                 rows_per_image: Some(texture_extent.height),
             },
         },
@@ -138,7 +144,7 @@ fn download_preview(gcx: &Gcx, texture: &Texture) -> RgbaImage {
 
     // Convert texture to to RGBA image. Format is *not* guaranteed to be be,
     // but will almost always be Rgba8Unorm or Bgra8Unorm.
-    let Extent3d { width, height, .. } = texture_extent;
+    let Extent3d { height, .. } = texture_extent;
     let image = match gcx.texture {
         TextureFormat::Rgba8Unorm => RgbaImage::from_raw(width, height, result.to_vec()).unwrap(),
         TextureFormat::Bgra8Unorm => {
@@ -149,13 +155,13 @@ fn download_preview(gcx: &Gcx, texture: &Texture) -> RgbaImage {
                     image.put_pixel(x, y, Rgba([bgra[2], bgra[1], bgra[0], bgra[3]]));
                 }
             }
-            image
+            imageops::crop_imm(&image, 0, 0, size.x, height).to_image()
         }
         x => {
             error!(
                 "Can't make preview image due to unsupported framebuffer texture format {x:?}. Please make an issue on Github."
             );
-            RgbaImage::new(width, height)
+            RgbaImage::new(size.x, height)
         }
     };
 

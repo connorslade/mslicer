@@ -1,3 +1,5 @@
+use common::color::LinearRgb;
+use nalgebra::Vector2;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -11,6 +13,11 @@ pub struct RenderConfig {
     pub projection: Projection,
     pub ambient_occlusion: AmbientOcclusion,
     pub anti_aliasing: AntiAliasing,
+
+    // preview image
+    pub large_preview: Vector2<u32>,
+    pub small_preview: Vector2<u32>,
+    pub preview_background_color: LinearRgb<f32>,
 
     // extras
     pub grid_size: f32,
@@ -75,6 +82,10 @@ impl Default for RenderConfig {
             projection: Projection::Perspective,
             ambient_occlusion: Default::default(),
             anti_aliasing: Default::default(),
+
+            large_preview: Vector2::new(400, 300),
+            small_preview: Vector2::new(200, 125),
+            preview_background_color: LinearRgb::splat(0.0),
 
             grid_size: 12.16,
             overhangs: (false, 30.0),

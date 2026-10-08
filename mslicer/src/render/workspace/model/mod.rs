@@ -1,3 +1,4 @@
+use common::color::SRgb;
 use egui_wgpu::ScreenDescriptor;
 use wgpu::{
     Buffer, BufferUsages, CommandEncoder, Device, Origin3d, RenderPass, Sampler,
@@ -84,7 +85,12 @@ impl ModelPipeline {
         }
     }
 
-    fn render(&mut self, encoder: &mut CommandEncoder, app: &mut App) {
+    fn render(
+        &mut self,
+        encoder: &mut CommandEncoder,
+        app: &mut App,
+        background: Option<SRgb<f32>>,
+    ) {
         let multi = self.multi_stage.as_ref().unwrap();
         let index = &self.post_index_buffer;
 
@@ -94,7 +100,7 @@ impl ModelPipeline {
             self.blur.paint(encoder, multi, index);
         }
 
-        self.lighting.paint(encoder, multi, index);
+        self.lighting.paint(encoder, multi, index, background);
         if app.config.render.anti_aliasing.enabled {
             self.fxaa.paint(encoder, multi, index);
         } else {
@@ -133,7 +139,7 @@ impl ModelPipeline {
         self.fxaa.prepare(gcx, app, size);
 
         self.size_textures(gcx, app, screen.size_in_pixels.into());
-        self.render(encoder, app);
+        self.render(encoder, app, None);
 
         let multi = self.multi_stage.as_ref().unwrap();
         self.picker.update(gcx, encoder, multi, app);

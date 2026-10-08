@@ -77,7 +77,7 @@ impl Model {
             mesh,
 
             unit: MeshUnit::Millimeters,
-            color: LinearRgb::repeat(1.0),
+            color: LinearRgb::splat(1.0),
             hidden: false,
             exposure: 255,
             ui: ModelUi::default(),

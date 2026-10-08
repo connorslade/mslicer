@@ -15,6 +15,8 @@ fn frag(in: VertexOutput) -> @location(0) vec4f {
     let color = textureSample(texture, texture_sampler, uv);
     let normal = textureSample(normal, texture_sampler, uv).xyz;
 
+    if all(normal == vec3f(0)) {  discard; }
+
     let intensity = blinn_phong(normal, normalize(ctx.camera_position));
     let occlusion = textureSample(occlusion, texture_sampler, uv).r;
 

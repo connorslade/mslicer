@@ -15,10 +15,6 @@ Feel free to help out :eyes:.
 - overlay elements (hover tooltip / mode buttons) can render over welcome screen
 - dont make 'Saturn 3 Ultra' the default profile
   - add an unselected option to force users to pick the right printer?
-- printer usage analytics?
-  - or just like ask people...
-- figure out how other slicers size the preview images
-  - is it per printer or one set of sizes used everywhere?
 - fix model buffer download bounds (again):
 
 ```

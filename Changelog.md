@@ -94,6 +94,7 @@
 - Added a ton of printer presets
 - Allow rotating the slice preview
 - Mark on the printer presets which printers are known to work with mslicer
+- Configurable preview image sizes and background color
 
 ## v0.9.2 &mdash; August 30th, 2026
 

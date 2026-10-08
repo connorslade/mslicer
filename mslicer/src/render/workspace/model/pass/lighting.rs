@@ -1,3 +1,4 @@
+use common::color::SRgb;
 use encase::{ShaderSize, ShaderType, UniformBuffer};
 use nalgebra::Vector3;
 use wgpu::{
@@ -182,18 +183,25 @@ impl LightingPass {
             }));
     }
 
-    pub fn paint(&self, encoder: &mut CommandEncoder, multi: &MultiStage, index: &Buffer) {
+    pub fn paint(
+        &self,
+        encoder: &mut CommandEncoder,
+        multi: &MultiStage,
+        index: &Buffer,
+        background: Option<SRgb<f32>>,
+    ) {
         let Some(bind_group) = &self.bind_group else {
             return;
         };
 
+        let clear = background.map(srgb_to_color).unwrap_or(Color::TRANSPARENT);
         let mut render_pass = encoder.begin_render_pass(&RenderPassDescriptor {
             label: Some("Lighting"),
             color_attachments: &[Some(RenderPassColorAttachment {
                 view: &multi.target_b,
                 resolve_target: None,
                 ops: Operations {
-                    load: LoadOp::Clear(Color::TRANSPARENT),
+                    load: LoadOp::Clear(clear),
                     store: StoreOp::Store,
                 },
                 depth_slice: None,
@@ -207,5 +215,14 @@ impl LightingPass {
         render_pass.set_bind_group(0, bind_group, &[]);
         render_pass.set_index_buffer(index.slice(..), IndexFormat::Uint32);
         render_pass.draw_indexed(0..3, 0, 0..1);
+    }
+}
+
+fn srgb_to_color(vec: SRgb<f32>) -> Color {
+    Color {
+        r: vec.r as f64,
+        g: vec.g as f64,
+        b: vec.b as f64,
+        a: 1.0,
     }
 }

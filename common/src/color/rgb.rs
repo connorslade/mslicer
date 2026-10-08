@@ -3,8 +3,9 @@
 use std::mem;
 
 use nalgebra::Vector3;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[repr(C)]
 pub struct LinearRgb<T> {
     pub r: T,
@@ -12,7 +13,7 @@ pub struct LinearRgb<T> {
     pub b: T,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[repr(C)]
 pub struct SRgb<T> {
     pub r: T,
@@ -88,13 +89,13 @@ impl SRgb<f32> {
 }
 
 impl<T: Copy> LinearRgb<T> {
-    pub fn repeat(v: T) -> Self {
+    pub fn splat(v: T) -> Self {
         Self::new(v, v, v)
     }
 }
 
 impl<T: Copy> SRgb<T> {
-    pub fn repeat(v: T) -> Self {
+    pub fn splat(v: T) -> Self {
         Self::new(v, v, v)
     }
 }

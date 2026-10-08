@@ -177,6 +177,26 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
             });
     });
 
+    ui.collapsing("Preview Image", |ui| {
+        let render = &mut app.config.render;
+        grid("preview_image").show(ui, |ui| {
+            ui.label("Large Preview");
+            dragger::vec2(ui, render.large_preview.as_mut(), |x| x);
+            ui.end_row();
+
+            ui.label("Small Preview");
+            dragger::vec2(ui, render.small_preview.as_mut(), |x| x);
+            ui.end_row();
+
+            ui.label("Background Color");
+            ui.horizontal(|ui| {
+                ui.color_edit_button_rgb(render.preview_background_color.as_slice_mut());
+                ui.take_available_width();
+            });
+            ui.end_row();
+        });
+    });
+
     let aa = &mut app.config.render.anti_aliasing;
     aa.enabled = collapsing_toggle(
         "Anti Aliasing",

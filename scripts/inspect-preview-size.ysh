@@ -1,0 +1,36 @@
+#!/usr/bin/ysh
+
+source $LIB_YSH/args.ysh
+
+parser (&spec) {
+    flag -i --iterate
+    arg path
+}
+
+var args = parseArgs(spec, ARGV)
+
+var format_base = $(dirname $(realpath $0)) ++ "/../target/debug/"
+var format_ctb5 = format_base ++ "ctb5_format"
+var format_ctb4 = format_base ++ "ctb4_format"
+
+proc parse_preview_size(file, output) {
+    if (output ~ / 'large_preview' .* 'width: ' <capture d+ as lw: int> .* 'height: ' <capture d+ as lh: int> .* 'small_preview' .* 'width: ' <capture d+ as sw: int> .* 'height: ' <capture d+ as sh: int> ',' /) {
+        echo "($[_group('lw')]×$[_group('lh')], $[_group('sw')]×$[_group('sh')]) $file"
+    }
+}
+
+proc process_ctb(file) {
+    try { var out = $(@[format_ctb5, file] 2>/dev/null) }
+    if failed { try { setvar out = $(@[format_ctb4, file] 2>/dev/null) } }
+    if (_error.code === 0) { parse_preview_size $file $out }
+}
+
+if (args.iterate) {
+    cd $[args.path] {
+        for file in * {
+            if (file.endsWith('.ctb')) { process_ctb $file }
+        }
+    }
+} else {
+    if (args.path.endsWith('.ctb')) { process_ctb $[args.path] }
+}

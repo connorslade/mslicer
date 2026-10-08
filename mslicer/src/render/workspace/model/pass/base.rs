@@ -294,8 +294,8 @@ impl BasePass {
         });
     }
 
-    pub fn prepare_preview(&mut self, gcx: &Gcx, app: &mut App, camera: &Camera) {
-        let view_projection = camera.view_projection_matrix(Projection::Perspective, 1.0);
+    pub fn prepare_preview(&mut self, gcx: &Gcx, app: &mut App, camera: &Camera, aspect: f32) {
+        let view_projection = camera.view_projection_matrix(Projection::Perspective, aspect);
         self.write_uniforms(gcx, app, |app, gcx, model_id| {
             let model = app.project.model(model_id).unwrap();
             model.get_buffers(&gcx.device);
