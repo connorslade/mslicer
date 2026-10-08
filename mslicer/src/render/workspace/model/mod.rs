@@ -15,8 +15,12 @@ use crate::{
         workspace::model::{
             bindings::occlusion_size,
             pass::{
-                base::BasePass, blur::BlurPass, composite::CompositePass, fxaa::FxaaPass,
-                lighting::LightingPass, ssao::SsaoPass,
+                base::{BasePass, BaseResources},
+                blur::BlurPass,
+                composite::CompositePass,
+                fxaa::FxaaPass,
+                lighting::LightingPass,
+                ssao::SsaoPass,
             },
             pick::ModelPicker,
         },
@@ -67,11 +71,12 @@ struct MultiStage {
     world_target: TextureView,
 
     //bind groups!
-    ssao_bindings: BindGroup,
-    blur_bindings: BindGroup,
-    lighting_bindings: BindGroup,
-    fxaa_bindings: BindGroup,
-    composite_bindings: BindGroup,
+    base: BaseResources,
+    ssao: BindGroup,
+    blur: BindGroup,
+    lighting: BindGroup,
+    fxaa: BindGroup,
+    composite: BindGroup,
 }
 
 impl ModelPipeline {
@@ -112,16 +117,19 @@ impl ModelPipeline {
         let multi = self.get_target(target).as_ref().unwrap();
         let index = &self.post_index_buffer;
 
-        self.base.paint(encoder, multi, app);
+        match target {
+            Target::Viewport => self.base.paint(encoder, app, multi),
+            Target::Preview => self.base.paint_preview(encoder, app, multi),
+        }
         if app.config.render.ambient_occlusion.enabled {
-            self.ssao.paint(encoder, multi, index, &multi.ssao_bindings);
-            self.blur.paint(encoder, multi, index, &multi.blur_bindings);
+            self.ssao.paint(encoder, multi, index, &multi.ssao);
+            self.blur.paint(encoder, multi, index, &multi.blur);
         }
 
         self.lighting
-            .paint(encoder, multi, index, background, &multi.lighting_bindings);
+            .paint(encoder, multi, index, background, &multi.lighting);
         if app.config.render.anti_aliasing.enabled {
-            self.fxaa.paint(encoder, multi, index, &multi.fxaa_bindings);
+            self.fxaa.paint(encoder, multi, index, &multi.fxaa);
         } else {
             encoder.copy_texture_to_texture(
                 TexelCopyTextureInfo {
@@ -152,13 +160,15 @@ impl ModelPipeline {
         let occlusion_size = occlusion_size(app, size);
         let view_projection = app.view_projection();
 
-        self.base.prepare(gcx, app);
+        self.size_textures(gcx, app, Target::Viewport, screen.size_in_pixels.into());
+        let multi = self.viewport.as_mut().unwrap();
+        multi.base.prepare(gcx, app, &self.base);
+
         self.ssao.prepare(gcx, app, view_projection);
         self.blur.prepare(gcx, app, occlusion_size);
         self.lighting.prepare(gcx, app, None);
         self.fxaa.prepare(gcx, app, size);
 
-        self.size_textures(gcx, app, Target::Viewport, screen.size_in_pixels.into());
         self.render(encoder, app, Target::Viewport, None);
 
         let multi = self.viewport.as_ref().unwrap();
@@ -177,14 +187,13 @@ impl ModelPipeline {
 
         let preview = &app.config.render.preview;
         let background = preview.background_color;
-        let view_projection =
-            (app.state.preview_camera).view_projection_matrix(preview.projection, aspect);
+        let view = (app.state.preview_camera).view_projection_matrix(preview.projection, aspect);
 
-        // Switch out the multi stage state just for this operation
         self.size_textures(gcx, app, Target::Preview, size);
+        let multi = self.preview.as_mut().unwrap();
+        multi.base.prepare_preview(gcx, app, &self.base, view);
 
-        self.base.prepare_preview(gcx, app, view_projection);
-        self.ssao.prepare(gcx, app, view_projection);
+        self.ssao.prepare(gcx, app, view);
         self.blur.prepare(gcx, app, occlusion_size(app, size));
         self.lighting.prepare(gcx, app, Some(&camera));
         self.fxaa.prepare(gcx, app, size);
@@ -194,7 +203,7 @@ impl ModelPipeline {
     // Runs the post-processing pipeline, copying the data from the intermediary
     // buffers to the output surface.
     pub fn paint(&self, render_pass: &mut RenderPass, _app: &mut App, target: Target) {
-        let bindings = &self.get_target(target).as_ref().unwrap().composite_bindings;
+        let bindings = &self.get_target(target).as_ref().unwrap().composite;
         self.composite
             .paint(render_pass, &self.post_index_buffer, bindings);
     }

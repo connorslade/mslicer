@@ -26,6 +26,7 @@ pub struct ResizingBuffer {
     inner: Buffer,
 }
 
+#[derive(Clone)]
 pub struct MeshBuffers {
     pub vertex_buffer: Buffer,
     pub index_buffer: Buffer,

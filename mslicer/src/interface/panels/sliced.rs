@@ -38,7 +38,7 @@ use crate::{
             annotations::ISLAND_COLOR,
             result::{GenericSliceData, GenericSliceResult, RasterSliceResult, SliceResult},
         },
-        state::UiState,
+        state::{PreviewModel, UiState},
     },
     interface::{
         components::{collapsing_toggle, dragger, grid},
@@ -104,12 +104,12 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
 
                 let mut meshes = Vec::new();
                 let (mut min, mut max) = (Vector3::repeat(f32::MAX), Vector3::repeat(f32::MIN));
-                for model in app.project.models.iter() {
+                for model in app.project.models.iter_mut().filter(|x| !x.hidden) {
                     let (model_min, model_max) = model.mesh.bounds();
                     min = min.zip_map(&model_min, f32::min);
                     max = max.zip_map(&model_max, f32::max);
 
-                    meshes.push(model.mesh.clone());
+                    meshes.push(PreviewModel::for_model(model, &app.render_state.device));
                 }
 
                 let layers = result.inner.layers();
@@ -121,7 +121,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                     fov,
                     ..Default::default()
                 };
-                app.state.preview_meshes = meshes;
+                app.state.preview_models = meshes;
             }
 
             ui.horizontal(|ui| {
@@ -726,12 +726,18 @@ fn sidebar(
 
             let size = app.config.render.preview.large;
             let large_aspect = size.x as f32 / size.y as f32;
-            let (response, painter) = ui.allocate_painter(
-                vec2(available, available / large_aspect),
-                Sense::click_and_drag(),
-            );
+            let (response, painter) =
+                ui.allocate_painter(vec2(available, available / large_aspect), Sense::all());
 
             app.state.preview_camera.handle_movement(&response, ui);
+            if response.hovered() {
+                ui.input_mut(|i| {
+                    // todo: surely there is a better way...
+                    i.raw_scroll_delta.y = 0.0;
+                    i.smooth_scroll_delta.y = 0.0;
+                });
+            }
+
             preview_callback.viewport = Vector2::new(size.x, size.y);
             let cursor = [CursorIcon::Grab, CursorIcon::Grabbing]
                 [ui.input(|i| i.pointer.primary_down()) as usize];

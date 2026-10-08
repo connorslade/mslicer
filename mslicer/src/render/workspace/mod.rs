@@ -88,7 +88,6 @@ impl CallbackTrait for PreviewRenderCallback {
         let (gcx, view) = (app.gcx(), self.viewport);
 
         workspace.model.prepare_preview(&gcx, encoder, app, view);
-        workspace.support.prepare(&gcx, app);
 
         Vec::new()
     }
@@ -103,7 +102,6 @@ impl CallbackTrait for PreviewRenderCallback {
         let app = unsafe { &mut *self.app };
 
         workspace.model.paint(render_pass, app, Target::Preview);
-        workspace.support.paint(render_pass, app);
     }
 }
 

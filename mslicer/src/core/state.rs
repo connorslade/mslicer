@@ -1,19 +1,21 @@
 use std::sync::Arc;
 
+use common::color::SRgb;
 use egui::Vec2;
 use egui_phosphor::regular::{CURSOR_CLICK, LINE_SEGMENT, TRIANGLE};
 use egui_tracing::EventCollector;
-use nalgebra::{Vector2, Vector3};
+use nalgebra::{Matrix4, Vector2, Vector3};
 use slicer::mesh::Mesh;
+use wgpu::Device;
 
 use crate::{
     core::{
         config::peripherals::Webhook,
-        project::model::ModelId,
+        project::model::{Model, ModelId},
         selected::{SelectedModel, SelectedPrinter, SelectedSupports},
     },
     interface::tools::Tools,
-    render::camera::Camera,
+    render::{camera::Camera, util::MeshBuffers},
 };
 
 #[derive(Default)]
@@ -49,12 +51,20 @@ pub struct UiState {
     pub layer_count: (usize, u8),
 
     pub preview_camera: Camera,
-    pub preview_meshes: Vec<Mesh>,
+    pub preview_models: Vec<PreviewModel>,
 
     pub anisotropic_aa: bool,
 
     pub tools: Tools,
     pub move_timeout: u32,
+}
+
+pub struct PreviewModel {
+    pub mesh: MeshBuffers,
+    pub faces: usize,
+
+    pub transform: Matrix4<f32>,
+    pub color: SRgb<f32>,
 }
 
 #[derive(Default, PartialEq, Eq)]
@@ -92,6 +102,18 @@ pub enum RemotePrintConnectStatus {
     None,
     Connecting,
     Scanning,
+}
+
+impl PreviewModel {
+    pub fn for_model(model: &mut Model, device: &Device) -> Self {
+        Self {
+            mesh: model.get_buffers(device).clone(),
+            faces: model.mesh.face_count(),
+
+            transform: *model.mesh.transformation_matrix(),
+            color: model.color.to_srgb(),
+        }
+    }
 }
 
 impl WorkspaceHover {

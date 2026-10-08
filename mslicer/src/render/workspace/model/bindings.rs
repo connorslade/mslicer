@@ -7,7 +7,7 @@ use crate::{
     core::App,
     render::{
         Gcx,
-        workspace::model::{ModelPipeline, MultiStage, Target},
+        workspace::model::{ModelPipeline, MultiStage, Target, pass::base::BaseResources},
     },
 };
 
@@ -132,11 +132,12 @@ impl ModelPipeline {
         };
 
         *self.get_target_mut(target) = Some(MultiStage {
-            ssao_bindings: self.ssao.recreate_bind_group(gcx, &textures, sampler),
-            blur_bindings: self.blur.recreate_bind_group(gcx, &textures, sampler),
-            lighting_bindings: self.lighting.recreate_bind_group(gcx, &textures, sampler),
-            fxaa_bindings: self.fxaa.recreate_bind_group(gcx, &textures, bi_sampler),
-            composite_bindings: self.composite.recreate_bind_group(gcx, &textures, sampler),
+            base: BaseResources::new(&gcx.device),
+            ssao: self.ssao.recreate_bind_group(gcx, &textures, sampler),
+            blur: self.blur.recreate_bind_group(gcx, &textures, sampler),
+            lighting: self.lighting.recreate_bind_group(gcx, &textures, sampler),
+            fxaa: self.fxaa.recreate_bind_group(gcx, &textures, bi_sampler),
+            composite: self.composite.recreate_bind_group(gcx, &textures, sampler),
 
             target_a: textures.target_a,
             target_b: textures.target_b,

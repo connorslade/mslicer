@@ -11,7 +11,7 @@ use wgpu::{
     BindGroupLayoutEntry, BindingResource, BindingType, BlendState, BufferBinding,
     BufferBindingType, BufferUsages, Color, ColorTargetState, ColorWrites, CommandEncoder,
     CompareFunction, DepthBiasState, DepthStencilState, Device, FragmentState, IndexFormat, LoadOp,
-    Operations, PipelineLayoutDescriptor, RenderPassColorAttachment,
+    Operations, PipelineLayoutDescriptor, RenderPass, RenderPassColorAttachment,
     RenderPassDepthStencilAttachment, RenderPassDescriptor, RenderPipeline,
     RenderPipelineDescriptor, ShaderStages, StencilFaceState, StencilState, StoreOp, TextureFormat,
     VertexState,
@@ -30,12 +30,12 @@ use crate::{
 pub struct BasePass {
     pipeline: RenderPipeline,
     group_layout: BindGroupLayout,
+}
 
+pub struct BaseResources {
     uniform: ResizingBuffer,
     uniform_offsets: Vec<u32>,
-
     selected: ResizingBuffer,
-
     bind_group: Option<BindGroup>,
 }
 
@@ -149,180 +149,18 @@ impl BasePass {
             cache: None,
         });
 
-        let uniform = ResizingBuffer::new(device, BufferUsages::UNIFORM | BufferUsages::COPY_DST);
-        let selected = ResizingBuffer::new(device, BufferUsages::STORAGE | BufferUsages::COPY_DST);
-
         Self {
             pipeline,
             group_layout,
-
-            uniform,
-            uniform_offsets: Vec::new(),
-
-            selected,
-
-            bind_group: None,
         }
     }
 
-    fn write_uniforms(
-        &mut self,
-        gcx: &Gcx,
-        app: &mut App,
-        mut callback: impl FnMut(&mut App, &Gcx, ModelId) -> Vec<(Uniforms, Vec<u32>)>,
-    ) {
-        self.uniform_offsets.clear();
-
-        let mut uniform_buffer = DynamicUniformBuffer::new(Vec::new());
-        let mut selected_words = Vec::new();
-
-        let ids = (app.project.models.iter_mut())
-            .filter(|x| !x.hidden)
-            .map(|x| x.id)
-            .collect::<Vec<_>>();
-
-        for model_id in ids {
-            let model = app.project.model(model_id).unwrap();
-            model.get_buffers(&gcx.device);
-            model.supports.get_buffers(&gcx.device);
-
-            for (mut uniform, selected) in callback(app, gcx, model_id) {
-                uniform.selected_offset = selected_words.len() as u32;
-                selected_words.extend_from_slice(&selected);
-
-                let offset = uniform_buffer.write(&uniform);
-                self.uniform_offsets.push(offset.unwrap() as u32);
-            }
-        }
-
-        selected_words.resize(selected_words.len().max(1), 0);
-        let uniform = self.uniform.write(gcx, &uniform_buffer.into_inner());
-        let selected = self.selected.write_slice(gcx, &selected_words);
-
-        if !self.uniform_offsets.is_empty() && (uniform || selected) {
-            let bind_group = gcx.device.create_bind_group(&BindGroupDescriptor {
-                label: None,
-                layout: &self.group_layout,
-                entries: &[
-                    BindGroupEntry {
-                        binding: 0,
-                        resource: BindingResource::Buffer(BufferBinding {
-                            buffer: &self.uniform,
-                            offset: 0,
-                            size: Some(Uniforms::SHADER_SIZE),
-                        }),
-                    },
-                    BindGroupEntry {
-                        binding: 1,
-                        resource: BindingResource::Buffer(BufferBinding {
-                            buffer: &self.selected,
-                            offset: 0,
-                            size: None,
-                        }),
-                    },
-                ],
-            });
-
-            self.bind_group.replace(bind_group);
-        }
-    }
-
-    pub fn prepare(&mut self, gcx: &Gcx, app: &mut App) {
-        let view_projection = app.view_projection();
-        let render_style = app.config.render.style as u32;
-        let build_volume = (app.project.slice_config)
-            .platform_size
-            .map(|x| x.get::<Milimeter>());
-
-        let (show_overhang, overhang_angle) = app.config.render.overhangs;
-        let overhang_angle = show_overhang.then_some(overhang_angle);
-        let overhang_angle = overhang_angle
-            .map(|x| x.to_radians())
-            .unwrap_or(f32::from_bits(u32::MAX));
-
-        self.write_uniforms(gcx, app, |app, gcx, model_id| {
-            let model = app.project.model(model_id).unwrap();
-            model.get_buffers(&gcx.device);
-
-            let model_transform = *model.mesh.transformation_matrix();
-            let base = Uniforms {
-                transform: view_projection * model_transform,
-                model_transform,
-                build_volume,
-                model_color: model.color.to_srgb().into(),
-                render_style,
-                overhang_angle,
-                id: model.id.raw(),
-                selected_offset: 0,
-            };
-
-            let mut selected = Selected::for_model(model);
-            if app.state.tool == Tool::Orient
-                && let Some(hover) = app.state.hovered_geometry
-                && hover.model == model.id
-            {
-                selected.set_selected(hover.face as usize);
-            }
-
-            let mut out = vec![(base.clone(), selected.into_inner())];
-
-            if model.supports.get_buffers(&gcx.device).is_some() {
-                let (mesh, support_faces) = model.supports.mesh().as_ref().unwrap();
-                let model_transform = mesh.transformation_matrix();
-                let uniform = Uniforms {
-                    transform: view_projection * model_transform,
-                    model_color: invert_color(model.color).into(),
-                    id: base.id | 1 << 31,
-                    ..base
-                };
-
-                let mut selected = Selected::new(mesh.face_count());
-                for support in app.state.selected_supports.for_model(model.id) {
-                    selected.set_selected_range(support_faces[&support]);
-                }
-
-                out.push((uniform, selected.into_inner()));
-            }
-
-            out
-        });
-    }
-
-    pub fn prepare_preview(&mut self, gcx: &Gcx, app: &mut App, view_projection: Matrix4<f32>) {
-        self.write_uniforms(gcx, app, |app, gcx, model_id| {
-            let model = app.project.model(model_id).unwrap();
-            model.get_buffers(&gcx.device);
-
-            let model_transform = *model.mesh.transformation_matrix();
-            let base = Uniforms {
-                transform: view_projection * model_transform,
-                model_transform,
-                build_volume: Vector3::repeat(f32::MAX),
-                model_color: model.color.to_srgb().into(),
-                render_style: RenderStyle::Rendered as u32,
-                overhang_angle: 0.0,
-                id: model.id.raw(),
-                selected_offset: 0,
-            };
-
-            let mut out = vec![(base.clone(), Selected::for_model(model).into_inner())];
-            if model.supports.get_buffers(&gcx.device).is_some() {
-                let mesh = &model.supports.mesh().as_ref().unwrap().0;
-                let model_transform = mesh.transformation_matrix();
-                let uniform = Uniforms {
-                    transform: view_projection * model_transform,
-                    model_color: invert_color(model.color).into(),
-                    ..base
-                };
-                out.push((uniform, Selected::new(mesh.face_count()).into_inner()));
-            }
-
-            out
-        });
-    }
-
-    pub fn paint(&self, encoder: &mut CommandEncoder, multi: &MultiStage, app: &mut App) {
-        let mut render_pass = encoder.begin_render_pass(&RenderPassDescriptor {
+    fn render_pass<'a>(
+        &self,
+        encoder: &'a mut CommandEncoder,
+        multi: &MultiStage,
+    ) -> RenderPass<'a> {
+        encoder.begin_render_pass(&RenderPassDescriptor {
             label: Some("Model"),
             color_attachments: &[
                 Some(RenderPassColorAttachment {
@@ -377,12 +215,16 @@ impl BasePass {
             }),
             timestamp_writes: None,
             occlusion_query_set: None,
-        });
+        })
+    }
 
-        let Some(bind_group) = &self.bind_group else {
+    pub fn paint(&self, encoder: &mut CommandEncoder, app: &mut App, multi: &MultiStage) {
+        let resources = &multi.base;
+        let Some(bind_group) = &resources.bind_group else {
             return;
         };
 
+        let mut render_pass = self.render_pass(encoder, multi);
         render_pass.set_pipeline(&self.pipeline);
 
         let indexes = (app.project.models.iter().enumerate())
@@ -391,7 +233,7 @@ impl BasePass {
 
         let mut i = 0;
         for idx in indexes {
-            render_pass.set_bind_group(0, bind_group, &[self.uniform_offsets[i]]);
+            render_pass.set_bind_group(0, bind_group, &[resources.uniform_offsets[i]]);
             i += 1;
 
             let model = &app.project.models[idx];
@@ -401,13 +243,213 @@ impl BasePass {
             render_pass.draw_indexed(0..(model.mesh.face_count() as u32 * 3), 0, 0..1);
 
             if let Some((buffers, count)) = model.supports.try_get_buffers() {
-                render_pass.set_bind_group(0, bind_group, &[self.uniform_offsets[i]]);
+                render_pass.set_bind_group(0, bind_group, &[resources.uniform_offsets[i]]);
                 i += 1;
 
                 render_pass.set_vertex_buffer(0, buffers.vertex_buffer.slice(..));
                 render_pass.set_index_buffer(buffers.index_buffer.slice(..), IndexFormat::Uint32);
                 render_pass.draw_indexed(0..count, 0, 0..1);
             }
+        }
+    }
+
+    pub fn paint_preview(&self, encoder: &mut CommandEncoder, app: &mut App, multi: &MultiStage) {
+        let Some(bind_group) = &multi.base.bind_group else {
+            return;
+        };
+
+        let mut render_pass = self.render_pass(encoder, multi);
+        render_pass.set_pipeline(&self.pipeline);
+
+        for (i, model) in app.state.preview_models.iter().enumerate() {
+            render_pass.set_bind_group(0, bind_group, &[multi.base.uniform_offsets[i]]);
+
+            let buffers = &model.mesh;
+            render_pass.set_vertex_buffer(0, buffers.vertex_buffer.slice(..));
+            render_pass.set_index_buffer(buffers.index_buffer.slice(..), IndexFormat::Uint32);
+            render_pass.draw_indexed(0..(model.faces as u32 * 3), 0, 0..1);
+        }
+    }
+}
+
+impl BaseResources {
+    pub fn new(device: &Device) -> Self {
+        let uniform = ResizingBuffer::new(device, BufferUsages::UNIFORM | BufferUsages::COPY_DST);
+        let selected = ResizingBuffer::new(device, BufferUsages::STORAGE | BufferUsages::COPY_DST);
+
+        Self {
+            uniform,
+            selected,
+            uniform_offsets: Vec::new(),
+            bind_group: None,
+        }
+    }
+
+    fn recreate_bind_group(&mut self, gcx: &Gcx, layout: &BindGroupLayout) {
+        let bind_group = gcx.device.create_bind_group(&BindGroupDescriptor {
+            label: None,
+            layout,
+            entries: &[
+                BindGroupEntry {
+                    binding: 0,
+                    resource: BindingResource::Buffer(BufferBinding {
+                        buffer: &self.uniform,
+                        offset: 0,
+                        size: Some(Uniforms::SHADER_SIZE),
+                    }),
+                },
+                BindGroupEntry {
+                    binding: 1,
+                    resource: BindingResource::Buffer(BufferBinding {
+                        buffer: &self.selected,
+                        offset: 0,
+                        size: None,
+                    }),
+                },
+            ],
+        });
+
+        self.bind_group.replace(bind_group);
+    }
+
+    fn write_uniforms(
+        &mut self,
+        gcx: &Gcx,
+        app: &mut App,
+        layout: &BindGroupLayout,
+        mut callback: impl FnMut(&mut App, &Gcx, ModelId) -> Vec<(Uniforms, Vec<u32>)>,
+    ) {
+        self.uniform_offsets.clear();
+
+        let mut uniform_buffer = DynamicUniformBuffer::new(Vec::new());
+        let mut selected_words = Vec::new();
+
+        let ids = (app.project.models.iter_mut())
+            .filter(|x| !x.hidden)
+            .map(|x| x.id)
+            .collect::<Vec<_>>();
+
+        for model_id in ids {
+            let model = app.project.model(model_id).unwrap();
+            model.get_buffers(&gcx.device);
+            model.supports.get_buffers(&gcx.device);
+
+            for (mut uniform, selected) in callback(app, gcx, model_id) {
+                uniform.selected_offset = selected_words.len() as u32;
+                selected_words.extend_from_slice(&selected);
+
+                let offset = uniform_buffer.write(&uniform);
+                self.uniform_offsets.push(offset.unwrap() as u32);
+            }
+        }
+
+        selected_words.resize(selected_words.len().max(1), 0);
+        let uniform = self.uniform.write(gcx, &uniform_buffer.into_inner());
+        let selected = self.selected.write_slice(gcx, &selected_words);
+
+        if !self.uniform_offsets.is_empty() && (uniform || selected) {
+            self.recreate_bind_group(gcx, layout);
+        }
+    }
+
+    pub fn prepare(&mut self, gcx: &Gcx, app: &mut App, pass: &BasePass) {
+        let view_projection = app.view_projection();
+        let render_style = app.config.render.style as u32;
+        let build_volume = (app.project.slice_config)
+            .platform_size
+            .map(|x| x.get::<Milimeter>());
+
+        let (show_overhang, overhang_angle) = app.config.render.overhangs;
+        let overhang_angle = show_overhang.then_some(overhang_angle);
+        let overhang_angle = overhang_angle
+            .map(|x| x.to_radians())
+            .unwrap_or(f32::from_bits(u32::MAX));
+
+        self.write_uniforms(gcx, app, &pass.group_layout, |app, gcx, model_id| {
+            let model = app.project.model(model_id).unwrap();
+            model.get_buffers(&gcx.device);
+
+            let model_transform = *model.mesh.transformation_matrix();
+            let base = Uniforms {
+                transform: view_projection * model_transform,
+                model_transform,
+                build_volume,
+                model_color: model.color.to_srgb().into(),
+                render_style,
+                overhang_angle,
+                id: model.id.raw(),
+                selected_offset: 0,
+            };
+
+            let mut selected = Selected::for_model(model);
+            if app.state.tool == Tool::Orient
+                && let Some(hover) = app.state.hovered_geometry
+                && hover.model == model.id
+            {
+                selected.set_selected(hover.face as usize);
+            }
+
+            let mut out = vec![(base.clone(), selected.into_inner())];
+
+            if model.supports.get_buffers(&gcx.device).is_some() {
+                let (mesh, support_faces) = model.supports.mesh().as_ref().unwrap();
+                let model_transform = mesh.transformation_matrix();
+                let uniform = Uniforms {
+                    transform: view_projection * model_transform,
+                    model_color: invert_color(model.color).into(),
+                    id: base.id | 1 << 31,
+                    ..base
+                };
+
+                let mut selected = Selected::new(mesh.face_count());
+                for support in app.state.selected_supports.for_model(model.id) {
+                    selected.set_selected_range(support_faces[&support]);
+                }
+
+                out.push((uniform, selected.into_inner()));
+            }
+
+            out
+        });
+    }
+
+    pub fn prepare_preview(
+        &mut self,
+        gcx: &Gcx,
+        app: &mut App,
+        pass: &BasePass,
+        view: Matrix4<f32>,
+    ) {
+        self.uniform_offsets.clear();
+
+        let mut uniform_buffer = DynamicUniformBuffer::new(Vec::new());
+        let mut selected_words = Vec::new();
+
+        for model in app.state.preview_models.iter() {
+            let uniform = Uniforms {
+                transform: view * model.transform,
+                model_transform: model.transform,
+                build_volume: Vector3::repeat(f32::MAX),
+                model_color: model.color.into(),
+                render_style: RenderStyle::Rendered as u32,
+                overhang_angle: 0.0,
+                id: 0,
+                selected_offset: selected_words.len() as u32,
+            };
+
+            let selected = Selected::new(model.faces).into_inner();
+            selected_words.extend_from_slice(&selected);
+
+            let offset = uniform_buffer.write(&uniform);
+            self.uniform_offsets.push(offset.unwrap() as u32);
+        }
+
+        selected_words.resize(selected_words.len().max(1), 0);
+        let uniform = self.uniform.write(gcx, &uniform_buffer.into_inner());
+        let selected = self.selected.write_slice(gcx, &selected_words);
+
+        if !self.uniform_offsets.is_empty() && (uniform || selected) {
+            self.recreate_bind_group(gcx, &pass.group_layout);
         }
     }
 }
