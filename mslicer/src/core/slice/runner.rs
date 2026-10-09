@@ -10,6 +10,7 @@ use tracing::info;
 use crate::{
     core::{
         App,
+        config::render::Projection,
         slice::{InteractivePreviews, SliceOperation},
         state::PreviewModel,
     },
@@ -87,9 +88,18 @@ impl App {
         }
 
         let fov = self.config.render.preview.fov;
+        let size = self.config.render.preview.size;
+
+        let aspect = size.x as f32 / size.y as f32;
+        let radius = (max - min).magnitude() / 2.0;
+        let distance = match self.config.render.preview.projection {
+            Projection::Perspective => radius / (aspect.min(1.0) * (fov / 2.0).tan()).atan().sin(),
+            Projection::Orthographic => radius / ((fov / 2.0).sin() * aspect.min(1.0)),
+        };
+
         let camera = Camera {
             target: (max + min) / 2.0,
-            distance: (max + min).magnitude() / 4.0 / (fov / 2.0).tan(),
+            distance,
             fov,
             ..Default::default()
         };
