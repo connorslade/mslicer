@@ -10,7 +10,6 @@ use tracing::info;
 use crate::{
     core::{
         App,
-        config::render::Projection,
         slice::{InteractivePreviews, SliceOperation},
         state::PreviewModel,
     },
@@ -60,7 +59,7 @@ impl App {
 
         // Transform models from world-space to platform-space
         let mut out = Vec::new();
-        let mut preview = Vec::new();
+        let mut preview_models = Vec::new();
 
         let mut triangles = 0;
         let (mut min, mut max) = (Vector3::repeat(f32::MAX), Vector3::repeat(f32::MIN));
@@ -70,7 +69,7 @@ impl App {
             let (model_min, model_max) = model.mesh.bounds();
             min = min.zip_map(&model_min, f32::min);
             max = max.zip_map(&model_max, f32::max);
-            preview.push(PreviewModel::for_model(&mut model, device));
+            preview_models.push(PreviewModel::for_model(&mut model, device));
 
             // slicing
             let (mut mesh, exposure) = (model.mesh, model.exposure);
@@ -87,26 +86,21 @@ impl App {
             }
         }
 
-        let fov = self.config.render.preview.fov;
-        let size = self.config.render.preview.size;
+        let preview = &self.config.render.preview;
 
-        let aspect = size.x as f32 / size.y as f32;
-        let radius = (max - min).magnitude() / 2.0;
-        let distance = match self.config.render.preview.projection {
-            Projection::Perspective => radius / (aspect.min(1.0) * (fov / 2.0).tan()).atan().sin(),
-            Projection::Orthographic => radius / ((fov / 2.0).sin() * aspect.min(1.0)),
-        };
+        let aspect = preview.size.x as f32 / preview.size.y as f32;
+        let radius = (max.x - min.x).max(max.y - min.y) / 2.0;
 
-        let camera = Camera {
+        let mut camera = Camera {
             target: (max + min) / 2.0,
-            distance,
-            fov,
+            fov: preview.fov,
             ..Default::default()
         };
+        camera.visible_sphere(aspect, radius);
 
         let previews = InteractivePreviews {
             camera: Mutex::new(camera),
-            models: preview,
+            models: preview_models,
         };
 
         let slicer = Slicer::new(slice_config, out);

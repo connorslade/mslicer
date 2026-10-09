@@ -58,7 +58,8 @@ Caused by:
 - avg fps so its readable, or update it 1 Hz
 - optimize island detection
 - two stage lift config!! (how have i left this unimplemented for so long!)
-- configurable preview image size
+- dont iterate over all verts for Model::bounds (calc bounds once and apply transformation matrix)
+- heightmap to mesh tool?
 
 ## Documentation
 

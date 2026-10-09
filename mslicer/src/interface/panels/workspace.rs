@@ -1,7 +1,10 @@
+use std::time::Instant;
+
 use common::units::Milimeter;
 use const_format::concatcp;
 use egui::{
-    Align, CollapsingHeader, Color32, ComboBox, Context, DragValue, Grid, Layout, Theme, Ui, Widget,
+    Align, CollapsingHeader, Color32, ComboBox, Context, DragValue, Grid, Layout, Response, Theme,
+    Ui, Widget,
 };
 use egui_phosphor::regular::{ARROW_COUNTER_CLOCKWISE, ARROWS_CLOCKWISE, FOLDER, INFO};
 use egui_plot::{Line, Plot};
@@ -14,8 +17,10 @@ use crate::{
             render::{Projection, RenderStyle},
             ui::{B_PER_MIB, HoverOverlay, UpdateCheckFrequency},
         },
+        state::PreviewMode,
     },
     interface::components::{
+        BeingEditedExt,
         chart::PieChart,
         collapsing_toggle,
         dragger::{self, dragger},
@@ -171,24 +176,39 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     ui.collapsing("Preview Image", |ui| {
         let preview = &mut app.config.render.preview;
         grid("preview_image").show(ui, |ui| {
+            let mut edited = false;
+
             ui.label("Size");
             ui.horizontal(|ui| {
-                dragger::vec2(ui, preview.size.as_mut(), |x| x);
+                edited |= dragger::vec2(ui, preview.size.as_mut(), |x| x);
                 ui.take_available_width();
             });
             ui.end_row();
 
             ui.label("Background");
-            ui.color_edit_button_rgb(preview.background.as_slice_mut());
+            ui.color_edit_button_rgb(preview.background.as_slice_mut())
+                .being_edited(&mut edited);
             ui.end_row();
 
             ui.label("Projection");
-            projection_combobox(ui, &mut preview.projection);
+            projection_combobox(ui, &mut preview.projection).being_edited(&mut edited);
             ui.end_row();
 
             ui.label("Fov");
-            ui.add(DragValue::new(&mut preview.fov).speed(0.01));
+            ui.add(DragValue::new(&mut preview.fov).speed(0.01))
+                .being_edited(&mut edited);
             ui.end_row();
+
+            if edited
+                && let Some(operation) = &mut app.slice_operation
+                && let Some(interactive) = &operation.interactive_previews
+            {
+                app.state.preview_mode = PreviewMode::Interactive;
+                app.state.last_preview_interact = Some(Instant::now());
+
+                let mut camera = interactive.camera.lock();
+                camera.fov = preview.fov;
+            }
         });
     });
 
@@ -431,12 +451,18 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     });
 }
 
-fn projection_combobox(ui: &mut Ui, projection: &mut Projection) {
-    ComboBox::from_id_salt("projection")
+fn projection_combobox(ui: &mut Ui, projection: &mut Projection) -> Response {
+    let mut edited = false;
+    let mut response = ComboBox::from_id_salt("projection")
         .selected_text(projection.name())
         .show_ui(ui, |ui| {
             for camera in Projection::ALL {
-                ui.selectable_value(projection, camera, camera.name());
+                ui.selectable_value(projection, camera, camera.name())
+                    .being_edited(&mut edited);
             }
-        });
+        })
+        .response;
+
+    edited.then(|| response.mark_changed());
+    response
 }

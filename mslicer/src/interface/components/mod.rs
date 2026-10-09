@@ -48,7 +48,7 @@ pub trait BeingEditedExt {
 
 impl BeingEditedExt for Response {
     fn being_edited(self, edited: &mut bool) -> Self {
-        *edited |= self.dragged() || self.has_focus();
+        *edited |= self.dragged() || self.has_focus() || self.changed();
         self
     }
 }

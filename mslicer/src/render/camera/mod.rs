@@ -3,8 +3,7 @@ use std::{
     ops::Neg,
 };
 
-use bytemuck::Zeroable;
-use egui::{PointerButton, Response, Ui, Vec2};
+use egui::{PointerButton, Response, Ui};
 use nalgebra::{Matrix4, Vector2, Vector3};
 
 use crate::core::config::render::Projection;
@@ -88,7 +87,7 @@ impl Camera {
         if response.dragged_by(PointerButton::Primary) {
             self.angle.x -= drag_delta.x * 0.01;
             self.angle.y += drag_delta.y * 0.01;
-            active |= drag_delta != Vec2::zeroed();
+            active |= true;
         }
 
         if response.dragged_by(PointerButton::Secondary) {
@@ -96,7 +95,7 @@ impl Camera {
             let right = facing.cross(&self.up()).normalize();
             let up = right.cross(&facing).normalize();
             self.target -= (right * drag_delta.x * 0.1) - (up * drag_delta.y * 0.1);
-            active |= drag_delta != Vec2::zeroed();
+            active |= true;
         }
 
         if response.hovered() {
@@ -118,6 +117,16 @@ impl Camera {
 
     pub fn up(&self) -> Vector3<f32> {
         Vector3::z() * self.angle.y.cos().signum()
+    }
+
+    /// Updates the view distance so that the sphere centered at the camera
+    /// target with radius r is fully visible.
+    pub fn visible_sphere(&mut self, aspect: f32, r: f32) {
+        // Because the orthographic projection is also based on the fov, the
+        // same eq can be used for both:
+
+        let base_size = aspect.min(1.0) * (self.fov / 2.0).sin();
+        self.distance = r / base_size;
     }
 }
 
