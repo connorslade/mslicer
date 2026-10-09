@@ -73,6 +73,7 @@ impl LoadSliced {
         let operation = SliceOperation::new(
             Progress::already_complete(),
             CombinedProgress::already_complete(),
+            None,
         );
 
         let handle = TaskThread::spawn(clone!([progress], move || {

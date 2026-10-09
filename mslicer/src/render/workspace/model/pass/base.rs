@@ -254,14 +254,17 @@ impl BasePass {
     }
 
     pub fn paint_preview(&self, encoder: &mut CommandEncoder, app: &mut App, multi: &MultiStage) {
-        let Some(bind_group) = &multi.base.bind_group else {
+        let (Some(bind_group), Some(Some(interactive))) = (
+            &multi.base.bind_group,
+            (app.slice_operation.as_ref()).map(|x| x.interactive_previews.as_ref()),
+        ) else {
             return;
         };
 
         let mut render_pass = self.render_pass(encoder, multi);
         render_pass.set_pipeline(&self.pipeline);
 
-        for (i, model) in app.state.preview_models.iter().enumerate() {
+        for (i, model) in interactive.models.iter().enumerate() {
             render_pass.set_bind_group(0, bind_group, &[multi.base.uniform_offsets[i]]);
 
             let buffers = &model.mesh;
@@ -420,12 +423,18 @@ impl BaseResources {
         pass: &BasePass,
         view: Matrix4<f32>,
     ) {
+        let Some(Some(interactive)) =
+            (app.slice_operation.as_ref()).map(|x| x.interactive_previews.as_ref())
+        else {
+            return;
+        };
+
         self.uniform_offsets.clear();
 
         let mut uniform_buffer = DynamicUniformBuffer::new(Vec::new());
         let mut selected_words = Vec::new();
 
-        for model in app.state.preview_models.iter() {
+        for model in interactive.models.iter() {
             let uniform = Uniforms {
                 transform: view * model.transform,
                 model_transform: model.transform,

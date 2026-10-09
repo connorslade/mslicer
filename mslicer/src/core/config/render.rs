@@ -49,9 +49,8 @@ pub struct AntiAliasing {
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Preview {
-    pub large: Vector2<u32>,
-    pub small: Vector2<u32>,
-    pub background_color: LinearRgb<f32>,
+    pub size: Vector2<u32>,
+    pub background: LinearRgb<f32>,
 
     pub projection: Projection,
     pub fov: f32,
@@ -129,9 +128,8 @@ impl Default for AntiAliasing {
 impl Default for Preview {
     fn default() -> Self {
         Self {
-            large: Vector2::new(400, 300),
-            small: Vector2::new(200, 125),
-            background_color: LinearRgb::splat(0.0),
+            size: Vector2::new(400, 300),
+            background: LinearRgb::splat(0.0),
 
             projection: Projection::Perspective,
             fov: Camera::default().fov,

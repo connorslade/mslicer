@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{sync::Arc, time::Instant};
 
 use common::color::SRgb;
 use egui::Vec2;
@@ -15,7 +15,7 @@ use crate::{
         selected::{SelectedModel, SelectedPrinter, SelectedSupports},
     },
     interface::tools::Tools,
-    render::{camera::Camera, util::MeshBuffers},
+    render::util::MeshBuffers,
 };
 
 #[derive(Default)]
@@ -50,8 +50,8 @@ pub struct UiState {
     pub preview_scale: f32,
     pub layer_count: (usize, u8),
 
-    pub preview_camera: Camera,
-    pub preview_models: Vec<PreviewModel>,
+    pub preview_mode: PreviewMode,
+    pub last_preview_interact: Option<Instant>,
 
     pub anisotropic_aa: bool,
 
@@ -65,6 +65,13 @@ pub struct PreviewModel {
 
     pub transform: Matrix4<f32>,
     pub color: SRgb<f32>,
+}
+
+#[derive(Default, Copy, Clone, PartialEq, Eq)]
+pub enum PreviewMode {
+    Interactive,
+    #[default]
+    Static,
 }
 
 #[derive(Default, PartialEq, Eq)]
@@ -127,6 +134,15 @@ impl WorkspaceHover {
 
     pub fn hovered(&self) -> bool {
         self.uv.x >= 0.0 && self.uv.y >= 0.0
+    }
+}
+
+impl PreviewMode {
+    pub fn other(&self) -> Self {
+        match self {
+            PreviewMode::Interactive => PreviewMode::Static,
+            PreviewMode::Static => PreviewMode::Interactive,
+        }
     }
 }
 

@@ -3,7 +3,8 @@ use std::{
     ops::Neg,
 };
 
-use egui::{PointerButton, Response, Ui};
+use bytemuck::Zeroable;
+use egui::{PointerButton, Response, Ui, Vec2};
 use nalgebra::{Matrix4, Vector2, Vector3};
 
 use crate::core::config::render::Projection;
@@ -79,13 +80,15 @@ impl Camera {
         }
     }
 
-    pub fn handle_movement(&mut self, response: &Response, ui: &Ui) {
+    pub fn handle_movement(&mut self, response: &Response, ui: &Ui) -> bool {
         let shift_down = ui.input(|x| x.modifiers.shift);
         let drag_delta = response.drag_delta() * if shift_down { 0.1 } else { 1.0 };
 
+        let mut active = false;
         if response.dragged_by(PointerButton::Primary) {
             self.angle.x -= drag_delta.x * 0.01;
             self.angle.y += drag_delta.y * 0.01;
+            active |= drag_delta != Vec2::zeroed();
         }
 
         if response.dragged_by(PointerButton::Secondary) {
@@ -93,12 +96,16 @@ impl Camera {
             let right = facing.cross(&self.up()).normalize();
             let up = right.cross(&facing).normalize();
             self.target -= (right * drag_delta.x * 0.1) - (up * drag_delta.y * 0.1);
+            active |= drag_delta != Vec2::zeroed();
         }
 
         if response.hovered() {
             let scroll = ui.input(|x| x.smooth_scroll_delta);
             self.distance = (self.distance - scroll.y * 0.1).max(EPSILON);
+            active |= scroll.y != 0.0;
         }
+
+        active
     }
 
     pub fn position(&self, distance: f32) -> Vector3<f32> {

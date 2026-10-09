@@ -171,19 +171,15 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     ui.collapsing("Preview Image", |ui| {
         let preview = &mut app.config.render.preview;
         grid("preview_image").show(ui, |ui| {
-            ui.label("Large Preview");
+            ui.label("Size");
             ui.horizontal(|ui| {
-                dragger::vec2(ui, preview.large.as_mut(), |x| x);
+                dragger::vec2(ui, preview.size.as_mut(), |x| x);
                 ui.take_available_width();
             });
             ui.end_row();
 
-            ui.label("Small Preview");
-            dragger::vec2(ui, preview.small.as_mut(), |x| x);
-            ui.end_row();
-
-            ui.label("Background Color");
-            ui.color_edit_button_rgb(preview.background_color.as_slice_mut());
+            ui.label("Background");
+            ui.color_edit_button_rgb(preview.background.as_slice_mut());
             ui.end_row();
 
             ui.label("Projection");

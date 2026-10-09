@@ -1,10 +1,6 @@
-// TODO: Will need to be updated again to run the post processing shader.
-
-use std::f32::consts::PI;
-
 use egui_wgpu::RenderState;
 use image::{Rgba, RgbaImage, imageops};
-use nalgebra::{Vector2, Vector3};
+use nalgebra::Vector2;
 use parking_lot::MappedRwLockWriteGuard;
 use tracing::{error, info};
 use wgpu::{
@@ -17,7 +13,6 @@ use crate::{
     core::App,
     render::{
         Gcx,
-        camera::Camera,
         workspace::{WorkspaceRenderResources, model::ModelPipeline},
     },
 };
@@ -29,7 +24,7 @@ pub fn process_previews(app: &mut App) {
         // yes i know im downloading a texture from the gpu and then immediately
         // reuploading it... sue me.
         let preview = &app.config.render.preview;
-        let image = render_preview_image(app, preview.large);
+        let image = render_preview_image(app, preview.size);
         let operation = app.slice_operation.as_ref().unwrap();
         operation.add_preview(image);
     }
@@ -38,26 +33,13 @@ pub fn process_previews(app: &mut App) {
 // TODO: Allow rendering multiple preview images at once
 fn render_preview_image(app: &mut App, size: Vector2<u32>) -> RgbaImage {
     info!("Generating {}x{} preview image", size.x, size.y);
+
     let gcx = app.gcx();
-
-    let (mut min, mut max) = (Vector3::repeat(f32::MAX), Vector3::repeat(f32::MIN));
-    for model in app.project.models.iter() {
-        let (model_min, model_max) = model.mesh.bounds();
-        min = min.zip_map(&model_min, f32::min);
-        max = max.zip_map(&model_max, f32::max);
-    }
-
-    let mut camera = Camera {
-        target: (min + max) / 2.0,
-        ..Default::default()
-    };
-    camera.angle.y = PI / 10.0;
-    camera.distance = (max - camera.target).magnitude() / (camera.fov / 2.0).tan();
+    let mut encoder = gcx.device.create_command_encoder(&Default::default());
 
     let render_state = app.render_state.clone();
-
-    let mut encoder = gcx.device.create_command_encoder(&Default::default());
     let mut pipeline = pipeline(&render_state);
+
     pipeline.prepare_preview(&gcx, &mut encoder, app, size);
     let texture = pipeline.preview.as_ref().unwrap().target_a.clone();
 

@@ -182,12 +182,18 @@ impl ModelPipeline {
         app: &mut App,
         size: Vector2<u32>,
     ) {
+        let Some(Some(interactive)) =
+            (app.slice_operation.as_ref()).map(|x| x.interactive_previews.as_ref())
+        else {
+            return;
+        };
+
         let aspect = size.x as f32 / size.y as f32;
-        let camera = app.state.preview_camera.clone();
+        let camera = interactive.camera.lock().clone();
 
         let preview = &app.config.render.preview;
-        let background = preview.background_color;
-        let view = (app.state.preview_camera).view_projection_matrix(preview.projection, aspect);
+        let background = preview.background;
+        let view = camera.view_projection_matrix(preview.projection, aspect);
 
         self.size_textures(gcx, app, Target::Preview, size);
         let multi = self.preview.as_mut().unwrap();
