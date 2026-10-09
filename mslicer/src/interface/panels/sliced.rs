@@ -6,18 +6,20 @@ use std::{
     io::{BufReader, Write},
     mem,
     sync::Arc,
+    time::{Duration, Instant},
 };
 
 use const_format::concatcp;
 use egui::{
     Align, Align2, Button, CollapsingHeader, Color32, ComboBox, Context, CursorIcon, DragValue,
-    FontId, FontSelection, Frame, Grid, Id, ImageSource, Layout, ProgressBar, Rect, RichText,
-    ScrollArea, Sense, SidePanel, Slider, StrokeKind, Style, Ui, Vec2, Widget, load::SizedTexture,
-    panel::Side, style::HandleShape, text::LayoutJob, vec2,
+    FontId, FontSelection, Frame, Grid, Id, Image, ImageSource, Layout, ProgressBar, Rect,
+    RichText, ScrollArea, Sense, SidePanel, Slider, StrokeKind, Style, Ui, Vec2, Widget,
+    load::SizedTexture, panel::Side, style::HandleShape, text::LayoutJob, vec2,
 };
 use egui_phosphor::regular::{
-    ARROW_CLOCKWISE, ARROW_COUNTER_CLOCKWISE, CAMERA, CARET_DOWN, CARET_UP, CLOCK, CORNERS_IN,
-    CROSSHAIR, CUBE_TRANSPARENT, DROP, FLOPPY_DISK_BACK, PAPER_PLANE_TILT, SIDEBAR, SWAP, TEXT_AA,
+    ARROW_CLOCKWISE, ARROW_COUNTER_CLOCKWISE, CARET_DOWN, CARET_UP, CLOCK, CORNERS_IN, CROSSHAIR,
+    CUBE_TRANSPARENT, DROP, FLOPPY_DISK_BACK, PAPER_PLANE_TILT, SIDEBAR, SWAP, TEXT_AA, TRASH,
+    VECTOR_THREE, VECTOR_TWO,
 };
 use egui_plot::{Line, LineStyle, Plot, VLine};
 use egui_wgpu::Callback;
@@ -37,14 +39,14 @@ use crate::{
             annotations::ISLAND_COLOR,
             result::{GenericSliceData, GenericSliceResult, RasterSliceResult, SliceResult},
         },
-        state::UiState,
+        state::{PreviewMode, UiState},
     },
     interface::{
         components::{collapsing_toggle, dragger, grid},
         panels::slice_config::exposure_config,
         popup::{Popup, PopupIcon, PopupManager},
     },
-    render::slice_preview::SlicePreviewRenderCallback,
+    render::{slice_preview::SlicePreviewRenderCallback, workspace::PreviewRenderCallback},
     task::{FileDialog, IslandDetection, ReconstructMesh, SaveSliced, TaskManager},
     util::management::{LazyText, LazyTextureId},
 };
@@ -70,6 +72,13 @@ const SLICING_DEFECTS: &str = "There were (potential) slicing defects detected o
 const DEFECT_EXPL: &str = "Defective meshes can cause incorrect slicing. See how many defects were detected in each layer.";
 
 pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
+    // idk man
+    let preview = PreviewRenderCallback {
+        app: app as *mut _,
+        viewport: Default::default(),
+    };
+
+    let mut discard = false;
     if let Some(slice_operation) = &app.slice_operation {
         let progress = &slice_operation.progress;
 
@@ -94,6 +103,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
 
                 let layers = result.inner.layers();
                 app.state.layer_count = (layers, layers.to_string().len() as u8);
+                app.state.preview_mode = PreviewMode::Static;
             }
 
             ui.horizontal(|ui| {
@@ -194,6 +204,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                             }
                         });
 
+                        discard = ui.button(concatcp!(TRASH, " Unload")).clicked();
                         ui.separator();
 
                         // todo: these functions shouldn't available if slice is
@@ -251,6 +262,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                             &mut app.config,
                             &mut app.tasks,
                             &mut app.popup,
+                            preview,
                             ui,
                         );
                     })
@@ -351,6 +363,8 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
             ui.label("keyboard shortcut.");
         });
     }
+
+    discard.then(|| app.slice_operation = None);
 }
 
 fn slice_preview(
@@ -592,6 +606,7 @@ fn sidebar(
     config: &mut Config,
     tasks: &mut TaskManager,
     popups: &mut PopupManager,
+    mut preview_callback: PreviewRenderCallback,
     ui: &mut Ui,
 ) {
     CollapsingHeader::new("Preview Image")
@@ -603,23 +618,25 @@ fn sidebar(
 
             ui.add_space(4.0);
             ui.horizontal(|ui| {
-                reset_preview = ui.button(concatcp!(CAMERA, " Retake")).clicked();
-
                 if ui.button(concatcp!(SWAP, " Replace")).clicked() {
-                    let task =
-                        FileDialog::pick_file(("Image", &IMAGE_FORMATS), |app, path, _tasks| {
+                    let preview_size = config.render.preview.size;
+                    let task = FileDialog::pick_file(
+                        ("Image", &IMAGE_FORMATS),
+                        move |app, path, _tasks| {
                             let format = ImageFormat::from_path(path).unwrap();
                             let file = BufReader::new(File::open(path).unwrap());
-                            let mut image = image::load(file, format).unwrap();
 
-                            if image.width() > 512 || image.height() > 512 {
-                                image = image.resize(512, 512, FilterType::Triangle);
-                            }
+                            let image = image::load(file, format).unwrap().resize(
+                                preview_size.x,
+                                preview_size.y,
+                                FilterType::Triangle,
+                            );
 
                             if let Some(operation) = app.slice_operation.as_mut() {
                                 operation.add_preview(image.to_rgba8());
                             }
-                        });
+                        },
+                    );
                     tasks.add(task);
                 }
 
@@ -674,19 +691,72 @@ fn sidebar(
                         close
                     }));
                 }
+
+                ui.separator();
+                let icon = [VECTOR_TWO, VECTOR_THREE][(operation.interactive_previews.is_some()
+                    && state.preview_mode == PreviewMode::Interactive)
+                    as usize];
+                (ui.button(icon).clicked())
+                    .then(|| state.preview_mode = state.preview_mode.other());
             });
 
+            ui.add_space(4.0);
             let available = ui.available_width();
-            let (width, height) = (preview.image.width(), preview.image.height());
+            let cursor = [CursorIcon::Grab, CursorIcon::Grabbing]
+                [ui.input(|i| i.pointer.primary_down()) as usize];
 
-            let size = vec2(available, available / width as f32 * height as f32);
-            let texture = SizedTexture::new(preview.texture.get(ui.ctx(), &preview.image), size);
+            if let Some(interactive) = &operation.interactive_previews
+                && state.preview_mode == PreviewMode::Interactive
+            {
+                let size = config.render.preview.size;
+                let large_aspect = size.x as f32 / size.y as f32;
+                let (response, painter) =
+                    ui.allocate_painter(vec2(available, available / large_aspect), Sense::all());
+
+                if interactive.camera.lock().handle_movement(&response, ui) {
+                    state.last_preview_interact = Some(Instant::now());
+                }
+
+                if let Some(last) = state.last_preview_interact
+                    && last.elapsed() > Duration::from_secs(1)
+                {
+                    state.preview_mode = PreviewMode::Static;
+                    reset_preview = true;
+                }
+
+                if response.hovered() {
+                    ui.input_mut(|i| {
+                        // todo: surely there is a better way...
+                        i.raw_scroll_delta.y = 0.0;
+                        i.smooth_scroll_delta.y = 0.0;
+                    });
+                }
+
+                preview_callback.viewport = Vector2::new(size.x, size.y);
+                let rect = response.on_hover_cursor(cursor).rect;
+                painter.add(Callback::new_paint_callback(rect, preview_callback));
+            } else {
+                let (width, height) = (preview.image.width(), preview.image.height());
+
+                let size = vec2(available, available / width as f32 * height as f32);
+                let texture =
+                    SizedTexture::new(preview.texture.get(ui.ctx(), &preview.image), size);
+
+                let response = Image::new(ImageSource::Texture(texture))
+                    .sense(Sense::all())
+                    .ui(ui)
+                    .on_hover_cursor(cursor)
+                    .on_hover_text(LazyText::new(move || format!("{width}×{height}")));
+
+                if response.clicked()
+                    || response.drag_started()
+                    || (response.hovered() && ui.input(|i| i.smooth_scroll_delta.y != 0.0))
+                {
+                    state.preview_mode = PreviewMode::Interactive;
+                }
+            }
 
             reset_preview.then(|| previews.take());
-
-            ui.add_space(4.0);
-            ui.image(ImageSource::Texture(texture))
-                .on_hover_text(LazyText::new(move || format!("{width}×{height}")))
         });
 
     CollapsingHeader::new("Slice Preview")

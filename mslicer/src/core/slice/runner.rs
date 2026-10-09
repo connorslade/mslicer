@@ -4,14 +4,21 @@ use clone_macro::clone;
 use const_format::concatcp;
 use egui_phosphor::regular::CARET_RIGHT;
 use nalgebra::Vector3;
+use parking_lot::Mutex;
 use tracing::info;
 
 use crate::{
-    core::{App, slice::SliceOperation},
+    core::{
+        App,
+        config::render::Projection,
+        slice::{InteractivePreviews, SliceOperation},
+        state::PreviewModel,
+    },
     interface::{
         panels::Tab,
         popup::{Popup, PopupIcon},
     },
+    render::camera::Camera,
 };
 use common::{progress::CombinedProgress, slice::SliceMode, units::Milimeter};
 use slicer::{
@@ -49,10 +56,23 @@ impl App {
         let platform = slice_config.platform_resolution.cast::<f32>();
         let mm_to_px = platform.component_div(&platform_size).push(1.0);
 
+        let device = &self.render_state.device;
+
         // Transform models from world-space to platform-space
         let mut out = Vec::new();
+        let mut preview = Vec::new();
+
         let mut triangles = 0;
-        for (supports, model) in meshes.into_iter() {
+        let (mut min, mut max) = (Vector3::repeat(f32::MAX), Vector3::repeat(f32::MIN));
+
+        for (supports, mut model) in meshes.into_iter() {
+            // preview
+            let (model_min, model_max) = model.mesh.bounds();
+            min = min.zip_map(&model_min, f32::min);
+            max = max.zip_map(&model_max, f32::max);
+            preview.push(PreviewModel::for_model(&mut model, device));
+
+            // slicing
             let (mut mesh, exposure) = (model.mesh, model.exposure);
             let offset = (platform / 2.0).push(-slice_height / 2.0);
 
@@ -67,9 +87,32 @@ impl App {
             }
         }
 
+        let fov = self.config.render.preview.fov;
+        let size = self.config.render.preview.size;
+
+        let aspect = size.x as f32 / size.y as f32;
+        let radius = (max - min).magnitude() / 2.0;
+        let distance = match self.config.render.preview.projection {
+            Projection::Perspective => radius / (aspect.min(1.0) * (fov / 2.0).tan()).atan().sin(),
+            Projection::Orthographic => radius / ((fov / 2.0).sin() * aspect.min(1.0)),
+        };
+
+        let camera = Camera {
+            target: (max + min) / 2.0,
+            distance,
+            fov,
+            ..Default::default()
+        };
+
+        let previews = InteractivePreviews {
+            camera: Mutex::new(camera),
+            models: preview,
+        };
+
         let slicer = Slicer::new(slice_config, out);
         let post_process = CombinedProgress::new();
-        let slice_operation = SliceOperation::new(slicer.progress(), post_process.clone());
+        let slice_operation =
+            SliceOperation::new(slicer.progress(), post_process.clone(), Some(previews));
         self.slice_operation.replace(slice_operation);
         self.panels.focus_tab(Tab::Sliced);
 

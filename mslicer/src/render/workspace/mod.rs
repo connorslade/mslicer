@@ -1,11 +1,15 @@
 use egui::PaintCallbackInfo;
 use egui_wgpu::{CallbackResources, CallbackTrait, ScreenDescriptor};
+use nalgebra::Vector2;
 use wgpu::{CommandBuffer, CommandEncoder, Device, Queue, RenderPass};
 
 use crate::{
     core::App,
     render::workspace::{
-        line::LineDispatch, model::ModelPipeline, point::PointDispatch, support::SupportPipeline,
+        line::LineDispatch,
+        model::{ModelPipeline, Target},
+        point::PointDispatch,
+        support::SupportPipeline,
     },
 };
 
@@ -22,8 +26,14 @@ pub struct WorkspaceRenderResources {
     pub solid_line: LineDispatch,
 }
 
+// todo: do i even have to say it...
 pub struct WorkspaceRenderCallback {
     pub app: *mut App,
+}
+
+pub struct PreviewRenderCallback {
+    pub app: *mut App,
+    pub viewport: Vector2<u32>,
 }
 
 impl CallbackTrait for WorkspaceRenderCallback {
@@ -36,7 +46,7 @@ impl CallbackTrait for WorkspaceRenderCallback {
         resources: &mut CallbackResources,
     ) -> Vec<CommandBuffer> {
         let workspace = resources.get_mut::<WorkspaceRenderResources>().unwrap();
-        let app = self.app();
+        let app = unsafe { &mut *self.app };
         let gcx = app.gcx();
 
         workspace.model.prepare(&gcx, screen, encoder, app);
@@ -54,21 +64,49 @@ impl CallbackTrait for WorkspaceRenderCallback {
         resources: &CallbackResources,
     ) {
         let workspace = resources.get::<WorkspaceRenderResources>().unwrap();
-        let app = self.app();
+        let app = unsafe { &mut *self.app };
 
         workspace.solid_line.paint(render_pass);
-        workspace.model.paint(render_pass, app);
+        workspace.model.paint(render_pass, app, Target::Viewport);
         workspace.point.paint(render_pass);
         workspace.support.paint(render_pass, app);
     }
 }
 
-impl WorkspaceRenderCallback {
-    #[allow(clippy::mut_from_ref)]
-    pub fn app(&self) -> &mut App {
-        unsafe { &mut *self.app }
+// do u really have to put the word 'Trait' in ur trait name...
+impl CallbackTrait for PreviewRenderCallback {
+    fn prepare(
+        &self,
+        _device: &Device,
+        _queue: &Queue,
+        _screen: &ScreenDescriptor,
+        encoder: &mut CommandEncoder,
+        resources: &mut CallbackResources,
+    ) -> Vec<wgpu::CommandBuffer> {
+        let workspace = resources.get_mut::<WorkspaceRenderResources>().unwrap();
+        let app = unsafe { &mut *self.app };
+        let (gcx, view) = (app.gcx(), self.viewport);
+
+        workspace.model.prepare_preview(&gcx, encoder, app, view);
+
+        Vec::new()
+    }
+
+    fn paint(
+        &self,
+        _info: PaintCallbackInfo,
+        render_pass: &mut RenderPass,
+        resources: &CallbackResources,
+    ) {
+        let workspace = resources.get::<WorkspaceRenderResources>().unwrap();
+        let app = unsafe { &mut *self.app };
+
+        workspace.model.paint(render_pass, app, Target::Preview);
     }
 }
 
 unsafe impl Send for WorkspaceRenderCallback {}
 unsafe impl Sync for WorkspaceRenderCallback {}
+
+unsafe impl Send for PreviewRenderCallback {}
+unsafe impl Sync for PreviewRenderCallback {}

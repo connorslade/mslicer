@@ -14,14 +14,17 @@ use wgpu::{
 use crate::{
     core::App,
     include_shader,
-    render::{Gcx, camera::Camera, workspace::model::MultiStage},
+    render::{
+        Gcx,
+        camera::Camera,
+        workspace::model::{MultiStage, bindings::TextureViews},
+    },
 };
 
 pub struct LightingPass {
     pipeline: RenderPipeline,
     group_layout: BindGroupLayout,
     uniform: Buffer,
-    bind_group: Option<BindGroup>,
 }
 
 #[derive(ShaderType)]
@@ -133,7 +136,6 @@ impl LightingPass {
             pipeline,
             group_layout,
             uniform,
-            bind_group: None,
         }
     }
 
@@ -153,34 +155,38 @@ impl LightingPass {
             .write_buffer(&self.uniform, 0, &buffer.into_inner());
     }
 
-    pub fn recreate_bind_group(&mut self, gcx: &Gcx, multi: &MultiStage, sampler: &Sampler) {
-        self.bind_group
-            .replace(gcx.device.create_bind_group(&BindGroupDescriptor {
-                label: None,
-                layout: &self.group_layout,
-                entries: &[
-                    BindGroupEntry {
-                        binding: 0,
-                        resource: self.uniform.as_entire_binding(),
-                    },
-                    BindGroupEntry {
-                        binding: 1,
-                        resource: BindingResource::TextureView(&multi.target_a),
-                    },
-                    BindGroupEntry {
-                        binding: 2,
-                        resource: BindingResource::TextureView(&multi.normal_target),
-                    },
-                    BindGroupEntry {
-                        binding: 3,
-                        resource: BindingResource::TextureView(&multi.occlusion_target_b),
-                    },
-                    BindGroupEntry {
-                        binding: 4,
-                        resource: BindingResource::Sampler(sampler),
-                    },
-                ],
-            }));
+    pub fn recreate_bind_group(
+        &mut self,
+        gcx: &Gcx,
+        textures: &TextureViews,
+        sampler: &Sampler,
+    ) -> BindGroup {
+        gcx.device.create_bind_group(&BindGroupDescriptor {
+            label: None,
+            layout: &self.group_layout,
+            entries: &[
+                BindGroupEntry {
+                    binding: 0,
+                    resource: self.uniform.as_entire_binding(),
+                },
+                BindGroupEntry {
+                    binding: 1,
+                    resource: BindingResource::TextureView(&textures.target_a),
+                },
+                BindGroupEntry {
+                    binding: 2,
+                    resource: BindingResource::TextureView(&textures.normal_target),
+                },
+                BindGroupEntry {
+                    binding: 3,
+                    resource: BindingResource::TextureView(&textures.occlusion_target_b),
+                },
+                BindGroupEntry {
+                    binding: 4,
+                    resource: BindingResource::Sampler(sampler),
+                },
+            ],
+        })
     }
 
     pub fn paint(
@@ -189,11 +195,8 @@ impl LightingPass {
         multi: &MultiStage,
         index: &Buffer,
         background: Option<SRgb<f32>>,
+        bind_group: &BindGroup,
     ) {
-        let Some(bind_group) = &self.bind_group else {
-            return;
-        };
-
         let clear = background.map(srgb_to_color).unwrap_or(Color::TRANSPARENT);
         let mut render_pass = encoder.begin_render_pass(&RenderPassDescriptor {
             label: Some("Lighting"),

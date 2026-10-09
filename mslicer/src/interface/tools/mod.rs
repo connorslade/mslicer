@@ -47,7 +47,7 @@ macro_rules! generator_tool {
         };
 
         let mut config = $app.project.slice_config.clone();
-        let operation = SliceOperation::new(Progress::new(), CombinedProgress::new());
+        let operation = SliceOperation::new(Progress::new(), CombinedProgress::new(), None);
         operation.add_preview(RgbaImage::new(512, 512)); // blank preview image
         let tool = $tool.clone();
         tool.slice_config(&mut config);

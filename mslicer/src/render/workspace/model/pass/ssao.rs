@@ -11,16 +11,18 @@ use wgpu::{
 };
 
 use crate::{
-    core::{App, config::render::Projection},
+    core::App,
     include_shader,
-    render::{Gcx, camera::Camera, workspace::model::MultiStage},
+    render::{
+        Gcx,
+        workspace::model::{MultiStage, bindings::TextureViews},
+    },
 };
 
 pub struct SsaoPass {
     pipeline: RenderPipeline,
     group_layout: BindGroupLayout,
     uniform: Buffer,
-    bind_group: Option<BindGroup>,
 }
 
 #[derive(ShaderType)]
@@ -124,17 +126,11 @@ impl SsaoPass {
             pipeline,
             group_layout,
             uniform,
-            bind_group: None,
         }
     }
 
-    pub fn prepare(&mut self, gcx: &Gcx, app: &mut App, camera: Option<&Camera>) {
+    pub fn prepare(&mut self, gcx: &Gcx, app: &mut App, view_projection: Matrix4<f32>) {
         let mut buffer = UniformBuffer::new(Vec::new());
-
-        let view_projection = match camera {
-            Some(c) => c.view_projection_matrix(Projection::Perspective, 1.0),
-            None => app.view_projection(),
-        };
 
         let ao = &app.config.render.ambient_occlusion;
         let uniform = Uniforms {
@@ -149,37 +145,43 @@ impl SsaoPass {
             .write_buffer(&self.uniform, 0, &buffer.into_inner());
     }
 
-    pub fn recreate_bind_group(&mut self, gcx: &Gcx, multi: &MultiStage, sampler: &Sampler) {
-        self.bind_group
-            .replace(gcx.device.create_bind_group(&BindGroupDescriptor {
-                label: None,
-                layout: &self.group_layout,
-                entries: &[
-                    BindGroupEntry {
-                        binding: 0,
-                        resource: self.uniform.as_entire_binding(),
-                    },
-                    BindGroupEntry {
-                        binding: 1,
-                        resource: BindingResource::TextureView(&multi.world_target),
-                    },
-                    BindGroupEntry {
-                        binding: 2,
-                        resource: BindingResource::TextureView(&multi.depth_target),
-                    },
-                    BindGroupEntry {
-                        binding: 3,
-                        resource: BindingResource::Sampler(sampler),
-                    },
-                ],
-            }));
+    pub fn recreate_bind_group(
+        &mut self,
+        gcx: &Gcx,
+        textures: &TextureViews,
+        sampler: &Sampler,
+    ) -> BindGroup {
+        gcx.device.create_bind_group(&BindGroupDescriptor {
+            label: None,
+            layout: &self.group_layout,
+            entries: &[
+                BindGroupEntry {
+                    binding: 0,
+                    resource: self.uniform.as_entire_binding(),
+                },
+                BindGroupEntry {
+                    binding: 1,
+                    resource: BindingResource::TextureView(&textures.world_target),
+                },
+                BindGroupEntry {
+                    binding: 2,
+                    resource: BindingResource::TextureView(&textures.depth_target),
+                },
+                BindGroupEntry {
+                    binding: 3,
+                    resource: BindingResource::Sampler(sampler),
+                },
+            ],
+        })
     }
 
-    pub fn paint(&self, encoder: &mut CommandEncoder, multi: &MultiStage, index: &Buffer) {
-        let Some(bind_group) = &self.bind_group else {
-            return;
-        };
-
+    pub fn paint(
+        &self,
+        encoder: &mut CommandEncoder,
+        multi: &MultiStage,
+        index: &Buffer,
+        bind_group: &BindGroup,
+    ) {
         let mut render_pass = encoder.begin_render_pass(&RenderPassDescriptor {
             label: Some("SSAO"),
             color_attachments: &[Some(RenderPassColorAttachment {

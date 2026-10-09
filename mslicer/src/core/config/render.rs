@@ -2,6 +2,8 @@ use common::color::LinearRgb;
 use nalgebra::Vector2;
 use serde::{Deserialize, Serialize};
 
+use crate::render::camera::Camera;
+
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct RenderConfig {
@@ -14,10 +16,7 @@ pub struct RenderConfig {
     pub ambient_occlusion: AmbientOcclusion,
     pub anti_aliasing: AntiAliasing,
 
-    // preview image
-    pub large_preview: Vector2<u32>,
-    pub small_preview: Vector2<u32>,
-    pub preview_background_color: LinearRgb<f32>,
+    pub preview: Preview,
 
     // extras
     pub grid_size: f32,
@@ -45,6 +44,16 @@ pub struct AmbientOcclusion {
 #[serde(default)]
 pub struct AntiAliasing {
     pub enabled: bool,
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+#[serde(default)]
+pub struct Preview {
+    pub size: Vector2<u32>,
+    pub background: LinearRgb<f32>,
+
+    pub projection: Projection,
+    pub fov: f32,
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -83,9 +92,7 @@ impl Default for RenderConfig {
             ambient_occlusion: Default::default(),
             anti_aliasing: Default::default(),
 
-            large_preview: Vector2::new(400, 300),
-            small_preview: Vector2::new(200, 125),
-            preview_background_color: LinearRgb::splat(0.0),
+            preview: Preview::default(),
 
             grid_size: 12.16,
             overhangs: (false, 30.0),
@@ -115,5 +122,17 @@ impl Default for AmbientOcclusion {
 impl Default for AntiAliasing {
     fn default() -> Self {
         Self { enabled: true }
+    }
+}
+
+impl Default for Preview {
+    fn default() -> Self {
+        Self {
+            size: Vector2::new(400, 300),
+            background: LinearRgb::splat(0.0),
+
+            projection: Projection::Perspective,
+            fov: Camera::default().fov,
+        }
     }
 }

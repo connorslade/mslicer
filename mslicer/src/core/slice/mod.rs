@@ -12,10 +12,14 @@ use parking_lot::{Mutex, MutexGuard};
 use tracing::info;
 
 use crate::{
-    core::slice::{
-        annotations::Annotations,
-        result::{RasterSliceResult, SliceResult, VectorSliceResult},
+    core::{
+        slice::{
+            annotations::Annotations,
+            result::{RasterSliceResult, SliceResult, VectorSliceResult},
+        },
+        state::PreviewModel,
     },
+    render::camera::Camera,
     util::management::LazyTextureId,
 };
 
@@ -33,7 +37,9 @@ pub struct SliceOperationInner {
     pub progress: Progress,
     pub post_processing_progress: CombinedProgress<2>,
     pub result: Mutex<Option<SliceResult>>,
+
     pub previews: Mutex<Option<PreviewImage>>,
+    pub interactive_previews: Option<InteractivePreviews>,
 }
 
 pub struct PreviewImage {
@@ -41,15 +47,26 @@ pub struct PreviewImage {
     pub texture: LazyTextureId,
 }
 
+pub struct InteractivePreviews {
+    pub camera: Mutex<Camera>, // hmph.
+    pub models: Vec<PreviewModel>,
+}
+
 impl SliceOperation {
-    pub fn new(slice: Progress, post_process: CombinedProgress<2>) -> Self {
+    pub fn new(
+        slice: Progress,
+        post_process: CombinedProgress<2>,
+        interactive_previews: Option<InteractivePreviews>,
+    ) -> Self {
         Self {
             inner: Arc::new(SliceOperationInner {
                 start_time: Instant::now(),
                 progress: slice,
                 post_processing_progress: post_process,
                 result: Mutex::new(None),
+
                 previews: Mutex::new(Default::default()),
+                interactive_previews,
             }),
         }
     }

@@ -13,14 +13,16 @@ use wgpu::{
 use crate::{
     core::App,
     include_shader,
-    render::{Gcx, workspace::model::MultiStage},
+    render::{
+        Gcx,
+        workspace::model::{MultiStage, bindings::TextureViews},
+    },
 };
 
 pub struct FxaaPass {
     pipeline: RenderPipeline,
     group_layout: BindGroupLayout,
     uniform: Buffer,
-    bind_group: Option<BindGroup>,
 }
 
 #[derive(ShaderType)]
@@ -111,7 +113,6 @@ impl FxaaPass {
             pipeline,
             group_layout,
             uniform,
-            bind_group: None,
         }
     }
 
@@ -125,33 +126,39 @@ impl FxaaPass {
             .write_buffer(&self.uniform, 0, &buffer.into_inner());
     }
 
-    pub fn recreate_bind_group(&mut self, gcx: &Gcx, multi: &MultiStage, sampler: &Sampler) {
-        self.bind_group
-            .replace(gcx.device.create_bind_group(&BindGroupDescriptor {
-                label: None,
-                layout: &self.group_layout,
-                entries: &[
-                    BindGroupEntry {
-                        binding: 0,
-                        resource: self.uniform.as_entire_binding(),
-                    },
-                    BindGroupEntry {
-                        binding: 1,
-                        resource: BindingResource::TextureView(&multi.target_b),
-                    },
-                    BindGroupEntry {
-                        binding: 2,
-                        resource: BindingResource::Sampler(sampler),
-                    },
-                ],
-            }));
+    pub fn recreate_bind_group(
+        &mut self,
+        gcx: &Gcx,
+        textures: &TextureViews,
+        sampler: &Sampler,
+    ) -> BindGroup {
+        gcx.device.create_bind_group(&BindGroupDescriptor {
+            label: None,
+            layout: &self.group_layout,
+            entries: &[
+                BindGroupEntry {
+                    binding: 0,
+                    resource: self.uniform.as_entire_binding(),
+                },
+                BindGroupEntry {
+                    binding: 1,
+                    resource: BindingResource::TextureView(&textures.target_b),
+                },
+                BindGroupEntry {
+                    binding: 2,
+                    resource: BindingResource::Sampler(sampler),
+                },
+            ],
+        })
     }
 
-    pub fn paint(&self, encoder: &mut CommandEncoder, multi: &MultiStage, index: &Buffer) {
-        let Some(bind_group) = &self.bind_group else {
-            return;
-        };
-
+    pub fn paint(
+        &self,
+        encoder: &mut CommandEncoder,
+        multi: &MultiStage,
+        index: &Buffer,
+        bind_group: &BindGroup,
+    ) {
         let mut render_pass = encoder.begin_render_pass(&RenderPassDescriptor {
             label: Some("FXAA"),
             color_attachments: &[Some(RenderPassColorAttachment {

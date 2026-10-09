@@ -1,18 +1,21 @@
-use std::sync::Arc;
+use std::{sync::Arc, time::Instant};
 
+use common::color::SRgb;
 use egui::Vec2;
 use egui_phosphor::regular::{CURSOR_CLICK, LINE_SEGMENT, TRIANGLE};
 use egui_tracing::EventCollector;
-use nalgebra::{Vector2, Vector3};
+use nalgebra::{Matrix4, Vector2, Vector3};
 use slicer::mesh::Mesh;
+use wgpu::Device;
 
 use crate::{
     core::{
         config::peripherals::Webhook,
-        project::model::ModelId,
+        project::model::{Model, ModelId},
         selected::{SelectedModel, SelectedPrinter, SelectedSupports},
     },
     interface::tools::Tools,
+    render::util::MeshBuffers,
 };
 
 #[derive(Default)]
@@ -47,10 +50,28 @@ pub struct UiState {
     pub preview_scale: f32,
     pub layer_count: (usize, u8),
 
+    pub preview_mode: PreviewMode,
+    pub last_preview_interact: Option<Instant>,
+
     pub anisotropic_aa: bool,
 
     pub tools: Tools,
     pub move_timeout: u32,
+}
+
+pub struct PreviewModel {
+    pub mesh: MeshBuffers,
+    pub faces: usize,
+
+    pub transform: Matrix4<f32>,
+    pub color: SRgb<f32>,
+}
+
+#[derive(Default, Copy, Clone, PartialEq, Eq)]
+pub enum PreviewMode {
+    Interactive,
+    #[default]
+    Static,
 }
 
 #[derive(Default, PartialEq, Eq)]
@@ -90,6 +111,18 @@ pub enum RemotePrintConnectStatus {
     Scanning,
 }
 
+impl PreviewModel {
+    pub fn for_model(model: &mut Model, device: &Device) -> Self {
+        Self {
+            mesh: model.get_buffers(device).clone(),
+            faces: model.mesh.face_count(),
+
+            transform: *model.mesh.transformation_matrix(),
+            color: model.color.to_srgb(),
+        }
+    }
+}
+
 impl WorkspaceHover {
     pub fn new(is_moving: bool, aspect: f32, uv: Vec2) -> Self {
         Self {
@@ -101,6 +134,15 @@ impl WorkspaceHover {
 
     pub fn hovered(&self) -> bool {
         self.uv.x >= 0.0 && self.uv.y >= 0.0
+    }
+}
+
+impl PreviewMode {
+    pub fn other(&self) -> Self {
+        match self {
+            PreviewMode::Interactive => PreviewMode::Static,
+            PreviewMode::Static => PreviewMode::Interactive,
+        }
     }
 }
 
