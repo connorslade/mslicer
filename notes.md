@@ -9,19 +9,9 @@ Feel free to help out :eyes:.
 - hover overlay flickers sometimes
 - does the 'File › Install' button on windows close your project without saving?
 - resizing the window is laggy (bc of all the texture reallocs!)
-- only handle 1, 2, 3 keybind if not editing a text field...
 - fix long file names in remote print causing problems...
 - don't use currently selected printer resolution for sliced diff. Fail if the two files have differing resolutions.
 - overlay elements (hover tooltip / mode buttons) can render over welcome screen
-- dont make 'Saturn 3 Ultra' the default profile
-  - add an unselected option to force users to pick the right printer?
-- fix model buffer download bounds (again):
-
-```
-Caused by:
-  In a CommandEncoder
-    Copy of X 1920..1921 would end up overrunning the bounds of the Source texture of X size 1920
-```
 
 ## Features
 
@@ -95,6 +85,8 @@ Features that would be cool, but are a bit out of scope for now.
 - slice b-rep?
   - at what point of mesh resolution is polygon intersection slower 
 - scripting???
+- dont make 'Saturn 3 Ultra' the default profile
+  - add an unselected option to force users to pick the right printer?
 
 ---
 

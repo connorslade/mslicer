@@ -131,7 +131,7 @@ impl Default for Preview {
             size: Vector2::new(400, 300),
             background: LinearRgb::splat(0.0),
 
-            projection: Projection::Perspective,
+            projection: Projection::Orthographic,
             fov: Camera::default().fov,
         }
     }

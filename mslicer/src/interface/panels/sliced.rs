@@ -696,8 +696,10 @@ fn sidebar(
                 let icon = [VECTOR_TWO, VECTOR_THREE][(operation.interactive_previews.is_some()
                     && state.preview_mode == PreviewMode::Interactive)
                     as usize];
-                (ui.button(icon).clicked())
-                    .then(|| state.preview_mode = state.preview_mode.other());
+                if ui.button(icon).clicked() {
+                    state.preview_mode = state.preview_mode.other();
+                    state.last_preview_interact = None;
+                }
             });
 
             ui.add_space(4.0);

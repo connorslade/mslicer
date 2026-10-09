@@ -108,7 +108,8 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                             .ui(ui)
                             .on_hover_text(format!("{}\nShortcut: {}", tool.name(), i + 1));
 
-                        let shortcut = ui.input(|x| x.key_pressed(NUMBER_KEYS[i + 1]));
+                        let shortcut = ui.input(|x| x.key_pressed(NUMBER_KEYS[i + 1]))
+                            && !ui.ctx().wants_keyboard_input();
                         (button.clicked() || shortcut).then(|| app.state.tool = tool);
                     }
                 })

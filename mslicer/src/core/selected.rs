@@ -11,12 +11,6 @@ pub enum SelectedPrinter {
     Preset(usize, usize),
 }
 
-impl Default for SelectedPrinter {
-    fn default() -> Self {
-        SelectedPrinter::Preset(0, 0)
-    }
-}
-
 #[derive(Default)]
 pub enum SelectedModel {
     #[default]
@@ -179,5 +173,11 @@ impl SelectedSupports {
         } else {
             self.supports.insert(key);
         }
+    }
+}
+
+impl Default for SelectedPrinter {
+    fn default() -> Self {
+        SelectedPrinter::Preset(0, 0)
     }
 }

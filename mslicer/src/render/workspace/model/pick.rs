@@ -70,16 +70,16 @@ impl ModelPicker {
         let size = texture.size();
 
         let uv = app.state.workspace.uv.map(|x| x.saturate());
-        if !(0.0..1.0).contains(&uv.x) || !(0.0..1.0).contains(&uv.y) {
-            app.state.hovered_geometry = None;
-            return;
-        }
-
         let pos = Origin3d {
             x: (uv.x * size.width as f32).round() as u32,
             y: (uv.y * size.height as f32).round() as u32,
             z: 0,
         };
+
+        if !(0..size.width).contains(&pos.x) || !(0..size.height).contains(&pos.y) {
+            app.state.hovered_geometry = None;
+            return;
+        }
 
         encoder.copy_texture_to_buffer(
             TexelCopyTextureInfo {
