@@ -18,7 +18,7 @@ use crate::{
 #[rustfmt::skip]
 const NUMBER_KEYS: [Key; 10] = [Key::Num0, Key::Num1, Key::Num2, Key::Num3, Key::Num4, Key::Num5, Key::Num6, Key::Num7, Key::Num8, Key::Num9];
 
-pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
+pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
     let (rect, response) = ui.allocate_exact_size(ui.available_size(), Sense::click_and_drag());
     app.camera.handle_movement(&response, ui);
 
@@ -33,7 +33,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     is_moving |= response.dragged();
 
     let aspect = rect.width() / rect.height();
-    let px = response.hover_pos().unwrap_or_default();
+    let px = ui.input(|i| i.pointer.latest_pos()).unwrap_or_default();
     let uv = (px - rect.min) / rect.size();
     app.state.workspace = WorkspaceHover::new(is_moving, aspect, uv);
 
@@ -117,9 +117,12 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
 
     paint_basis_vectors(painter, app, &rect);
 
+    // Can't just use `response.contains_pointer()` since the hover overlay can
+    // take focus away from the viewport.
     if app.config.ui.hover_overlay != HoverOverlay::Off
         && let Some(hover) = app.state.hovered_geometry
-        && response.contains_pointer()
+        && response.rect.contains(px)
+        && ctx.layer_id_at(px) == Some(ui.layer_id())
     {
         paint_hover_overlay(ui, app, hover, px);
     }

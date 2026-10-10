@@ -24,14 +24,14 @@ fn frag(in: VertexOutput) -> @location(0) vec4f {
     let c_ne = textureSample(texture, texture_sampler, uv + vec2f( 1, -1) * texel_size).rgb;
     let c_sw = textureSample(texture, texture_sampler, uv + vec2f(-1,  1) * texel_size).rgb;
     let c_se = textureSample(texture, texture_sampler, uv + vec2f( 1,  1) * texel_size).rgb;
-    let c_m  = textureSample(texture, texture_sampler, uv).rgb;
+    let c_m  = textureSample(texture, texture_sampler, uv);
 
     // Convert to lumanance
     let l_nw = dot(c_nw, LUMA);
     let l_ne = dot(c_ne, LUMA);
     let l_sw = dot(c_sw, LUMA);
     let l_se = dot(c_se, LUMA);
-    let l_m  = dot(c_m , LUMA);
+    let l_m  = dot(c_m.rgb , LUMA);
 
     var dir = vec2f(-((l_nw + l_ne) - (l_sw + l_se)), (l_nw + l_sw) - (l_ne + l_se));
     let sum = l_nw + l_ne + l_sw + l_se;
@@ -54,6 +54,5 @@ fn frag(in: VertexOutput) -> @location(0) vec4f {
     let l_max = max(l_m, max(max(l_nw, l_ne), max(l_sw, l_se)));
 
     let color = select(c_a, c_b, l_b >= l_min && l_b <= l_max);
-
-    return vec4f(color, 1.0);
+    return vec4f(color, c_m.a);
 }

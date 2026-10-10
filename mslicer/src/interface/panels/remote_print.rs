@@ -170,7 +170,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
                         }
 
                         if printing {
-                            ui.horizontal(|ui| {
+                            ui.horizontal_wrapped(|ui| {
                                 ui.label("Printing");
                                 ui.monospace(&print_info.filename);
                                 ui.label(format!("({:?})", print_info.status));

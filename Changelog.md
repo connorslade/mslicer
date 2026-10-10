@@ -98,6 +98,9 @@
 - Button to unload sliced result
 - Interactive preview image! (Drag it to change the camera view angle)
 - Height map generator tool
+- Fix being unable to uncheck 'Check for Updates at Startup'
+- Fix anti-aliasing changing the viewport background color
+- Fix some elements rendering over welcome background
 
 ## v0.9.2 &mdash; August 30th, 2026
 

@@ -6,13 +6,11 @@ Feel free to help out :eyes:.
 ## Bugs
 
 - check if slicing with spacemouse button causes crash
-- hover overlay flickers sometimes
 - does the 'File › Install' button on windows close your project without saving?
 - resizing the window is laggy (bc of all the texture reallocs!)
 - fix long file names in remote print causing problems...
 - don't use currently selected printer resolution for sliced diff. Fail if the two files have differing resolutions.
-- overlay elements (hover tooltip / mode buttons) can render over welcome screen
-- enabling AA changes background color
+- some custom components dont work well on light mode
 
 ## Features
 

@@ -1,6 +1,4 @@
-use egui::{
-    Color32, Context, Id, Image, ImageSource, LayerId, Order, Widget, Window, include_image, vec2,
-};
+use egui::{Color32, Context, Frame, Id, Image, ImageSource, Modal, Widget, include_image};
 use egui_phosphor::regular::INFO;
 
 use crate::{VERSION, core::App, interface::components::button_row};
@@ -21,16 +19,12 @@ pub fn ui(app: &mut App, ctx: &Context) {
         return;
     }
 
-    let painter = ctx.layer_painter(LayerId::new(Order::Middle, Id::new("about")));
-    painter.rect_filled(ctx.content_rect(), 0.0, BACKGROUND_TINT);
-
-    let size = vec2(400.0, 227.0);
-    let window = Window::new("about")
-        .title_bar(false)
-        .resizable(false)
-        .fixed_size(size)
-        .fixed_pos((ctx.content_rect().size() - size).to_pos2() / 2.0)
+    let modal = Modal::new(Id::new("about"))
+        .backdrop_color(BACKGROUND_TINT)
+        .frame(Frame::window(&ctx.style()))
         .show(ctx, |ui| {
+            ui.set_width(400.0);
+
             ui.vertical_centered(|ui| {
                 Image::new(LOGO).max_width(80.0).ui(ui);
                 ui.heading(format!("mslicer v{VERSION}"));
@@ -54,7 +48,13 @@ pub fn ui(app: &mut App, ctx: &Context) {
 
             ui.add_space(5.0);
             ui.horizontal(|ui| {
-                ui.checkbox(&mut true, "Check for Updates on Startup");
+                let mut check_enabled = app.config.ui.update_check.enabled();
+                if ui
+                    .checkbox(&mut check_enabled, "Check for Updates on Startup")
+                    .changed()
+                {
+                    app.config.ui.update_check.toggle();
+                }
                 ui.label(INFO).on_hover_text(UPDATE_CHECK_TIP);
             });
 
@@ -70,14 +70,7 @@ pub fn ui(app: &mut App, ctx: &Context) {
             );
         });
 
-    if ctx.input(|i| i.pointer.any_down())
-        && let Some(pos) = ctx.pointer_interact_pos()
-        && !window.unwrap().response.rect.contains(pos)
-    {
-        app.config.ui.about = false;
-    }
-
-    if ctx.input(|i| !i.keys_down.is_empty()) {
+    if ctx.input(|i| !i.keys_down.is_empty()) || modal.should_close() {
         app.config.ui.about = false;
     }
 }
