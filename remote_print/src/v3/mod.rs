@@ -14,10 +14,10 @@ use std::{
 use anyhow::{Context, Result, bail};
 use clone_macro::clone;
 use parking_lot::{Mutex, MutexGuard};
+use rand::{Rng, rng};
 use tracing::{info, trace, warn};
 use tungstenite::Error;
 use ureq::unversioned::multipart::{Form, Part};
-use uuid::Uuid;
 
 use crate::{
     manager,
@@ -252,7 +252,7 @@ impl RemotePrintV3 {
         const CHUNK_SIZE: usize = 1024 * 1024;
 
         let md5 = format!("{:x}", md5::compute(data));
-        let uuid = Uuid::new_v4().to_string();
+        let uuid = uuid_v4();
         let total_size = data.len();
         let total_size_str = total_size.to_string();
         let url = format!("http://{ip}:3030/uploadFile/upload");
@@ -342,4 +342,25 @@ impl Client {
             was_printing: false,
         }
     }
+}
+
+fn uuid_v4() -> String {
+    let mut bytes = [0; 16];
+    rng().fill_bytes(&mut bytes);
+
+    bytes[6] = (bytes[6] & 0x0f) | 0x40;
+    bytes[8] = (bytes[8] & 0x3f) | 0x80;
+
+    let mut out = String::new();
+    for (i, byte) in bytes.iter().enumerate() {
+        matches!(i, 4 | 6 | 8 | 10).then(|| out.push('-'));
+        out.push_str(&format!("{:02x}", byte));
+    }
+
+    out
+}
+
+#[test]
+fn test() {
+    dbg!(uuid_v4());
 }
