@@ -17,7 +17,7 @@ use crate::{
     task::FileDialog,
 };
 
-pub const DESCRIPTION: &str =
+const DESCRIPTION: &str =
     "Compares the layer data between two sliced files using your selected difference method.";
 
 pub fn open(app: &mut App) {

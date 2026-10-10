@@ -97,6 +97,7 @@
 - Configurable preview image sizes and background color
 - Button to unload sliced result
 - Interactive preview image! (Drag it to change the camera view angle)
+- Height map generator tool
 
 ## v0.9.2 &mdash; August 30th, 2026
 

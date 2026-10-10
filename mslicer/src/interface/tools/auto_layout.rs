@@ -19,7 +19,7 @@ use crate::{
     },
 };
 
-pub const DESCRIPTION: &str = "Automatically lays out models on the print bed. Slower than the Quick Layout, but produces better results.";
+const DESCRIPTION: &str = "Automatically lays out models on the print bed. Slower than the Quick Layout, but produces better results.";
 
 pub fn open(app: &mut App) {
     app.popup

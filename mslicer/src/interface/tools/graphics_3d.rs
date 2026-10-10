@@ -11,7 +11,7 @@ use crate::{
     },
 };
 
-pub const DESCRIPTION: &str = "peak unemployment";
+const DESCRIPTION: &str = "peak unemployment";
 
 pub fn open(app: &mut App) {
     app.popup

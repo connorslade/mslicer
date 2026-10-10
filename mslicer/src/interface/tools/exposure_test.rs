@@ -10,7 +10,7 @@ use crate::{
     },
 };
 
-pub const DESCRIPTION: &str = "Generates a rectangular prism with a gradient of voxel vales across the top layer. Measuring the printed result will allow you get the value to voxel size mapping.";
+const DESCRIPTION: &str = "Generates a rectangular prism with a gradient of voxel vales across the top layer. Measuring the printed result will allow you get the value to voxel size mapping.";
 
 pub fn open(app: &mut App) {
     app.popup

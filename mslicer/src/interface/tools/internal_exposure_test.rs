@@ -10,7 +10,7 @@ use crate::{
     },
 };
 
-pub const DESCRIPTION: &str = "Generates a rectangular prism with a gradient of voxel vales inside. Intended for use with translucent resins.";
+const DESCRIPTION: &str = "Generates a rectangular prism with a gradient of voxel vales inside. Intended for use with translucent resins.";
 
 pub fn open(app: &mut App) {
     app.popup

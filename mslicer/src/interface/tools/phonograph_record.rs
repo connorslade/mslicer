@@ -9,10 +9,11 @@ use crate::{
         components::grid,
         popup::{Popup, PopupApp},
     },
-    task::{FileDialog, GenerateMesh},
+    mesh_generator_tool,
+    task::FileDialog,
 };
 
-pub const DESCRIPTION: &str = "Generates a phonograph record mesh from an audio file.";
+const DESCRIPTION: &str = "Generates a phonograph record mesh from an audio file.";
 pub const MESH_GEN_TIP: &str = "The mesh generation mode. A minimal mesh may not slice in other programs or when rotated (excluding yaw).";
 
 pub fn open(app: &mut App) {
@@ -166,12 +167,7 @@ fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
     ui.vertical_centered(|ui| {
         let button = Button::new("Generate").min_size(vec2(ui.available_width(), 0.0));
         if ui.add_enabled(!slicing && audio_loaded, button).clicked() {
-            let tool = tool.clone();
-            let task = GenerateMesh::new("Record".into(), move |progress| {
-                tool.generate(progress).unwrap()
-            });
-
-            app.tasks.add(task);
+            mesh_generator_tool!(app, tool, "Record");
         }
     });
 

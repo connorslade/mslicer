@@ -139,6 +139,7 @@ pub fn ui(app: &mut App, ctx: &Context) {
                     labeled_separator(ui, "Generators");
                     (ui.button("Printed Circuit Board").clicked())
                         .then(|| tools::printed_circuit_board::open(app));
+                    (ui.button("Height Map").clicked()).then(|| tools::height_map::open(app));
                     (ui.button("Test Pattern").clicked()).then(|| tools::test_pattern::open(app));
                     ui.menu_button("Fun", |ui| {
                         (ui.button("Phonograph Record").clicked())

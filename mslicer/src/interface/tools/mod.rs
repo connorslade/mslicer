@@ -1,8 +1,9 @@
 use experimental::sdf::SdfSlicer;
 use tools::{
     auto_layout::AutoLayoutAnnealing, exposure_test::ExposureTest, graphics_3d::Graphics3D,
-    internal_exposure_test::InternalExposureTest, phonograph_record::PhonographRecord,
-    printed_circuit_board::PrintedCircuitBoard, sliced_diff::SlicedDiff, test_pattern::TestPattern,
+    height_map::HeightMap, internal_exposure_test::InternalExposureTest,
+    phonograph_record::PhonographRecord, printed_circuit_board::PrintedCircuitBoard,
+    sliced_diff::SlicedDiff, test_pattern::TestPattern,
 };
 
 pub mod auto_layout;
@@ -10,6 +11,7 @@ pub mod auto_layout;
 pub mod brep_slicer;
 pub mod exposure_test;
 pub mod graphics_3d;
+pub mod height_map;
 pub mod internal_exposure_test;
 pub mod phonograph_record;
 pub mod printed_circuit_board;
@@ -27,6 +29,7 @@ pub struct Tools {
     pattern_generator: TestPattern,
     phonograph_record: PhonographRecord,
     sliced_diff: SlicedDiff,
+    height_map: HeightMap,
 
     sdf_slicer: SdfSlicer,
     #[cfg(feature = "brep")]
@@ -59,4 +62,16 @@ macro_rules! generator_tool {
         $app.slice_operation.replace(operation);
         $app.panels.focus_tab(Tab::Sliced);
     }};
+}
+
+#[macro_export]
+macro_rules! mesh_generator_tool {
+    ($app:expr, $tool:expr, $name:expr) => {
+        let tool = $tool.clone();
+        let task = $crate::task::GenerateMesh::new($name.into(), move |progress| {
+            tool.generate(progress).unwrap()
+        });
+
+        $app.tasks.add(task);
+    };
 }

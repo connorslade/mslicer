@@ -16,7 +16,7 @@ use crate::{
     task::{FileDialog, MultiFileDialog},
 };
 
-pub const DESCRIPTION: &str = "Use your MSLA resin printer to expose UV sensitive photoresist or soldermask for PCB manufacturing.";
+const DESCRIPTION: &str = "Use your MSLA resin printer to expose UV sensitive photoresist or soldermask for PCB manufacturing.";
 pub const DOCS_PAGE: &str = "https://mslicer.com/docs/pcb-photolighography";
 
 pub fn open(app: &mut App) {

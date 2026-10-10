@@ -10,7 +10,7 @@ use crate::{
     },
 };
 
-pub const DESCRIPTION: &str = "Generates patterns for testing and debugging purposes.";
+const DESCRIPTION: &str = "Generates patterns for testing and debugging purposes.";
 
 pub fn open(app: &mut App) {
     app.popup
