@@ -74,6 +74,13 @@ fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
             .suffix(" mm")
             .ui(ui);
         ui.end_row();
+
+        ui.label("Base Height");
+        DragValue::new(&mut tool.base_height)
+            .speed(0.1)
+            .suffix(" mm")
+            .ui(ui);
+        ui.end_row();
     });
     ui.add_space(8.0);
 
