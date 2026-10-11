@@ -73,10 +73,7 @@ const DEFECT_EXPL: &str = "Defective meshes can cause incorrect slicing. See how
 
 pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     // idk man
-    let preview = PreviewRenderCallback {
-        app: app as *mut _,
-        viewport: Default::default(),
-    };
+    let ptr = app as *mut _;
 
     let mut discard = false;
     if let Some(slice_operation) = &app.slice_operation {
@@ -255,16 +252,14 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                 .resizable(false)
                 .show_animated_inside(ui, app.config.sliced.sidebar, |ui| {
                     ScrollArea::vertical().show(ui, |ui| {
-                        sidebar(
-                            slice_operation,
-                            result,
-                            &mut app.state,
-                            &mut app.config,
-                            &mut app.tasks,
-                            &mut app.popup,
-                            preview,
-                            ui,
-                        );
+                        let app = SidebarApp {
+                            ptr,
+                            state: &mut app.state,
+                            config: &mut app.config,
+                            tasks: &mut app.tasks,
+                            popup: &mut app.popup,
+                        };
+                        sidebar(slice_operation, result, app, ui);
                     })
                 });
 
@@ -598,17 +593,19 @@ fn sidebar_button(sliced: &mut SlicedConfig, ui: &mut Ui) {
     );
 }
 
+struct SidebarApp<'a> {
+    // :|
+    // ill fix it eventually!
+    ptr: *mut App,
+
+    state: &'a mut UiState,
+    config: &'a mut Config,
+    tasks: &'a mut TaskManager,
+    popup: &'a mut PopupManager,
+}
+
 // todo: do smth abt these args sob
-fn sidebar(
-    operation: &SliceOperation,
-    result: &mut SliceResult,
-    state: &mut UiState,
-    config: &mut Config,
-    tasks: &mut TaskManager,
-    popups: &mut PopupManager,
-    mut preview_callback: PreviewRenderCallback,
-    ui: &mut Ui,
-) {
+fn sidebar(operation: &SliceOperation, result: &mut SliceResult, app: SidebarApp, ui: &mut Ui) {
     CollapsingHeader::new("Preview Image")
         .default_open(true)
         .show(ui, |ui| {
@@ -619,7 +616,7 @@ fn sidebar(
             ui.add_space(4.0);
             ui.horizontal(|ui| {
                 if ui.button(concatcp!(SWAP, " Replace")).clicked() {
-                    let preview_size = config.render.preview.size;
+                    let preview_size = app.config.render.preview.size;
                     let task = FileDialog::pick_file(
                         ("Image", &IMAGE_FORMATS),
                         move |app, path, _tasks| {
@@ -637,13 +634,13 @@ fn sidebar(
                             }
                         },
                     );
-                    tasks.add(task);
+                    app.tasks.add(task);
                 }
 
                 if ui.button(concatcp!(TEXT_AA, " Add Text")).clicked() {
                     let mut text = String::default();
                     let mut size = 10.0;
-                    popups.open(Popup::new("Add Text", move |app, ui| {
+                    app.popup.open(Popup::new("Add Text", move |app, ui| {
                         grid("text").show(ui, |ui| {
                             ui.label("Text");
                             ui.text_edit_singleline(&mut text);
@@ -694,11 +691,11 @@ fn sidebar(
 
                 ui.separator();
                 let icon = [VECTOR_TWO, VECTOR_THREE][(operation.interactive_previews.is_some()
-                    && state.preview_mode == PreviewMode::Interactive)
+                    && app.state.preview_mode == PreviewMode::Interactive)
                     as usize];
                 if ui.button(icon).clicked() {
-                    state.preview_mode = state.preview_mode.other();
-                    state.last_preview_interact = None;
+                    app.state.preview_mode = app.state.preview_mode.other();
+                    app.state.last_preview_interact = None;
                 }
             });
 
@@ -708,21 +705,21 @@ fn sidebar(
                 [ui.input(|i| i.pointer.primary_down()) as usize];
 
             if let Some(interactive) = &operation.interactive_previews
-                && state.preview_mode == PreviewMode::Interactive
+                && app.state.preview_mode == PreviewMode::Interactive
             {
-                let size = config.render.preview.size;
+                let size = app.config.render.preview.size;
                 let large_aspect = size.x as f32 / size.y as f32;
                 let (response, painter) =
                     ui.allocate_painter(vec2(available, available / large_aspect), Sense::all());
 
                 if interactive.camera.lock().handle_movement(&response, ui) {
-                    state.last_preview_interact = Some(Instant::now());
+                    app.state.last_preview_interact = Some(Instant::now());
                 }
 
-                if let Some(last) = state.last_preview_interact
+                if let Some(last) = app.state.last_preview_interact
                     && last.elapsed() > Duration::from_secs(1)
                 {
-                    state.preview_mode = PreviewMode::Static;
+                    app.state.preview_mode = PreviewMode::Static;
                     reset_preview = true;
                 }
 
@@ -734,9 +731,13 @@ fn sidebar(
                     });
                 }
 
-                preview_callback.viewport = Vector2::new(size.x, size.y);
+                let callback = PreviewRenderCallback {
+                    app: app.ptr,
+                    viewport: Vector2::new(size.x, size.y),
+                };
+
                 let rect = response.on_hover_cursor(cursor).rect;
-                painter.add(Callback::new_paint_callback(rect, preview_callback));
+                painter.add(Callback::new_paint_callback(rect, callback));
             } else {
                 let (width, height) = (preview.image.width(), preview.image.height());
 
@@ -754,7 +755,7 @@ fn sidebar(
                     || response.drag_started()
                     || (response.hovered() && ui.input(|i| i.smooth_scroll_delta.y != 0.0))
                 {
-                    state.preview_mode = PreviewMode::Interactive;
+                    app.state.preview_mode = PreviewMode::Interactive;
                 }
             }
 
@@ -764,7 +765,7 @@ fn sidebar(
     CollapsingHeader::new("Slice Preview")
         .default_open(true)
         .show(ui, |ui| {
-            let sliced = &mut config.sliced;
+            let sliced = &mut app.config.sliced;
             grid("slice_preview").show(ui, |ui| {
                 ui.label("Coordinate Space");
                 ComboBox::from_id_salt("coordinate_space")
@@ -861,7 +862,7 @@ fn sidebar(
     }
 
     // todo: disabling exposure override leaves exposure config as is.
-    let layer = &mut raster.layers[state.preview_layer - 1];
+    let layer = &mut raster.layers[app.state.preview_layer - 1];
     layer.unique_exposure = collapsing_toggle(
         "Current Layer Override",
         layer.unique_exposure,
@@ -876,7 +877,7 @@ fn sidebar(
 
     // If any exposure setting was changed, recalculate the print time.
     exposure_changed.then(|| raster.print_time = print_time(raster.layers.iter()));
-    let layer = &mut raster.layers[state.preview_layer - 1];
+    let layer = &mut raster.layers[app.state.preview_layer - 1];
 
     ui.add_space(8.0);
     ui.heading("Analysis");
@@ -895,8 +896,8 @@ fn sidebar(
                     ui.end_row();
 
                     ui.label("Mass");
-                    ui.label(format!("{:.2} g", volume * config.sliced.resin_density));
-                    DragValue::new(&mut config.sliced.resin_density)
+                    ui.label(format!("{:.2} g", volume * app.config.sliced.resin_density));
+                    DragValue::new(&mut app.config.sliced.resin_density)
                         .range(0.0..=f32::MAX)
                         .speed(0.1)
                         .suffix(" g/mL")
@@ -904,14 +905,14 @@ fn sidebar(
                     ui.end_row();
 
                     ui.label("Cost");
-                    let symbol = config.sliced.currency.symbol();
+                    let symbol = app.config.sliced.currency.symbol();
                     ui.label(format!(
                         "{}{:.2}",
                         symbol,
-                        volume * config.sliced.resin_cost / 1000.0
+                        volume * app.config.sliced.resin_cost / 1000.0
                     ));
                     ui.horizontal(|ui| {
-                        DragValue::new(&mut config.sliced.resin_cost)
+                        DragValue::new(&mut app.config.sliced.resin_cost)
                             .speed(0.1)
                             .range(0.0..=f32::MAX)
                             .suffix(format!(" {symbol}/L"))
@@ -919,11 +920,11 @@ fn sidebar(
 
                         ComboBox::from_id_salt("currency")
                             .width(16.0)
-                            .selected_text(config.sliced.currency.symbol().to_string())
+                            .selected_text(app.config.sliced.currency.symbol().to_string())
                             .show_ui(ui, |ui| {
                                 for currency in Currency::ALL {
                                     ui.selectable_value(
-                                        &mut config.sliced.currency,
+                                        &mut app.config.sliced.currency,
                                         currency,
                                         currency.name(),
                                     );
@@ -1006,7 +1007,7 @@ fn sidebar(
                     .collect::<Vec<_>>();
                 plot.add(Line::new("", series).color(Color32::WHITE));
                 plot.add(
-                    VLine::new("", (state.preview_layer - 1) as f32)
+                    VLine::new("", (app.state.preview_layer - 1) as f32)
                         .color(Color32::RED)
                         .style(LineStyle::Dashed { length: 4.0 }),
                 );
@@ -1037,7 +1038,7 @@ fn sidebar(
                 .show(ui, |plot| {
                     plot.add(Line::new("", defects).color(Color32::WHITE));
                     plot.add(
-                        VLine::new("", (state.preview_layer - 1) as f32)
+                        VLine::new("", (app.state.preview_layer - 1) as f32)
                             .color(Color32::RED)
                             .style(LineStyle::Dashed { length: 4.0 }),
                     );
