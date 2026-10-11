@@ -15,7 +15,6 @@ Feel free to help out :eyes:.
   - use convex hull to re-calc bounds after transformation
   - cache bounds!!! pls dont iter over every vert MULTIPLE TIMES per frame...
   - remove bounds function from Mesh and replace with a ConvexHull struct in Model(?)
-- some way to disable building acc structures? for when you dont need supports.
 
 ## Features
 
@@ -53,6 +52,8 @@ Feel free to help out :eyes:.
 - optimize island detection
 - two stage lift config!! (how have i left this unimplemented for so long!)
 - dont iterate over all verts for Model::bounds (calc bounds once and apply transformation matrix)
+- some way to disable building acc structures? for when you dont need supports.
+- project notes?
 
 ## Documentation
 
