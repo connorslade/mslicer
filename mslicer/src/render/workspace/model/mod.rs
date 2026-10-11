@@ -112,6 +112,7 @@ impl ModelPipeline {
         encoder: &mut CommandEncoder,
         app: &mut App,
         target: Target,
+        [ssao, fxaa]: [bool; 2],
         background: Option<SRgb<f32>>,
     ) {
         let multi = self.get_target(target).as_ref().unwrap();
@@ -121,14 +122,14 @@ impl ModelPipeline {
             Target::Viewport => self.base.paint(encoder, app, multi),
             Target::Preview => self.base.paint_preview(encoder, app, multi),
         }
-        if app.config.render.ambient_occlusion.enabled {
+        if ssao {
             self.ssao.paint(encoder, multi, index, &multi.ssao);
             self.blur.paint(encoder, multi, index, &multi.blur);
         }
 
         self.lighting
             .paint(encoder, multi, index, background, &multi.lighting);
-        if app.config.render.anti_aliasing.enabled {
+        if fxaa {
             self.fxaa.paint(encoder, multi, index, &multi.fxaa);
         } else {
             encoder.copy_texture_to_texture(
@@ -160,16 +161,21 @@ impl ModelPipeline {
         let occlusion_size = occlusion_size(app, size);
         let view_projection = app.view_projection();
 
+        let render = &app.config.render;
+        let passes @ [ao, _] = [
+            render.ambient_occlusion.enabled,
+            render.anti_aliasing.enabled,
+        ];
+
         self.size_textures(gcx, app, Target::Viewport, screen.size_in_pixels.into());
         let multi = self.viewport.as_mut().unwrap();
         multi.base.prepare(gcx, app, &self.base);
 
         self.ssao.prepare(gcx, app, view_projection);
         self.blur.prepare(gcx, app, occlusion_size);
-        self.lighting.prepare(gcx, app, None);
+        self.lighting.prepare(gcx, app, ao, None);
         self.fxaa.prepare(gcx, app, size);
-
-        self.render(encoder, app, Target::Viewport, None);
+        self.render(encoder, app, Target::Viewport, passes, None);
 
         let multi = self.viewport.as_ref().unwrap();
         self.picker.update(gcx, encoder, multi, app);
@@ -201,9 +207,15 @@ impl ModelPipeline {
 
         self.ssao.prepare(gcx, app, view);
         self.blur.prepare(gcx, app, occlusion_size(app, size));
-        self.lighting.prepare(gcx, app, Some(&camera));
+        self.lighting.prepare(gcx, app, true, Some(&camera));
         self.fxaa.prepare(gcx, app, size);
-        self.render(encoder, app, Target::Preview, Some(background.to_srgb()));
+        self.render(
+            encoder,
+            app,
+            Target::Preview,
+            [true; 2],
+            Some(background.to_srgb()),
+        );
     }
 
     // Runs the post-processing pipeline, copying the data from the intermediary

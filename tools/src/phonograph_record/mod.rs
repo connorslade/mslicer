@@ -115,7 +115,7 @@ impl PhonographRecord {
         // grove end caps
         let base = (resolution - 1) * 3;
         builder.add_face([0, 2, 1]);
-        builder.add_face([base, base + 2, base + 1]);
+        builder.add_face([base, base + 1, base + 2]);
 
         let sagitta = self.sagitta.get::<Milimeter>();
         let [bo, bi, be] = add_disk(

@@ -441,7 +441,7 @@ impl BaseResources {
                 build_volume: Vector3::repeat(f32::MAX),
                 model_color: model.color.into(),
                 render_style: RenderStyle::Rendered as u32,
-                overhang_angle: 0.0,
+                overhang_angle: f32::from_bits(0xFFFFFFFF),
                 id: 0,
                 selected_offset: selected_words.len() as u32,
             };

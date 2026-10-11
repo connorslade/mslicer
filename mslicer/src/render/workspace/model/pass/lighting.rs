@@ -139,12 +139,10 @@ impl LightingPass {
         }
     }
 
-    pub fn prepare(&mut self, gcx: &Gcx, app: &mut App, camera: Option<&Camera>) {
+    pub fn prepare(&mut self, gcx: &Gcx, app: &mut App, ao: bool, camera: Option<&Camera>) {
         let mut buffer = UniformBuffer::new(Vec::new());
 
-        let ao = app.config.render.ambient_occlusion.enabled;
         let camera = camera.unwrap_or(&app.camera);
-
         let uniform = Uniforms {
             camera_position: camera.position(camera.distance),
             flags: ao as u32,
