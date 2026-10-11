@@ -385,13 +385,29 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     ui.heading("Stats");
 
     ui.collapsing("Rendering", |ui| {
-        ui.label(format!(
-            "Frame Time: {:.2}ms",
-            app.fps.frame_time() * 1000.0
-        ));
-        ui.label(format!("FPS: {:.2}", 1.0 / app.fps.frame_time()));
-        ui.add_space(4.0);
+        let avg_time = app.config.render.stats_average_time;
+        let frame_time = app.fps.avg_frame_time(Some(avg_time));
+        grid("stats_rendering").show(ui, |ui| {
+            ui.label("Frame Time");
+            ui.horizontal(|ui| {
+                ui.label(format!("{:.2}ms", frame_time * 1000.0));
+                ui.take_available_width();
+            });
+            ui.end_row();
 
+            ui.label("Frames/sec");
+            ui.label(format!("{:.2}", frame_time.recip()));
+            ui.end_row();
+
+            ui.label("Average Time");
+            DragValue::new(app.config.render.stats_average_time.raw_mut())
+                .suffix(" s")
+                .speed(0.1)
+                .ui(ui);
+            ui.end_row();
+        });
+
+        ui.add_space(8.0);
         Plot::new("fps")
             .width(ui.available_width())
             .allow_drag(false)

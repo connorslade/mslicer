@@ -25,7 +25,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
     let focused = ui.input(|i| i.focused);
     let mut is_moving = app.spacenav().handle_movement(focused);
     if is_moving {
-        app.state.move_timeout = ((0.025 / app.fps.frame_time()).round() as u32).min(60);
+        app.state.move_timeout = ((0.025 / app.fps.avg_frame_time(None)).round() as u32).min(60);
     } else if app.state.move_timeout > 0 {
         app.state.move_timeout -= 1;
         is_moving = true;

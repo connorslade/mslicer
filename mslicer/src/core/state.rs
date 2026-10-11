@@ -56,7 +56,7 @@ pub struct UiState {
     pub anisotropic_aa: bool,
 
     pub tools: Tools,
-    pub move_timeout: u32,
+    pub move_timeout: u32, // todo: having this in frames is fragile!
 }
 
 pub struct PreviewModel {

@@ -35,7 +35,7 @@ impl<T, const SIZE: usize> RingBuffer<T, SIZE> {
     }
 
     /// Wraps Self::real to provide a safe and convenient API.
-    pub fn iter(&self) -> impl Iterator<Item = &T> {
+    pub fn iter(&self) -> impl DoubleEndedIterator<Item = &T> {
         (self.data[self.index..].iter())
             .take(if self.filled { SIZE } else { 0 })
             .chain(self.data[..self.index].iter())

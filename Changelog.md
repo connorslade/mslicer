@@ -101,6 +101,7 @@
 - Fix being unable to uncheck 'Check for Updates at Startup'
 - Fix anti-aliasing changing the viewport background color
 - Fix some elements rendering over welcome background
+- Refresh rendering stats UI
 
 ## v0.9.2 &mdash; August 30th, 2026
 

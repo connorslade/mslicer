@@ -1,6 +1,9 @@
 use std::time::Instant;
 
-use common::container::RingBuffer;
+use common::{
+    container::RingBuffer,
+    units::{Second, Seconds},
+};
 
 pub struct FpsTracker {
     last_frame: Instant,
@@ -22,8 +25,25 @@ impl FpsTracker {
         self.last_frame = now;
     }
 
-    pub fn frame_time(&self) -> f32 {
-        self.history.last().copied().unwrap_or_default()
+    pub fn avg_frame_time(&self, duration: Option<Seconds>) -> f32 {
+        let max_time = match duration {
+            Some(t) => t.get::<Second>(),
+            None => f32::MAX,
+        };
+
+        let mut sum = 0.0;
+        let mut n = 0;
+
+        for frame_time in self.history.iter().rev() {
+            sum += frame_time;
+            n += 1;
+
+            if sum >= max_time {
+                break;
+            }
+        }
+
+        if n == 0 { 0.0 } else { sum / n as f32 }
     }
 
     pub fn fps_history(&self) -> impl Iterator<Item = f32> {

@@ -1,4 +1,4 @@
-use common::color::LinearRgb;
+use common::{color::LinearRgb, units::Seconds};
 use nalgebra::Vector2;
 use serde::{Deserialize, Serialize};
 
@@ -9,6 +9,7 @@ use crate::render::camera::Camera;
 pub struct RenderConfig {
     // system
     pub max_buffer_size: u64,
+    pub stats_average_time: Seconds,
 
     // basic rendering
     pub style: RenderStyle,
@@ -86,6 +87,7 @@ impl Default for RenderConfig {
     fn default() -> Self {
         Self {
             max_buffer_size: 512 << 20,
+            stats_average_time: Seconds::new(1.0),
 
             style: RenderStyle::Rendered,
             projection: Projection::Perspective,
