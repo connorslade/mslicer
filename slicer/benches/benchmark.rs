@@ -26,7 +26,7 @@ fn slicer(model: &[u8]) -> Slicer {
     Slicer::new(
         SliceConfig::default(),
         vec![SlicerModel {
-            mesh: Mesh::new_boxed(mesh.verts, mesh.faces),
+            mesh: Mesh::new_boxed_centered(mesh.verts, mesh.faces),
             exposure: 255,
         }],
     )

@@ -21,7 +21,7 @@ use crate::{
 };
 use common::{progress::CombinedProgress, slice::SliceMode, units::Milimeter};
 use slicer::{
-    mesh::Mesh,
+    mesh::{Bounds3D, Mesh},
     slicer::{Slicer, SlicerModel},
 };
 
@@ -62,13 +62,11 @@ impl App {
         let mut preview_models = Vec::new();
 
         let mut triangles = 0;
-        let (mut min, mut max) = (Vector3::repeat(f32::MAX), Vector3::repeat(f32::MIN));
+        let mut bounds = Bounds3D::empty();
 
         for (supports, mut model) in meshes.into_iter() {
             // preview
-            let (model_min, model_max) = model.mesh.bounds();
-            min = min.zip_map(&model_min, f32::min);
-            max = max.zip_map(&model_max, f32::max);
+            bounds.extend(&model.mesh.bounds());
             preview_models.push(PreviewModel::for_model(&mut model, device));
 
             // slicing
@@ -89,11 +87,10 @@ impl App {
         let preview = &self.config.render.preview;
 
         let aspect = preview.size.x as f32 / preview.size.y as f32;
-        let radius = (max.x - min.x).max(max.y - min.y) / 2.0;
-
+        let (target, radius) = bounds.bounding_sphere();
         let mut camera = Camera {
-            target: (max + min) / 2.0,
             fov: preview.fov,
+            target,
             ..Default::default()
         };
         camera.visible_sphere(aspect, radius);

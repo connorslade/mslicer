@@ -37,7 +37,7 @@ impl ReloadModel {
         Self {
             handle: TaskThread::spawn(clone!([progress], move || {
                 let mesh = load_mesh(des, format, &progress).unwrap();
-                Mesh::new_boxed(mesh.verts, mesh.faces)
+                Mesh::new_boxed_centered(mesh.verts, mesh.faces)
             })),
             progress,
 

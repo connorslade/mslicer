@@ -18,7 +18,7 @@ use common::{
     units::Milimeter,
 };
 use slicer::{
-    mesh::Mesh,
+    mesh::{Bounds3D, Mesh},
     slicer::{Slicer, SlicerModel},
     util::export_raster,
 };
@@ -52,8 +52,7 @@ fn main() -> Result<()> {
         mesh.set_rotation(model.rotation.map(f32::to_radians));
 
         // Center the model
-        let (min, max) = mesh.bounds();
-        let mesh_center = (min + max) / 2.0;
+        let mesh_center = mesh.bounds().center();
         let center = (slice_config.platform_resolution / 2).cast::<f32>();
         mesh.set_position((center - mesh_center.xy()).to_homogeneous() + model.position);
 
@@ -130,11 +129,11 @@ fn load_mesh<T: Read + Seek + Send + 'static>(reader: T, format: &str) -> Result
     let des = ReaderDeserializer::new(reader);
     let format = mesh_format::Format::from_extension(format).context("Unknown mesh extension.")?;
     let mesh = mesh_format::load_mesh(des, format, &Progress::new())?;
-    Ok(Mesh::new_boxed(mesh.verts, mesh.faces))
+    Ok(Mesh::new_boxed_centered(mesh.verts, mesh.faces))
 }
 
 fn is_oob(mesh: &Mesh, slice_config: &SliceConfig) -> bool {
-    let (min, max) = mesh.bounds();
+    let Bounds3D { min, max } = mesh.bounds();
     min.x < 0.0
         || min.y < 0.0
         || min.z < 0.0

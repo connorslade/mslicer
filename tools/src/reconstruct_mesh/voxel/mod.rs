@@ -24,7 +24,8 @@ pub struct VoxelReconstruction {
     faces: Vec<[u32; 3]>,
 
     voxel_size: Vector3<f32>,
-    platform: Vector2<u32>,
+    platform: Vector2<f32>,
+    resolution: Vector2<u32>,
     subsample: u8,
 }
 
@@ -40,21 +41,23 @@ impl VoxelReconstruction {
             faces: Vec::new(),
 
             voxel_size,
-            platform: config.platform_resolution,
+            platform: config.platform_size.xy().map(|x| x.get::<Milimeter>()),
+            resolution: config.platform_resolution,
             subsample,
         }
     }
 
     pub fn into_inner(self) -> (Vec<Vector3<f32>>, Vec<[u32; 3]>) {
+        let offset = (-self.platform / 2.0).to_homogeneous();
         let world = (self.verts.into_inner().into_iter())
-            .map(|x| x.cast::<f32>().component_mul(&self.voxel_size))
+            .map(|x| x.cast::<f32>().component_mul(&self.voxel_size) + offset)
             .collect::<Vec<_>>();
 
         (world, self.faces)
     }
 
     pub fn process(&mut self, progress: &Progress, layers: &[Layer]) {
-        let width = self.platform.x.div_ceil(self.subsample as u32) as u64;
+        let width = self.resolution.x.div_ceil(self.subsample as u32) as u64;
 
         // layers → rows → runs
         let masks = if self.subsample <= 1 {
@@ -62,9 +65,9 @@ impl VoxelReconstruction {
                 .map(|layer| bits::chunks(&bits::from_runs(&layer.data), width))
                 .collect::<Vec<_>>()
         } else {
-            let voxels = self.platform.x as u64 * self.platform.y as u64;
+            let voxels = self.resolution.x as u64 * self.resolution.y as u64;
             (layers.par_iter())
-                .map(|layer| subsample(self.platform, self.subsample, layer))
+                .map(|layer| subsample(self.resolution, self.subsample, layer))
                 .chunks(self.subsample as usize)
                 .map(|layers| {
                     let mut out = Vec::new();

@@ -2,6 +2,7 @@ use std::iter;
 
 use itertools::Itertools;
 use nalgebra::Vector3;
+use slicer::mesh::Bounds3D;
 
 use crate::{
     core::App,
@@ -35,7 +36,7 @@ impl LineGenerator for BoundingBoxDispatch {
 
             if enabled {
                 for model in app.project.models.iter().filter(|x| !x.hidden) {
-                    let (min, max) = model.mesh.bounds();
+                    let Bounds3D { min, max } = model.mesh.bounds();
 
                     let bottom = [
                         Vector3::new(min.x, min.y, min.z),

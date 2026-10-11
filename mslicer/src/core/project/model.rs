@@ -10,7 +10,11 @@ use common::{
 use nalgebra::Vector3;
 use wgpu::Device;
 
-use slicer::{geometry::bvh::Bvh, half_edge::HalfEdgeMesh, mesh::Mesh};
+use slicer::{
+    geometry::bvh::Bvh,
+    half_edge::HalfEdgeMesh,
+    mesh::{Bounds3D, Mesh},
+};
 
 use crate::{
     core::project::{CollectionId, RenameState, supports::Supports},
@@ -187,9 +191,9 @@ impl Model {
 
 impl Model {
     pub fn align_to_bed(&mut self) {
-        let (bottom, _) = self.mesh.bounds();
+        let Bounds3D { min, .. } = self.mesh.bounds();
 
-        let pos = self.mesh.position() - Vector3::z() * bottom.z;
+        let pos = self.mesh.position() - Vector3::z() * min.z;
         self.mesh.set_position(pos);
     }
 
@@ -200,7 +204,8 @@ impl Model {
             self.mesh.rotation(),
         );
 
-        let (min, max) = self.mesh.bounds();
+        // todo: make a
+        let Bounds3D { min, max } = self.mesh.bounds();
         let half = platform.map(|x| x.raw()) / 2.0;
 
         let oob = (min.x < -half.x || min.y < -half.y || min.z < 0.0)
@@ -208,15 +213,9 @@ impl Model {
         self.warnings.set(MeshWarnings::OutOfBounds, oob);
     }
 
-    pub fn get_bounds_center(&self) -> Vector3<f32> {
-        let (min, max) = self.mesh.bounds();
-        (max + min) / 2.0
-    }
-
     pub fn set_bounds_center(&mut self, platform: &Vector3<Milimeters>, center: Vector3<f32>) {
-        let current = self.get_bounds_center();
-        let delta = center - current;
-        self.set_position(platform, self.mesh.position() + delta);
+        let current = self.mesh.bounds().center();
+        self.set_position(platform, self.mesh.position() + center - current);
     }
 
     pub fn set_position(&mut self, platform: &Vector3<Milimeters>, pos: Vector3<f32>) {

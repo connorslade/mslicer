@@ -53,7 +53,7 @@ impl MeshBuilder {
     }
 
     pub fn build(self) -> Mesh {
-        Mesh::new_uncentered(self.vertices, self.faces)
+        Mesh::new(self.vertices, self.faces)
     }
 }
 

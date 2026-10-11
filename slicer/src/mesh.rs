@@ -25,6 +25,12 @@ pub struct MeshInner {
     pub faces: Box<[[u32; 3]]>,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Bounds3D {
+    pub min: Vector3<f32>,
+    pub max: Vector3<f32>,
+}
+
 // todo: mesh ids may not be unique through time (not sure if that could be a problem)
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct MeshId(usize);
@@ -32,20 +38,7 @@ pub struct MeshId(usize);
 impl Mesh {
     /// Creates a new mesh from the given vertices and faces. The
     /// transformations are all 0 by default.
-    pub fn new(mut vertices: Vec<Vector3<f32>>, faces: Vec<[u32; 3]>) -> Self {
-        center_vertices(&mut vertices);
-        Self::new_uncentered(vertices, faces)
-    }
-
-    pub fn new_boxed(mut vertices: Box<[Vector3<f32>]>, faces: Box<[[u32; 3]]>) -> Self {
-        center_vertices(&mut vertices);
-        Self::new_boxed_uncentered(vertices, faces)
-    }
-
-    /// Creates a new mesh from the given vertices and faces. The
-    /// transformations are all 0 by default and the vertices are
-    /// not centered.
-    pub fn new_uncentered(vertices: Vec<Vector3<f32>>, faces: Vec<[u32; 3]>) -> Self {
+    pub fn new(vertices: Vec<Vector3<f32>>, faces: Vec<[u32; 3]>) -> Self {
         Self {
             inner: Arc::new(MeshInner {
                 vertices: vertices.into_boxed_slice(),
@@ -55,11 +48,21 @@ impl Mesh {
         }
     }
 
-    pub fn new_boxed_uncentered(vertices: Box<[Vector3<f32>]>, faces: Box<[[u32; 3]]>) -> Self {
+    pub fn new_centered(mut vertices: Vec<Vector3<f32>>, faces: Vec<[u32; 3]>) -> Self {
+        center_vertices(&mut vertices);
+        Self::new(vertices, faces)
+    }
+
+    pub fn new_boxed(vertices: Box<[Vector3<f32>]>, faces: Box<[[u32; 3]]>) -> Self {
         Self {
             inner: Arc::new(MeshInner { vertices, faces }),
             ..Default::default()
         }
+    }
+
+    pub fn new_boxed_centered(mut vertices: Box<[Vector3<f32>]>, faces: Box<[[u32; 3]]>) -> Self {
+        center_vertices(&mut vertices);
+        Self::new_boxed(vertices, faces)
     }
 
     pub fn from_inner(inner: Arc<MeshInner>) -> Self {
@@ -170,11 +173,8 @@ impl Mesh {
         (self.inv_transform * normal.to_homogeneous()).xyz()
     }
 
-    /// Get the minimum and maximum of each component of every vertex in the
-    /// model. These points define the bounding box of the model.
-    pub fn bounds(&self) -> (Vector3<f32>, Vector3<f32>) {
-        // todo: this should be optimized!!
-        vertex_bounds(self.vertices(), &self.transform)
+    pub fn bounds(&self) -> Bounds3D {
+        Bounds3D::from_verts_transformed(self.vertices(), &self.transform)
     }
 
     pub fn memory_size(&self) -> usize {
@@ -259,6 +259,49 @@ impl MeshId {
     }
 }
 
+impl Bounds3D {
+    pub fn empty() -> Self {
+        Self {
+            min: Vector3::repeat(f32::MAX),
+            max: Vector3::repeat(f32::MIN),
+        }
+    }
+
+    pub fn from_verts(vertices: &[Vector3<f32>]) -> Self {
+        let (min, max) = vertices.iter().fold(
+            (Vector3::repeat(f32::MAX), Vector3::repeat(f32::MIN)),
+            |(min, max), v| (min.zip_map(v, f32::min), max.zip_map(v, f32::max)),
+        );
+        Self { min, max }
+    }
+
+    pub fn from_verts_transformed(vertices: &[Vector3<f32>], transform: &Matrix4<f32>) -> Self {
+        let (min, max) = (vertices.iter().map(|v| (transform * v.push(1.0)).xyz())).fold(
+            (Vector3::repeat(f32::MAX), Vector3::repeat(f32::MIN)),
+            |(min, max), v| (min.zip_map(&v, f32::min), max.zip_map(&v, f32::max)),
+        );
+        Self { min, max }
+    }
+
+    pub fn extend(&mut self, other: &Bounds3D) {
+        self.min = self.min.zip_map(&other.min, f32::min);
+        self.max = self.max.zip_map(&other.max, f32::max);
+    }
+
+    pub fn size(&self) -> Vector3<f32> {
+        self.max - self.min
+    }
+
+    pub fn center(&self) -> Vector3<f32> {
+        (self.max + self.min) / 2.0
+    }
+
+    pub fn bounding_sphere(&self) -> (Vector3<f32>, f32) {
+        let radius = (self.max.x - self.min.x).max(self.max.y - self.min.y) / 2.0;
+        (self.center(), radius)
+    }
+}
+
 impl Default for Mesh {
     fn default() -> Self {
         Self {
@@ -278,27 +321,11 @@ impl Default for Mesh {
     }
 }
 
-// todo: maybe only transform min and max at end
-/// Get the minimum and maximum of each component of every vertex.
-/// These points define the bounding box of the model.
-fn vertex_bounds(
-    vertices: &[Vector3<f32>],
-    transform: &Matrix4<f32>,
-) -> (Vector3<f32>, Vector3<f32>) {
-    vertices.iter().fold(
-        (Vector3::repeat(f32::MAX), Vector3::repeat(f32::MIN)),
-        |(min, max), v| {
-            let v = (transform * v.push(1.0)).xyz();
-            (min.zip_map(&v, f32::min), max.zip_map(&v, f32::max))
-        },
-    )
-}
-
 /// Moves the model to have its origin at its center point.
 fn center_vertices(vertices: &mut [Vector3<f32>]) {
-    let (min, max) = vertex_bounds(vertices, &Matrix4::identity());
+    let bounds = Bounds3D::from_verts(vertices);
+    let center = bounds.center();
 
-    let center = (min + max) / 2.0;
-    let center = Vector3::new(center.x, center.y, min.z);
-    vertices.iter_mut().for_each(|v| *v -= center);
+    let offset = Vector3::new(center.x, center.y, bounds.min.z);
+    vertices.iter_mut().for_each(|v| *v -= offset);
 }

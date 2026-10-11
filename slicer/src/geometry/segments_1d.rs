@@ -1,6 +1,9 @@
 use nalgebra::{Vector2, Vector3};
 
-use crate::{geometry::triangle::plane_triangle_intersection, mesh::Mesh};
+use crate::{
+    geometry::triangle::plane_triangle_intersection,
+    mesh::{Bounds3D, Mesh},
+};
 
 /// Acceleration structure for mesh slicing. By spiting the mesh into segments
 /// along the slicing axis and adding references to all the triangles that
@@ -18,7 +21,7 @@ pub struct Segments1D {
 impl Segments1D {
     /// Creates a new Segments structure from a given mesh and segment count.
     pub fn from_mesh(mesh: &Mesh, layer_count: usize) -> Self {
-        let (min, max) = mesh.bounds();
+        let Bounds3D { min, max } = mesh.bounds();
 
         // Caching transformed points / normals makes slicing faster.
         let transformed_points = (mesh.vertices().iter())
