@@ -27,6 +27,7 @@ pub struct Project {
     pub post_processing: PostProcessing,
     pub models: Vec<Model>,
     pub collections: Vec<Collection>,
+    pub notes: String,
 }
 
 #[derive(Clone)]

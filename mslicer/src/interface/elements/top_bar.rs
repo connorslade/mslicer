@@ -17,7 +17,7 @@ use crate::{
         panels::Tab,
         popup::confirm_unsaved,
         shortcuts::{self, Shortcut},
-        tools::{self, graphics_3d, sdf_slicer, sliced_diff},
+        tools::{self, graphics_3d, notes, sdf_slicer, sliced_diff},
     },
     task::ProjectLoad,
 };
@@ -156,8 +156,9 @@ pub fn ui(app: &mut App, ctx: &Context) {
                     ui.button("Collect Instances")
                         .clicked()
                         .then(|| collect_instances(app));
-
                     (ui.button("Sliced Diff").clicked()).then(|| sliced_diff::open(app));
+                    (ui.button("Notes").clicked()).then(|| notes::open(app));
+
                     ui.menu_button("Experimental", |ui| {
                         (ui.button("SDF Slicer").clicked()).then(|| sdf_slicer::open(app));
                         #[cfg(feature = "brep")]

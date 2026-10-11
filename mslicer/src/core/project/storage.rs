@@ -228,6 +228,7 @@ impl Project {
             post_processing,
             models,
             collections,
+            notes: Default::default(),
         })
     }
 }
