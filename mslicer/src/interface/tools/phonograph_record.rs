@@ -126,13 +126,22 @@ fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
     ui.collapsing("Groove", |ui| {
         grid("groove").show(ui, |ui| {
             ui.label("Pitch");
-            tool.pitch.with::<Micrometer, _>(|x| {
-                DragValue::new(x).suffix(" μm").ui(ui);
+            ui.horizontal(|ui| {
+                tool.pitch.with::<Micrometer, _>(|x| {
+                    DragValue::new(x).suffix(" μm").ui(ui);
+                });
+                ui.take_available_width();
             });
             ui.end_row();
 
             ui.label("Width");
             tool.width.with::<Micrometer, _>(|x| {
+                DragValue::new(x).suffix(" μm").ui(ui);
+            });
+            ui.end_row();
+
+            ui.label("Modulation");
+            tool.modulation.with::<Micrometer, _>(|x| {
                 DragValue::new(x).suffix(" μm").ui(ui);
             });
             ui.end_row();
@@ -145,18 +154,6 @@ fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
 
             ui.label("Playback Speed");
             DragValue::new(&mut tool.rpm).suffix(" RPM").ui(ui);
-            ui.end_row();
-
-            ui.label("Modulation");
-            ui.horizontal(|ui| {
-                // todo: store as percent
-                DragValue::new(&mut tool.modulation)
-                    .custom_formatter(|n, _| format!("{:.2}", n * 100.0))
-                    .custom_parser(|s| s.parse::<f64>().map(|x| x / 100.0).ok())
-                    .suffix("%")
-                    .ui(ui);
-                ui.take_available_width();
-            });
             ui.end_row();
         });
     });

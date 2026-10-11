@@ -40,9 +40,9 @@ pub struct PhonographRecord {
 
     pub pitch: Milimeters, // must be >width
     pub width: Milimeters,
+    pub modulation: Milimeters,
     pub groove_resolution: f32,
     pub rpm: f32,
-    pub modulation: f32,
 
     pub audio: PathBuf,
     pub channels: Channels,
@@ -81,7 +81,7 @@ impl PhonographRecord {
             let offset = unit * r;
 
             let (l, r) = audio.get(t * duration);
-            let profile = self.profile((self.pitch - self.width) * 0.5 * self.modulation, l, r);
+            let profile = self.profile(self.modulation, l, r);
             for (i, point) in profile.iter().enumerate() {
                 let vertex = rotation * point + offset.push(thickness);
                 let idx = builder.add_vertex(vertex);
@@ -179,9 +179,9 @@ impl Default for PhonographRecord {
 
             pitch: Micrometers::new(150.0).convert(),
             width: Micrometers::new(80.0).convert(),
+            modulation: Micrometers::new(70.0).convert(),
             groove_resolution: 20_000.0,
             rpm: 33.3333,
-            modulation: 2.0,
 
             audio: PathBuf::new(),
             channels: Default::default(),
