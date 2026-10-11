@@ -2,10 +2,11 @@ use std::collections::HashSet;
 
 use common::container::ArrayCluster;
 use nalgebra::Vector3;
-use slicer::{
-    geometry::{Ray, primitive, triangle::triangle_intersection},
-    half_edge::HalfEdgeMesh,
-    mesh::Mesh,
+use slicer::geometry::{
+    Ray,
+    mesh::{HalfEdgeMesh, Mesh},
+    primitive,
+    triangle::triangle_intersection,
 };
 
 use crate::supports::auto::{AutoPlacement, quazirandom::quazirandom_rect_2d};

@@ -1,6 +1,9 @@
 use common::units::{Milimeter, Milimeters};
 use nalgebra::Vector3;
-use slicer::{geometry::bvh::Bvh, half_edge::HalfEdgeMesh, mesh::Mesh};
+use slicer::geometry::{
+    mesh::{HalfEdgeMesh, Mesh},
+    partitioning::Bvh,
+};
 use tracing::info;
 
 use crate::supports::mesh::SupportPreset;

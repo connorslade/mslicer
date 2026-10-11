@@ -2,7 +2,7 @@ use std::f32::consts::{PI, TAU};
 
 use nalgebra::Vector3;
 
-use crate::mesh::Mesh;
+use crate::geometry::mesh::Mesh;
 
 pub struct MeshBuilder {
     vertices: Vec<Vector3<f32>>,

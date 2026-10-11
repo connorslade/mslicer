@@ -4,7 +4,7 @@ use std::{
     sync::Arc,
 };
 
-use crate::mesh::MeshInner;
+use crate::geometry::mesh::MeshInner;
 
 #[derive(Clone)]
 pub struct HalfEdgeMesh {

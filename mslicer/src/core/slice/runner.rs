@@ -21,7 +21,7 @@ use crate::{
 };
 use common::{progress::CombinedProgress, slice::SliceMode, units::Milimeter};
 use slicer::{
-    mesh::{Bounds3D, Mesh},
+    geometry::{bounds::Bounds3D, mesh::Mesh},
     slicer::{Slicer, SlicerModel},
 };
 

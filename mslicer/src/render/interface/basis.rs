@@ -2,7 +2,7 @@ use egui::PaintCallbackInfo;
 use egui_wgpu::{CallbackResources, CallbackTrait, ScreenDescriptor};
 use encase::{ShaderSize, ShaderType, UniformBuffer};
 use nalgebra::{Matrix4, Vector3};
-use slicer::{builder::MeshBuilder, mesh::Mesh};
+use slicer::geometry::mesh::{Mesh, MeshBuilder};
 use wgpu::{
     BindGroup, BlendState, Buffer, BufferDescriptor, ColorTargetState, ColorWrites, CommandBuffer,
     CommandEncoder, Device, FragmentState, IndexFormat, MultisampleState, PipelineLayoutDescriptor,

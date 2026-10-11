@@ -2,7 +2,7 @@ use std::{collections::HashMap, mem};
 
 use clone_macro::clone;
 use common::{container::ArrayCluster, progress::Progress};
-use slicer::mesh::Mesh;
+use slicer::geometry::mesh::Mesh;
 
 use crate::{
     core::project::{

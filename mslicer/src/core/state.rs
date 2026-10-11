@@ -5,7 +5,7 @@ use egui::Vec2;
 use egui_phosphor::regular::{CURSOR_CLICK, LINE_SEGMENT, TRIANGLE};
 use egui_tracing::EventCollector;
 use nalgebra::{Matrix4, Vector2, Vector3};
-use slicer::mesh::Mesh;
+use slicer::geometry::mesh::Mesh;
 use wgpu::Device;
 
 use crate::{

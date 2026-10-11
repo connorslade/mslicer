@@ -1,8 +1,8 @@
 use nalgebra::Vector3;
 
-pub mod segments_1d;
-pub use segments_1d::Segments1D;
-pub mod bvh;
+pub mod bounds;
+pub mod mesh;
+pub mod partitioning;
 pub mod triangle;
 
 pub struct Hit {

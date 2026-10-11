@@ -1,6 +1,6 @@
 use clone_macro::clone;
 use common::{progress::Progress, units::CubicMilimeters};
-use slicer::mesh::{Mesh, MeshId};
+use slicer::geometry::mesh::{Mesh, MeshId};
 
 use crate::{
     core::project::model::Model,

@@ -15,7 +15,7 @@ use svg::{
 };
 
 use crate::{
-    geometry::Segments1D,
+    geometry::partitioning::Segments1D,
     slicer::{SEGMENT_LAYERS, Slicer},
 };
 

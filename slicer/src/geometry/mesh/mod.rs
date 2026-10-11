@@ -4,6 +4,15 @@ use common::progress::Progress;
 use nalgebra::{Matrix4, Vector3};
 use serde::{Deserialize, Serialize};
 
+mod builder;
+mod half_edge;
+
+use crate::geometry::bounds::Bounds3D;
+pub use {
+    builder::{MeshBuilder, orthogonal_basis},
+    half_edge::{HalfEdge, HalfEdgeMesh},
+};
+
 /// A mesh made of vertices and triangular faces. It can be scaled, translated,
 /// and rotated.
 #[derive(Debug, Clone)]
@@ -23,12 +32,6 @@ pub struct Mesh {
 pub struct MeshInner {
     pub vertices: Box<[Vector3<f32>]>,
     pub faces: Box<[[u32; 3]]>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Bounds3D {
-    pub min: Vector3<f32>,
-    pub max: Vector3<f32>,
 }
 
 // todo: mesh ids may not be unique through time (not sure if that could be a problem)
@@ -256,49 +259,6 @@ impl Mesh {
 impl MeshId {
     pub fn for_mesh_inner(mesh: &Arc<MeshInner>) -> Self {
         Self(Arc::as_ptr(mesh) as usize)
-    }
-}
-
-impl Bounds3D {
-    pub fn empty() -> Self {
-        Self {
-            min: Vector3::repeat(f32::MAX),
-            max: Vector3::repeat(f32::MIN),
-        }
-    }
-
-    pub fn from_verts(vertices: &[Vector3<f32>]) -> Self {
-        let (min, max) = vertices.iter().fold(
-            (Vector3::repeat(f32::MAX), Vector3::repeat(f32::MIN)),
-            |(min, max), v| (min.zip_map(v, f32::min), max.zip_map(v, f32::max)),
-        );
-        Self { min, max }
-    }
-
-    pub fn from_verts_transformed(vertices: &[Vector3<f32>], transform: &Matrix4<f32>) -> Self {
-        let (min, max) = (vertices.iter().map(|v| (transform * v.push(1.0)).xyz())).fold(
-            (Vector3::repeat(f32::MAX), Vector3::repeat(f32::MIN)),
-            |(min, max), v| (min.zip_map(&v, f32::min), max.zip_map(&v, f32::max)),
-        );
-        Self { min, max }
-    }
-
-    pub fn extend(&mut self, other: &Bounds3D) {
-        self.min = self.min.zip_map(&other.min, f32::min);
-        self.max = self.max.zip_map(&other.max, f32::max);
-    }
-
-    pub fn size(&self) -> Vector3<f32> {
-        self.max - self.min
-    }
-
-    pub fn center(&self) -> Vector3<f32> {
-        (self.max + self.min) / 2.0
-    }
-
-    pub fn bounding_sphere(&self) -> (Vector3<f32>, f32) {
-        let radius = (self.max.x - self.min.x).max(self.max.y - self.min.y) / 2.0;
-        (self.center(), radius)
     }
 }
 

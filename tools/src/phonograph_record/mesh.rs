@@ -1,7 +1,7 @@
 use std::f32::consts::TAU;
 
 use nalgebra::Vector3;
-use slicer::builder::MeshBuilder;
+use slicer::geometry::mesh::MeshBuilder;
 
 use crate::misc::circle_points;
 

@@ -14,9 +14,12 @@ use nalgebra::Vector2;
 
 pub use misc::Alignment;
 use polygons::Polygons;
-use slicer::slicer::raster::{self, Segment};
+use slicer::{
+    geometry::bounds::Bounds2D,
+    slicer::raster::{self, Segment},
+};
 
-use crate::{misc::bounds::Bounds2D, printed_circuit_board::polygons::Mode};
+use crate::printed_circuit_board::polygons::Mode;
 
 mod gerber;
 mod misc;

@@ -1,7 +1,8 @@
 use nalgebra::{Vector2, Vector3};
-use slicer::mesh::{Mesh, MeshId};
-
-use crate::misc::bounds::Bounds2D;
+use slicer::geometry::{
+    bounds::Bounds2D,
+    mesh::{Mesh, MeshId},
+};
 
 mod annealing;
 mod cache;

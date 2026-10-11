@@ -12,7 +12,7 @@ use common::{
     units::{Micrometers, Milimeter, Milimeters},
 };
 use nalgebra::{Rotation3, Vector2, Vector3};
-use slicer::{builder::MeshBuilder, mesh::Mesh};
+use slicer::geometry::mesh::{Mesh, MeshBuilder};
 
 use crate::phonograph_record::{
     audio::{AudioBuffer, Channels, Equalization},

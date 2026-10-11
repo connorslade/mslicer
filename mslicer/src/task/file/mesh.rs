@@ -14,7 +14,7 @@ use common::{
 };
 use mesh_format::{Format, load_mesh, save_mesh};
 
-use slicer::mesh::{Mesh, MeshInner};
+use slicer::geometry::mesh::{Mesh, MeshInner};
 use tracing::info;
 
 use crate::{

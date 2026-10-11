@@ -3,7 +3,7 @@ use common::{
     progress::Progress,
     slice::{Layer, SliceConfig},
 };
-use slicer::mesh::Mesh;
+use slicer::geometry::mesh::Mesh;
 use tools::reconstruct_mesh;
 
 use crate::task::{MeshLoad, PollResult, Task, TaskApp, TaskStatus, thread::TaskThread};

@@ -2,7 +2,7 @@ use std::{mem, ops::Deref};
 
 use bytemuck::NoUninit;
 use nalgebra::Vector3;
-use slicer::mesh::Mesh;
+use slicer::geometry::mesh::Mesh;
 use wgpu::{
     Buffer, BufferDescriptor, BufferUsages, Device,
     util::{BufferInitDescriptor, DeviceExt},

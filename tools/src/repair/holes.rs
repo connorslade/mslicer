@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use nalgebra::Vector3;
-use slicer::half_edge::HalfEdgeMesh;
+use slicer::geometry::mesh::HalfEdgeMesh;
 
 use crate::repair::{MeshRepair, RepairState};
 

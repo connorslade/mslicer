@@ -1,34 +1,106 @@
-use std::sync::Arc;
+use std::{mem, sync::Arc};
 
 use common::progress::Progress;
 use nalgebra::Vector3;
 use ordered_float::OrderedFloat;
 
-use crate::{
-    geometry::{
-        Hit, Primitive,
-        bvh::{LEAF_SIZE, Ray},
-        triangle::{closest_point, triangle_intersection},
-    },
+use crate::geometry::{
+    Hit, Primitive, Ray,
+    bounds::Bounds3D,
     mesh::{Mesh, MeshInner},
+    primitive,
+    triangle::{closest_point, triangle_intersection},
 };
 
-use super::bounding_box::BoundingBox;
+const LEAF_SIZE: usize = 8;
+
+#[derive(Clone, Default)]
+pub struct Bvh {
+    nodes: Arc<Vec<BvhNode>>,
+}
 
 pub enum BvhNode {
     Leaf {
         faces: Box<[usize]>,
-        bounds: BoundingBox,
+        bounds: Bounds3D,
     },
     Node {
         left: usize,
         right: usize,
-        bounds: BoundingBox,
+        bounds: Bounds3D,
     },
 }
 
+impl Bvh {
+    pub fn build(mesh: &Arc<MeshInner>, progress: Progress) -> Self {
+        let faces = mesh.faces.len();
+        progress.set_total(faces as u64);
+
+        if faces == 0 {
+            return Self::default();
+        }
+
+        let mut arena = Vec::new();
+        let face_indices = (0..faces).collect::<Vec<_>>();
+
+        let root = build_bvh_node(&mut arena, mesh, &progress, face_indices);
+        arena.push(root);
+
+        progress.set_finished();
+        Self {
+            nodes: Arc::new(arena),
+        }
+    }
+
+    pub fn memory_size(&self) -> usize {
+        self.nodes.capacity() * mem::size_of::<BvhNode>()
+    }
+
+    fn intersect<Type: Primitive>(&self, mesh: &Mesh, ray: Ray) -> Option<Hit> {
+        let mut hit = Hit::default();
+        if let Some(root) = self.nodes.last() {
+            root.intersect::<Type>(&self.nodes, mesh, ray, &mut hit);
+        }
+
+        (hit.face != usize::MAX).then_some(hit)
+    }
+
+    pub fn closest(&self, mesh: &Mesh, point: Vector3<f32>) -> Option<Hit> {
+        self.nodes.last().map(|root| {
+            let mut hit = Hit::default();
+            root.closest(&self.nodes, mesh, mesh.inv_transform(&point), &mut hit);
+            hit.t = hit.t.sqrt();
+            hit
+        })
+    }
+
+    pub fn intersect_ray(
+        &self,
+        mesh: &Mesh,
+        origin: Vector3<f32>,
+        direction: Vector3<f32>,
+    ) -> Option<Hit> {
+        let (origin, direction) = (
+            mesh.inv_transform(&origin),
+            mesh.inv_transform_normal(&direction),
+        );
+
+        self.intersect::<primitive::Ray>(mesh, Ray { origin, direction })
+    }
+
+    pub fn intersect_segment(&self, mesh: &Mesh, a: Vector3<f32>, b: Vector3<f32>) -> Option<Hit> {
+        let (a, b) = (mesh.inv_transform(&a), mesh.inv_transform(&b));
+        let ray = Ray {
+            origin: a,
+            direction: b - a,
+        };
+
+        self.intersect::<primitive::Segment>(mesh, ray)
+    }
+}
+
 impl BvhNode {
-    fn bounds(&self) -> &BoundingBox {
+    fn bounds(&self) -> &Bounds3D {
         match self {
             BvhNode::Leaf { bounds, .. } | BvhNode::Node { bounds, .. } => bounds,
         }
@@ -118,7 +190,7 @@ pub fn build_bvh_node(
     progress: &Progress,
     mut face_indices: Vec<usize>,
 ) -> BvhNode {
-    let mut bounds = BoundingBox::new();
+    let mut bounds = Bounds3D::empty();
     for &face in face_indices.iter() {
         bounds.expand_face(mesh, face);
     }
@@ -133,7 +205,7 @@ pub fn build_bvh_node(
 
     let longest_axis = bounds.longest_axis();
     face_indices.sort_by_cached_key(|&x| {
-        let mut bounds = BoundingBox::new();
+        let mut bounds = Bounds3D::empty();
         bounds.expand_face(mesh, x);
         OrderedFloat(bounds.center()[longest_axis])
     });

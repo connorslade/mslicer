@@ -1,6 +1,5 @@
 use nalgebra::Vector2;
-
-use crate::misc::bounds::Bounds2D;
+use slicer::geometry::bounds::Bounds2D;
 
 #[derive(Clone, Copy, Default, PartialEq, Eq)]
 pub enum Alignment {

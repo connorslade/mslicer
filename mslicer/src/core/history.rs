@@ -11,7 +11,7 @@ use common::{
 };
 use nalgebra::{Vector2, Vector3};
 use slicer::{
-    mesh::MeshId,
+    geometry::mesh::MeshId,
     post_process::{
         elephant_foot_fixer::ElephantFootFixer, variable_layer_height::VariableLayerHeight,
     },

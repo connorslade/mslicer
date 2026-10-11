@@ -1,6 +1,6 @@
 use common::{progress::Progress, slice::SliceConfig};
 
-use crate::mesh::Mesh;
+use crate::geometry::mesh::Mesh;
 
 pub mod raster;
 pub mod vector;

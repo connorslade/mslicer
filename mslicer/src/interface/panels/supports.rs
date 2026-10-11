@@ -2,7 +2,7 @@ use common::units::Milimeter;
 use const_format::concatcp;
 use egui::{Button, Context, DragValue, Ui, Widget};
 use egui_phosphor::regular::{SELECTION_INVERSE, SPARKLE, TRASH};
-use slicer::builder::MeshBuilder;
+use slicer::geometry::mesh::MeshBuilder;
 use tools::supports::auto::{AutoPlacement, route_support};
 
 use crate::{core::App, interface::components::grid};

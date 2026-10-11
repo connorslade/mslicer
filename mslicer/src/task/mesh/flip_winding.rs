@@ -1,6 +1,6 @@
 use clone_macro::clone;
 use common::progress::Progress;
-use slicer::mesh::Mesh;
+use slicer::geometry::mesh::Mesh;
 
 use crate::{
     core::project::model::{Model, ModelId},

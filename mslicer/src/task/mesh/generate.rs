@@ -2,7 +2,7 @@ use std::{borrow::Cow, mem};
 
 use clone_macro::clone;
 use common::progress::Progress;
-use slicer::mesh::Mesh;
+use slicer::geometry::mesh::Mesh;
 
 use crate::task::{MeshLoad, PollResult, Task, TaskApp, TaskStatus, thread::TaskThread};
 

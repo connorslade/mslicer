@@ -3,9 +3,12 @@ use std::{collections::HashMap, f32::consts::TAU, sync::Arc};
 use common::geometry::convex_hull;
 use itertools::Itertools;
 use nalgebra::{Rotation2, Vector2};
-use slicer::mesh::{Mesh, MeshId};
+use slicer::geometry::{
+    bounds::Bounds2D,
+    mesh::{Mesh, MeshId},
+};
 
-use crate::{auto_layout::StaticTransformation, misc::bounds::Bounds2D};
+use crate::auto_layout::StaticTransformation;
 
 const OFFSET_PRECISION: usize = 6;
 const ROTATION_RESLUTION: f32 = 1.0_f32.to_radians();

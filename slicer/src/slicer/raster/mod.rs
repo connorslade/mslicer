@@ -11,7 +11,7 @@ use nalgebra::Vector2;
 use rayon::iter::{IndexedParallelIterator, IntoParallelIterator, ParallelIterator};
 
 use crate::{
-    geometry::Segments1D,
+    geometry::partitioning::Segments1D,
     slicer::{
         SEGMENT_LAYERS, Slicer,
         raster::edge_table::{global_edge_table, update_active_edges},

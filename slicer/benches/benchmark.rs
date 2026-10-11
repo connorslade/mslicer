@@ -4,7 +4,7 @@ use criterion::{
 };
 use mesh_format::Format;
 use slicer::{
-    mesh::Mesh,
+    geometry::mesh::Mesh,
     slicer::{Slicer, SlicerModel},
 };
 use std::{fs, hint::black_box};

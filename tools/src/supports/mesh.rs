@@ -2,7 +2,7 @@ use std::{collections::HashMap, f32::consts::PI, range::Range, time::Instant};
 
 use common::{geometry::convex_hull, units::Milimeters};
 use nalgebra::{Vector2, Vector3};
-use slicer::{builder::MeshBuilder, mesh::Mesh};
+use slicer::geometry::mesh::{Mesh, MeshBuilder};
 use tracing::info;
 
 use crate::supports::{Support, SupportId};

@@ -1,7 +1,5 @@
 use std::f64::consts::PI;
 
-pub mod bounds;
-
 /// Reference: https://en.wikipedia.org/wiki/Sagitta_(geometry)
 ///
 /// ```plain

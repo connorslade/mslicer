@@ -2,7 +2,7 @@ use std::fmt::Debug;
 
 use common::progress::Progress;
 use nalgebra::Vector3;
-use slicer::{half_edge::HalfEdgeMesh, mesh::Mesh};
+use slicer::geometry::mesh::{HalfEdgeMesh, Mesh};
 
 mod degenerative;
 mod holes;

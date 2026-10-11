@@ -4,7 +4,7 @@ use anyhow::{Ok, Result};
 use common::progress::Progress;
 use image::{ImageBuffer, Luma};
 use nalgebra::{Vector2, Vector3};
-use slicer::{builder::MeshBuilder, mesh::Mesh};
+use slicer::geometry::mesh::{Mesh, MeshBuilder};
 
 type Image = ImageBuffer<Luma<f32>, Vec<f32>>;
 

@@ -9,7 +9,7 @@ use common::{progress::Progress, serde::ReaderDeserializer, slice::SliceConfig};
 use mesh_format::Format;
 use rayon::iter::{ParallelBridge, ParallelIterator};
 use slicer::{
-    mesh::Mesh,
+    geometry::mesh::Mesh,
     slicer::{Slicer, SlicerModel},
 };
 

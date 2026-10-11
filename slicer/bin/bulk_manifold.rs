@@ -8,7 +8,7 @@ use anyhow::{Context, Result};
 use common::{progress::Progress, serde::ReaderDeserializer};
 use mesh_format::Format;
 use rayon::iter::{ParallelBridge, ParallelIterator};
-use slicer::mesh::Mesh;
+use slicer::geometry::mesh::Mesh;
 
 fn main() -> Result<()> {
     let dir = (env::args().skip(1).next()).context("No directory specified.")?;

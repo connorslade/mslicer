@@ -13,7 +13,7 @@ use common::{
     serde::{ReaderDeserializer, WriterSerializer},
 };
 use mesh_format::Format;
-use slicer::mesh::{Mesh, MeshInner};
+use slicer::geometry::mesh::{Mesh, MeshInner};
 use tools::repair::MeshRepair;
 
 fn main() -> Result<()> {

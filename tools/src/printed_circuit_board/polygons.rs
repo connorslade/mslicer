@@ -1,12 +1,13 @@
 use std::f64::consts::TAU;
 
 use nalgebra::Vector2;
+use slicer::geometry::bounds::Bounds2D;
 use svg::{
     Document,
     node::element::{Path, path::Data},
 };
 
-use crate::misc::{bounds::Bounds2D, circle_points};
+use crate::misc::circle_points;
 
 pub struct Polygons {
     pub polygons: Vec<Vec<Vector2<f64>>>,

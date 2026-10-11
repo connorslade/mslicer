@@ -13,7 +13,7 @@ use common::{
     slice::SliceConfig,
 };
 use slicer::{
-    mesh::{Mesh, MeshInner},
+    geometry::mesh::{Mesh, MeshInner},
     post_process::{
         elephant_foot_fixer::ElephantFootFixer, variable_layer_height::VariableLayerHeight,
     },

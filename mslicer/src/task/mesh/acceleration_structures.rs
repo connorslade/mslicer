@@ -2,7 +2,10 @@ use std::sync::Arc;
 
 use clone_macro::clone;
 use common::progress::Progress;
-use slicer::{geometry::bvh::Bvh, half_edge::HalfEdgeMesh, mesh::MeshId};
+use slicer::geometry::{
+    mesh::{HalfEdgeMesh, MeshId},
+    partitioning::Bvh,
+};
 
 use crate::{
     core::project::model::Model,

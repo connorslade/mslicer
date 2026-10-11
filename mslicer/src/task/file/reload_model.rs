@@ -5,7 +5,7 @@ use clone_macro::clone;
 use common::{progress::Progress, serde::ReaderDeserializer};
 use mesh_format::{Format, load_mesh};
 
-use slicer::mesh::Mesh;
+use slicer::geometry::mesh::Mesh;
 use tracing::info;
 
 use crate::{

@@ -10,10 +10,10 @@ use common::{
 use nalgebra::Vector3;
 use wgpu::Device;
 
-use slicer::{
-    geometry::bvh::Bvh,
-    half_edge::HalfEdgeMesh,
-    mesh::{Bounds3D, Mesh},
+use slicer::geometry::{
+    bounds::Bounds3D,
+    mesh::{HalfEdgeMesh, Mesh},
+    partitioning::Bvh,
 };
 
 use crate::{

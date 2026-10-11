@@ -1,7 +1,7 @@
 use bytemuck::{Pod, Zeroable};
 use encase::{ShaderSize, ShaderType, UniformBuffer};
 use nalgebra::{Matrix4, Vector3, Vector4};
-use slicer::builder::MeshBuilder;
+use slicer::geometry::mesh::MeshBuilder;
 use wgpu::{
     BindGroup, BlendState, Buffer, BufferDescriptor, BufferUsages, ColorTargetState, ColorWrites,
     DepthStencilState, Device, FragmentState, IndexFormat, MultisampleState,

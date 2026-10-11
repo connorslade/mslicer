@@ -1,9 +1,6 @@
 use nalgebra::{Vector2, Vector3};
 
-use crate::{
-    geometry::{Primitive, Ray},
-    mesh::Mesh,
-};
+use crate::geometry::{Primitive, Ray, mesh::Mesh};
 
 /// Intersects a plane with a triangle.
 pub fn plane_triangle_intersection(

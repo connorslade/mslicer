@@ -11,7 +11,7 @@ use common::{
 mod marching_cubes;
 mod voxel;
 
-use slicer::mesh::Mesh;
+use slicer::geometry::mesh::Mesh;
 use tracing::info;
 
 pub fn marching_cubes(

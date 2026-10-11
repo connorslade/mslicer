@@ -3,14 +3,12 @@ use std::iter;
 use common::progress::Progress;
 use itertools::Itertools;
 use nalgebra::Vector2;
+use slicer::geometry::bounds::Bounds2D;
 use tracing::warn;
 
-use crate::{
-    auto_layout::{
-        Model, Objective, Placement,
-        cache::{CacheEntry, LayoutCache},
-    },
-    misc::bounds::Bounds2D,
+use crate::auto_layout::{
+    Model, Objective, Placement,
+    cache::{CacheEntry, LayoutCache},
 };
 
 pub struct AutoLayoutNfp<'a> {

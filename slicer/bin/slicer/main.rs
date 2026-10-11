@@ -18,7 +18,7 @@ use common::{
     units::Milimeter,
 };
 use slicer::{
-    mesh::{Bounds3D, Mesh},
+    geometry::{bounds::Bounds3D, mesh::Mesh},
     slicer::{Slicer, SlicerModel},
     util::export_raster,
 };

@@ -2,7 +2,7 @@ use std::iter;
 
 use itertools::Itertools;
 use nalgebra::Vector3;
-use slicer::mesh::Bounds3D;
+use slicer::geometry::bounds::Bounds3D;
 
 use crate::{
     core::App,

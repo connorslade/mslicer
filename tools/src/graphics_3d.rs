@@ -4,7 +4,7 @@ use common::{
 };
 use nalgebra::{Matrix4, Vector2, Vector3};
 use slicer::{
-    mesh::Mesh,
+    geometry::mesh::Mesh,
     slicer::raster::{self, Segment},
 };
 
