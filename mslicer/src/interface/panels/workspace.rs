@@ -1,4 +1,4 @@
-use std::time::Instant;
+use std::{hash::Hash, time::Instant};
 
 use common::units::Milimeter;
 use const_format::concatcp;
@@ -81,13 +81,12 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
             ui.end_row();
 
             ui.label("Normals");
+            visibility_combobox(ui, "normals", &mut app.config.render.normals);
+            ui.end_row();
+
+            ui.label("Bounding Boxes");
             ui.horizontal(|ui| {
-                ComboBox::from_id_salt("normals")
-                    .selected_text(["Hidden", "Shown"][app.config.render.normals as usize])
-                    .show_ui(ui, |ui| {
-                        ui.selectable_value(&mut app.config.render.normals, false, "Hidden");
-                        ui.selectable_value(&mut app.config.render.normals, true, "Shown");
-                    });
+                visibility_combobox(ui, "bounding_box", &mut app.config.render.bounding_box);
                 ui.take_available_width();
             });
             ui.end_row();
@@ -481,4 +480,13 @@ fn projection_combobox(ui: &mut Ui, projection: &mut Projection) -> Response {
 
     edited.then(|| response.mark_changed());
     response
+}
+
+fn visibility_combobox(ui: &mut Ui, salt: impl Hash, value: &mut bool) {
+    ComboBox::from_id_salt(salt)
+        .selected_text(["Hidden", "Shown"][*value as usize])
+        .show_ui(ui, |ui| {
+            ui.selectable_value(value, false, "Hidden");
+            ui.selectable_value(value, true, "Shown");
+        });
 }

@@ -8,7 +8,10 @@ use wgpu::{
 };
 
 use crate::{
-    core::App,
+    core::{
+        App,
+        project::model::{Model, ModelId},
+    },
     include_shader,
     render::{
         Gcx,
@@ -18,12 +21,13 @@ use crate::{
         },
         util::ResizingBuffer,
         workspace::line::{
-            build_plate::BuildPlateDispatch, line_support_debug::LineSupportDebugDispatch,
-            normals::NormalsDispatch,
+            bounding_box::BoundingBoxDispatch, build_plate::BuildPlateDispatch,
+            line_support_debug::LineSupportDebugDispatch, normals::NormalsDispatch,
         },
     },
 };
 
+mod bounding_box;
 mod build_plate;
 mod line_support_debug;
 mod normals;
@@ -48,9 +52,10 @@ const VERTEX_BUFFER_LAYOUT: VertexBufferLayout = VertexBufferLayout {
 pub struct LineDispatch {
     render_pipeline: LinePipeline,
 
+    bounding_box: BoundingBoxDispatch,
     build_plate: BuildPlateDispatch,
-    normals: NormalsDispatch,
     line_support_debug: LineSupportDebugDispatch,
+    normals: NormalsDispatch,
 }
 
 pub struct LinePipeline {
@@ -94,26 +99,29 @@ impl LineDispatch {
         Self {
             render_pipeline: LinePipeline::new(device, texture),
 
+            bounding_box: BoundingBoxDispatch::new(),
             build_plate: BuildPlateDispatch::new(),
-            normals: NormalsDispatch::new(),
             line_support_debug: LineSupportDebugDispatch::new(),
+            normals: NormalsDispatch::new(),
         }
     }
 
     pub fn prepare(&mut self, gcx: &Gcx, app: &mut App) {
         let dispatches: &mut [&mut dyn LineGenerator] = &mut [
+            &mut self.bounding_box,
             &mut self.build_plate,
-            &mut self.normals,
             &mut self.line_support_debug,
+            &mut self.normals,
         ];
         for dispatch in dispatches.iter_mut() {
             dispatch.generate_lines(app);
         }
 
         let lines = &[
+            self.bounding_box.lines(),
             self.build_plate.lines(),
-            self.normals.lines(),
             self.line_support_debug.lines(),
+            self.normals.lines(),
         ][..];
         self.render_pipeline.prepare(gcx, app, lines);
     }
@@ -248,5 +256,32 @@ impl Line {
                 color,
             },
         ]
+    }
+}
+
+pub struct LastModels {
+    last_ids: Vec<ModelId>,
+    last_transforms: Vec<Matrix4<f32>>,
+}
+
+impl LastModels {
+    pub fn empty() -> Self {
+        Self {
+            last_ids: Vec::new(),
+            last_transforms: Vec::new(),
+        }
+    }
+
+    pub fn update<'a>(&mut self, models: impl Iterator<Item = &'a Model>) -> bool {
+        let (ids, transforms) = models
+            .into_iter()
+            .map(|x| (x.id, *x.mesh.transformation_matrix()))
+            .unzip();
+
+        let result = self.last_ids == ids && self.last_transforms == transforms;
+        self.last_ids = ids;
+        self.last_transforms = transforms;
+
+        result
     }
 }

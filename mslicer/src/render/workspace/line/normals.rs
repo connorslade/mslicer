@@ -1,16 +1,12 @@
-use nalgebra::{Matrix4, Vector3};
+use nalgebra::Vector3;
 
 use crate::{
-    core::{
-        App,
-        project::model::{Model, ModelId},
-    },
-    render::workspace::line::{Line, LineGenerator},
+    core::{App, project::model::Model},
+    render::workspace::line::{LastModels, Line, LineGenerator},
 };
 
 pub struct NormalsDispatch {
-    last_models: Vec<ModelId>,
-    last_transforms: Vec<Matrix4<f32>>,
+    last_models: LastModels,
     last_normals: bool,
 
     cached_lines: Vec<Line>,
@@ -19,8 +15,7 @@ pub struct NormalsDispatch {
 impl NormalsDispatch {
     pub fn new() -> Self {
         Self {
-            last_models: Vec::new(),
-            last_transforms: Vec::new(),
+            last_models: LastModels::empty(),
             last_normals: false,
 
             cached_lines: Vec::new(),
@@ -35,20 +30,8 @@ impl LineGenerator for NormalsDispatch {
             return;
         }
 
-        let ids = (app.project.models.iter())
-            .filter(|x| x.hidden)
-            .map(|x| x.id)
-            .collect::<Vec<_>>();
-        let transforms = (app.project.models.iter())
-            .map(|x| *x.mesh.transformation_matrix())
-            .collect::<Vec<_>>();
-
-        if ids != self.last_models
-            || transforms != self.last_transforms
-            || show_normals != self.last_normals
-        {
-            self.last_models = ids;
-            self.last_transforms = transforms;
+        let models = app.project.models.iter().filter(|x| x.hidden);
+        if self.last_models.update(models) || show_normals != self.last_normals {
             self.last_normals = show_normals;
 
             if show_normals {

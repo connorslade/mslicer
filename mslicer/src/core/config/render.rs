@@ -22,6 +22,7 @@ pub struct RenderConfig {
     // extras
     pub grid_size: f32,
     pub normals: bool,
+    pub bounding_box: bool,
     pub overhangs: (bool, f32),
     pub basis_size: f32,
 }
@@ -99,6 +100,7 @@ impl Default for RenderConfig {
             grid_size: 12.16,
             overhangs: (false, 30.0),
             normals: false,
+            bounding_box: false,
             basis_size: 100.0,
         }
     }
