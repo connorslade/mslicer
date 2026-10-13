@@ -60,10 +60,10 @@ And here are some documents on some more niche use cases.
 [download-badge]: https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fconnorcode.com%2Fapi%2Fdownloads%3Fgithub%3Dconnorslade%252Fmslicer%26flathub%3Dcom.connorcode.mslicer&query=%24%5B%27total-human%27%5D&label=downloads&color=limegreen;
 [release-badge]: https://img.shields.io/github/v/release/connorslade/mslicer
 
-[hero-image]: https://github.com/user-attachments/assets/c862edbe-1e08-49e9-b0e2-6e21488977d5
+[hero-image]: https://mslicer.com/supported-dragon.png
 [benchmark results]: https://mslicer.com/docs/benchmark
 
-[github-badge]: https://github.com/user-attachments/assets/3546dfe9-323b-4986-a9bb-c6af04792305
+[github-badge]: https://files.connorslade.com/Misc/github-badge.svg
 [flathub-badge]: https://flathub.org/api/badge?svg&locale=en
 [nixpkgs-badge]: https://raw.githubusercontent.com/dch82/Nixpkgs-Badges/main/nixpkgs-badge-dark.svg
 [flathub]: https://flathub.org/apps/com.connorcode.mslicer
