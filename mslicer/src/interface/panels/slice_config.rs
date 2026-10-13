@@ -44,12 +44,10 @@ const ANTI_ALIAS_TIP: &str = "Uses supersampling anti-aliasing (SSAA) to pick gr
 const TRANSITION_LAYER_TIP: &str = "Transition layers interpolate between the first exposure settings and the normal exposure settings.";
 
 pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
-    ui.heading("Slice Config");
-
     ui.add_enabled_ui(
         app.project.slice_config != app.config.default_slice_config,
         |ui| {
-            ui.horizontal(|ui| {
+            ui.horizontal_wrapped(|ui| {
                 ui.button(concatcp!(ARROW_COUNTER_CLOCKWISE, " Reset to Default"))
                     .clicked()
                     .then(|| app.project.slice_config = app.config.default_slice_config.clone());
@@ -295,7 +293,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     });
 
     ui.add_space(8.0);
-    ui.heading("Post Processing");
+    ui.heading("Post Processors");
 
     ui.collapsing("Exposure Remapping", |ui| {
         exposure_remapping(
@@ -599,6 +597,8 @@ fn exposure_remapping(
 ) {
     const EXPOSURE_REMAPPING_DESCRIPTION: &str = "Fractional exposure values don't necessarily correspond linearly to voxel growth, so you may need to adjust the mapping with the curve below to get ideal results with antialiasing.";
     ui.label(EXPOSURE_REMAPPING_DESCRIPTION);
+    ui.add_space(8.0);
+
     let [p1, p2, p3, p4] = remap.points();
 
     let mut pointer = None;

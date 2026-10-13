@@ -59,6 +59,10 @@ impl Bounds3D {
         self.expand_point(&mesh.vertices[face[2] as usize]);
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.min > self.max
+    }
+
     pub fn size(&self) -> Vector3<f32> {
         self.max - self.min
     }

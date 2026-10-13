@@ -111,10 +111,14 @@ pub fn collapsing_toggle(
     ui: &mut Ui,
 ) -> bool {
     ui.with_layout(Layout::right_to_left(Align::Min), |ui| {
-        ui.checkbox(&mut toggle, "");
+        let width = ui.checkbox(&mut toggle, "").rect.width();
+        let padding = ui.spacing().item_spacing.x;
         CollapsingHeader::new(title)
             .default_open(default)
-            .show(ui, |ui| content(ui));
+            .show(ui, |ui| {
+                ui.set_width(ui.available_width() + width + padding);
+                content(ui)
+            });
     });
     toggle
 }

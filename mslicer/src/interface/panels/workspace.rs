@@ -6,8 +6,11 @@ use egui::{
     Align, CollapsingHeader, Color32, ComboBox, Context, DragValue, Grid, Layout, Response, Theme,
     Ui, Widget,
 };
-use egui_phosphor::regular::{ARROW_COUNTER_CLOCKWISE, ARROWS_CLOCKWISE, FOLDER, INFO};
+use egui_phosphor::regular::{
+    ARROW_COUNTER_CLOCKWISE, ARROWS_CLOCKWISE, FOLDER, INFO, SELECTION_ALL,
+};
 use egui_plot::{Line, Plot};
+use slicer::geometry::bounds::Bounds3D;
 use tracing::error;
 
 use crate::{
@@ -39,8 +42,6 @@ const SPACENAV_UNCONNECTED: &str =
     "Failed to connect to Spacenav. Make sure the daemon is running and reconnect.";
 
 pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
-    ui.heading("Workspace");
-
     ui.horizontal_wrapped(|ui| {
         if ui
             .button(concatcp!(FOLDER, " Open Config Directory"))
@@ -57,9 +58,10 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
             app.config = Default::default();
         }
     });
-    ui.add_space(8.0);
 
-    ui.collapsing("Render Style", |ui| {
+    ui.add_space(8.0);
+    ui.heading("Rendering");
+    ui.collapsing("Style", |ui| {
         grid("style").show(ui, |ui| {
             ui.horizontal(|ui| {
                 ui.label("Mode");
@@ -92,60 +94,30 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
             ui.end_row();
         });
     });
-    ui.collapsing("Interface", |ui| {
-        grid("interface").show(ui, |ui| {
-            ui.label("Theme");
-            ComboBox::from_id_salt("theme")
-                .selected_text(match app.config.ui.theme {
-                    Theme::Dark => "Dark",
-                    Theme::Light => "Light",
-                })
-                .show_ui(ui, |ui| {
-                    ui.selectable_value(&mut app.config.ui.theme, Theme::Dark, "Dark");
-                    ui.selectable_value(&mut app.config.ui.theme, Theme::Light, "Light");
-                });
-            ui.end_row();
 
-            ui.label("Grid Size");
-            ui.horizontal(|ui| {
-                dragger(ui, "", &mut app.config.render.grid_size, |x| {
-                    x.speed(0.1).range(1.0..=f32::MAX)
-                });
-                ui.take_available_width();
-            });
-            ui.end_row();
-
-            ui.horizontal(|ui| {
-                ui.label("Basis Size");
-                ui.label(INFO).on_hover_text(BASIS_TIP);
-            });
-            DragValue::new(&mut app.config.render.basis_size)
-                .range(0.0..=200.0)
-                .suffix(" px")
-                .ui(ui);
-            ui.end_row();
-
-            ui.label("Hover Overlay");
-            ComboBox::from_id_salt("hover_overlay")
-                .selected_text(app.config.ui.hover_overlay.name())
-                .show_ui(ui, |ui| {
-                    for mode in HoverOverlay::ALL {
-                        ui.selectable_value(&mut app.config.ui.hover_overlay, mode, mode.name());
-                    }
-                });
-            ui.end_row();
-        });
-    });
-
-    ui.add_space(8.0);
-    ui.heading("Rendering");
     ui.collapsing("Camera", |ui| {
-        if ui
-            .button(concatcp!(ARROW_COUNTER_CLOCKWISE, " Reset"))
-            .clicked()
-        {
-            app.camera = Default::default();
-        }
+        ui.horizontal_wrapped(|ui| {
+            if ui
+                .button(concatcp!(ARROW_COUNTER_CLOCKWISE, " Reset"))
+                .clicked()
+            {
+                app.camera = Default::default();
+            }
+
+            if ui.button(concatcp!(SELECTION_ALL, " View All")).clicked() {
+                let mut bounds = Bounds3D::empty();
+                for model in app.project.models.iter().filter(|x| !x.hidden) {
+                    bounds.extend(&model.bounds);
+                }
+
+                if !bounds.is_empty() {
+                    let (center, r) = bounds.bounding_sphere();
+                    app.camera.target = center;
+                    app.camera.visible_sphere(app.state.workspace.aspect, r);
+                }
+            }
+        });
+        ui.add_space(8.0);
 
         Grid::new("workspace_camera")
             .striped(true)
@@ -156,7 +128,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                 ui.end_row();
 
                 ui.label("Angle");
-                dragger::vec2(ui, app.camera.angle.as_mut(), |x| x);
+                dragger::vec2(ui, app.camera.angle.as_mut(), |x| x.speed(0.01));
                 ui.end_row();
 
                 ui.label("Distance");
@@ -296,6 +268,51 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
 
     ui.add_space(8.0);
     ui.heading("Miscellaneous");
+    ui.collapsing("Interface", |ui| {
+        grid("interface").show(ui, |ui| {
+            ui.label("Theme");
+            ComboBox::from_id_salt("theme")
+                .selected_text(match app.config.ui.theme {
+                    Theme::Dark => "Dark",
+                    Theme::Light => "Light",
+                })
+                .show_ui(ui, |ui| {
+                    ui.selectable_value(&mut app.config.ui.theme, Theme::Dark, "Dark");
+                    ui.selectable_value(&mut app.config.ui.theme, Theme::Light, "Light");
+                });
+            ui.end_row();
+
+            ui.label("Grid Size");
+            ui.horizontal(|ui| {
+                dragger(ui, "", &mut app.config.render.grid_size, |x| {
+                    x.speed(0.1).range(1.0..=f32::MAX)
+                });
+                ui.take_available_width();
+            });
+            ui.end_row();
+
+            ui.horizontal(|ui| {
+                ui.label("Basis Size");
+                ui.label(INFO).on_hover_text(BASIS_TIP);
+            });
+            DragValue::new(&mut app.config.render.basis_size)
+                .range(0.0..=200.0)
+                .suffix(" px")
+                .ui(ui);
+            ui.end_row();
+
+            ui.label("Hover Overlay");
+            ComboBox::from_id_salt("hover_overlay")
+                .selected_text(app.config.ui.hover_overlay.name())
+                .show_ui(ui, |ui| {
+                    for mode in HoverOverlay::ALL {
+                        ui.selectable_value(&mut app.config.ui.hover_overlay, mode, mode.name());
+                    }
+                });
+            ui.end_row();
+        });
+    });
+
     ui.collapsing("Limits", |ui| {
         grid("limits").show(ui, |ui| {
             ui.label("Check for Updates");

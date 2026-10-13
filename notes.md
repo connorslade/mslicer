@@ -51,6 +51,8 @@ Feel free to help out :eyes:.
 - some way to disable building acc structures? for when you dont need supports.
 - project notes?
 - use convex hull to re-calc bounds after transformation
+- slice config presets
+- custom post processor with dyn libs? (https://github.com/nagisa/rust_libloading/)
 
 ## Documentation
 

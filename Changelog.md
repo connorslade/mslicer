@@ -104,6 +104,7 @@
 - Refresh rendering stats UI
 - Notes panel
 - Only re-calculate model bounds when they change
+- Camera 'View All' button to change the target/distance to show all visible models
 
 ## v0.9.2 &mdash; August 30th, 2026
 
