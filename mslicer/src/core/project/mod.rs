@@ -22,12 +22,12 @@ pub mod supports;
 #[derive(Default, Clone)]
 pub struct Project {
     pub path: Option<PathBuf>,
+    pub notes: String,
     pub slice_config: SliceConfig,
     pub support_config: SupportConfig,
     pub post_processing: PostProcessing,
     pub models: Vec<Model>,
     pub collections: Vec<Collection>,
-    pub notes: String,
 }
 
 #[derive(Clone)]
@@ -74,6 +74,7 @@ impl Project {
 
     pub fn reset(&mut self, default_config: &SliceConfig) {
         self.path = None;
+        self.notes.clear();
         self.slice_config = default_config.clone();
         self.post_processing = Default::default();
         self.models.clear();
