@@ -27,6 +27,7 @@ pub struct Model {
     pub collection: Option<CollectionId>,
 
     pub mesh: Mesh,
+    pub bounds: Bounds3D,
     pub bvh: Option<Arc<Bvh>>,
     pub half_edge: Option<Arc<HalfEdgeMesh>>,
     pub supports: Supports,
@@ -78,6 +79,7 @@ impl Model {
             bvh: None,
             half_edge: None,
             supports: Supports::default(),
+            bounds: Bounds3D::from_mesh(&mesh),
             mesh,
 
             unit: MeshUnit::Millimeters,
@@ -191,7 +193,7 @@ impl Model {
 
 impl Model {
     pub fn align_to_bed(&mut self) {
-        let Bounds3D { min, .. } = self.mesh.bounds();
+        let Bounds3D { min, .. } = self.bounds;
 
         let pos = self.mesh.position() - Vector3::z() * min.z;
         self.mesh.set_position(pos);
@@ -204,9 +206,9 @@ impl Model {
             self.mesh.rotation(),
         );
 
-        // todo: make a
-        let Bounds3D { min, max } = self.mesh.bounds();
+        let bounds @ Bounds3D { min, max } = Bounds3D::from_mesh(&self.mesh);
         let half = platform.map(|x| x.raw()) / 2.0;
+        self.bounds = bounds;
 
         let oob = (min.x < -half.x || min.y < -half.y || min.z < 0.0)
             || (max.x > half.x || max.y > half.y || max.z > platform.z.raw());
@@ -214,7 +216,7 @@ impl Model {
     }
 
     pub fn set_bounds_center(&mut self, platform: &Vector3<Milimeters>, center: Vector3<f32>) {
-        let current = self.mesh.bounds().center();
+        let current = self.bounds.center();
         self.set_position(platform, self.mesh.position() + center - current);
     }
 
@@ -309,6 +311,7 @@ impl Clone for Model {
             collection: self.collection,
 
             mesh: self.mesh.clone(),
+            bounds: self.bounds.clone(),
             bvh: self.bvh.clone(),
             half_edge: self.half_edge.clone(),
             supports: Supports::default(),

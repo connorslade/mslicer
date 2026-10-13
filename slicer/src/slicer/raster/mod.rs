@@ -42,7 +42,7 @@ impl Slicer {
         // to find all intersections. This massively speeds up the slicing
         // operation and actually makes it faster than most other slicers. :p
         let segments = (self.models.iter())
-            .map(|model| Segments1D::from_mesh(&model.mesh, SEGMENT_LAYERS))
+            .map(|model| Segments1D::from_mesh(&model.mesh, &model.bounds, SEGMENT_LAYERS))
             .collect::<Vec<_>>();
 
         (0..self.layers * supersample.z as u32)

@@ -1,6 +1,6 @@
 use common::{progress::Progress, slice::SliceConfig};
 
-use crate::geometry::mesh::Mesh;
+use crate::geometry::{bounds::Bounds3D, mesh::Mesh};
 
 pub mod raster;
 pub mod vector;
@@ -18,6 +18,7 @@ pub struct Slicer {
 
 pub struct SlicerModel {
     pub mesh: Mesh,
+    pub bounds: Bounds3D,
     pub exposure: u8,
 }
 

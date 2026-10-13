@@ -36,7 +36,7 @@ impl LineGenerator for BoundingBoxDispatch {
 
             if enabled {
                 for model in app.project.models.iter().filter(|x| !x.hidden) {
-                    let Bounds3D { min, max } = model.mesh.bounds();
+                    let Bounds3D { min, max } = model.bounds;
 
                     let bottom = [
                         Vector3::new(min.x, min.y, min.z),

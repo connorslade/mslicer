@@ -3,9 +3,12 @@ use std::sync::Arc;
 use nalgebra::{Matrix4, Vector3};
 use serde::{Deserialize, Serialize};
 
-use crate::geometry::{Primitive, Ray, mesh::MeshInner};
+use crate::geometry::{
+    Primitive, Ray,
+    mesh::{Mesh, MeshInner},
+};
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Bounds3D {
     pub min: Vector3<f32>,
     pub max: Vector3<f32>,
@@ -33,6 +36,10 @@ impl Bounds3D {
             |(min, max), v| (min.zip_map(&v, f32::min), max.zip_map(&v, f32::max)),
         );
         Self { min, max }
+    }
+
+    pub fn from_mesh(mesh: &Mesh) -> Self {
+        Self::from_verts_transformed(mesh.vertices(), mesh.transformation_matrix())
     }
 
     pub fn extend(&mut self, other: &Bounds3D) {

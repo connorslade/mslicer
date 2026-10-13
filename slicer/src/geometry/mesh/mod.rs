@@ -176,10 +176,6 @@ impl Mesh {
         (self.inv_transform * normal.to_homogeneous()).xyz()
     }
 
-    pub fn bounds(&self) -> Bounds3D {
-        Bounds3D::from_verts_transformed(self.vertices(), &self.transform)
-    }
-
     pub fn memory_size(&self) -> usize {
         self.face_count() * mem::size_of::<[u32; 3]>()
             + self.vertex_count() * mem::size_of::<Vector3<f32>>()

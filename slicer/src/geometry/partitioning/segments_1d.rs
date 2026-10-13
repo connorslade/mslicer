@@ -17,8 +17,8 @@ pub struct Segments1D {
 
 impl Segments1D {
     /// Creates a new Segments structure from a given mesh and segment count.
-    pub fn from_mesh(mesh: &Mesh, layer_count: usize) -> Self {
-        let Bounds3D { min, max } = mesh.bounds();
+    pub fn from_mesh(mesh: &Mesh, mesh_bounds: &Bounds3D, layer_count: usize) -> Self {
+        let Bounds3D { min, max } = mesh_bounds;
 
         // Caching transformed points / normals makes slicing faster.
         let transformed_points = (mesh.vertices().iter())

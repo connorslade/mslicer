@@ -66,7 +66,7 @@ impl App {
 
         for (supports, mut model) in meshes.into_iter() {
             // preview
-            bounds.extend(&model.mesh.bounds());
+            bounds.extend(&model.bounds);
             preview_models.push(PreviewModel::for_model(&mut model, device));
 
             // slicing
@@ -75,12 +75,22 @@ impl App {
 
             transform_mesh(&mut mesh, mm_to_px, offset);
             triangles += mesh.face_count() as u64;
-            out.push(SlicerModel { mesh, exposure });
+            let bounds = Bounds3D::from_mesh(&mesh); // todo: no need to reaclc since only translation and scale are applied
+            out.push(SlicerModel {
+                mesh,
+                bounds,
+                exposure,
+            });
 
             if let Some((mut mesh, _)) = supports {
                 transform_mesh(&mut mesh, mm_to_px, offset);
                 triangles += mesh.face_count() as u64;
-                out.push(SlicerModel { mesh, exposure });
+                let bounds = Bounds3D::from_mesh(&mesh);
+                out.push(SlicerModel {
+                    mesh,
+                    bounds,
+                    exposure,
+                });
             }
         }
 

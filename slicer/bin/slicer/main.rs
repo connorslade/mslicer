@@ -52,9 +52,9 @@ fn main() -> Result<()> {
         mesh.set_rotation(model.rotation.map(f32::to_radians));
 
         // Center the model
-        let mesh_center = mesh.bounds().center();
+        let bounds = Bounds3D::from_mesh(&mesh);
         let center = (slice_config.platform_resolution / 2).cast::<f32>();
-        mesh.set_position((center - mesh_center.xy()).to_homogeneous() + model.position);
+        mesh.set_position((center - bounds.center().xy()).to_homogeneous() + model.position);
 
         // Scale the model into printer-space (mm => px)
         mesh.set_scale(model.scale.component_mul(&mm_to_px));
@@ -66,12 +66,13 @@ fn main() -> Result<()> {
             mesh.face_count()
         );
 
-        if is_oob(&mesh, &slice_config) {
+        if is_oob(&bounds, &slice_config) {
             println!(" \\ Model extends outsize of print volume and will be cut off.",);
         }
 
         meshes.push(SlicerModel {
             mesh,
+            bounds,
             exposure: 255,
         });
     }
@@ -132,8 +133,8 @@ fn load_mesh<T: Read + Seek + Send + 'static>(reader: T, format: &str) -> Result
     Ok(Mesh::new_boxed_centered(mesh.verts, mesh.faces))
 }
 
-fn is_oob(mesh: &Mesh, slice_config: &SliceConfig) -> bool {
-    let Bounds3D { min, max } = mesh.bounds();
+fn is_oob(bounds: &Bounds3D, slice_config: &SliceConfig) -> bool {
+    let Bounds3D { min, max } = bounds;
     min.x < 0.0
         || min.y < 0.0
         || min.z < 0.0

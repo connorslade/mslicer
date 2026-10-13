@@ -27,7 +27,7 @@ pub struct SvgFile {
 impl Slicer {
     pub fn slice_vector(&self) -> Vec<VectorLayer> {
         let segments = (self.models.iter())
-            .map(|x| Segments1D::from_mesh(&x.mesh, SEGMENT_LAYERS))
+            .map(|x| Segments1D::from_mesh(&x.mesh, &x.bounds, SEGMENT_LAYERS))
             .collect::<Vec<_>>();
 
         let layers = (0..self.layers)
