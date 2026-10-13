@@ -232,6 +232,7 @@ impl<'a> PopupApp<'a> {
     }
 }
 
+// todo: add dirty flag to history
 pub fn confirm_unsaved(app: &mut App, mut callback: impl FnMut(&mut PopupApp) + 'static) {
     if app.project.models.is_empty() {
         callback(&mut PopupApp::from_app(app));

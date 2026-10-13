@@ -11,6 +11,7 @@ Feel free to help out :eyes:.
 - fix long file names in remote print causing problems...
 - don't use currently selected printer resolution for sliced diff. Fail if the two files have differing resolutions.
 - some custom components dont work well on light mode
+- if you make changes to a project in the time that it takes for another project to load, your changes will be deleted
 
 ## Features
 
@@ -22,7 +23,6 @@ Feel free to help out :eyes:.
     - don't simplify a cylinder to a segment during intersection testing. either
       use a different algorithm or sample multiple points around the edges.
 - put all models in the same segments1d to improve slicing times with supports?
-- dont repaint every frame (or at least when unfocused)
 - save old versions of config files when being overwritten (invalid config). or
   like just ignore the broken values.
 - phonographic record generator (it might be possible :eyes:)
@@ -38,21 +38,14 @@ Feel free to help out :eyes:.
 - sliced post processing
   - remove islands ←
   - exposure remap
-- combine MeshDefective, MeshVolume, and BuildAccelerationStructures into one task
-- switch between multiple sliced files in slice preview?
 - look into reducing memory usage
   - boxed slices
   - Run u32
+- combine MeshDefective and MeshVolume into one task (Mesh Analysis)
 - reduce power usage (dont always re-render, don't re-do work)
-- avg fps so its readable, or update it 1 Hz
-- optimize island detection
 - two stage lift config!! (how have i left this unimplemented for so long!)
-- dont iterate over all verts for Model::bounds (calc bounds once and apply transformation matrix)
 - some way to disable building acc structures? for when you dont need supports.
-- project notes?
-- use convex hull to re-calc bounds after transformation
 - slice config presets
-- custom post processor with dyn libs? (https://github.com/nagisa/rust_libloading/)
 - shift drag to select multiple models
 
 ## Documentation
@@ -91,6 +84,12 @@ Features that would be cool, but are a bit out of scope for now.
 - scripting???
 - dont make 'Saturn 3 Ultra' the default profile
   - add an unselected option to force users to pick the right printer?
+- custom post processor with dyn libs?
+  - https://github.com/rodrimati1992/abi_stable_crates
+  - https://github.com/ZettaScaleLabs/stabby
+- use convex hull to re-calc bounds after transformation
+- switch between multiple sliced files in slice preview?
+- optimize island detection
 
 ---
 

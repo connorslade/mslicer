@@ -155,8 +155,11 @@ fn load(app: &mut App, _ctx: &Context) {
     confirm_unsaved(app, |app| app.tasks.add(Project::load()));
 }
 
-fn quit(_app: &mut App, ctx: &Context) {
-    ctx.send_viewport_cmd(ViewportCommand::Close)
+fn quit(app: &mut App, ctx: &Context) {
+    let ctx = ctx.clone();
+    confirm_unsaved(app, move |_app| {
+        ctx.send_viewport_cmd(ViewportCommand::Close);
+    });
 }
 
 fn slice(app: &mut App, _ctx: &Context) {

@@ -2,7 +2,7 @@ use std::{fs::File, mem, sync::Arc};
 
 use common::slice::format::RasterFormat;
 use const_format::concatcp;
-use egui::{Button, ComboBox, DragValue, RichText, Ui};
+use egui::{Button, ComboBox, DragValue, RichText, Ui, vec2};
 use egui_phosphor::regular::{FOLDER_OPEN, STACK_SIMPLE, SWAP};
 use slicer::util;
 use tools::sliced_diff::{Difference, Source, SourceId};
@@ -36,6 +36,7 @@ fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
         mem::swap(&mut tool.new, &mut tool.old);
     }
 
+    ui.add_space(8.0);
     grid("").show(ui, |ui| {
         ui.label("Old");
         source_ui(app, ui, SourceId::Old);
@@ -75,12 +76,10 @@ fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
         ui.add_space(8.0);
     }
 
-    ui.centered_and_justified(|ui| {
+    ui.vertical_centered(|ui| {
+        let button = Button::new("Generate").min_size(vec2(ui.available_width(), 0.0));
         if ui
-            .add_enabled(
-                !slicing && has_source && sources_match,
-                Button::new("Generate"),
-            )
+            .add_enabled(!slicing && has_source && sources_match, button)
             .clicked()
         {
             generator_tool!(app, tool);
