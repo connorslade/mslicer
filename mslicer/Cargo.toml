@@ -5,7 +5,7 @@ edition = "2024"
 
 [dependencies]
 common.workspace = true
-experimental.workspace = true
+experimental = { workspace = true, optional = true }
 mesh_format.workspace = true
 remote_print.workspace = true
 slicer.workspace = true
@@ -57,4 +57,5 @@ windows-registry.workspace = true
 winres.workspace = true
 
 [features]
-brep = ["experimental/brep"]
+experimental = ["dep:experimental"]
+brep = ["experimental", "experimental/brep"]

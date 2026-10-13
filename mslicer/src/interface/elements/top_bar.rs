@@ -17,7 +17,7 @@ use crate::{
         panels::Tab,
         popup::confirm_unsaved,
         shortcuts::{self, Shortcut},
-        tools::{self, graphics_3d, sdf_slicer, sliced_diff},
+        tools,
     },
     task::ProjectLoad,
 };
@@ -144,7 +144,7 @@ pub fn ui(app: &mut App, ctx: &Context) {
                     ui.menu_button("Fun", |ui| {
                         (ui.button("Phonograph Record").clicked())
                             .then(|| tools::phonograph_record::open(app));
-                        (ui.button("3D Graphics").clicked()).then(|| graphics_3d::open(app));
+                        (ui.button("3D Graphics").clicked()).then(|| tools::graphics_3d::open(app));
                     });
 
                     labeled_separator(ui, "Exposure");
@@ -156,12 +156,22 @@ pub fn ui(app: &mut App, ctx: &Context) {
                     ui.button("Collect Instances")
                         .clicked()
                         .then(|| collect_instances(app));
-                    (ui.button("Sliced Diff").clicked()).then(|| sliced_diff::open(app));
+                    (ui.button("Sliced Diff").clicked()).then(|| tools::sliced_diff::open(app));
 
-                    ui.menu_button("Experimental", |ui| {
-                        (ui.button("SDF Slicer").clicked()).then(|| sdf_slicer::open(app));
-                        #[cfg(feature = "brep")]
-                        (ui.button("BREP Slicer").clicked()).then(|| tools::brep_slicer::open(app));
+                    ui.add_enabled_ui(cfg!(feature = "experimental"), |ui| {
+                        #[allow(unused)]
+                        ui.menu_button("Experimental", |ui| {
+                            #[cfg(feature = "experimental")]
+                            {
+                                (ui.button("SDF Slicer").clicked())
+                                    .then(|| tools::sdf_slicer::open(app));
+                                #[cfg(feature = "brep")]
+                                (ui.button("BREP Slicer").clicked())
+                                    .then(|| tools::brep_slicer::open(app));
+                            }
+                        })
+                        .response
+                        .on_disabled_hover_text("Experiential tools are disabled in this build.");
                     });
                 });
 

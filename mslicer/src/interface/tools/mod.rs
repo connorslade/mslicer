@@ -1,4 +1,3 @@
-use experimental::sdf::SdfSlicer;
 use tools::{
     auto_layout::AutoLayoutAnnealing, exposure_test::ExposureTest, graphics_3d::Graphics3D,
     height_map::HeightMap, internal_exposure_test::InternalExposureTest,
@@ -15,6 +14,7 @@ pub mod height_map;
 pub mod internal_exposure_test;
 pub mod phonograph_record;
 pub mod printed_circuit_board;
+#[cfg(feature = "experimental")]
 pub mod sdf_slicer;
 pub mod sliced_diff;
 pub mod test_pattern;
@@ -31,7 +31,8 @@ pub struct Tools {
     sliced_diff: SlicedDiff,
     height_map: HeightMap,
 
-    sdf_slicer: SdfSlicer,
+    #[cfg(feature = "experimental")]
+    sdf_slicer: experimental::sdf::SdfSlicer,
     #[cfg(feature = "brep")]
     brep_slicer: experimental::brep::BrepSlicer,
 }
