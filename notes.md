@@ -53,6 +53,7 @@ Feel free to help out :eyes:.
 - use convex hull to re-calc bounds after transformation
 - slice config presets
 - custom post processor with dyn libs? (https://github.com/nagisa/rust_libloading/)
+- shift drag to select multiple models
 
 ## Documentation
 

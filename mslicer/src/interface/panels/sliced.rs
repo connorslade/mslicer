@@ -689,20 +689,26 @@ fn sidebar(operation: &SliceOperation, result: &mut SliceResult, app: SidebarApp
                     }));
                 }
 
-                ui.separator();
-                let icon = [VECTOR_TWO, VECTOR_THREE][(operation.interactive_previews.is_some()
-                    && app.state.preview_mode == PreviewMode::Interactive)
-                    as usize];
-                if ui.button(icon).clicked() {
-                    app.state.preview_mode = app.state.preview_mode.other();
-                    app.state.last_preview_interact = None;
+                if operation.interactive_previews.is_some() {
+                    ui.separator();
+                    let icon = [VECTOR_TWO, VECTOR_THREE][(operation.interactive_previews.is_some()
+                        && app.state.preview_mode == PreviewMode::Interactive)
+                        as usize];
+                    if ui.button(icon).clicked() {
+                        app.state.preview_mode = app.state.preview_mode.other();
+                        app.state.last_preview_interact = None;
+                    }
                 }
             });
 
             ui.add_space(4.0);
             let available = ui.available_width();
-            let cursor = [CursorIcon::Grab, CursorIcon::Grabbing]
-                [ui.input(|i| i.pointer.primary_down()) as usize];
+            let cursor = if operation.interactive_previews.is_some() {
+                [CursorIcon::Grab, CursorIcon::Grabbing]
+                    [ui.input(|i| i.pointer.primary_down()) as usize]
+            } else {
+                CursorIcon::Default
+            };
 
             if let Some(interactive) = &operation.interactive_previews
                 && app.state.preview_mode == PreviewMode::Interactive
