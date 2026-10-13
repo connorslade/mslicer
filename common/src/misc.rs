@@ -115,7 +115,7 @@ macro_rules! id_type {
                 }
 
                 pub fn bump_past(raw: $inner) {
-                    NEXT_ID.fetch_max(raw as _, MEMORY_ORDER);
+                    NEXT_ID.fetch_max(1 + raw as u64, MEMORY_ORDER);
                 }
 
                 pub fn from_raw(raw: $inner) -> Self {

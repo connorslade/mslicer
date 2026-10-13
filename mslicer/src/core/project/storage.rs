@@ -1,6 +1,7 @@
 use std::{collections::HashMap, sync::Arc};
 
 use anyhow::{Result, ensure};
+use const_format::concatcp;
 use nalgebra::Vector3;
 
 use crate::core::project::{
@@ -23,6 +24,8 @@ use slicer::{
 /// changes, even in development so anyone using the dev/prerelease versions
 /// don't ruin their projects.
 ///
+/// - v16 (v0.10.0) — Added project notes and an ignored section with info about
+///   the format in ASCII.
 /// - v15 (v0.10.0) — Store first layers and transition layers as either a layer
 ///   count or a united distance.
 /// - v14 (v0.10.0) — Separate XY and Z supersample antialiasing parameters. You
@@ -43,7 +46,12 @@ use slicer::{
 /// - v3 (v0.6.0) — Added the PWM value to SliceConfig -> ExposureConfig.
 /// - v2 (v0.5.0) — A complete rewrite using a custom serilizer/deserilizer
 ///   because of the bincode drama...
-const VERSION: u16 = 15;
+const VERSION: u16 = 16;
+const DESCRIPTION: &str = concatcp!(
+    "Saved by mslicer v",
+    crate::VERSION,
+    " (https://mslicer.com)"
+);
 
 struct ModelInfo {
     mesh: u32,
@@ -149,6 +157,13 @@ impl ModelInfo {
 impl Project {
     pub fn serialize<T: Serializer>(&self, ser: &mut T, progress: Progress) {
         ser.write_u16_be(VERSION);
+
+        ser.write_u32_be(DESCRIPTION.len() as u32);
+        ser.write_bytes(DESCRIPTION.as_bytes());
+
+        ser.write_u32_be(self.notes.len() as u32);
+        ser.write_bytes(self.notes.as_bytes());
+
         self.slice_config.serialize(ser);
         self.post_processing.serialize(ser);
 
@@ -190,6 +205,16 @@ impl Project {
             "Save version not supported."
         );
 
+        let notes = if version >= 16 {
+            let description_len = des.read_u32_be() as usize;
+            des.advance_by(description_len);
+
+            let notes_len = des.read_u32_be() as usize;
+            String::from_utf8_lossy(&des.read_bytes(notes_len)).into_owned()
+        } else {
+            String::new()
+        };
+
         let slice_config = SliceConfig::deserialize(des, version)?;
         let post_processing = PostProcessing::deserialize(des, version);
 
@@ -217,12 +242,13 @@ impl Project {
 
         // kinda jank but it's whatever
         if let Some(max_id) = collections.iter().map(|x| x.id.raw()).max() {
-            CollectionId::bump_past(max_id + 1);
+            CollectionId::bump_past(max_id);
         }
 
         progress.set_finished();
         Ok(Self {
             path: None,
+            notes,
             slice_config,
             support_config: Default::default(),
             post_processing,

@@ -156,8 +156,8 @@ pub fn ui(app: &mut App, ctx: &Context) {
                     ui.button("Collect Instances")
                         .clicked()
                         .then(|| collect_instances(app));
-
                     (ui.button("Sliced Diff").clicked()).then(|| sliced_diff::open(app));
+
                     ui.menu_button("Experimental", |ui| {
                         (ui.button("SDF Slicer").clicked()).then(|| sdf_slicer::open(app));
                         #[cfg(feature = "brep")]

@@ -102,6 +102,7 @@
 - Fix anti-aliasing changing the viewport background color
 - Fix some elements rendering over welcome background
 - Refresh rendering stats UI
+- Notes panel
 - Only re-calculate model bounds when they change
 
 ## v0.9.2 &mdash; August 30th, 2026
