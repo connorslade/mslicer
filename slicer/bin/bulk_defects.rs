@@ -9,7 +9,7 @@ use common::{progress::Progress, serde::ReaderDeserializer, slice::SliceConfig};
 use mesh_format::Format;
 use rayon::iter::{ParallelBridge, ParallelIterator};
 use slicer::{
-    geometry::mesh::Mesh,
+    geometry::{bounds::Bounds3D, mesh::Mesh},
     slicer::{Slicer, SlicerModel},
 };
 
@@ -28,12 +28,14 @@ fn main() -> Result<()> {
 
                 let mesh = mesh_format::load_mesh(des, format, &Progress::new()).unwrap();
                 let mesh = Mesh::new_boxed(mesh.verts, mesh.faces);
+                let bounds = Bounds3D::from_verts(&mesh.vertices());
 
                 let name = path.file_name().unwrap().to_string_lossy();
                 let detected_defective = mesh.is_defective(Progress::new());
 
                 let models = vec![SlicerModel {
                     mesh,
+                    bounds,
                     exposure: 255,
                 }];
                 let slicer = Slicer::new(SliceConfig::default(), models);

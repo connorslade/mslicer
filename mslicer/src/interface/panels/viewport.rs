@@ -71,7 +71,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
                         Vector3::zeros()
                     };
 
-                    let center = model.mesh.bounds().center();
+                    let center = model.bounds.center();
                     model.set_rotation(&platform, rotation);
                     model.set_bounds_center(&platform, center);
                     model.align_to_bed();

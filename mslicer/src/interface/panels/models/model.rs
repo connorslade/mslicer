@@ -253,7 +253,7 @@ pub fn model_properties(
                         (editing, ui, &mut app.history),
                         (id, || ModelAction::Position(model.mesh.position())),
                     );
-                    (model.mesh.position() != position)
+                    (editing && model.mesh.position() != position)
                         .then(|| model.set_position(platform, position));
                     ui.take_available_width();
                 });
@@ -280,7 +280,8 @@ pub fn model_properties(
                     );
 
                     scale *= factor;
-                    (model.mesh.scale() != scale).then(|| model.set_scale(platform, scale));
+                    (editing && model.mesh.scale() != scale)
+                        .then(|| model.set_scale(platform, scale));
 
                     model.ui.locked_scale ^= ui
                         .button([LINK_BREAK, LINK_SIMPLE][model.ui.locked_scale as usize])
@@ -295,8 +296,12 @@ pub fn model_properties(
                     (editing, ui, &mut app.history),
                     (id, || ModelAction::Rotation(model.mesh.rotation())),
                 );
-                (model.mesh.rotation() != rotation)
-                    .then(|| model.set_rotation(platform, deg_to_rad(rotation)));
+
+                if editing {
+                    let rad = deg_to_rad(rotation);
+                    (model.mesh.rotation() != rad).then(|| model.set_rotation(platform, rad));
+                }
+
                 ui.end_row();
 
                 ui.label("Color");

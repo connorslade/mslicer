@@ -4,7 +4,7 @@ use criterion::{
 };
 use mesh_format::Format;
 use slicer::{
-    geometry::mesh::Mesh,
+    geometry::{bounds::Bounds3D, mesh::Mesh},
     slicer::{Slicer, SlicerModel},
 };
 use std::{fs, hint::black_box};
@@ -23,10 +23,14 @@ fn slicer(model: &[u8]) -> Slicer {
     let des = SliceDeserializer::new(model);
     let mesh = mesh_format::load_mesh(des, Format::Stl, &Progress::new()).unwrap();
 
+    let mesh = Mesh::new_boxed_centered(mesh.verts, mesh.faces);
+    let bounds = Bounds3D::from_verts(mesh.vertices());
+
     Slicer::new(
         SliceConfig::default(),
         vec![SlicerModel {
-            mesh: Mesh::new_boxed_centered(mesh.verts, mesh.faces),
+            mesh,
+            bounds,
             exposure: 255,
         }],
     )

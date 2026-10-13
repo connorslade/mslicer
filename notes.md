@@ -11,10 +11,6 @@ Feel free to help out :eyes:.
 - fix long file names in remote print causing problems...
 - don't use currently selected printer resolution for sliced diff. Fail if the two files have differing resolutions.
 - some custom components dont work well on light mode
-- optimize mesh AABB
-  - use convex hull to re-calc bounds after transformation
-  - cache bounds!!! pls dont iter over every vert MULTIPLE TIMES per frame...
-  - remove bounds function from Mesh and replace with a ConvexHull struct in Model(?)
 
 ## Features
 
@@ -54,6 +50,7 @@ Feel free to help out :eyes:.
 - dont iterate over all verts for Model::bounds (calc bounds once and apply transformation matrix)
 - some way to disable building acc structures? for when you dont need supports.
 - project notes?
+- use convex hull to re-calc bounds after transformation
 
 ## Documentation
 
