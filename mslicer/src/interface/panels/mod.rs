@@ -5,6 +5,7 @@ use std::{
 
 mod logs;
 mod models;
+mod notes;
 pub mod remote_print;
 mod slice_config;
 mod sliced;

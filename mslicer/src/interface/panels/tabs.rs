@@ -20,29 +20,32 @@ pub enum Tab {
     Supports,
     Viewport,
     Workspace,
+    Notes,
 }
 
 impl Tab {
-    pub const ALL: [Tab; 7] = [
-        Tab::Logs,
-        Tab::Models,
-        Tab::RemotePrint,
-        Tab::SliceConfig,
-        Tab::Sliced,
-        Tab::Supports,
-        Tab::Workspace,
+    pub const ALL: [Tab; 8] = [
+        Self::Logs,
+        Self::Models,
+        Self::Notes,
+        Self::RemotePrint,
+        Self::SliceConfig,
+        Self::Sliced,
+        Self::Supports,
+        Self::Workspace,
     ];
 
     pub fn name(&self) -> &'static str {
         match self {
-            Tab::Logs => "Logs",
-            Tab::Models => "Models",
-            Tab::RemotePrint => "Remote Print",
-            Tab::SliceConfig => "Slice Config",
-            Tab::Sliced => "Sliced",
-            Tab::Supports => "Supports",
-            Tab::Viewport => "Viewport",
-            Tab::Workspace => "Workspace",
+            Self::Logs => "Logs",
+            Self::Models => "Models",
+            Self::Notes => "Notes",
+            Self::RemotePrint => "Remote Print",
+            Self::SliceConfig => "Slice Config",
+            Self::Sliced => "Sliced",
+            Self::Supports => "Supports",
+            Self::Viewport => "Viewport",
+            Self::Workspace => "Workspace",
         }
     }
 }
@@ -58,6 +61,7 @@ impl TabViewer for Tabs<'_> {
         match tab {
             Tab::Logs => logs::ui(self.app, ui, self.ctx),
             Tab::Models => models::ui(self.app, ui, self.ctx),
+            Tab::Notes => notes::ui(self.app, ui, self.ctx),
             Tab::RemotePrint => remote_print::ui(self.app, ui, self.ctx),
             Tab::SliceConfig => slice_config::ui(self.app, ui, self.ctx),
             Tab::Sliced => sliced::ui(self.app, ui, self.ctx),

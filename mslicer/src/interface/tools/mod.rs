@@ -13,7 +13,6 @@ pub mod exposure_test;
 pub mod graphics_3d;
 pub mod height_map;
 pub mod internal_exposure_test;
-pub mod notes;
 pub mod phonograph_record;
 pub mod printed_circuit_board;
 pub mod sdf_slicer;
