@@ -18,12 +18,13 @@ use crate::{
     render::util::MeshBuffers,
 };
 
-// todo: rea
+// todo: organize this...
 #[derive(Default)]
 pub struct UiState {
     pub event_collector: EventCollector,
-    pub line_support_debug: Vec<[Vector3<f32>; 2]>,
+    pub close_requested: bool,
     pub queue_reset_ui: bool,
+    pub line_support_debug: Vec<[Vector3<f32>; 2]>,
     pub tool: Tool,
     pub select_start: Option<Vec2>,
 

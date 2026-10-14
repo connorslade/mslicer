@@ -58,8 +58,8 @@ impl OpenInto {
 
     pub fn start(self, app: &mut App) {
         if let Some(path) = self.project {
-            confirm_unsaved(app, move |app| {
-                app.tasks.add(ProjectLoad::new(path.to_path_buf()))
+            confirm_unsaved(app, move |_app| {
+                vec![Box::new(ProjectLoad::new(path.to_path_buf()))]
             });
         }
 

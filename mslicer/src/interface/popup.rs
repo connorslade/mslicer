@@ -1,4 +1,4 @@
-use std::mem;
+use std::{mem, path::PathBuf};
 
 use egui::{
     Align, Button, Color32, Context, Grid, Id, Label, Layout, RichText, Ui, UiBuilder, Widget,
@@ -15,7 +15,7 @@ use crate::{
     },
     interface::{components::button_row, panels::Panels},
     render::camera::Camera,
-    task::TaskManager,
+    task::{Task, TaskApp, TaskManager},
 };
 
 type UiFunction = dyn FnMut(&mut PopupApp, &mut Ui) -> bool;
@@ -37,6 +37,7 @@ pub struct Popup {
 }
 
 pub struct PopupApp<'a> {
+    pub config_dir: &'a mut PathBuf,
     pub panels: &'a mut Panels,
     pub tasks: &'a mut TaskManager,
     pub remote_print: &'a mut RemotePrintManager,
@@ -73,6 +74,7 @@ impl<'a> PopupManagerRef<'a> {
 
         let this = &mut self.app.popup;
         let mut app = PopupApp {
+            config_dir: &mut self.app.config_dir,
             panels: &mut self.app.panels,
             tasks: &mut self.app.tasks,
             remote_print: &mut self.app.remote_print,
@@ -211,36 +213,68 @@ impl PopupIcon {
 }
 
 impl<'a> PopupApp<'a> {
-    // kinda annoying this has to be duplicated...
-    pub fn from_app(app: &'a mut App) -> Self {
-        Self {
-            panels: &mut app.panels,
-            tasks: &mut app.tasks,
-            remote_print: &mut app.remote_print,
-            slice_operation: &mut app.slice_operation,
-            camera: &mut app.camera,
-            state: &mut app.state,
-            config: &mut app.config,
-            project: &mut app.project,
-            history: &mut app.history,
-        }
-    }
-
     // i know, i know…
     pub fn is_slicing(&self) -> bool {
         is_slicing(self.slice_operation)
     }
 }
 
+// what r we even doing at this point...
+#[allow(unused)]
+pub struct ConfirmUnsavedApp<'a> {
+    pub config_dir: &'a mut PathBuf, // only used on windows
+    pub config: &'a mut Config,
+    pub project: &'a mut Project,
+    pub history: &'a mut History,
+    pub state: &'a mut UiState,
+}
+
+impl<'a> ConfirmUnsavedApp<'a> {
+    pub fn from_app(app: &'a mut App) -> Self {
+        Self {
+            config_dir: &mut app.config_dir,
+            config: &mut app.config,
+            project: &mut app.project,
+            history: &mut app.history,
+            state: &mut app.state,
+        }
+    }
+
+    pub fn from_popup_app(app: &'a mut PopupApp) -> Self {
+        Self {
+            config_dir: &mut app.config_dir,
+            config: &mut app.config,
+            project: &mut app.project,
+            history: &mut app.history,
+            state: &mut app.state,
+        }
+    }
+
+    pub fn from_task_app(app: &'a mut TaskApp) -> Self {
+        Self {
+            config_dir: &mut app.config_dir,
+            config: &mut app.config,
+            project: &mut app.project,
+            history: &mut app.history,
+            state: &mut app.state,
+        }
+    }
+}
+
 // todo: add dirty flag to history
-pub fn confirm_unsaved(app: &mut App, mut callback: impl FnMut(&mut PopupApp) + 'static) {
+pub fn confirm_unsaved(
+    app: &mut App,
+    mut callback: impl FnMut(&mut ConfirmUnsavedApp) -> Vec<Box<dyn Task>> + 'static,
+) {
     if app.project.models.is_empty() {
-        callback(&mut PopupApp::from_app(app));
+        let tasks = callback(&mut ConfirmUnsavedApp::from_app(app));
+        app.tasks.extend_boxed(tasks);
         return;
     }
 
+    let mut callback = Some(callback);
     app.popup
-        .open(Popup::new("Unsaved Changes", move |app, ui| {
+        .open(Popup::new_seeded("Unsaved Changes", move |app, ui| {
             ui.add_space(8.0);
             ui.label(if app.project.path.is_some() {
                 "Do you want to save the changes made to this project?"
@@ -259,11 +293,14 @@ pub fn confirm_unsaved(app: &mut App, mut callback: impl FnMut(&mut PopupApp) + 
                 ],
             );
 
-            if save {
-                app.tasks.add_boxed(app.project.save());
-                callback(app);
-            } else if dont_save {
-                callback(app);
+            if save && let Some(mut callback) = callback.take() {
+                app.tasks.add_boxed(
+                    app.project
+                        .save(move |app| callback(&mut ConfirmUnsavedApp::from_task_app(app))),
+                );
+            } else if dont_save && let Some(mut callback) = callback.take() {
+                let tasks = callback(&mut ConfirmUnsavedApp::from_popup_app(app));
+                app.tasks.extend_boxed(tasks);
             }
 
             cancel || dont_save || save

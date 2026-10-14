@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use crate::{
     core::project::model::{Model, ModelId},
-    task::{FileDialog, ProjectLoad, ProjectSave, Task},
+    task::{FileDialog, ProjectLoad, ProjectSave, Task, TaskApp},
 };
 use common::{
     id_type,
@@ -102,21 +102,26 @@ impl Project {
         })
     }
 
-    pub fn save(&self) -> Box<dyn Task> {
+    pub fn save(
+        &self,
+        callback: impl FnOnce(&mut TaskApp) -> Vec<Box<dyn Task>> + 'static,
+    ) -> Box<dyn Task> {
         if let Some(path) = self.path.clone() {
-            Box::new(ProjectSave::new(self.clone(), path.to_path_buf()))
+            Box::new(ProjectSave::new(self.clone(), path.to_path_buf()).with_callback(callback))
         } else {
-            Box::new(self.save_as())
+            Box::new(self.save_as(callback))
         }
     }
 
-    pub fn save_as(&self) -> FileDialog {
+    pub fn save_as(
+        &self,
+        callback: impl FnOnce(&mut TaskApp) -> Vec<Box<dyn Task>> + 'static,
+    ) -> FileDialog {
         FileDialog::save_file(("mslicer project", &["mslicer"]), |app, path, tasks| {
             let path = path.with_extension("mslicer");
-            tasks.push(Box::new(ProjectSave::new(
-                app.project.clone(),
-                path.to_path_buf(),
-            )));
+            tasks.push(Box::new(
+                ProjectSave::new(app.project.clone(), path.to_path_buf()).with_callback(callback),
+            ));
             app.project.path = Some(path);
         })
     }

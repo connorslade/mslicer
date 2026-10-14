@@ -17,6 +17,8 @@ use crate::{
     task::{MeshAnalysis, PollResult, Task, TaskApp, TaskStatus, thread::TaskThread},
 };
 
+type Callback = Box<dyn FnOnce(&mut TaskApp) -> Vec<Box<dyn Task>>>;
+
 pub struct ProjectLoad {
     progress: Progress,
     path: PathBuf,
@@ -26,7 +28,9 @@ pub struct ProjectLoad {
 pub struct ProjectSave {
     progress: Progress,
     path: PathBuf,
+
     handle: TaskThread<()>,
+    callback: Option<Callback>,
 }
 
 impl ProjectLoad {
@@ -64,7 +68,19 @@ impl ProjectSave {
         Self {
             progress,
             path,
+
             handle,
+            callback: None,
+        }
+    }
+
+    pub fn with_callback(
+        self,
+        callback: impl FnOnce(&mut TaskApp) -> Vec<Box<dyn Task>> + 'static,
+    ) -> Self {
+        Self {
+            callback: Some(Box::new(callback)),
+            ..self
         }
     }
 }
@@ -113,7 +129,11 @@ impl Task for ProjectSave {
     fn poll(&mut self, app: &mut TaskApp) -> PollResult {
         (self.handle.poll(app, "Failed to Save Project")).into_poll_result(|_| {
             app.config.add_recent_project(self.path.to_path_buf());
-            PollResult::complete()
+            if let Some(callback) = self.callback.take() {
+                PollResult::complete().with_tasks(callback(app))
+            } else {
+                PollResult::complete()
+            }
         })
     }
 

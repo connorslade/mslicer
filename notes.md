@@ -6,10 +6,8 @@ Feel free to help out :eyes:.
 ## Bugs
 
 - check if slicing with spacemouse button causes crash
-- does the 'File › Install' button on windows close your project without saving?
 - resizing the window is laggy (bc of all the texture reallocs!)
 - fix long file names in remote print causing problems...
-- don't use currently selected printer resolution for sliced diff. Fail if the two files have differing resolutions.
 - some custom components dont work well on light mode
 - if you make changes to a project in the time that it takes for another project to load, your changes will be deleted
 - don't allow starting multiple build acc structure tasks
@@ -33,7 +31,6 @@ Feel free to help out :eyes:.
 - task cancellation mechanism
 - release updated msla_format
 - game style camera (arrow keys to move)
-- plot voxel error across different triangulations
 - different support colors (also diff default styles)
 - sliced post processing
   - remove islands ←
@@ -75,6 +72,7 @@ Features that would be cool, but are a bit out of scope for now.
 - optimize elephant foot post processing (deprecated post processor)
 - slice b-rep?
   - at what point of mesh resolution is polygon intersection slower 
+  - plot voxel error across different triangulations
 - scripting???
 - dont make 'Saturn 3 Ultra' the default profile
   - add an unselected option to force users to pick the right printer?

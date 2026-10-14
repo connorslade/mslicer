@@ -138,28 +138,26 @@ fn new(app: &mut App, _ctx: &Context) {
     confirm_unsaved(app, |app| {
         app.project.reset(&app.config.default_slice_config);
         app.history.clear();
+        Vec::new()
     });
 }
 
 fn save(app: &mut App, _ctx: &Context) {
-    let task = app.project.save();
+    let task = app.project.save(|_| Vec::new());
     app.tasks().add_boxed(task);
 }
 
 fn save_as(app: &mut App, _ctx: &Context) {
-    let task = app.project.save_as();
+    let task = app.project.save_as(|_| Vec::new());
     app.tasks().add(task);
 }
 
 fn load(app: &mut App, _ctx: &Context) {
-    confirm_unsaved(app, |app| app.tasks.add(Project::load()));
+    confirm_unsaved(app, |_app| vec![Box::new(Project::load())]);
 }
 
-fn quit(app: &mut App, ctx: &Context) {
-    let ctx = ctx.clone();
-    confirm_unsaved(app, move |_app| {
-        ctx.send_viewport_cmd(ViewportCommand::Close);
-    });
+fn quit(_app: &mut App, ctx: &Context) {
+    ctx.send_viewport_cmd(ViewportCommand::Close);
 }
 
 fn slice(app: &mut App, _ctx: &Context) {

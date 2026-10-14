@@ -75,8 +75,8 @@ pub fn ui(app: &mut App, ctx: &Context) {
                             }
 
                             if let Some(path) = load {
-                                confirm_unsaved(app, move |app| {
-                                    app.tasks.add(ProjectLoad::new(path.to_path_buf()))
+                                confirm_unsaved(app, move |_app| {
+                                    vec![Box::new(ProjectLoad::new(path.to_path_buf()))]
                                 });
                             }
                         });
@@ -91,11 +91,17 @@ pub fn ui(app: &mut App, ctx: &Context) {
                     });
 
                     labeled_separator(ui, "Misc");
+
                     #[cfg(windows)]
                     if app.config.portable && ui.button("Install").clicked() {
-                        app.config.portable = false;
-                        let _ = app.config.save(&app.config_dir);
-                        launch_install().unwrap();
+                        confirm_unsaved(app, |app| {
+                            if launch_install().is_ok() {
+                                app.config.portable = false;
+                                let _ = app.config.save(&app.config_dir);
+                                app.state.close_requested = true;
+                            }
+                            Vec::new()
+                        });
                     }
 
                     menu_button((ui, app, ctx), &shortcuts::QUIT_SHORTCUT, "Quit");

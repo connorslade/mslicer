@@ -1,5 +1,6 @@
 use std::{
     borrow::Cow,
+    path::PathBuf,
     sync::mpsc::{self, Receiver, SyncSender},
 };
 
@@ -55,6 +56,7 @@ pub struct TaskManager {
 /// these fields in task callbacks without two mutable references to the
 /// TaskManager.
 pub struct TaskApp<'a> {
+    pub config_dir: &'a mut PathBuf,
     pub panels: &'a mut Panels,
     pub popup: &'a mut PopupManager,
     pub slice_operation: &'a mut Option<SliceOperation>,
@@ -87,6 +89,10 @@ impl TaskManager {
         self.tasks.push(task);
     }
 
+    pub fn extend_boxed(&mut self, task: impl IntoIterator<Item = Box<dyn Task>>) {
+        self.tasks.extend(task);
+    }
+
     pub fn iter(&self) -> impl Iterator<Item = &Box<dyn Task>> {
         self.tasks.iter()
     }
@@ -116,6 +122,7 @@ impl<'a> TaskManagerRef<'a> {
         }
 
         let mut app = TaskApp {
+            config_dir: &mut self.app.config_dir,
             panels: &mut self.app.panels,
             popup: &mut self.app.popup,
             slice_operation: &mut self.app.slice_operation,

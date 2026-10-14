@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use egui::{Theme, ViewportCommand, Visuals};
+use egui::{Context, Theme, ViewportCommand, Visuals};
 use egui_tracing::EventCollector;
 use egui_wgpu::RenderState;
 use nalgebra::Vector3;
@@ -18,7 +18,7 @@ use crate::{
     interface::{
         self,
         panels::{self, Panels},
-        popup::PopupManager,
+        popup::{PopupManager, confirm_unsaved},
     },
     render::{
         Gcx,
@@ -121,7 +121,7 @@ impl App {
         }
     }
 
-    pub fn set_title(&mut self, ctx: &egui::Context) {
+    pub fn set_title(&mut self, ctx: &Context) {
         let title = if let Some(stem) = self.project.path.as_ref().and_then(|x| x.file_stem()) {
             format!("mslicer — {}", stem.to_string_lossy())
         } else {
@@ -142,9 +142,10 @@ impl App {
 
 // todo: move more of this or even the whole trait impl to interface
 impl eframe::App for App {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+    fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
         ctx.request_repaint();
         self.set_title(ctx);
+        save_before_close(self, ctx);
 
         self.project.update();
         self.panels.update(ctx.viewport_rect().width());
@@ -185,4 +186,19 @@ pub fn is_slicing(slice_operation: &Option<SliceOperation>) -> bool {
         .as_ref()
         .map(|x| !x.progress.complete())
         .unwrap_or_default()
+}
+
+fn save_before_close(app: &mut App, ctx: &Context) {
+    if app.state.close_requested {
+        ctx.send_viewport_cmd(ViewportCommand::Close);
+        return;
+    }
+
+    if ctx.input(|i| i.viewport().close_requested()) {
+        ctx.send_viewport_cmd(ViewportCommand::CancelClose);
+        confirm_unsaved(app, |app| {
+            app.state.close_requested = true;
+            Vec::new()
+        });
+    }
 }
