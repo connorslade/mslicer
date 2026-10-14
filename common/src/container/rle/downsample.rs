@@ -106,11 +106,11 @@ pub fn pad_2d(
     let padded_y = size.y.div_ceil(factor) * factor;
 
     let mut out = Vec::new();
-    for mut row in chunks(runs, size.x as u32) {
+    for mut row in chunks(runs, size.x) {
         let row_len = row.iter().map(|r| r.length).sum::<u32>();
-        if row_len < padded_x as u32 {
+        if row_len < padded_x {
             row.push(Run {
-                length: padded_x as u32 - row_len,
+                length: padded_x - row_len,
                 value: pad_value,
             });
         }
@@ -119,7 +119,7 @@ pub fn pad_2d(
 
     if size.y < padded_y {
         out.push(Run {
-            length: (padded_y - size.y) as u32 * padded_x as u32,
+            length: (padded_y - size.y) * padded_x,
             value: pad_value,
         });
     }

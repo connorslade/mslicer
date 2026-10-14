@@ -94,11 +94,11 @@ impl DecompressPass {
                     remaining -= take;
 
                     data.push(i);
-                    data.push((take as u32) << 8 | run.value as u32);
-                    i += take as u32;
+                    data.push(take << 8 | run.value as u32);
+                    i += take;
                 }
             } else {
-                i += run.length as u32;
+                i += run.length;
             }
         }
 

@@ -77,7 +77,7 @@ impl<'a> PngEncoder<'a> {
     }
 
     pub fn write_image_data(&mut self, mut data: Vec<Run>) {
-        let width = self.size.x as u32 * self.color.planes() as u32;
+        let width = self.size.x * self.color.planes() as u32;
         intersperse_runs(&mut data, Run::new(1, 0), 0, width);
 
         let mut check = Adler32::new();

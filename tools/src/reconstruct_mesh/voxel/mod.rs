@@ -110,17 +110,17 @@ impl VoxelReconstruction {
 
                     if dir ^ last {
                         last = dir;
-                        self.x_face(x as u32, y, z, !dir);
+                        self.x_face(x, y, z, !dir);
                     }
 
-                    (dir ^ prev_dir).then(|| self.y_face(x as u32, y, z, n as u32, dir));
-                    (z == 0 && dir).then(|| self.z_face(x as u32, y, 0, n as u32, false));
-                    (dir ^ above_dir).then(|| self.z_face(x as u32, y, z + 1, n as u32, dir));
+                    (dir ^ prev_dir).then(|| self.y_face(x, y, z, n, dir));
+                    (z == 0 && dir).then(|| self.z_face(x, y, 0, n, false));
+                    (dir ^ above_dir).then(|| self.z_face(x, y, z + 1, n, dir));
 
                     x += n;
                 }
 
-                last.then(|| self.x_face(x as u32, y, z, true));
+                last.then(|| self.x_face(x, y, z, true));
             }
 
             progress.add_complete(1);

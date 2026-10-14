@@ -55,7 +55,7 @@ impl LayerEncoder {
     pub fn image_data(mut self) -> Vec<u8> {
         let mut ser = DynamicSerializer::new();
 
-        let width = self.platform.x as u32;
+        let width = self.platform.x;
         let sub_pad = 3 - width % 3;
         if sub_pad != 3 {
             let run = Run::new(sub_pad, 0);
