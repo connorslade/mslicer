@@ -31,10 +31,7 @@ use crate::{
             SPLIT_SHORTCUT, UiAction, shortcut,
         },
     },
-    task::{
-        BuildAccelerationStructures, FileDialog, FlipWinding, MeshRepair, MeshSave, ReloadModel,
-        SplitBodies,
-    },
+    task::{FileDialog, FlipWinding, MeshRepair, MeshSave, ReloadModel, SplitBodies},
 };
 
 const WARN_DEFECTIVE: &str = "This mesh is defective, it may produce unexpected results when sliced.\nConsider running it through a mesh repair tool.";
@@ -189,12 +186,6 @@ pub fn model_properties(
 
             model.align_to_bed();
             model.update_oob(platform);
-        }
-
-        if !model.has_acceleration_structures()
-            && ui.button(concatcp!(LINE_SEGMENT, " Prepare")).clicked()
-        {
-            app.tasks.add(BuildAccelerationStructures::new(model));
         }
 
         if ui.button(concatcp!(SWAP, " Replace")).clicked() {

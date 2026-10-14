@@ -132,7 +132,8 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
 
     // Can't just use `response.contains_pointer()` since the hover overlay can
     // take focus away from the viewport.
-    if let Some(hover) = app.state.hovered_geometry
+    if app.state.select_start.is_none()
+        && let Some(hover) = app.state.hovered_geometry
         && response.rect.contains(px)
         && ctx.layer_id_at(px) == Some(ui.layer_id())
     {

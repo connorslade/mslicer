@@ -7,30 +7,9 @@ use egui_phosphor::regular::{LINE_SEGMENT, SELECTION_INVERSE, SPARKLE, TRASH};
 use slicer::geometry::mesh::MeshBuilder;
 use tools::supports::auto::{AutoPlacement, route_support};
 
-use crate::{
-    core::{App, project::model::Model},
-    interface::components::grid,
-    task::BuildAccelerationStructures,
-};
-
-const NEEDS_ACC_STRUCTURES: &str = "In order to place supports, you need to prepare the models you want to support (build acceleration structures). This can be done per model with the 'Prepare' button in the models panel.";
+use crate::{core::App, interface::components::grid, task::BuildAccelerationStructures};
 
 pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
-    let any_acc_built = app
-        .project
-        .models
-        .iter()
-        .any(Model::has_acceleration_structures);
-
-    if !any_acc_built {
-        ui.heading("Initialization");
-        ui.label(NEEDS_ACC_STRUCTURES);
-        ui.add_space(8.0);
-
-        ui.vertical_centered(|ui| prepare(app, ui));
-        return;
-    }
-
     ui.horizontal(|ui| {
         let support_mode = &mut app.state.support_mode;
         *support_mode ^= Button::selectable(!*support_mode, "Place").ui(ui).clicked();
@@ -107,10 +86,19 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
             ui.menu_button(concatcp!(SPARKLE, " Auto"), |ui| {
                 ui.set_width(200.0);
 
+                let mut any = false;
                 for idx in 0..app.project.models.len() {
-                    if ui.button(&app.project.models[idx].name).clicked() {
-                        generate_support(app, idx);
+                    let model = &app.project.models[idx];
+                    if model.has_acceleration_structures() {
+                        any = true;
+                        if ui.button(&model.name).clicked() {
+                            generate_support(app, idx);
+                        }
                     }
+                }
+
+                if !any {
+                    ui.label("No models have been prepared for supports.");
                 }
             });
         });
