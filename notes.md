@@ -40,7 +40,6 @@ Feel free to help out :eyes:.
   - exposure remap
 - reduce power usage (dont always re-render, don't re-do work)
 - two stage lift config!! (how have i left this unimplemented for so long!)
-- some way to disable building acc structures? for when you dont need supports.
 - slice config presets
 
 ## Documentation

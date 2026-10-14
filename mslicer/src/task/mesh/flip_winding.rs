@@ -4,9 +4,7 @@ use slicer::geometry::mesh::Mesh;
 
 use crate::{
     core::project::model::{Model, ModelId},
-    task::{
-        BuildAccelerationStructures, PollResult, Task, TaskApp, TaskStatus, thread::TaskThread,
-    },
+    task::{PollResult, Task, TaskApp, TaskStatus, thread::TaskThread},
 };
 
 pub struct FlipWinding {
@@ -53,7 +51,7 @@ impl Task for FlipWinding {
                 };
 
                 model.replace_mesh(mesh, None, &platform);
-                PollResult::complete().with_task(BuildAccelerationStructures::new(model))
+                PollResult::complete()
             })
     }
 

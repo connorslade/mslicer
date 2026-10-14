@@ -1,21 +1,44 @@
 use common::units::Milimeter;
 use const_format::concatcp;
-use egui::{Button, Context, DragValue, Ui, Widget};
-use egui_phosphor::regular::{SELECTION_INVERSE, SPARKLE, TRASH};
+use egui::{Align, Button, Context, DragValue, Layout, Ui, Widget};
+use egui_phosphor::regular::{LINE_SEGMENT, SELECTION_INVERSE, SPARKLE, TRASH};
 use slicer::geometry::mesh::MeshBuilder;
 use tools::supports::auto::{AutoPlacement, route_support};
 
-use crate::{core::App, interface::components::grid};
+use crate::{
+    core::{App, project::model::Model},
+    interface::components::grid,
+    task::BuildAccelerationStructures,
+};
+
+const NEEDS_ACC_STRUCTURES: &str = "In order to place supports, you need to prepare the models you want to support (build acceleration structures). This can be done per model with the 'Prepare' button in the models panel.";
 
 pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
-    let support_mode = &mut app.state.support_mode;
+    let any_acc_built = app
+        .project
+        .models
+        .iter()
+        .any(Model::has_acceleration_structures);
+
+    if !any_acc_built {
+        ui.heading("Initialization");
+        ui.label(NEEDS_ACC_STRUCTURES);
+        ui.add_space(8.0);
+
+        ui.vertical_centered(|ui| prepare(app, ui));
+        return;
+    }
+
     ui.horizontal(|ui| {
+        let support_mode = &mut app.state.support_mode;
         *support_mode ^= Button::selectable(!*support_mode, "Place").ui(ui).clicked();
         *support_mode ^= Button::selectable(*support_mode, "Edit").ui(ui).clicked();
+
+        ui.with_layout(Layout::right_to_left(Align::Center), |ui| prepare(app, ui));
     });
     ui.separator();
 
-    if *support_mode {
+    if app.state.support_mode {
         // edit
         let selected = &mut app.state.selected_supports;
         let selected_count = selected.count();
@@ -196,6 +219,16 @@ pub fn manual_support_placement(app: &mut App, clicked: bool) {
     }
 
     app.state.support_preview = (!builder.is_empty()).then(|| builder.build());
+}
+
+fn prepare(app: &mut App, ui: &mut Ui) {
+    let active = (app.project.models.iter()).any(|model| !model.has_acceleration_structures());
+    let button = Button::new(concatcp!(LINE_SEGMENT, " Prepare All"));
+    if ui.add_enabled(active, button).clicked() {
+        // todo: will rebuild acc structures unnecessarily!!!
+        (app.project.meshes())
+            .for_each(|mesh| app.tasks.add(BuildAccelerationStructures::new_mesh(mesh)));
+    }
 }
 
 // NO DRUGS

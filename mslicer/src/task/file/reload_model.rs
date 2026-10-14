@@ -10,10 +10,7 @@ use tracing::info;
 
 use crate::{
     core::project::model::ModelId,
-    task::{
-        BuildAccelerationStructures, MeshAnalysis, PollResult, Task, TaskApp, TaskStatus,
-        thread::TaskThread,
-    },
+    task::{MeshAnalysis, PollResult, Task, TaskApp, TaskStatus, thread::TaskThread},
 };
 
 pub struct ReloadModel {
@@ -60,9 +57,7 @@ impl Task for ReloadModel {
             let platform_size = app.project.slice_config.platform_size;
             if let Some(model) = app.project.model(self.model) {
                 model.replace_mesh(mesh, Some(mem::take(&mut self.path)), &platform_size);
-                PollResult::complete()
-                    .with_task(MeshAnalysis::new(model))
-                    .with_task(BuildAccelerationStructures::new(model))
+                PollResult::complete().with_task(MeshAnalysis::new(model))
             } else {
                 PollResult::complete()
             }

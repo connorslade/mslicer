@@ -6,10 +6,7 @@ use tracing::info;
 use crate::{
     core::project::model::{Model, ModelId},
     interface::{components::grid, popup::Popup},
-    task::{
-        BuildAccelerationStructures, MeshAnalysis, PollResult, Task, TaskApp, TaskStatus,
-        thread::TaskThread,
-    },
+    task::{MeshAnalysis, PollResult, Task, TaskApp, TaskStatus, thread::TaskThread},
 };
 
 pub struct MeshRepair {
@@ -96,9 +93,7 @@ impl Task for MeshRepair {
                     close
                 }));
 
-                PollResult::complete()
-                    .with_task(MeshAnalysis::new(model))
-                    .with_task(BuildAccelerationStructures::new(model))
+                PollResult::complete().with_task(MeshAnalysis::new(model))
             })
     }
 

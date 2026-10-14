@@ -3,7 +3,7 @@ use std::sync::Arc;
 use clone_macro::clone;
 use common::progress::Progress;
 use slicer::geometry::{
-    mesh::{HalfEdgeMesh, MeshId},
+    mesh::{HalfEdgeMesh, Mesh, MeshId},
     partitioning::Bvh,
 };
 
@@ -14,7 +14,7 @@ use crate::{
 
 pub struct BuildAccelerationStructures {
     mesh_id: MeshId,
-    name: String,
+    name: Option<String>,
 
     progress: Progress,
     handle: TaskThread<(Arc<Bvh>, Arc<HalfEdgeMesh>)>,
@@ -26,10 +26,25 @@ impl BuildAccelerationStructures {
         let mesh = model.mesh.inner().clone();
         Self {
             mesh_id: model.mesh.mesh_id(),
-            name: model.name.clone(),
+            name: Some(model.name.clone()),
             handle: TaskThread::spawn(clone!([progress], move || {
                 let bvh = Bvh::build(&mesh, progress);
                 let half_edge = HalfEdgeMesh::build_from_mesh(&mesh);
+                (Arc::new(bvh), Arc::new(half_edge))
+            })),
+            progress,
+        }
+    }
+
+    pub fn new_mesh(mesh: &Mesh) -> Self {
+        let progress = Progress::new();
+        let inner = mesh.inner().clone();
+        Self {
+            mesh_id: mesh.mesh_id(),
+            name: None,
+            handle: TaskThread::spawn(clone!([progress], move || {
+                let bvh = Bvh::build(&inner, progress);
+                let half_edge = HalfEdgeMesh::build_from_mesh(&inner);
                 (Arc::new(bvh), Arc::new(half_edge))
             })),
             progress,
@@ -57,7 +72,7 @@ impl Task for BuildAccelerationStructures {
     fn status(&self) -> Option<TaskStatus<'_>> {
         Some(TaskStatus {
             name: "Building Acceleration Structures".into(),
-            details: Some(format!("For `{}`", self.name)),
+            details: self.name.as_ref().map(|name| format!("For `{name}`")),
             progress: self.progress.progress(),
         })
     }

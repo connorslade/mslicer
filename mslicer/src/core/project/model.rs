@@ -145,6 +145,10 @@ impl Model {
         self
     }
 
+    pub fn has_acceleration_structures(&self) -> bool {
+        self.bvh.is_some() && self.half_edge.is_some()
+    }
+
     pub fn try_get_buffers(&self) -> Option<&MeshBuffers> {
         self.buffers.as_ref()
     }

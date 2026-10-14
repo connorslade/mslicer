@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::{collections::HashMap, path::PathBuf};
 
 use crate::{
     core::project::model::{Model, ModelId},
@@ -10,8 +10,11 @@ use common::{
     slice::{Layer, SliceConfig},
     units::Milimeters,
 };
-use slicer::post_process::{
-    elephant_foot_fixer::ElephantFootFixer, variable_layer_height::VariableLayerHeight,
+use slicer::{
+    geometry::mesh::Mesh,
+    post_process::{
+        elephant_foot_fixer::ElephantFootFixer, variable_layer_height::VariableLayerHeight,
+    },
 };
 use tools::supports::{auto::PlacementConfig, mesh::SupportPreset};
 
@@ -83,6 +86,15 @@ impl Project {
 
     pub fn model(&mut self, id: ModelId) -> Option<&mut Model> {
         self.models.iter_mut().find(|x| x.id == id)
+    }
+
+    pub fn meshes(&self) -> impl Iterator<Item = &Mesh> {
+        let mut meshes = HashMap::new();
+        for model in self.models.iter() {
+            meshes.entry(model.mesh.mesh_id()).or_insert(&model.mesh);
+        }
+
+        meshes.into_values()
     }
 
     pub fn collection(&mut self, id: CollectionId) -> Option<&mut Collection> {

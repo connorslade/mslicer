@@ -6,13 +6,13 @@ use common::{
 };
 use const_format::concatcp;
 use egui::{
-    CollapsingHeader, Color32, ComboBox, Context, DragValue, Label, Popup, Response, Sense,
-    TextEdit, Ui, UiBuilder, Widget, text::CCursorRange, vec2,
+    Align, CollapsingHeader, Color32, ComboBox, Context, DragValue, Label, Layout, Popup, Response,
+    Sense, TextEdit, Ui, UiBuilder, Widget, text::CCursorRange, vec2,
 };
 use egui_phosphor::regular::{
     ARROW_LINE_DOWN, ARROWS_COUNTER_CLOCKWISE, BANDAIDS, COPY, CUBE, CURSOR_TEXT, DICE_THREE, EYE,
-    EYE_SLASH, FLOPPY_DISK_BACK, FOLDER_DASHED, INFO, LINK_BREAK, LINK_SIMPLE, SUBTRACT_SQUARE,
-    SWAP, TRASH, VECTOR_THREE, WARNING,
+    EYE_SLASH, FLOPPY_DISK_BACK, FOLDER_DASHED, INFO, LINE_SEGMENT, LINK_BREAK, LINK_SIMPLE,
+    SUBTRACT_SQUARE, SWAP, TRASH, VECTOR_THREE, WARNING,
 };
 use nalgebra::Vector3;
 
@@ -33,11 +33,16 @@ use crate::{
             SPLIT_SHORTCUT, UiAction, shortcut,
         },
     },
-    task::{FileDialog, FlipWinding, MeshRepair, MeshSave, ReloadModel, SplitBodies},
+    task::{
+        BuildAccelerationStructures, FileDialog, FlipWinding, MeshRepair, MeshSave, ReloadModel,
+        SplitBodies,
+    },
 };
 
 const WARN_DEFECTIVE: &str = "This mesh is defective, it may produce unexpected results when sliced.\nConsider running it through a mesh repair tool.";
 const WARN_OUT_OF_BOUNDS: &str = "This mesh extends beyond the printer volume and will be cut off.";
+const SUPPORTABLE_TIP: &str =
+    "Acceleration structures have been built for this mesh.\nSupports can be placed or generated.";
 const UNIT_TIP: &str = "Common polygon mesh formats like .stl and .obj don't include unit information. For this reason you need to manually specify the units for each mesh, although Millimeters, the default, is often correct.";
 const CUSTOM_UNIT_TIP: &str = "To use a custom unit, input the conversion factor from the input unit to Millimeters. For example if your mesh was defined in feet (for some reason) you would use 30.48.";
 
@@ -92,19 +97,6 @@ pub fn model_entry(
                 model.hidden ^= true;
             }
 
-            if !model.warnings.is_empty() {
-                let count = model.warnings.bits().count_ones();
-                let mut warn = ui.label(format!("{WARNING}{}", subscript_number(count)));
-                for warning in model.warnings.iter() {
-                    let desc = match warning {
-                        MeshWarnings::Defective => WARN_DEFECTIVE,
-                        MeshWarnings::OutOfBounds => WARN_OUT_OF_BOUNDS,
-                        _ => unreachable!(),
-                    };
-                    warn = warn.on_hover_text(desc);
-                }
-            }
-
             if matches!(model.ui.rename, RenameState::None) {
                 Label::new(&model.name).selectable(false).ui(ui);
             } else {
@@ -126,7 +118,26 @@ pub fn model_entry(
                 )
             }
 
-            ui.take_available_width();
+            ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                let icon = |icon: &str| Label::new(icon).selectable(false);
+
+                if !model.warnings.is_empty() {
+                    let count = model.warnings.bits().count_ones();
+                    let mut warn = icon(&format!("{WARNING}{}", subscript_number(count))).ui(ui);
+                    for warning in model.warnings.iter() {
+                        let desc = match warning {
+                            MeshWarnings::Defective => WARN_DEFECTIVE,
+                            MeshWarnings::OutOfBounds => WARN_OUT_OF_BOUNDS,
+                            _ => unreachable!(),
+                        };
+                        warn = warn.on_hover_text(desc);
+                    }
+                }
+
+                if model.has_acceleration_structures() {
+                    icon(LINE_SEGMENT).ui(ui).on_hover_text(SUPPORTABLE_TIP);
+                }
+            });
         });
     });
 
@@ -180,6 +191,12 @@ pub fn model_properties(
 
             model.align_to_bed();
             model.update_oob(platform);
+        }
+
+        if !model.has_acceleration_structures()
+            && ui.button(concatcp!(LINE_SEGMENT, " Prepare")).clicked()
+        {
+            app.tasks.add(BuildAccelerationStructures::new(model));
         }
 
         if ui.button(concatcp!(SWAP, " Replace")).clicked() {

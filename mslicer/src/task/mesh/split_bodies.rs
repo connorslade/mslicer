@@ -9,10 +9,7 @@ use crate::{
         Collection,
         model::{Model, ModelId},
     },
-    task::{
-        BuildAccelerationStructures, MeshAnalysis, PollResult, Task, TaskApp, TaskStatus,
-        thread::TaskThread,
-    },
+    task::{MeshAnalysis, PollResult, Task, TaskApp, TaskStatus, thread::TaskThread},
 };
 
 pub struct SplitBodies {
@@ -89,9 +86,7 @@ impl Task for SplitBodies {
                         .with_collection(Some(collection.id))
                         .with_random_color();
                     model.update_oob(&app.project.slice_config.platform_size);
-                    result = result
-                        .with_task(MeshAnalysis::new(&model))
-                        .with_task(BuildAccelerationStructures::new(&model));
+                    result = result.with_task(MeshAnalysis::new(&model));
                     app.project.models.push(model);
                 }
 

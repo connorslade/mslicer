@@ -19,10 +19,7 @@ use tracing::info;
 
 use crate::{
     core::{history::Action, project::model::Model},
-    task::{
-        BuildAccelerationStructures, MeshAnalysis, PollResult, Task, TaskApp, TaskStatus,
-        thread::TaskThread,
-    },
+    task::{MeshAnalysis, PollResult, Task, TaskApp, TaskStatus, thread::TaskThread},
 };
 
 pub struct MeshLoad {
@@ -94,9 +91,7 @@ impl Task for MeshLoad {
                 .width_file(self.file.take())
                 .with_random_color();
             model.update_oob(&app.project.slice_config.platform_size);
-            let result = PollResult::complete()
-                .with_task(MeshAnalysis::new(&model))
-                .with_task(BuildAccelerationStructures::new(&model));
+            let result = PollResult::complete().with_task(MeshAnalysis::new(&model));
             app.history.track(Action::ModelAdded { id: model.id });
             app.project.models.push(model);
             result
