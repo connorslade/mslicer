@@ -59,7 +59,7 @@ impl<'a> LockedAnnotations<'a> {
         unsafe { mem::transmute::<Vec<Run<Annotation>>, Vec<Run<u8>>>(layer.clone()) }
     }
 
-    pub fn insert_layer(&mut self, annotation: Annotation, layer: usize, runs: &[u32]) {
+    pub fn insert_layer(&mut self, annotation: Annotation, layer: usize, runs: &[u64]) {
         assert!(!self.layers.contains_key(&layer)); // not yet implemented!
 
         let runs = runs

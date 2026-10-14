@@ -28,7 +28,7 @@ impl LayerEncoder {
         }
     }
 
-    pub fn add_run(&mut self, length: u32, value: u8) {
+    pub fn add_run(&mut self, length: u64, value: u8) {
         // byte 0: aabbcccc
         // a => 0: full black, 1: full white, 2: small diff, 3: large diff
         // b => 0: 4 bit length, 1: 12 bit value, 2: 20 bit value, 3: 28 bit value
@@ -119,7 +119,7 @@ impl EncodableLayer for LayerEncoder {
         Self::default()
     }
 
-    fn add_run(&mut self, length: u32, value: u8) {
+    fn add_run(&mut self, length: u64, value: u8) {
         self.add_run(length, value);
     }
 
@@ -191,7 +191,7 @@ impl Iterator for LayerDecoder<'_> {
                     length = 1;
                 } else {
                     self.offset += 1;
-                    length = self.data[self.offset] as u32;
+                    length = self.data[self.offset] as u64;
                 }
                 if diff_type & 0b10 == 0 {
                     self.color += diff_value;
@@ -204,27 +204,26 @@ impl Iterator for LayerDecoder<'_> {
         };
 
         if chunk_type != 0b10 {
-            let base = (head & 0x0F) as u32;
+            let base = (head & 0x0F) as u64;
             match chunk_length_size {
                 0b00 => length = base,
                 0b01 => {
-                    length = base + ((self.data[self.offset + 1] as u32) << 4);
+                    length = base + ((self.data[self.offset + 1] as u64) << 4);
                     self.offset += 1;
                 }
                 0b10 => {
                     length = base
-                        + ((self.data[self.offset + 1] as u32) << 12)
-                        + ((self.data[self.offset + 2] as u32) << 4);
+                        + ((self.data[self.offset + 1] as u64) << 12)
+                        + ((self.data[self.offset + 2] as u64) << 4);
                     self.offset += 2;
                 }
                 0b11 => {
                     length = base
-                        + ((self.data[self.offset + 1] as u32) << 20)
-                        + ((self.data[self.offset + 2] as u32) << 12)
-                        + ((self.data[self.offset + 3] as u32) << 4);
+                        + ((self.data[self.offset + 1] as u64) << 20)
+                        + ((self.data[self.offset + 2] as u64) << 12)
+                        + ((self.data[self.offset + 3] as u64) << 4);
                     self.offset += 3;
                 }
-
                 _ => unreachable!(),
             };
         }

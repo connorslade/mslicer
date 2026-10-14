@@ -15,7 +15,7 @@ pub struct ImageRuns<'a, T = u8> {
     inner: &'a [T],
 
     last_value: T,
-    last_idx: u32,
+    last_idx: u64,
 }
 
 impl Image {
@@ -125,7 +125,7 @@ impl<T: PartialEq + Copy + Default> Iterator for ImageRuns<'_, T> {
     type Item = Run<T>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let size = self.inner.len() as u32;
+        let size = self.inner.len() as u64;
         if self.last_idx >= size {
             return None;
         }

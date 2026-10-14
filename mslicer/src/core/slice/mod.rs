@@ -104,7 +104,7 @@ impl SliceOperationInner {
             .convert();
 
         let voxels = (layers.iter())
-            .flat_map(|x| (x.data.iter().filter(|x| x.value != 0)).map(|x| x.length as u64))
+            .flat_map(|x| x.data.iter().filter(|x| x.value != 0).map(|x| x.length))
             .sum::<u64>();
 
         let elapsed = self.start_time.elapsed();

@@ -40,7 +40,7 @@ pub trait EncodableLayer {
     type Output: Send;
 
     fn new(platform: Vector2<u32>) -> Self;
-    fn add_run(&mut self, length: u32, value: u8);
+    fn add_run(&mut self, length: u64, value: u8);
     fn finish(
         self,
         config: &SliceConfig,
@@ -62,7 +62,7 @@ pub struct Layer {
     pub data: Arc<Vec<Run>>,
     pub area: u64,
     pub height: Milimeters,
-    pub defects: u32, // Number of scan lines affected by mesh errors
+    pub defects: u64, // Number of scan lines affected by mesh errors
 
     /// If this exposure is not derived directly from the slice config.
     pub unique_exposure: bool,
@@ -75,9 +75,10 @@ impl Layer {
     }
 
     pub fn new_arc(data: Arc<Vec<Run>>, height: Milimeters, exposure: ExposureConfig) -> Self {
-        let area = (data.iter())
+        let area = data
+            .iter()
             .filter(|x| x.value > 0)
-            .fold(0, |acc, run| acc + run.length as u64);
+            .fold(0, |acc, run| acc + run.length);
 
         Self {
             data,
@@ -90,7 +91,7 @@ impl Layer {
         }
     }
 
-    pub fn with_defects(self, defects: u32) -> Self {
+    pub fn with_defects(self, defects: u64) -> Self {
         Self { defects, ..self }
     }
 }

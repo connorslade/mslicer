@@ -23,7 +23,7 @@ impl TestPattern {
     pub fn slice_config(&self, _config: &mut SliceConfig) {}
 
     pub fn generate(&self, config: &SliceConfig, progress: &Progress) -> Vec<Layer> {
-        let pixels = config.platform_resolution.x * config.platform_resolution.y;
+        let pixels = config.platform_resolution.x as u64 * config.platform_resolution.y as u64;
         progress.set_total(1 + self.layers as u64);
 
         let mut data = Vec::new();

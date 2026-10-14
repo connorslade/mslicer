@@ -71,7 +71,7 @@ impl SlicedDiff {
         let (_, new) = self.new.load(progress).unwrap();
 
         let platform = loaded_config.platform_resolution;
-        let pixels = platform.x * platform.y;
+        let pixels = platform.x as u64 * platform.y as u64;
         let empty = Arc::new(vec![Run::new(pixels, 0)]);
 
         let result = &self.result;
@@ -133,7 +133,7 @@ impl SlicedDiff {
 
             let [old_value, new_value] = [old.value, new.value].map(|x| self.threshold(x));
             if old_value != new_value {
-                diff += length as u64;
+                diff += length;
                 value_diff += length as i64
                     * match self.difference {
                         Difference::Absolute => new_value.abs_diff(old_value) as i64,

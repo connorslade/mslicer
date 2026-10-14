@@ -93,7 +93,7 @@ fn main() -> Result<()> {
     let handle = thread::spawn(clone!([{ encoding_progress } as p], move || {
         let layers = slicer.slice_raster();
         let voxels = (layers.iter())
-            .flat_map(|x| (x.data.iter().filter(|x| x.value != 0)).map(|x| x.length as u64))
+            .flat_map(|x| x.data.iter().filter(|x| x.value != 0).map(|x| x.length))
             .sum::<u64>();
         export_raster(&p, &slicer.slice_config, layers, voxels, format)
     }));
