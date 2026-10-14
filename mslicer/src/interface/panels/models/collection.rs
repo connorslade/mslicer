@@ -1,17 +1,22 @@
+use const_format::concatcp;
 use egui::{
     Color32, Context, DragAndDrop, Id, Label, LayerId, Order, Rect, Sense, Ui, UiBuilder, Widget,
     emath::TSTransform, vec2,
 };
-use egui_phosphor::regular::{FOLDER, FOLDER_OPEN};
+use egui_phosphor::regular::{CURSOR_TEXT, EYE, EYE_SLASH, FOLDER, FOLDER_OPEN, SELECTION, TRASH};
 
 use crate::{
     core::{
         App,
+        history::{Action, ModelAction},
         project::{CollectionId, RenameState},
     },
     interface::{
         components::being_edited,
-        panels::models::{DraggedModel, model::model_entry},
+        panels::models::{
+            DELETE_SHORTCUT, DraggedModel, HIDE_SHORTCUT, RENAME_SHORTCUT, SELECT_SHORTCUT,
+            model::model_entry, shortcut,
+        },
     },
 };
 
@@ -124,4 +129,57 @@ pub fn collection_entry(
     });
 
     rect
+}
+
+pub fn collection_properties(app: &mut App, ui: &mut Ui, id: CollectionId) {
+    ui.horizontal_wrapped(|ui| {
+        if shortcut(
+            ui.button(concatcp!(CURSOR_TEXT, " Rename")),
+            RENAME_SHORTCUT,
+        ) && let Some(collection) = app.project.collection(id)
+        {
+            collection.rename = RenameState::Starting;
+        }
+
+        if shortcut(ui.button(concatcp!(TRASH, " Delete")), DELETE_SHORTCUT) {
+            app.state.selected.clear();
+
+            for model in app.project.models.iter_mut() {
+                if model.collection == Some(id) {
+                    app.history
+                        .track_model(model.id, ModelAction::Collection(Some(id)));
+                    model.collection = None;
+                }
+            }
+
+            if let Some(index) = app.project.collections.iter().position(|x| x.id == id) {
+                let collection = app.project.collections.remove(index);
+                app.history
+                    .track(Action::CollectionRemoved { index, collection });
+            }
+        }
+
+        let hidden = (app.project.models.iter())
+            .find(|x| x.collection == Some(id))
+            .map(|x| x.hidden)
+            .unwrap_or_default();
+        let text = [
+            concatcp!(EYE_SLASH, " Hide All"),
+            concatcp!(EYE, " Show All"),
+        ][hidden as usize];
+        if shortcut(ui.button(text), HIDE_SHORTCUT) {
+            (app.project.models.iter_mut())
+                .filter(|x| x.collection == Some(id))
+                .for_each(|m| m.hidden = !hidden);
+        }
+
+        if shortcut(
+            ui.button(concatcp!(SELECTION, " Select Models")),
+            SELECT_SHORTCUT,
+        ) {
+            (app.project.models.iter())
+                .filter(|x| x.collection == Some(id))
+                .for_each(|x| app.state.selected.select_model(x.id));
+        }
+    });
 }

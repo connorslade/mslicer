@@ -3,7 +3,7 @@ use std::sync::Arc;
 use clone_macro::clone;
 use common::progress::Progress;
 use slicer::geometry::{
-    mesh::{HalfEdgeMesh, Mesh, MeshId},
+    mesh::{HalfEdgeMesh, MeshId, MeshInner},
     partitioning::Bvh,
 };
 
@@ -36,11 +36,10 @@ impl BuildAccelerationStructures {
         }
     }
 
-    pub fn new_mesh(mesh: &Mesh) -> Self {
+    pub fn new_mesh(mesh_id: MeshId, inner: Arc<MeshInner>) -> Self {
         let progress = Progress::new();
-        let inner = mesh.inner().clone();
         Self {
-            mesh_id: mesh.mesh_id(),
+            mesh_id,
             name: None,
             handle: TaskThread::spawn(clone!([progress], move || {
                 let bvh = Bvh::build(&inner, progress);

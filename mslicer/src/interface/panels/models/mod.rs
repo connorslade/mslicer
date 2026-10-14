@@ -1,22 +1,23 @@
-use std::f32;
+use std::{collections::HashMap, f32};
 
 use const_format::concatcp;
 use egui::{
     Color32, Context, DragAndDrop, Frame, Key, Response, ScrollArea, Sense, Stroke, StrokeKind,
     TopBottomPanel, Ui, Vec2,
 };
-use egui_phosphor::regular::{COPY, CURSOR_TEXT, EYE, EYE_SLASH, FOLDER_DASHED, SELECTION, TRASH};
+use egui_phosphor::regular::{COPY, FOLDER_DASHED, LINE_SEGMENT, TRASH};
 
 use crate::{
     core::{
         App,
         history::{Action, ModelAction},
-        project::{Collection, CollectionId, RenameState},
+        project::Collection,
     },
     interface::panels::models::{
-        collection::{collection, collection_entry},
+        collection::{collection, collection_entry, collection_properties},
         model::model_properties,
     },
+    task::BuildAccelerationStructures,
 };
 
 mod collection;
@@ -230,58 +231,20 @@ fn selection_properties(app: &mut App, ui: &mut Ui) {
                 }
             }
         }
-    });
-}
 
-fn collection_properties(app: &mut App, ui: &mut Ui, id: CollectionId) {
-    ui.horizontal_wrapped(|ui| {
-        if shortcut(
-            ui.button(concatcp!(CURSOR_TEXT, " Rename")),
-            RENAME_SHORTCUT,
-        ) && let Some(collection) = app.project.collection(id)
-        {
-            collection.rename = RenameState::Starting;
-        }
+        if ui.button(concatcp!(LINE_SEGMENT, " Prepare")).clicked() {
+            let meshes = (app.state.selected.selected_models())
+                .filter_map(|id| {
+                    (app.project.model(id))
+                        .filter(|model| !model.has_acceleration_structures())
+                        .map(|model| (model.mesh.mesh_id(), model.mesh.inner().clone()))
+                })
+                .collect::<HashMap<_, _>>();
 
-        if shortcut(ui.button(concatcp!(TRASH, " Delete")), DELETE_SHORTCUT) {
-            app.state.selected.clear();
-
-            for model in app.project.models.iter_mut() {
-                if model.collection == Some(id) {
-                    app.history
-                        .track_model(model.id, ModelAction::Collection(Some(id)));
-                    model.collection = None;
-                }
+            for (id, mesh) in meshes.into_iter() {
+                app.tasks
+                    .add(BuildAccelerationStructures::new_mesh(id, mesh));
             }
-
-            if let Some(index) = app.project.collections.iter().position(|x| x.id == id) {
-                let collection = app.project.collections.remove(index);
-                app.history
-                    .track(Action::CollectionRemoved { index, collection });
-            }
-        }
-
-        let hidden = (app.project.models.iter())
-            .find(|x| x.collection == Some(id))
-            .map(|x| x.hidden)
-            .unwrap_or_default();
-        let text = [
-            concatcp!(EYE_SLASH, " Hide All"),
-            concatcp!(EYE, " Show All"),
-        ][hidden as usize];
-        if shortcut(ui.button(text), HIDE_SHORTCUT) {
-            (app.project.models.iter_mut())
-                .filter(|x| x.collection == Some(id))
-                .for_each(|m| m.hidden = !hidden);
-        }
-
-        if shortcut(
-            ui.button(concatcp!(SELECTION, " Select Models")),
-            SELECT_SHORTCUT,
-        ) {
-            (app.project.models.iter())
-                .filter(|x| x.collection == Some(id))
-                .for_each(|x| app.state.selected.select_model(x.id));
         }
     });
 }

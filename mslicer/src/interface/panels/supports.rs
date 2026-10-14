@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use common::units::Milimeter;
 use const_format::concatcp;
 use egui::{Align, Button, Context, DragValue, Layout, Ui, Widget};
@@ -225,9 +227,19 @@ fn prepare(app: &mut App, ui: &mut Ui) {
     let active = (app.project.models.iter()).any(|model| !model.has_acceleration_structures());
     let button = Button::new(concatcp!(LINE_SEGMENT, " Prepare All"));
     if ui.add_enabled(active, button).clicked() {
-        // todo: will rebuild acc structures unnecessarily!!!
-        (app.project.meshes())
-            .for_each(|mesh| app.tasks.add(BuildAccelerationStructures::new_mesh(mesh)));
+        let mut meshes = HashMap::new();
+        for model in app.project.models.iter() {
+            if !model.has_acceleration_structures() {
+                meshes.entry(model.mesh.mesh_id()).or_insert(&model.mesh);
+            }
+        }
+
+        for mesh in meshes.into_values() {
+            app.tasks.add(BuildAccelerationStructures::new_mesh(
+                mesh.mesh_id(),
+                mesh.inner().clone(),
+            ));
+        }
     }
 }
 

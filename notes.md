@@ -12,6 +12,7 @@ Feel free to help out :eyes:.
 - don't use currently selected printer resolution for sliced diff. Fail if the two files have differing resolutions.
 - some custom components dont work well on light mode
 - if you make changes to a project in the time that it takes for another project to load, your changes will be deleted
+- don't allow starting multiple build acc structure tasks
 
 ## Features
 
@@ -33,7 +34,6 @@ Feel free to help out :eyes:.
 - release updated msla_format
 - game style camera (arrow keys to move)
 - plot voxel error across different triangulations
-- lower render resolution?
 - different support colors (also diff default styles)
 - sliced post processing
   - remove islands ←
@@ -84,6 +84,7 @@ Features that would be cool, but are a bit out of scope for now.
 - use convex hull to re-calc bounds after transformation
 - switch between multiple sliced files in slice preview?
 - optimize island detection
+- lower render resolution?
 
 ---
 
