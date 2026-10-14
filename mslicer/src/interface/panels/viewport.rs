@@ -237,7 +237,16 @@ fn paint_hover_overlay(ui: &mut Ui, app: &mut App, hover: GeometryHit, px: Pos2)
         .pivot(Align2::LEFT_BOTTOM)
         .interactable(false)
         .show(ui.ctx(), |ui| {
-            Frame::new()
+            let id = Id::new("toolbar");
+            let last_size = ui.data(|d| d.get_temp::<Vec2>(id));
+
+            // kinda jank but better than nothing
+            if let Some(last_size) = last_size {
+                let rect = Align2::LEFT_BOTTOM.anchor_size(px + vec2(p.x, -p.y), last_size);
+                ui.shrink_clip_rect(rect);
+            }
+
+            let response = Frame::new()
                 .inner_margin(p)
                 .corner_radius(ui.visuals().menu_corner_radius)
                 .fill(Color32::BLACK.lerp_to_gamma(Color32::TRANSPARENT, 0.25))
@@ -250,25 +259,6 @@ fn paint_hover_overlay(ui: &mut Ui, app: &mut App, hover: GeometryHit, px: Pos2)
                             ui.label("Model");
                             ui.label(&model.name);
                             ui.end_row();
-
-                            if hover.support
-                                && let Some(support) = model.supports.support_for_face(hover.face)
-                            {
-                                ui.label("Support");
-                                ui.label(format!("#{}", support.raw()));
-                                ui.end_row();
-                            }
-
-                            if app.state.tool == Tool::Orient {
-                                ui.label("Rotation");
-                                let rotation = hover_rotation(model, hover.face as usize)
-                                    .map(|x| x.to_degrees());
-                                ui.label(format!(
-                                    "{:.2}° × {:.2}° × {:.2}°",
-                                    rotation.x, rotation.y, rotation.z
-                                ));
-                                ui.end_row();
-                            }
 
                             if detail {
                                 ui.label("Face");
@@ -291,6 +281,25 @@ fn paint_hover_overlay(ui: &mut Ui, app: &mut App, hover: GeometryHit, px: Pos2)
                                 });
                                 ui.end_row();
                             }
+
+                            if hover.support
+                                && let Some(support) = model.supports.support_for_face(hover.face)
+                            {
+                                ui.label("Support");
+                                ui.label(format!("#{}", support.raw()));
+                                ui.end_row();
+                            }
+
+                            if app.state.tool == Tool::Orient {
+                                ui.label("Rotation");
+                                let rotation = hover_rotation(model, hover.face as usize)
+                                    .map(|x| x.to_degrees());
+                                ui.label(format!(
+                                    "{:.2}° × {:.2}° × {:.2}°",
+                                    rotation.x, rotation.y, rotation.z
+                                ));
+                                ui.end_row();
+                            }
                         });
                     }
 
@@ -298,7 +307,10 @@ fn paint_hover_overlay(ui: &mut Ui, app: &mut App, hover: GeometryHit, px: Pos2)
                         enabled.then(|| ui.add_space(8.0));
                         ui.label(CANT_SUPPORT);
                     }
-                });
+                })
+                .response;
+
+            ui.memory_mut(|m| m.data.insert_temp(id, response.rect.size()));
         });
 }
 

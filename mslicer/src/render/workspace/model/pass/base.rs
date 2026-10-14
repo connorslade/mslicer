@@ -387,6 +387,7 @@ impl BaseResources {
             let mut selected = Selected::for_model(model);
             if app.state.tool == Tool::Orient
                 && let Some(hover) = app.state.hovered_geometry
+                && !hover.support
                 && hover.model == model.id
             {
                 selected.set_selected(hover.face as usize);

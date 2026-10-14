@@ -30,7 +30,6 @@ Feel free to help out :eyes:.
 - add well documented .zip and .bin output formats (closes #29)
 - task cancellation mechanism
 - release updated msla_format
-- game style camera (arrow keys to move)
 - different support colors (also diff default styles)
 - sliced post processing
   - remove islands ←
@@ -83,6 +82,7 @@ Features that would be cool, but are a bit out of scope for now.
 - switch between multiple sliced files in slice preview?
 - optimize island detection
 - lower render resolution?
+- game style camera (arrow keys to move)
 
 ---
 
