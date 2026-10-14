@@ -1,4 +1,10 @@
-use std::{path::PathBuf, sync::Arc};
+use std::{
+    path::PathBuf,
+    sync::{
+        Arc,
+        atomic::{AtomicBool, AtomicI64, AtomicU64, Ordering},
+    },
+};
 
 use common::{
     container::{Run, rle::downsample::RunQueue},
@@ -12,6 +18,7 @@ use rayon::iter::{IntoParallelIterator, ParallelIterator};
 pub struct SlicedDiff {
     pub old: Source,
     pub new: Source,
+    pub result: Arc<DiffResult>,
 
     pub difference: Difference,
     pub threshold: (bool, u8),
@@ -43,10 +50,20 @@ pub enum Difference {
     Signed,
 }
 
+#[derive(Default)]
+pub struct DiffResult {
+    populated: AtomicBool,
+
+    diff_count: AtomicU64,
+    diff_value: AtomicI64,
+}
+
 impl SlicedDiff {
     pub fn slice_config(&self, _config: &mut SliceConfig) {}
 
     pub fn generate(&self, config: &SliceConfig, progress: &Progress) -> Vec<Layer> {
+        self.result.populated.store(false, Ordering::Relaxed);
+
         let layers = self.old.layers().max(self.new.layers());
         progress.set_total((self.old.layers() + self.new.layers() + layers) as u64);
 
@@ -57,11 +74,14 @@ impl SlicedDiff {
         let pixels = platform.x * platform.y;
         let empty = Arc::new(vec![Run::new(pixels, 0)]);
 
+        let result = &self.result;
         let layers = (0..layers)
             .into_par_iter()
             .map(|i| {
                 let [old, new] = [&old, &new].map(|x| x.get(i).map(|x| &x.data).unwrap_or(&empty));
-                let data = self.diff_layer(old, new);
+                let (data, diff, value_diff) = self.diff_layer(old, new);
+                result.diff_count.fetch_add(diff, Ordering::Relaxed);
+                result.diff_value.fetch_add(value_diff, Ordering::Relaxed);
 
                 Layer::new(
                     data,
@@ -72,6 +92,7 @@ impl SlicedDiff {
             .inspect(|_| progress.add_complete(1))
             .collect();
 
+        self.result.populated.store(true, Ordering::Relaxed);
         progress.set_finished();
         layers
     }
@@ -100,9 +121,10 @@ impl SlicedDiff {
         }
     }
 
-    fn diff_layer(&self, old: &[Run], new: &[Run]) -> Vec<Run> {
+    fn diff_layer(&self, old: &[Run], new: &[Run]) -> (Vec<Run>, u64, i64) {
         let (mut old, mut new) = (RunQueue::new(old), RunQueue::new(new));
         let mut out = Vec::new();
+        let (mut diff, mut value_diff) = (0, 0);
 
         // uncompressed length of old and new must be the same
         while old.remaining() {
@@ -110,18 +132,29 @@ impl SlicedDiff {
             let (old, new) = (old.take_up_to(length), new.take_up_to(length));
 
             let [old_value, new_value] = [old.value, new.value].map(|x| self.threshold(x));
-            let value = match self.difference {
-                Difference::Absolute => old_value.abs_diff(new_value),
-                Difference::Signed => {
-                    let diff = new_value as i16 - old_value as i16;
-                    (diff / 2 + 128) as u8
-                }
-            };
+            if old_value != new_value {
+                diff += length as u64;
+                value_diff += length as i64
+                    * match self.difference {
+                        Difference::Absolute => new_value.abs_diff(old_value) as i64,
+                        Difference::Signed => new_value as i64 - old_value as i64,
+                    };
 
-            out.push(Run::new(length, value));
+                let value = match self.difference {
+                    Difference::Absolute => old_value.abs_diff(new_value),
+                    Difference::Signed => {
+                        let diff = new_value as i16 - old_value as i16;
+                        (diff / 2 + 128) as u8
+                    }
+                };
+
+                out.push(Run::new(length, value));
+            } else {
+                out.push(Run::new(length, self.difference.default()));
+            }
         }
 
-        out
+        (out, diff, value_diff)
     }
 }
 
@@ -167,6 +200,27 @@ impl Difference {
             Difference::Signed => "Signed Difference",
         }
     }
+
+    pub fn default(&self) -> u8 {
+        match self {
+            Difference::Absolute => 0,
+            Difference::Signed => 128,
+        }
+    }
+}
+
+impl DiffResult {
+    pub fn populated(&self) -> bool {
+        self.populated.load(Ordering::Relaxed)
+    }
+
+    pub fn voxels(&self) -> u64 {
+        self.diff_count.load(Ordering::Relaxed)
+    }
+
+    pub fn value(&self) -> f32 {
+        self.diff_value.load(Ordering::Relaxed) as f32 / 255.0
+    }
 }
 
 impl Default for SlicedDiff {
@@ -174,6 +228,7 @@ impl Default for SlicedDiff {
         Self {
             old: Default::default(),
             new: Default::default(),
+            result: Default::default(),
 
             difference: Difference::Signed,
             threshold: (false, 128),

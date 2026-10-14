@@ -1,9 +1,9 @@
 use std::{fs::File, mem, sync::Arc};
 
-use common::slice::format::RasterFormat;
+use common::{misc::separate_thousands, slice::format::RasterFormat};
 use const_format::concatcp;
-use egui::{Button, ComboBox, DragValue, RichText, Ui, vec2};
-use egui_phosphor::regular::{FOLDER_OPEN, STACK_SIMPLE, SWAP};
+use egui::{Button, CollapsingHeader, ComboBox, DragValue, RichText, Ui, vec2};
+use egui_phosphor::regular::{FOLDER_OPEN, INFO, STACK_SIMPLE, SWAP};
 use slicer::util;
 use tools::sliced_diff::{Difference, Source, SourceId};
 
@@ -69,6 +69,30 @@ fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
     let tool = &mut app.state.tools.sliced_diff;
     let has_source = tool.sources_specified();
     let sources_match = tool.matching_sources();
+
+    ui.add_space(8.0);
+    CollapsingHeader::new("Result")
+        .enabled(tool.result.populated())
+        .open((!tool.result.populated()).then_some(false))
+        .default_open(true)
+        .show(ui, |ui| {
+            grid("diff_result").show(ui, |ui| {
+                ui.label("Differing Voxels");
+                ui.horizontal(|ui| {
+                    ui.label(separate_thousands(tool.result.voxels()));
+                    ui.take_available_width();
+                });
+                ui.end_row();
+
+                ui.horizontal(|ui| {
+                    ui.label("Value Difference");
+                    ui.label(INFO)
+                        .on_hover_text("Uses your selected difference method.")
+                });
+                ui.label(tool.result.value().to_string());
+                ui.end_row();
+            });
+        });
 
     ui.add_space(8.0);
     if has_source && !sources_match {
