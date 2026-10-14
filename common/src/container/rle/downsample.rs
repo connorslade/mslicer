@@ -18,7 +18,7 @@ pub struct RunFlatten<I> {
 
 pub fn downsample_adjacent(factor: u8, runs: &[Run], out: &mut Vec<Run>) {
     let mut queue = RunQueue::new(runs);
-    let factor = factor as u64;
+    let factor = factor as u32;
 
     let mut i = 0;
     while queue.remaining() {
@@ -39,11 +39,11 @@ pub fn downsample_adjacent(factor: u8, runs: &[Run], out: &mut Vec<Run>) {
         }
 
         // if not a clean split, we will need to do some averaging
-        let mut interp = remaining * run.value as u64;
+        let mut interp = remaining * run.value as u32;
         while remaining != factor {
             // try to complete remaining by pulling from next run
             let next = queue.take_up_to(factor - remaining);
-            interp += next.length * next.value as u64;
+            interp += next.length * next.value as u32;
             remaining += next.length;
             i += next.length;
         }
@@ -55,7 +55,7 @@ pub fn downsample_adjacent(factor: u8, runs: &[Run], out: &mut Vec<Run>) {
     }
 }
 
-pub fn downsample<'a>(chunks: impl Iterator<Item = &'a Vec<Run>>, width: u64, out: &mut Vec<Run>) {
+pub fn downsample<'a>(chunks: impl Iterator<Item = &'a Vec<Run>>, width: u32, out: &mut Vec<Run>) {
     let mut len = 0;
     let mut queues = chunks
         .map(|x| RunQueue::new_fallback(x, width))
@@ -74,7 +74,7 @@ pub fn downsample<'a>(chunks: impl Iterator<Item = &'a Vec<Run>>, width: u64, ou
     }
 }
 
-pub fn chunks(runs: &[Run], width: u64) -> Vec<Vec<Run>> {
+pub fn chunks(runs: &[Run], width: u32) -> Vec<Vec<Run>> {
     let mut out = Vec::new();
     let mut working = Vec::new();
     let mut working_len = 0;
@@ -106,11 +106,11 @@ pub fn pad_2d(
     let padded_y = size.y.div_ceil(factor) * factor;
 
     let mut out = Vec::new();
-    for mut row in chunks(runs, size.x as u64) {
-        let row_len: u64 = row.iter().map(|r| r.length).sum();
-        if row_len < padded_x as u64 {
+    for mut row in chunks(runs, size.x as u32) {
+        let row_len = row.iter().map(|r| r.length).sum::<u32>();
+        if row_len < padded_x as u32 {
             row.push(Run {
-                length: padded_x as u64 - row_len,
+                length: padded_x as u32 - row_len,
                 value: pad_value,
             });
         }
@@ -119,7 +119,7 @@ pub fn pad_2d(
 
     if size.y < padded_y {
         out.push(Run {
-            length: (padded_y - size.y) as u64 * padded_x as u64,
+            length: (padded_y - size.y) as u32 * padded_x as u32,
             value: pad_value,
         });
     }
@@ -136,7 +136,7 @@ impl<'a, T: Copy + Default> RunQueue<'a, T> {
         }
     }
 
-    pub fn new_fallback(runs: &'a [Run<T>], fallback: u64) -> Self {
+    pub fn new_fallback(runs: &'a [Run<T>], fallback: u32) -> Self {
         if runs.is_empty() {
             Self {
                 runs,
@@ -163,7 +163,7 @@ impl<'a, T: Copy + Default> RunQueue<'a, T> {
         out
     }
 
-    pub fn take_up_to(&mut self, n: u64) -> Run<T> {
+    pub fn take_up_to(&mut self, n: u32) -> Run<T> {
         if self.active.length <= n {
             self.advance()
         } else {

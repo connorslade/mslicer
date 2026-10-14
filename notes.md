@@ -38,9 +38,6 @@ Feel free to help out :eyes:.
 - sliced post processing
   - remove islands ←
   - exposure remap
-- look into reducing memory usage
-  - boxed slices
-  - Run u32
 - combine MeshDefective and MeshVolume into one task (Mesh Analysis)
 - reduce power usage (dont always re-render, don't re-do work)
 - two stage lift config!! (how have i left this unimplemented for so long!)

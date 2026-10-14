@@ -77,7 +77,7 @@ impl<'a> PngEncoder<'a> {
     }
 
     pub fn write_image_data(&mut self, mut data: Vec<Run>) {
-        let width = self.size.x as u64 * self.color.planes() as u64;
+        let width = self.size.x as u32 * self.color.planes() as u32;
         intersperse_runs(&mut data, Run::new(1, 0), 0, width);
 
         let mut check = Adler32::new();
@@ -184,7 +184,7 @@ pub mod deflate {
         //
         // (l * 65520) + (255 * (l * (l + 1) / 2)) < 2^64 - 1
         pub fn update_run(&mut self, run: &Run) {
-            let (mut total_length, value) = (run.length, run.value as u64);
+            let (mut total_length, value) = (run.length as u64, run.value as u64);
             while total_length > 0 {
                 let length = total_length.min(380_368_439);
                 total_length -= length;

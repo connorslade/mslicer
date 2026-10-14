@@ -39,7 +39,7 @@ impl SdfSlicer {
                 let pz = i as f32 * slice_height;
                 let mut runs = Vec::new();
                 let mut working = (0, 0);
-                let mut run = |length: u64, value: u8| {
+                let mut run = |length: u32, value: u8| {
                     if working.1 == value {
                         working.0 += length;
                     } else {
@@ -63,7 +63,7 @@ impl SdfSlicer {
                         } else {
                             let length =
                                 (dist_px.abs() as u32).min(config.platform_resolution.x - x);
-                            run(length as u64, [0, 255][(dist < 0.0) as usize]);
+                            run(length, [0, 255][(dist < 0.0) as usize]);
                             x += length;
                         }
                     }

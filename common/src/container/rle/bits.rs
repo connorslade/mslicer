@@ -10,7 +10,7 @@ use crate::container::{Clusters, Run};
 ///
 /// Returns a list of lengths, starting with zero and alternating. So `[0, 23,
 /// 7]` would mean the run starts with 23 non-zero bytes, then 7 zero bytes.
-pub fn from_runs(runs: &[Run]) -> Vec<u64> {
+pub fn from_runs(runs: &[Run]) -> Vec<u32> {
     let mut out = Vec::with_capacity(runs.len());
 
     let mut value = false;
@@ -30,7 +30,7 @@ pub fn from_runs(runs: &[Run]) -> Vec<u64> {
 }
 
 /// Split a run length encoded bit stream into chunks each `width` bits long.
-pub fn chunks(runs: &[u64], width: u64) -> Vec<Vec<u64>> {
+pub fn chunks(runs: &[u32], width: u32) -> Vec<Vec<u32>> {
     let mut rows = Vec::new();
 
     let mut row = Vec::new();
@@ -67,15 +67,15 @@ pub struct ClusterRun {
     pub row: usize,
     pub index: usize,
 
-    pub position: u64,
-    pub size: u64,
+    pub position: u32,
+    pub size: u32,
 }
 
 /// Inserts all the adjacencies found between the two rows (`curr` and `base`)
 /// into the container.
 pub fn cluster_row_adjacency(
     clusters: &mut Clusters<ClusterRun>,
-    rows: &[Vec<u64>],
+    rows: &[Vec<u32>],
     base_row: usize,
     curr_row: usize,
 ) {
@@ -120,7 +120,7 @@ pub fn cluster_row_adjacency(
 }
 
 pub struct BitRunQueue<'a> {
-    pub runs: &'a [u64],
+    pub runs: &'a [u32],
     pub next: usize,
     pub active: BitRun,
 }
@@ -128,11 +128,11 @@ pub struct BitRunQueue<'a> {
 #[derive(Clone, Copy)]
 pub struct BitRun {
     pub value: bool,
-    pub length: u64,
+    pub length: u32,
 }
 
 impl<'a> BitRunQueue<'a> {
-    pub fn new(runs: &'a [u64]) -> Self {
+    pub fn new(runs: &'a [u32]) -> Self {
         if runs[0] == 0 && runs.len() > 1 {
             Self {
                 runs,
@@ -148,7 +148,7 @@ impl<'a> BitRunQueue<'a> {
         }
     }
 
-    pub fn new_fallback(runs: &'a [u64], width: u64) -> Self {
+    pub fn new_fallback(runs: &'a [u32], width: u32) -> Self {
         if runs.is_empty() {
             Self {
                 runs,
@@ -171,7 +171,7 @@ impl<'a> BitRunQueue<'a> {
         out
     }
 
-    pub fn take_up_to(&mut self, n: u64) -> BitRun {
+    pub fn take_up_to(&mut self, n: u32) -> BitRun {
         if self.active.length <= n {
             self.advance()
         } else {
@@ -186,7 +186,7 @@ impl<'a> BitRunQueue<'a> {
 }
 
 impl BitRun {
-    pub fn new(length: u64, value: bool) -> Self {
+    pub fn new(length: u32, value: bool) -> Self {
         Self { value, length }
     }
 }

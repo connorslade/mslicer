@@ -1055,10 +1055,10 @@ fn sidebar(operation: &SliceOperation, result: &mut SliceResult, app: SidebarApp
     });
 }
 
-fn error_stats(layers: &[Layer]) -> Option<(u64, u64)> {
+fn error_stats(layers: &[Layer]) -> Option<(u32, u32)> {
     let (mut count, mut scan_lines) = (0, 0);
     for layer in layers.iter() {
-        count += (layer.defects > 0) as u64;
+        count += (layer.defects > 0) as u32;
         scan_lines += layer.defects;
     }
 

@@ -41,7 +41,7 @@ fn main() -> Result<()> {
                 let slicer = Slicer::new(SliceConfig::default(), models);
 
                 let layers = slicer.slice_raster();
-                let defects = layers.iter().map(|x| x.defects).sum::<u64>();
+                let defects = layers.iter().map(|x| x.defects).sum::<u32>();
 
                 println!(
                     "{name}\t{}\t{}",

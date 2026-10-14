@@ -55,7 +55,7 @@ impl LayerEncoder {
     pub fn image_data(mut self) -> Vec<u8> {
         let mut ser = DynamicSerializer::new();
 
-        let width = self.platform.x as u64;
+        let width = self.platform.x as u32;
         let sub_pad = 3 - width % 3;
         if sub_pad != 3 {
             let run = Run::new(sub_pad, 0);
@@ -82,7 +82,7 @@ impl EncodableLayer for LayerEncoder {
         }
     }
 
-    fn add_run(&mut self, length: u64, value: u8) {
+    fn add_run(&mut self, length: u32, value: u8) {
         self.runs.push(Run { length, value });
     }
 
@@ -93,24 +93,24 @@ impl EncodableLayer for LayerEncoder {
         _height: Milimeters,
     ) -> Self::Output {
         let nonzero = rle::bits::from_runs(&self.runs);
-        let chunks = rle::bits::chunks(&nonzero, config.platform_resolution.x as u64);
+        let chunks = rle::bits::chunks(&nonzero, config.platform_resolution.x);
 
-        let mut min = Vector2::repeat(u64::MAX);
-        let mut max = Vector2::repeat(u64::MIN);
+        let mut min = Vector2::repeat(u32::MAX);
+        let mut max = Vector2::repeat(u32::MIN);
         let mut islands = Clusters::default();
 
-        let width = config.platform_resolution.x as u64;
+        let width = config.platform_resolution.x;
         for row in 1..chunks.len() {
             row_bounds(&chunks[row], width, row, &mut min, &mut max);
             rle::bits::cluster_row_adjacency(&mut islands, &chunks, row - 1, row);
         }
 
         let islands = (islands.clusters())
-            .map(|(_, runs)| runs.iter().map(|r| r.size).sum::<u64>())
+            .map(|(_, runs)| runs.iter().map(|r| r.size).sum::<u32>())
             .collect::<Vec<_>>();
         let smallest_area = islands.iter().min().copied().unwrap_or_default();
         let largest_area = islands.iter().max().copied().unwrap_or_default();
-        let total_area = islands.iter().sum::<u64>();
+        let total_area = islands.iter().sum::<u32>();
 
         let pixel_area = config.pixel_area();
         Layer {
@@ -118,10 +118,10 @@ impl EncodableLayer for LayerEncoder {
                 total_solid_area: total_area as f32 * pixel_area,
                 largest_area: largest_area as f32 * pixel_area,
                 smallest_area: smallest_area as f32 * pixel_area,
-                min_x: min.x as u32,
-                min_y: min.y as u32,
-                max_x: max.x as u32,
-                max_y: max.y as u32,
+                min_x: min.x,
+                min_y: min.y,
+                max_x: max.x,
+                max_y: max.y,
                 area_count: islands.len() as u32,
             },
             inner: self.image_data(),
@@ -171,15 +171,15 @@ pub fn layers_bounds(
     (layer_to_world(min), layer_to_world(max))
 }
 
-fn row_bounds(row: &[u64], width: u64, y: usize, min: &mut Vector2<u64>, max: &mut Vector2<u64>) {
+fn row_bounds(row: &[u32], width: u32, y: usize, min: &mut Vector2<u32>, max: &mut Vector2<u32>) {
     if row.len() <= 1 {
         return;
     }
 
     // If len>1 then there is at least one non-zero voxel in that layer, which
     // will extend the bounding box's y component.
-    min.y = min.y.min(y as u64);
-    max.y = max.y.max(y as u64);
+    min.y = min.y.min(y as u32);
+    max.y = max.y.max(y as u32);
 
     // The left side of the first run starts at row[0] pixels in and the right
     // side ends row[-1] pixels in from the right (when the last run is

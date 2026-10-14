@@ -11,12 +11,12 @@ pub mod png;
 /// Sequence of identical items.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Run<T = u8> {
-    pub length: u64,
+    pub length: u32,
     pub value: T,
 }
 
 impl<T> Run<T> {
-    pub fn new(length: u64, value: T) -> Self {
+    pub fn new(length: u32, value: T) -> Self {
         Self { length, value }
     }
 }
@@ -57,14 +57,14 @@ where
 /// value differences (abs) between the two sequences.
 ///
 /// Assumes the (uncompressed) input data are equal length.
-pub fn difference(a: &[Run], b: &[Run]) -> u64 {
+pub fn difference(a: &[Run], b: &[Run]) -> u32 {
     let (mut a, mut b) = (RunQueue::new(a), RunQueue::new(b));
     let mut difference = 0;
 
     while a.remaining() || b.remaining() {
         let len = a.active.length.min(b.active.length);
         let (a, b) = (a.take_up_to(len), b.take_up_to(len));
-        difference += a.value.abs_diff(b.value) as u64 * len;
+        difference += a.value.abs_diff(b.value) as u32 * len;
     }
 
     difference
@@ -74,7 +74,7 @@ pub fn difference(a: &[Run], b: &[Run]) -> u64 {
 ///
 /// For example running on `[0×3,1×2,0×3]` with `{ instance: 1×2, start: 0,
 /// spacing: 2}`, you will get `[1×2, 0×2, 1×2, 0×1, 1×4, 0×1, 1×2, 0×2]`.
-pub fn intersperse_runs(runs: &mut Vec<Run>, instance: Run, start: u64, spacing: u64) {
+pub fn intersperse_runs(runs: &mut Vec<Run>, instance: Run, start: u32, spacing: u32) {
     let mut i = 0; // The current run being processed
     let mut pos = 0; // The current position in bytes
     let mut next = start; // Next byte index to insert `value`

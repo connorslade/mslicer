@@ -54,7 +54,7 @@ impl SlicedDiff {
         let (_, new) = self.new.load(progress).unwrap();
 
         let platform = loaded_config.platform_resolution;
-        let pixels = platform.x as u64 * platform.y as u64;
+        let pixels = platform.x * platform.y;
         let empty = Arc::new(vec![Run::new(pixels, 0)]);
 
         let layers = (0..layers)

@@ -35,7 +35,7 @@ impl Slicer {
 
         let real_platform = self.slice_config.platform_resolution;
         let platform = real_platform * supersample.xy as u32;
-        let pixels = platform.x as u64 * platform.y as u64;
+        let pixels = platform.x * platform.y;
 
         // A segment contains a reference to all of the triangles it contains. By
         // splitting the mesh into segments, not all triangles need to be tested
@@ -95,7 +95,7 @@ pub fn layer(
     supersample: u8,
     real_platform: Vector2<u32>,
     segments: impl Iterator<Item = Segment>,
-) -> (Vec<Run>, u64) {
+) -> (Vec<Run>, u32) {
     let platform = real_platform * supersample as u32;
 
     let mut edges = global_edge_table(segments);
@@ -105,7 +105,7 @@ pub fn layer(
         .map(|e| (e.p_min.y - 0.5).ceil().max(0.0) as u32)
         .unwrap_or_default();
     let mut runs = Vec::new();
-    let padding = (first_y as u64 / supersample as u64) * real_platform.x as u64;
+    let padding = (first_y / supersample as u32) * real_platform.x;
 
     // In the case that there is geometry in the first row this padding value
     // will be zero and shouldn't be pushed as it could cause problems in later
@@ -140,8 +140,8 @@ pub fn layer(
             }
 
             let [a, b] = [a.x, b.x].map(|x| {
-                let pixel_x = (x - 0.5).ceil().max(0.0) as u64;
-                pixel_x.min(platform.x as u64)
+                let pixel_x = (x - 0.5).ceil().max(0.0) as u32;
+                pixel_x.min(platform.x)
             });
             if depth != 0 && b != a {
                 let (start, length) = (a, b - a);
@@ -157,11 +157,11 @@ pub fn layer(
         }
 
         if let Some(last) = active.last() {
-            errors += ((depth + 1 - (last.entering as i32) * 2) != 0) as u64;
+            errors += ((depth + 1 - (last.entering as i32) * 2) != 0) as u32;
         }
 
         // Fill the empty space at the end of the row
-        let padding = platform.x as u64 - last;
+        let padding = platform.x - last;
         (padding > 0).then(|| out.push(Run::new(padding, 0)));
 
         if supersample > 1 {
@@ -170,7 +170,7 @@ pub fn layer(
             row.clear();
 
             if (y + 1).is_multiple_of(supersample as u32) {
-                downsample(rows.iter(), platform.x as u64, &mut runs);
+                downsample(rows.iter(), platform.x, &mut runs);
                 rows.iter_mut().for_each(Vec::clear);
             }
         }
@@ -183,14 +183,14 @@ pub fn layer(
     // doesn't fill the buffer, the printer will just print whatever
     // was in the buffer before which just makes a huge mess.
     if y < platform.y {
-        let rows = (real_platform.y - y / supersample as u32) as u64;
-        runs.push(Run::new(rows * real_platform.x as u64, 0));
+        let rows = real_platform.y - y / supersample as u32;
+        runs.push(Run::new(rows * real_platform.x, 0));
     }
 
     (runs, errors)
 }
 
-fn downsample_to_vec(chunks: &[(Vec<Run>, u64)], width: u64) -> Vec<Run> {
+fn downsample_to_vec(chunks: &[(Vec<Run>, u32)], width: u32) -> Vec<Run> {
     let mut out = Vec::new();
     downsample(chunks.iter().map(|x| &x.0), width, &mut out);
     out

@@ -34,22 +34,22 @@ impl Iterator for LayerDecoder<'_> {
             value &= 0x7F;
             self.offset += 1;
 
-            let next = self.data[self.offset] as u64;
+            let next = self.data[self.offset] as u32;
             if next & 0x80 == 0 {
                 length = next;
             } else if next & 0xC0 == 0x80 {
-                length = ((next & 0x3F) << 8) + self.data[self.offset + 1] as u64;
+                length = ((next & 0x3F) << 8) + self.data[self.offset + 1] as u32;
                 self.offset += 1;
             } else if next & 0xE0 == 0xC0 {
                 length = ((next & 0x1F) << 16)
-                    + ((self.data[self.offset + 1] as u64) << 8)
-                    + self.data[self.offset + 2] as u64;
+                    + ((self.data[self.offset + 1] as u32) << 8)
+                    + self.data[self.offset + 2] as u32;
                 self.offset += 2;
             } else if next & 0xF0 == 0xE0 {
                 length = ((next & 0xF) << 24)
-                    + ((self.data[self.offset + 1] as u64) << 16)
-                    + ((self.data[self.offset + 2] as u64) << 8)
-                    + self.data[self.offset + 3] as u64;
+                    + ((self.data[self.offset + 1] as u32) << 16)
+                    + ((self.data[self.offset + 2] as u32) << 8)
+                    + self.data[self.offset + 3] as u32;
                 self.offset += 3;
             } else {
                 self.offset = self.data.len();
@@ -73,7 +73,7 @@ pub struct LayerEncoder {
 }
 
 impl LayerEncoder {
-    pub fn add_run(&mut self, length: u64, value: u8) {
+    pub fn add_run(&mut self, length: u32, value: u8) {
         if length == 0 {
             return;
         }
@@ -121,7 +121,7 @@ impl EncodableLayer for LayerEncoderV5 {
         Self::default()
     }
 
-    fn add_run(&mut self, length: u64, value: u8) {
+    fn add_run(&mut self, length: u32, value: u8) {
         self.encoder.add_run(length, value);
     }
 
@@ -158,7 +158,7 @@ impl EncodableLayer for LayerEncoderV4 {
         Self::default()
     }
 
-    fn add_run(&mut self, length: u64, value: u8) {
+    fn add_run(&mut self, length: u32, value: u8) {
         self.encoder.add_run(length, value);
     }
 

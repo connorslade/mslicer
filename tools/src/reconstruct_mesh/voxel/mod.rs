@@ -57,7 +57,7 @@ impl VoxelReconstruction {
     }
 
     pub fn process(&mut self, progress: &Progress, layers: &[Layer]) {
-        let width = self.resolution.x.div_ceil(self.subsample as u32) as u64;
+        let width = self.resolution.x.div_ceil(self.subsample as u32);
 
         // layers → rows → runs
         let masks = if self.subsample <= 1 {
@@ -65,7 +65,7 @@ impl VoxelReconstruction {
                 .map(|layer| bits::chunks(&bits::from_runs(&layer.data), width))
                 .collect::<Vec<_>>()
         } else {
-            let voxels = self.resolution.x as u64 * self.resolution.y as u64;
+            let voxels = self.resolution.x * self.resolution.y;
             (layers.par_iter())
                 .map(|layer| subsample(self.resolution, self.subsample, layer))
                 .chunks(self.subsample as usize)
@@ -81,8 +81,8 @@ impl VoxelReconstruction {
         progress.set_total(masks.len() as u64);
         for (z, rows) in masks.iter().enumerate() {
             let z = z as u32;
-            let get_row = |y: usize| -> &[u64] { if y < rows.len() { &rows[y] } else { &[] } };
-            let get_mask = |z: usize, y: usize| -> &[u64] {
+            let get_row = |y: usize| -> &[u32] { if y < rows.len() { &rows[y] } else { &[] } };
+            let get_mask = |z: usize, y: usize| -> &[u32] {
                 if z < masks.len() && y < rows.len() {
                     &masks[z][y]
                 } else {
@@ -133,11 +133,11 @@ fn subsample(res: Vector2<u32>, factor: u8, layer: &Layer) -> Vec<Run> {
 
     let mut out = Vec::new();
     downsample_adjacent(factor, &data, &mut out);
-    let chunks = chunks(&out, size.x as u64 / factor as u64);
+    let chunks = chunks(&out, size.x / factor as u32);
 
     let mut out = Vec::new();
     for y in chunks.chunks(factor as usize) {
-        downsample(y.iter(), size.x as u64 / factor as u64, &mut out);
+        downsample(y.iter(), size.x / factor as u32, &mut out);
     }
 
     out

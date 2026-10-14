@@ -15,8 +15,8 @@ pub fn detect_islands(
     layers: &[Layer],
     progress: Progress,
     cascade: bool,
-) -> Vec<Vec<u64>> {
-    let [width, rows] = *resolution.cast::<u64>().as_ref();
+) -> Vec<Vec<u32>> {
+    let [width, rows] = *resolution.as_ref();
     progress.set_total(layers.len() as u64);
 
     let mut prev = Vec::new();
@@ -56,7 +56,7 @@ pub fn detect_islands(
                 curr[run.row][run.index - 1] += mem::take(&mut curr[run.row][run.index]);
             }
 
-            let start = run.row as u64 * width + run.position;
+            let start = run.row as u32 * width + run.position;
             layer.push(start - pos);
             layer.push(run.size);
             pos = start + run.size;
@@ -69,12 +69,12 @@ pub fn detect_islands(
     annotations
 }
 
-fn condensed_layer_rows(layer: &Layer, width: u64) -> Vec<Vec<u64>> {
+fn condensed_layer_rows(layer: &Layer, width: u32) -> Vec<Vec<u32>> {
     let layer = rle::bits::from_runs(&layer.data);
     rle::bits::chunks(&layer, width)
 }
 
-fn row_overlaps(rows: &[Vec<u64>], run: &ClusterRun) -> bool {
+fn row_overlaps(rows: &[Vec<u32>], run: &ClusterRun) -> bool {
     let mut prev_pos = 0;
     for (i, &x) in rows[run.row].iter().enumerate() {
         if i % 2 != 0
