@@ -18,7 +18,7 @@ use crate::{
         App,
         config::{
             render::{Projection, RenderStyle},
-            ui::{B_PER_MIB, HoverOverlay, UpdateCheckFrequency},
+            ui::{B_PER_MIB, UpdateCheckFrequency},
         },
         state::PreviewMode,
     },
@@ -299,16 +299,6 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                 .range(0.0..=200.0)
                 .suffix(" px")
                 .ui(ui);
-            ui.end_row();
-
-            ui.label("Hover Overlay");
-            ComboBox::from_id_salt("hover_overlay")
-                .selected_text(app.config.ui.hover_overlay.name())
-                .show_ui(ui, |ui| {
-                    for mode in HoverOverlay::ALL {
-                        ui.selectable_value(&mut app.config.ui.hover_overlay, mode, mode.name());
-                    }
-                });
             ui.end_row();
         });
     });

@@ -1,7 +1,6 @@
 // todo: split this into multiple files
 
 use std::{
-    f32,
     fs::File,
     io::{BufReader, Write},
     mem,

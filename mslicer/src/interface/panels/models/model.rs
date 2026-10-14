@@ -1,5 +1,3 @@
-use std::f32;
-
 use common::{
     misc::{separate_thousands, subscript_number},
     units::Centimeter,
