@@ -7,8 +7,8 @@ use crate::{
     core::project::model::{Model, ModelId},
     interface::{components::grid, popup::Popup},
     task::{
-        BuildAccelerationStructures, MeshDefective, MeshVolume, PollResult, Task, TaskApp,
-        TaskStatus, thread::TaskThread,
+        BuildAccelerationStructures, MeshAnalysis, PollResult, Task, TaskApp, TaskStatus,
+        thread::TaskThread,
     },
 };
 
@@ -97,8 +97,7 @@ impl Task for MeshRepair {
                 }));
 
                 PollResult::complete()
-                    .with_task(MeshDefective::new(model))
-                    .with_task(MeshVolume::new(model))
+                    .with_task(MeshAnalysis::new(model))
                     .with_task(BuildAccelerationStructures::new(model))
             })
     }

@@ -156,6 +156,12 @@ impl PollResult {
         Self::from_bool(true)
     }
 
+    pub fn and(mut self, other: Self) -> Self {
+        self.complete &= other.complete;
+        self.new_tasks.extend(other.new_tasks);
+        self
+    }
+
     pub fn with_task(mut self, task: impl Task + 'static) -> Self {
         self.new_tasks.push(Box::new(task));
         self

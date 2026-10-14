@@ -1,14 +1,13 @@
 mod acceleration_structures;
+mod analysis;
 mod auto_layout;
-mod defective;
 mod flip_winding;
 mod generate;
 mod repair;
 mod split_bodies;
-mod volume;
 
 pub use self::{
-    acceleration_structures::BuildAccelerationStructures, auto_layout::AutoLayout,
-    defective::MeshDefective, flip_winding::FlipWinding, generate::GenerateMesh,
-    repair::MeshRepair, split_bodies::SplitBodies, volume::MeshVolume,
+    acceleration_structures::BuildAccelerationStructures, analysis::MeshAnalysis,
+    auto_layout::AutoLayout, flip_winding::FlipWinding, generate::GenerateMesh, repair::MeshRepair,
+    split_bodies::SplitBodies,
 };

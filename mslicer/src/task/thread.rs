@@ -19,6 +19,8 @@ enum Handle<T> {
 
 pub enum TaskResult<T> {
     Completed(T),
+    Empty,
+
     Failed,
     Pending,
 }
@@ -43,8 +45,8 @@ impl<T: Send + 'static> TaskThread<T> {
     pub fn poll(&mut self, app: &mut TaskApp, failure: &str) -> TaskResult<T> {
         if self.handle.is_finished() {
             match self.handle.join() {
-                Ok(value) => TaskResult::Completed(value),
-                Err(err) => {
+                Some(Ok(value)) => TaskResult::Completed(value),
+                Some(Err(err)) => {
                     let body = if let Some(err) = err.downcast_ref::<String>() {
                         err.clone()
                     } else if let Some(err) = err.downcast_ref::<&str>() {
@@ -57,6 +59,7 @@ impl<T: Send + 'static> TaskThread<T> {
                         .open(Popup::simple(failure, PopupIcon::Error, body));
                     TaskResult::Failed
                 }
+                None => TaskResult::Empty,
             }
         } else {
             TaskResult::Pending
@@ -68,8 +71,9 @@ impl<T: Send + 'static> TaskThread<T> {
     pub fn poll_ignore_err(&mut self) -> TaskResult<T> {
         if self.handle.is_finished() {
             match self.handle.join() {
-                Ok(value) => TaskResult::Completed(value),
-                Err(_) => TaskResult::Failed,
+                Some(Ok(value)) => TaskResult::Completed(value),
+                Some(Err(_)) => TaskResult::Failed,
+                None => TaskResult::Empty,
             }
         } else {
             TaskResult::Pending
@@ -80,15 +84,15 @@ impl<T: Send + 'static> TaskThread<T> {
 impl<T> Handle<T> {
     pub fn is_finished(&self) -> bool {
         match self {
-            Handle::Thread(handle) => handle.as_ref().unwrap().is_finished(),
-            Handle::Dummy(_) => true,
+            Handle::Thread(Some(handle)) => handle.is_finished(),
+            _ => true,
         }
     }
 
-    pub fn join(&mut self) -> Result<T, Box<dyn Any + Send + 'static>> {
+    pub fn join(&mut self) -> Option<Result<T, Box<dyn Any + Send + 'static>>> {
         match self {
-            Handle::Thread(handle) => handle.take().unwrap().join(),
-            Handle::Dummy(value) => Ok(value.take().unwrap()),
+            Handle::Thread(handle) => handle.take().map(|h| h.join()),
+            Handle::Dummy(value) => value.take().map(Ok),
         }
     }
 }
@@ -97,7 +101,7 @@ impl<T> TaskResult<T> {
     pub fn into_poll_result(self, callback: impl FnOnce(T) -> PollResult) -> PollResult {
         match self {
             TaskResult::Completed(value) => callback(value),
-            TaskResult::Failed => PollResult::complete(),
+            TaskResult::Failed | TaskResult::Empty => PollResult::complete(),
             TaskResult::Pending => PollResult::pending(),
         }
     }
