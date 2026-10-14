@@ -62,7 +62,7 @@ impl SlicedDiff {
     pub fn slice_config(&self, _config: &mut SliceConfig) {}
 
     pub fn generate(&self, config: &SliceConfig, progress: &Progress) -> Vec<Layer> {
-        self.result.populated.store(false, Ordering::Relaxed);
+        self.result.reset();
 
         let layers = self.old.layers().max(self.new.layers());
         progress.set_total((self.old.layers() + self.new.layers() + layers) as u64);
@@ -210,6 +210,12 @@ impl Difference {
 }
 
 impl DiffResult {
+    pub fn reset(&self) {
+        self.populated.store(false, Ordering::Relaxed);
+        self.diff_count.store(0, Ordering::Relaxed);
+        self.diff_value.store(0, Ordering::Relaxed);
+    }
+
     pub fn populated(&self) -> bool {
         self.populated.load(Ordering::Relaxed)
     }

@@ -108,7 +108,7 @@ impl BrepSlicer {
 fn layer_simple(
     platform: Vector2<u32>,
     segments: impl Iterator<Item = Segment>,
-) -> (Vec<Run>, u32) {
+) -> (Vec<Run>, u64) {
     let mut edges = global_edge_table(segments);
     let mut active = Vec::new();
     let first_y = edges
@@ -116,47 +116,38 @@ fn layer_simple(
         .map(|e| (e.p_min.y - 0.5).ceil().max(0.0) as u32)
         .unwrap_or_default();
     let mut runs = Vec::new();
-    let padding = first_y * platform.x;
-
+    let padding = first_y as u64 * platform.x as u64;
     (padding > 0).then(|| runs.push(Run::new(padding, 0)));
-
     let mut errors = 0;
     let mut y = first_y;
-
     while (!edges.is_empty() || !active.is_empty()) && y < platform.y {
         update_active_edges(&mut edges, &mut active, y);
-
         let mut depth = 0;
         let mut last = 0;
         for (i, (a, b)) in active.iter().tuple_windows().enumerate() {
             depth += [-1, 1][(i % 2 == 0) as usize];
-
             let [a, b] = [a.x, b.x].map(|x| {
-                let pixel_x = (x - 0.5).ceil().max(0.0) as u32;
-                pixel_x.min(platform.x)
+                let pixel_x = (x - 0.5).ceil().max(0.0) as u64;
+                pixel_x.min(platform.x as u64)
             });
             if depth != 0 && b != a {
                 let (start, length) = (a, b - a);
                 (start > last).then(|| runs.push(Run::new(start - last, 0)));
-
                 runs.push(Run::new(length, 255));
                 last = start + length;
             }
         }
-
         if let Some(last) = active.last() {
-            errors += ((depth + 1 - (last.entering as i32) * 2) != 0) as u32;
+            errors += ((depth + 1 - (last.entering as i32) * 2) != 0) as u64;
         }
-
-        let padding = platform.x - last;
+        let padding = platform.x as u64 - last;
         (padding > 0).then(|| runs.push(Run::new(padding, 0)));
         y += 1;
     }
-
     if y < platform.y {
-        runs.push(Run::new((platform.y - y) * platform.x, 0));
+        let rows = (platform.y - y) as u64;
+        runs.push(Run::new(rows * platform.x as u64, 0));
     }
-
     (runs, errors)
 }
 
