@@ -2,10 +2,10 @@ use egui::{Button, RichText, Ui, vec2};
 use egui_phosphor::regular::FILE;
 
 use crate::{
-    app::App,
+    core::App,
     generator_tool,
+    interface::popup::{Popup, PopupApp},
     task::FileDialog,
-    ui::popup::{Popup, PopupApp},
 };
 
 const DESCRIPTION: &str =
