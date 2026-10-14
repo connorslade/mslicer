@@ -1,9 +1,10 @@
 use egui::{
-    Align2, Area, Button, Color32, Context, Frame, Id, Key, Order, Painter, Pos2, Rect, RichText,
-    Sense, Stroke, StrokeKind, Theme, Ui, Vec2, Widget, pos2, vec2,
+    Align2, Area, Button, Color32, Context, Frame, Id, Key, Order, Painter, PointerButton, Pos2,
+    Rect, RichText, Sense, Stroke, StrokeKind, Theme, Ui, Vec2, Widget, pos2, vec2,
 };
 use egui_wgpu::Callback;
-use nalgebra::{Matrix4, Rotation3, Vector3};
+use nalgebra::{Matrix4, Rotation3, Vector2, Vector3};
+use slicer::geometry::bounds::Bounds2D;
 
 use crate::{
     core::{
@@ -12,7 +13,10 @@ use crate::{
         state::{GeometryHit, Tool, WorkspaceHover},
     },
     interface::{components::grid, panels::supports::manual_support_placement},
-    render::{interface::basis::BasisRenderCallback, workspace::WorkspaceRenderCallback},
+    render::{
+        interface::basis::BasisRenderCallback,
+        workspace::{WorkspaceRenderCallback, model::pick::pick_selection},
+    },
 };
 
 #[rustfmt::skip]
@@ -20,7 +24,31 @@ const NUMBER_KEYS: [Key; 10] = [Key::Num0, Key::Num1, Key::Num2, Key::Num3, Key:
 
 pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
     let (rect, response) = ui.allocate_exact_size(ui.available_size(), Sense::click_and_drag());
-    app.camera.handle_movement(&response, ui);
+
+    let aspect = rect.width() / rect.height();
+    let px = ui.input(|i| i.pointer.latest_pos()).unwrap_or_default();
+    let uv = (px - rect.min) / rect.size();
+
+    let shift_down = ui.input(|i| i.modifiers.shift);
+    if shift_down
+        && response.drag_started_by(PointerButton::Primary)
+        && app.state.select_start.is_none()
+    {
+        app.state.select_start = Some(uv);
+    }
+
+    if !response.dragged_by(PointerButton::Primary)
+        && let Some(start) = app.state.select_start.take()
+    {
+        let bounds = Bounds2D::<f32>::new_containing(&[
+            Vector2::new(start.x, start.y),
+            Vector2::new(uv.x, uv.y),
+        ]);
+        pick_selection(app, bounds);
+    }
+
+    let dragging_area = app.state.select_start.is_some();
+    (!dragging_area).then(|| app.camera.handle_movement(&response, ui));
 
     let focused = ui.input(|i| i.focused);
     let mut is_moving = app.spacenav().handle_movement(focused);
@@ -30,11 +58,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
         app.state.move_timeout -= 1;
         is_moving = true;
     }
-    is_moving |= response.dragged();
-
-    let aspect = rect.width() / rect.height();
-    let px = ui.input(|i| i.pointer.latest_pos()).unwrap_or_default();
-    let uv = (px - rect.min) / rect.size();
+    is_moving |= response.dragged() && !dragging_area;
     app.state.workspace = WorkspaceHover::new(is_moving, aspect, uv);
 
     (app.state.tool == Tool::Support).then(|| manual_support_placement(app, false));
@@ -91,6 +115,17 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
         rect,
         app.get_workspace_render_callback(),
     ));
+
+    if let Some(start) = app.state.select_start {
+        let start = start * rect.size() + rect.min.to_vec2();
+        let rect = Rect::from_two_pos(start.to_pos2(), px);
+
+        let stroke = Stroke::new(2_f32, Color32::LIGHT_BLUE);
+        let fill = Color32::LIGHT_BLUE.lerp_to_gamma(Color32::TRANSPARENT, 0.9);
+
+        painter.rect_filled(rect, 4.0, fill);
+        painter.rect_stroke(rect, 4.0, stroke, StrokeKind::Middle);
+    }
 
     Area::new(Id::new("toolbar"))
         .anchor(Align2::LEFT_TOP, Vec2::splat(10.0))

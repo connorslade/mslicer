@@ -43,7 +43,6 @@ Feel free to help out :eyes:.
 - two stage lift config!! (how have i left this unimplemented for so long!)
 - some way to disable building acc structures? for when you dont need supports.
 - slice config presets
-- shift drag to select multiple models
 
 ## Documentation
 

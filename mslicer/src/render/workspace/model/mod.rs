@@ -29,7 +29,7 @@ use crate::{
 
 mod bindings;
 mod pass;
-mod pick;
+pub mod pick;
 mod preview;
 mod selected;
 pub use preview::process_previews;
@@ -57,7 +57,7 @@ pub enum Target {
     Preview,
 }
 
-struct MultiStage {
+pub struct MultiStage {
     target_a: TextureView,
     target_b: TextureView,
 
@@ -178,7 +178,7 @@ impl ModelPipeline {
         self.render(encoder, app, Target::Viewport, passes, None);
 
         let multi = self.viewport.as_ref().unwrap();
-        self.picker.update(gcx, encoder, multi, app);
+        self.picker.update(app, gcx, encoder, multi);
     }
 
     pub fn prepare_preview(

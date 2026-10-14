@@ -2,7 +2,7 @@ use std::iter::Sum;
 
 use nalgebra::Vector2;
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub struct Bounds2D<T = f32> {
     pub min: Vector2<T>,
     pub max: Vector2<T>,
@@ -44,6 +44,10 @@ impl Bounds2D<f32> {
             min: self.min + offset,
             max: self.max + offset,
         }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.min > self.max
     }
 
     pub fn size(&self) -> Vector2<f32> {

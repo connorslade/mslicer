@@ -80,8 +80,8 @@ impl Camera {
     }
 
     pub fn handle_movement(&mut self, response: &Response, ui: &Ui) -> bool {
-        let shift_down = ui.input(|x| x.modifiers.shift);
-        let drag_delta = response.drag_delta() * if shift_down { 0.1 } else { 1.0 };
+        let ctrl_down = ui.input(|x| x.modifiers.command);
+        let drag_delta = response.drag_delta() * if ctrl_down { 0.1 } else { 1.0 };
 
         let mut active = false;
         if response.dragged_by(PointerButton::Primary) {
