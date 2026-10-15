@@ -86,6 +86,12 @@ impl SRgb<f32> {
             b: convert(self.b),
         }
     }
+
+    pub fn with_linear(&mut self, callback: impl FnOnce(&mut LinearRgb<f32>)) {
+        let mut linear = self.to_linear_rgb();
+        callback(&mut linear);
+        *self = linear.to_srgb();
+    }
 }
 
 impl<T: Copy> LinearRgb<T> {

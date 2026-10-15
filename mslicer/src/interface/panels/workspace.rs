@@ -1,4 +1,4 @@
-use std::{hash::Hash, time::Instant};
+use std::time::Instant;
 
 use common::units::Milimeter;
 use const_format::concatcp;
@@ -17,7 +17,7 @@ use crate::{
     core::{
         App,
         config::{
-            render::{Projection, RenderStyle},
+            render::{DebugRender, Projection, RenderStyle},
             ui::{B_PER_MIB, UpdateCheckFrequency},
         },
         state::PreviewMode,
@@ -37,9 +37,12 @@ const AA_DESC: &str = "Anti-aliasing smooths jagged edges at the borders of mode
 const SSAO_DESC: &str = "Ambient occlusion (SSAO) simulates how ambient light gets blocked in convex areas, making the rendering a little more realistic.";
 const SSAO_SCALE_TIP: &str = "Calculate ambient occlusion at a lower resolution to get better performance at the cost of quality.";
 const MAX_BUFFER_SIZE_TIP: &str = "The maximum GPU mesh size, high-poly meshes may require raising this setting but not all GPUs support larger values. Requires full app restart to take affect.";
+const MAX_HISTORY_MESH_TIP: &str =
+    "Meshes larger than this will be immediately unloaded on deletion, undo won't bring them back.";
 const SPACENAV_CONNECTED: &str = "Connected to Spacenav.";
 const SPACENAV_UNCONNECTED: &str =
     "Failed to connect to Spacenav. Make sure the daemon is running and reconnect.";
+const AVG_TIME_TIP: &str = "The duration which the frame time and FPS is averaged over.";
 
 pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     ui.horizontal_wrapped(|ui| {
@@ -61,37 +64,45 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
 
     ui.add_space(8.0);
     ui.heading("Rendering");
-    ui.collapsing("Style", |ui| {
-        grid("style").show(ui, |ui| {
-            ui.horizontal(|ui| {
-                ui.label("Mode");
-                ui.label(INFO)
-                    .on_hover_text("This setting is really only intended for debugging.");
+
+    ui.collapsing("Preview Image", |ui| {
+        let preview = &mut app.config.render.preview;
+        grid("preview_image").show(ui, |ui| {
+            let mut edited = false;
+
+            ui.label("Background");
+            preview.background.with_linear(|color| {
+                ui.color_edit_button_rgb(color.as_slice_mut())
+                    .being_edited(&mut edited);
             });
-            ComboBox::from_id_salt("render_style")
-                .selected_text(app.config.render.style.name())
-                .show_ui(ui, |ui| {
-                    for style in RenderStyle::ALL {
-                        ui.selectable_value(&mut app.config.render.style, style, style.name());
-                    }
-                });
             ui.end_row();
 
-            ui.label("Projection");
-
-            projection_combobox(ui, &mut app.config.render.projection);
-            ui.end_row();
-
-            ui.label("Normals");
-            visibility_combobox(ui, "normals", &mut app.config.render.normals);
-            ui.end_row();
-
-            ui.label("Bounding Boxes");
+            ui.label("Size");
             ui.horizontal(|ui| {
-                visibility_combobox(ui, "bounding_box", &mut app.config.render.bounding_box);
+                edited |= dragger::vec2(ui, preview.size.as_mut(), |x| x);
                 ui.take_available_width();
             });
             ui.end_row();
+
+            ui.label("Projection");
+            projection_combobox(ui, &mut preview.projection).being_edited(&mut edited);
+            ui.end_row();
+
+            ui.label("Fov");
+            ui.add(DragValue::new(&mut preview.fov).speed(0.01))
+                .being_edited(&mut edited);
+            ui.end_row();
+
+            if edited
+                && let Some(operation) = &mut app.slice_operation
+                && let Some(interactive) = &operation.interactive_previews
+            {
+                app.state.preview_mode = PreviewMode::Interactive;
+                app.state.last_preview_interact = Some(Instant::now());
+
+                let mut camera = interactive.camera.lock();
+                camera.fov = preview.fov;
+            }
         });
     });
 
@@ -119,12 +130,28 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
         });
         ui.add_space(8.0);
 
-        Grid::new("workspace_camera")
-            .striped(true)
-            .num_columns(2)
-            .show(ui, |ui| {
+        grid("workspace_camera").show(ui, |ui| {
+            ui.label("Projection");
+            projection_combobox(ui, &mut app.config.render.projection);
+            ui.end_row();
+
+            ui.label("Fov");
+            ui.horizontal(|ui| {
+                ui.add(DragValue::new(&mut app.camera.fov).speed(0.01));
+                ui.take_available_width();
+            });
+            ui.end_row();
+        });
+
+        ui.add_space(8.0);
+        ui.visuals_mut().collapsing_header_frame = false;
+        ui.collapsing("View", |ui| {
+            grid("view").show(ui, |ui| {
                 ui.label("Target");
-                dragger::vec3(ui, app.camera.target.as_mut(), |x| x);
+                ui.horizontal(|ui| {
+                    dragger::vec3(ui, app.camera.target.as_mut(), |x| x);
+                    ui.take_available_width();
+                });
                 ui.end_row();
 
                 ui.label("Angle");
@@ -134,52 +161,36 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                 ui.label("Distance");
                 dragger(ui, "", &mut app.camera.distance, |x| x.speed(5));
                 ui.end_row();
-
-                ui.label("Fov");
-                ui.horizontal(|ui| {
-                    ui.add(DragValue::new(&mut app.camera.fov).speed(0.01));
-                    ui.take_available_width();
-                });
-                ui.end_row();
-            });
+            })
+        });
     });
 
-    ui.collapsing("Preview Image", |ui| {
-        let preview = &mut app.config.render.preview;
-        grid("preview_image").show(ui, |ui| {
-            let mut edited = false;
-
-            ui.label("Size");
+    ui.collapsing("Models", |ui| {
+        grid("style").show(ui, |ui| {
             ui.horizontal(|ui| {
-                edited |= dragger::vec2(ui, preview.size.as_mut(), |x| x);
+                ui.label("Render Style");
+                ui.label(INFO)
+                    .on_hover_text("This setting is really only intended for debugging.");
+            });
+            ComboBox::from_id_salt("render_style")
+                .selected_text(app.config.render.style.name())
+                .show_ui(ui, |ui| {
+                    for style in RenderStyle::ALL {
+                        ui.selectable_value(&mut app.config.render.style, style, style.name());
+                    }
+                });
+            ui.end_row();
+
+            ui.label("Normals");
+            debug_renderer(ui, &mut app.config.render.normals);
+            ui.end_row();
+
+            ui.label("Bounding Boxes");
+            ui.horizontal(|ui| {
+                debug_renderer(ui, &mut app.config.render.bounding_box);
                 ui.take_available_width();
             });
             ui.end_row();
-
-            ui.label("Background");
-            ui.color_edit_button_rgb(preview.background.as_slice_mut())
-                .being_edited(&mut edited);
-            ui.end_row();
-
-            ui.label("Projection");
-            projection_combobox(ui, &mut preview.projection).being_edited(&mut edited);
-            ui.end_row();
-
-            ui.label("Fov");
-            ui.add(DragValue::new(&mut preview.fov).speed(0.01))
-                .being_edited(&mut edited);
-            ui.end_row();
-
-            if edited
-                && let Some(operation) = &mut app.slice_operation
-                && let Some(interactive) = &operation.interactive_previews
-            {
-                app.state.preview_mode = PreviewMode::Interactive;
-                app.state.last_preview_interact = Some(Instant::now());
-
-                let mut camera = interactive.camera.lock();
-                camera.fov = preview.fov;
-            }
         });
     });
 
@@ -207,7 +218,10 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                     ui.label("Scale");
                     ui.label(INFO).on_hover_text(SSAO_SCALE_TIP);
                 });
-                DragValue::new(&mut ao.scale).range(0.1..=1.0).ui(ui);
+                DragValue::new(&mut ao.scale)
+                    .range(0.1..=1.0)
+                    .speed(0.1)
+                    .ui(ui);
                 ui.end_row();
 
                 ui.label("Samples");
@@ -232,6 +246,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                 ui.end_row();
             });
 
+            ui.add_space(8.0);
             ui.visuals_mut().collapsing_header_frame = false;
             ui.collapsing("Blur", |ui| {
                 grid("ao_blur").show(ui, |ui| {
@@ -315,7 +330,10 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                 });
             ui.end_row();
 
-            ui.label("Max History Mesh");
+            ui.horizontal(|ui| {
+                ui.label("Max History Mesh");
+                ui.label(INFO).on_hover_text(MAX_HISTORY_MESH_TIP);
+            });
             ui.horizontal(|ui| {
                 DragValue::new(&mut app.config.ui.history_max_mesh_size)
                     .suffix(" MiB")
@@ -405,7 +423,10 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
             ui.label(format!("{:.2}", frame_time.recip()));
             ui.end_row();
 
-            ui.label("Average Time");
+            ui.horizontal(|ui| {
+                ui.label("Average");
+                ui.label(INFO).on_hover_text(AVG_TIME_TIP);
+            });
             DragValue::new(app.config.render.stats_average_time.raw_mut())
                 .suffix(" s")
                 .speed(0.1)
@@ -422,6 +443,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
             .allow_boxed_zoom(false)
             .show_axes([false, true])
             .view_aspect(3.0)
+            .default_y_bounds(0.0, 2.0 / frame_time as f64)
             .show(ui, |plot| {
                 let series = app
                     .fps
@@ -489,11 +511,11 @@ fn projection_combobox(ui: &mut Ui, projection: &mut Projection) -> Response {
     response
 }
 
-fn visibility_combobox(ui: &mut Ui, salt: impl Hash, value: &mut bool) {
-    ComboBox::from_id_salt(salt)
-        .selected_text(["Hidden", "Shown"][*value as usize])
-        .show_ui(ui, |ui| {
-            ui.selectable_value(value, false, "Hidden");
-            ui.selectable_value(value, true, "Shown");
+fn debug_renderer(ui: &mut Ui, debug: &mut DebugRender) {
+    ui.horizontal(|ui| {
+        ui.checkbox(&mut debug.enabled, "");
+        debug.color.with_linear(|color| {
+            ui.color_edit_button_rgb(color.as_slice_mut());
         });
+    });
 }

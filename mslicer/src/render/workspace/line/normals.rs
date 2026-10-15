@@ -1,13 +1,13 @@
 use nalgebra::Vector3;
 
 use crate::{
-    core::{App, project::model::Model},
+    core::{App, config::render::DebugRender, project::model::Model},
     render::workspace::line::{LastModels, Line, LineGenerator},
 };
 
 pub struct NormalsDispatch {
     last_models: LastModels,
-    last_normals: bool,
+    last_config: DebugRender,
 
     cached_lines: Vec<Line>,
 }
@@ -16,7 +16,7 @@ impl NormalsDispatch {
     pub fn new() -> Self {
         Self {
             last_models: LastModels::empty(),
-            last_normals: false,
+            last_config: DebugRender::new(),
 
             cached_lines: Vec::new(),
         }
@@ -25,19 +25,13 @@ impl NormalsDispatch {
 
 impl LineGenerator for NormalsDispatch {
     fn generate_lines(&mut self, app: &mut App) {
-        let show_normals = app.config.render.normals;
-        if !show_normals && show_normals == self.last_normals {
-            return;
-        }
-
+        let config = &app.config.render.normals;
         let models = app.project.models.iter().filter(|x| x.hidden);
-        if self.last_models.update(models) || show_normals != self.last_normals {
-            self.last_normals = show_normals;
+        if self.last_models.update(models) || config != &self.last_config {
+            self.cached_lines.clear();
 
-            if show_normals {
+            if config.enabled {
                 self.cached_lines = generate_normals(&app.project.models);
-            } else {
-                self.cached_lines = Vec::new();
             }
         }
     }

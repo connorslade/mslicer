@@ -1,4 +1,4 @@
-use common::{color::LinearRgb, units::Seconds};
+use common::{color::SRgb, units::Seconds};
 use nalgebra::Vector2;
 use serde::{Deserialize, Serialize};
 
@@ -21,8 +21,8 @@ pub struct RenderConfig {
 
     // extras
     pub grid_size: f32,
-    pub normals: bool,
-    pub bounding_box: bool,
+    pub normals: DebugRender,
+    pub bounding_box: DebugRender,
     pub overhangs: (bool, f32),
     pub basis_size: f32,
 }
@@ -52,10 +52,16 @@ pub struct AntiAliasing {
 #[serde(default)]
 pub struct Preview {
     pub size: Vector2<u32>,
-    pub background: LinearRgb<f32>,
+    pub background: SRgb<f32>,
 
     pub projection: Projection,
     pub fov: f32,
+}
+
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
+pub struct DebugRender {
+    pub enabled: bool,
+    pub color: SRgb<f32>,
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -84,6 +90,19 @@ impl RenderStyle {
     }
 }
 
+impl DebugRender {
+    pub fn new() -> Self {
+        Self {
+            enabled: false,
+            color: SRgb::splat(f32::MAX),
+        }
+    }
+
+    pub fn with_color(self, color: SRgb<f32>) -> Self {
+        Self { color, ..self }
+    }
+}
+
 impl Default for RenderConfig {
     fn default() -> Self {
         Self {
@@ -99,8 +118,8 @@ impl Default for RenderConfig {
 
             grid_size: 12.16,
             overhangs: (false, 30.0),
-            normals: false,
-            bounding_box: false,
+            normals: DebugRender::new().with_color(SRgb::new(0.5, 0.5, 1.0)),
+            bounding_box: DebugRender::new().with_color(SRgb::new(1.0, 0.5, 1.0)),
             basis_size: 100.0,
         }
     }
@@ -133,7 +152,7 @@ impl Default for Preview {
     fn default() -> Self {
         Self {
             size: Vector2::new(400, 300),
-            background: LinearRgb::splat(0.0),
+            background: SRgb::splat(0.0),
 
             projection: Projection::Orthographic,
             fov: Camera::default().fov,

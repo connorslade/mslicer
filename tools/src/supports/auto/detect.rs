@@ -88,7 +88,7 @@ impl<'a> AutoPlacement<'a> {
                     intersection.1 = mesh.transform(&intersection.1);
                     intersections.push(SupportPlacement {
                         point: intersection.1,
-                        normal: face.1,
+                        normal: mesh.transform_normal(&face.1),
                     });
                 }
             }
@@ -187,9 +187,9 @@ impl<'a> AutoPlacement<'a> {
             if (neighbors.iter()).all(|connected| {
                 origin_pos.z < mesh.transform(&vertices[connected.vertex as usize]).z
             }) {
-                let point = mesh.transform(&mesh.vertices()[origin.vertex as usize]);
+                let point = mesh.transform(&mesh.vertices()[origin.origin_vertex as usize]);
                 let normal = (neighbors.iter())
-                    .map(|x| mesh.normal(x.face as usize))
+                    .map(|x| mesh.transform_normal(&mesh.normal(x.face as usize)))
                     .sum::<Vector3<_>>()
                     .normalize();
 

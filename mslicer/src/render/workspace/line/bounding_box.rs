@@ -5,13 +5,13 @@ use nalgebra::Vector3;
 use slicer::geometry::bounds::Bounds3D;
 
 use crate::{
-    core::App,
+    core::{App, config::render::DebugRender},
     render::workspace::line::{LastModels, Line, LineGenerator},
 };
 
 pub struct BoundingBoxDispatch {
     last_models: LastModels,
-    last_enabled: bool,
+    last_config: DebugRender,
 
     cached_lines: Vec<Line>,
 }
@@ -20,7 +20,7 @@ impl BoundingBoxDispatch {
     pub fn new() -> Self {
         Self {
             last_models: LastModels::empty(),
-            last_enabled: false,
+            last_config: DebugRender::new(),
 
             cached_lines: Vec::new(),
         }
@@ -29,12 +29,13 @@ impl BoundingBoxDispatch {
 
 impl LineGenerator for BoundingBoxDispatch {
     fn generate_lines(&mut self, app: &mut App) {
-        let enabled = app.config.render.bounding_box;
+        let config = &app.config.render.bounding_box;
         let models = app.project.models.iter().filter(|x| x.hidden);
-        if self.last_models.update(models) || enabled ^ self.last_enabled {
+        if self.last_models.update(models) || config != &self.last_config {
             self.cached_lines.clear();
+            self.last_config = config.clone();
 
-            if enabled {
+            if config.enabled {
                 for model in app.project.models.iter().filter(|x| !x.hidden) {
                     let Bounds3D { min, max } = model.bounds;
 
@@ -57,7 +58,7 @@ impl LineGenerator for BoundingBoxDispatch {
 
                     self.cached_lines.extend(
                         (bottom_lines.chain(top_lines).chain(connection_lines))
-                            .map(|(a, b)| Line::new(*a, *b).color(Vector3::new(1.0, 0.5, 1.0))),
+                            .map(|(a, b)| Line::new(*a, *b).color(config.color.into())),
                     );
                 }
             }

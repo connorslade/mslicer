@@ -90,6 +90,12 @@ impl LightingPass {
                     ty: BindingType::Sampler(SamplerBindingType::NonFiltering),
                     count: None,
                 },
+                BindGroupLayoutEntry {
+                    binding: 5,
+                    visibility: ShaderStages::FRAGMENT,
+                    ty: BindingType::Sampler(SamplerBindingType::Filtering),
+                    count: None,
+                },
             ],
         });
 
@@ -157,6 +163,7 @@ impl LightingPass {
         &mut self,
         gcx: &Gcx,
         textures: &TextureViews,
+        bi_sampler: &Sampler,
         sampler: &Sampler,
     ) -> BindGroup {
         gcx.device.create_bind_group(&BindGroupDescriptor {
@@ -182,6 +189,10 @@ impl LightingPass {
                 BindGroupEntry {
                     binding: 4,
                     resource: BindingResource::Sampler(sampler),
+                },
+                BindGroupEntry {
+                    binding: 5,
+                    resource: BindingResource::Sampler(bi_sampler),
                 },
             ],
         })

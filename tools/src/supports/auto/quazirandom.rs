@@ -16,7 +16,7 @@ pub fn quazirandom_2d(i: usize) -> Vector2<f32> {
 // Output range: ⟨[0, width), [0, height)⟩
 pub fn quazirandom_rect_2d(size: Vector2<f32>, spacing: f32) -> impl Iterator<Item = Vector2<f32>> {
     let scale = size.x.max(size.y);
-    let count = (scale.powi(2) / spacing) as usize;
+    let count = (scale / spacing).powi(2) as usize;
 
     (0..count)
         .map(move |i| quazirandom_2d(i) * scale)

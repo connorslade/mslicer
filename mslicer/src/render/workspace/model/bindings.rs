@@ -135,7 +135,7 @@ impl ModelPipeline {
             base: BaseResources::new(&gcx.device),
             ssao: self.ssao.recreate_bind_group(gcx, &textures, sampler),
             blur: self.blur.recreate_bind_group(gcx, &textures, sampler),
-            lighting: self.lighting.recreate_bind_group(gcx, &textures, sampler),
+            lighting: (self.lighting).recreate_bind_group(gcx, &textures, bi_sampler, sampler),
             fxaa: self.fxaa.recreate_bind_group(gcx, &textures, bi_sampler),
             composite: self.composite.recreate_bind_group(gcx, &textures, sampler),
 

@@ -209,13 +209,7 @@ impl ModelPipeline {
         self.blur.prepare(gcx, app, occlusion_size(app, size));
         self.lighting.prepare(gcx, app, true, Some(&camera));
         self.fxaa.prepare(gcx, app, size);
-        self.render(
-            encoder,
-            app,
-            Target::Preview,
-            [true; 2],
-            Some(background.to_srgb()),
-        );
+        self.render(encoder, app, Target::Preview, [true; 2], Some(background));
     }
 
     // Runs the post-processing pipeline, copying the data from the intermediary
