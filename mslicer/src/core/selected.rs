@@ -165,6 +165,11 @@ impl SelectedSupports {
         models.len()
     }
 
+    pub fn select_support(&mut self, model: ModelId, support: SupportId) {
+        let key = SelectedSupport::new(model, support);
+        self.supports.insert(key);
+    }
+
     pub fn support_clicked(&mut self, model: ModelId, support: SupportId) {
         let key = SelectedSupport::new(model, support);
 

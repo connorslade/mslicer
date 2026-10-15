@@ -77,19 +77,20 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
             Tool::Select => {
                 if let Some(hover) = app.state.hovered_geometry {
                     let shift = ui.input(|x| x.modifiers.shift);
-                    if hover.support {
-                        if let Some(model) = app.project.model(hover.model)
-                            && let Some(support) = model.supports.support_for_face(hover.face)
-                        {
-                            (app.state.selected_supports).support_clicked(model.id, support);
-                        }
-                    } else {
+                    if !hover.support {
                         app.state.selected.model_clicked(hover.model, shift);
                     }
                 }
             }
             Tool::Support => {
                 manual_support_placement(app, true);
+
+                if let Some(hover) = app.state.hovered_geometry
+                    && let Some(model) = app.project.model(hover.model)
+                    && let Some(support) = model.supports.support_for_face(hover.face)
+                {
+                    (app.state.selected_supports).support_clicked(model.id, support);
+                }
 
                 if let Some(hover) = app.state.hovered_geometry
                     && let Some(model) = app.project.model(hover.model)

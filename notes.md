@@ -38,6 +38,7 @@ Feel free to help out :eyes:.
 - reduce power usage (dont always re-render, don't re-do work)
 - two stage lift config!! (how have i left this unimplemented for so long!)
 - slice config presets
+- configurable (and viewable) key binds
 
 ## Documentation
 

@@ -17,7 +17,11 @@ use wgpu::{
 };
 
 use crate::{
-    core::{App, project::model::ModelId, state::GeometryHit},
+    core::{
+        App,
+        project::model::ModelId,
+        state::{GeometryHit, Tool},
+    },
     render::{
         Gcx,
         workspace::{WorkspaceRenderResources, model::MultiStage},
@@ -227,10 +231,22 @@ fn download_area(app: &mut App, buffer: &Buffer, extent: &Extent3d) {
     let padded_width = (extent.width * 8).next_multiple_of(COPY_BYTES_PER_ROW_ALIGNMENT);
     for (x, y) in (0..extent.width).cartesian_product(0..extent.height) {
         let idx = (y * padded_width / 8) + x;
-        let id = data[idx as usize][0];
-        if id != u32::MAX {
-            let id = ModelId::from_raw(id & MODEL_ID_MASK);
-            app.state.selected.select_model(id)
+        let [model_raw, face] = data[idx as usize];
+        if model_raw != u32::MAX {
+            let support = model_raw >> 31 != 0;
+            let model_id = ModelId::from_raw(model_raw & MODEL_ID_MASK);
+
+            match app.state.tool {
+                Tool::Select if !support => app.state.selected.select_model(model_id),
+                Tool::Support if support => {
+                    if let Some(model) = app.project.model(model_id)
+                        && let Some(support_id) = model.supports.support_for_face(face)
+                    {
+                        (app.state.selected_supports).select_support(model_id, support_id);
+                    }
+                }
+                _ => {}
+            }
         }
     }
 }
