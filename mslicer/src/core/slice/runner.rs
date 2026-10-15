@@ -18,6 +18,7 @@ use crate::{
         popup::{Popup, PopupIcon},
     },
     render::camera::Camera,
+    util::misc::invert_color,
 };
 use common::{progress::CombinedProgress, slice::SliceMode, units::Milimeter};
 use slicer::{
@@ -27,9 +28,18 @@ use slicer::{
 
 impl App {
     pub fn slice(&mut self) {
+        let device = &self.render_state.device;
         let meshes = (self.project.models.iter_mut())
             .filter(|x| !x.hidden)
-            .map(|x| (x.supports.mesh().clone(), x.clone()))
+            .map(|x| {
+                (
+                    (
+                        x.supports.mesh().as_ref().map(|x| x.0.clone()),
+                        x.supports.preview(device, invert_color(x.color)),
+                    ),
+                    x.clone(),
+                )
+            })
             .collect::<Vec<_>>();
 
         if meshes.is_empty() {
@@ -55,8 +65,6 @@ impl App {
         let platform = slice_config.platform_resolution.cast::<f32>();
         let mm_to_px = platform.component_div(&platform_size).push(1.0);
 
-        let device = &self.render_state.device;
-
         // Transform models from world-space to platform-space
         let mut out = Vec::new();
         let mut preview_models = Vec::new();
@@ -67,7 +75,7 @@ impl App {
         for (supports, mut model) in meshes.into_iter() {
             // preview
             bounds.extend(&model.bounds);
-            preview_models.push(PreviewModel::for_model(&mut model, device));
+            preview_models.push(PreviewModel::for_model(device, &mut model));
 
             // slicing
             let (mut mesh, exposure) = (model.mesh, model.exposure);
@@ -82,7 +90,9 @@ impl App {
                 exposure,
             });
 
-            if let Some((mut mesh, _)) = supports {
+            if let (Some(mut mesh), Some(preview)) = supports {
+                preview_models.push(preview);
+
                 transform_mesh(&mut mesh, mm_to_px, offset);
                 triangles += mesh.face_count() as u64;
                 let bounds = Bounds3D::from_mesh(&mesh);

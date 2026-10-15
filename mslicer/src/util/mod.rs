@@ -1,6 +1,7 @@
 pub mod ext;
 pub mod fps_tracker;
 pub mod management;
+pub mod misc;
 
 #[macro_export]
 macro_rules! include_asset {

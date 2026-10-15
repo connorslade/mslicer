@@ -1,9 +1,6 @@
-use std::{f32::consts::PI, num::NonZero};
+use std::num::NonZero;
 
-use common::{
-    color::{LinearRgb, OkLab, SRgb},
-    units::Milimeter,
-};
+use common::units::Milimeter;
 use encase::{DynamicUniformBuffer, ShaderSize, ShaderType};
 use nalgebra::{Matrix4, Vector3};
 use wgpu::{
@@ -25,6 +22,7 @@ use crate::{
         util::ResizingBuffer,
         workspace::model::{MultiStage, selected::Selected},
     },
+    util::misc::invert_color,
 };
 
 pub struct BasePass {
@@ -462,11 +460,4 @@ impl BaseResources {
             self.recreate_bind_group(gcx, &pass.group_layout);
         }
     }
-}
-
-fn invert_color(linear: LinearRgb<f32>) -> SRgb<f32> {
-    OkLab::from_linear_srgb(linear)
-        .hue_shift(PI)
-        .to_linear_srgb()
-        .to_srgb()
 }

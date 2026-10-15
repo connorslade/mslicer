@@ -1,6 +1,6 @@
 use std::{collections::HashMap, f32::consts::PI, range::Range, time::Instant};
 
-use common::units::Milimeter;
+use common::{color::SRgb, units::Milimeter};
 use nalgebra::{Vector2, Vector3};
 use slicer::geometry::mesh::{Mesh, MeshBuilder};
 use tools::supports::{
@@ -10,7 +10,7 @@ use tools::supports::{
 use tracing::info;
 use wgpu::Device;
 
-use crate::render::util::MeshBuffers;
+use crate::{core::state::PreviewModel, render::util::MeshBuffers};
 
 #[derive(Default)]
 pub struct Supports {
@@ -172,5 +172,21 @@ impl Supports {
     pub fn remove(&mut self, id: SupportId) {
         self.auto.retain(|x| x.id != id);
         self.manual.retain(|x| x.id != id);
+    }
+
+    pub fn preview(&mut self, device: &Device, color: SRgb<f32>) -> Option<PreviewModel> {
+        if let Some((faces, transform)) = (self.mesh().as_ref())
+            .map(|(mesh, _)| (mesh.face_count(), *mesh.transformation_matrix()))
+            && let Some(buffers) = self.get_buffers(device)
+        {
+            return Some(PreviewModel {
+                mesh: buffers.clone(),
+                faces,
+                transform,
+                color,
+            });
+        }
+
+        None
     }
 }

@@ -115,7 +115,7 @@ pub enum RemotePrintConnectStatus {
 }
 
 impl PreviewModel {
-    pub fn for_model(model: &mut Model, device: &Device) -> Self {
+    pub fn for_model(device: &Device, model: &mut Model) -> Self {
         Self {
             mesh: model.get_buffers(device).clone(),
             faces: model.mesh.face_count(),
