@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use common::units::Milimeter;
 use const_format::concatcp;
-use egui::{Align, Button, Context, DragValue, Layout, Ui, Widget};
+use egui::{Button, Context, DragValue, Ui, Widget};
 use egui_phosphor::regular::{LINE_SEGMENT, SELECTION_INVERSE, SPARKLE, TRASH};
 use slicer::geometry::mesh::MeshBuilder;
 use tools::supports::auto::route_support;
@@ -14,136 +14,124 @@ use crate::{
 };
 
 pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
-    ui.horizontal(|ui| {
-        let support_mode = &mut app.state.support_mode;
-        *support_mode ^= Button::selectable(!*support_mode, "Place").ui(ui).clicked();
-        *support_mode ^= Button::selectable(*support_mode, "Edit").ui(ui).clicked();
+    ui.horizontal_wrapped(|ui| {
+        prepare(app, ui);
 
-        ui.with_layout(Layout::right_to_left(Align::Center), |ui| prepare(app, ui));
-    });
-    ui.separator();
+        ui.menu_button(concatcp!(SPARKLE, " Auto"), |ui| {
+            ui.set_width(200.0);
 
-    if app.state.support_mode {
-        // edit
-        let selected = &mut app.state.selected_supports;
-        let selected_count = selected.count();
-
-        if selected_count == 0 {
-            ui.label("No supports selected.");
-        } else {
-            let models = selected.model_count();
-            ui.label(format!(
-                "{selected_count} support{} selected across {models} model{}.",
-                ["", "s"][(selected_count != 1) as usize],
-                ["", "s"][(models != 1) as usize],
-            ));
-
-            ui.add_space(8.0);
-            ui.horizontal_wrapped(|ui| {
-                if ui.button(concatcp!(TRASH, " Delete")).clicked() {
-                    for support in selected.iter() {
-                        let model = app.project.model(support.model).unwrap();
-                        model.supports.remove(support.support);
-                        model.supports.invalidate_cache();
+            let mut any = false;
+            for idx in 0..app.project.models.len() {
+                let model = &app.project.models[idx];
+                if model.has_acceleration_structures() {
+                    any = true;
+                    if ui.button(&model.name).clicked() {
+                        generate_support(app, idx);
                     }
-                    selected.clear();
                 }
+            }
 
-                ui.button(concatcp!(SELECTION_INVERSE, " Deselect"))
-                    .clicked()
-                    .then(|| selected.clear());
-            });
-        }
+            if !any {
+                ui.label("No models have been prepared for supports.");
+            }
+        });
+    });
+
+    let selected = &mut app.state.selected_supports;
+    let selected_count = selected.count();
+    if selected_count > 0 {
+        ui.separator();
+
+        let models = selected.model_count();
+        ui.label(format!(
+            "{selected_count} support{} selected across {models} model{}.",
+            ["", "s"][(selected_count != 1) as usize],
+            ["", "s"][(models != 1) as usize],
+        ));
 
         ui.add_space(8.0);
-        ui.collapsing("Mesh", |ui| {
-            grid("mesh").show(ui, |ui| {
-                ui.label("Resolution");
-                DragValue::new(&mut app.project.support_config.mesh_resolution).ui(ui);
-                ui.end_row();
-            });
+        ui.horizontal_wrapped(|ui| {
+            if ui.button(concatcp!(TRASH, " Delete")).clicked() {
+                for support in selected.iter() {
+                    let model = app.project.model(support.model).unwrap();
+                    model.supports.remove(support.support);
+                    model.supports.invalidate_cache();
+                }
+                selected.clear();
+            }
+
+            ui.button(concatcp!(SELECTION_INVERSE, " Deselect"))
+                .clicked()
+                .then(|| selected.clear());
         });
 
-        ui.collapsing("Raft", |ui| {
-            grid("raft").show(ui, |ui| {
-                let config = &mut app.project.support_config;
+        ui.separator();
+    }
 
-                ui.label("Height");
-                config.raft_height.with::<Milimeter, _>(|x| {
+    let config = &mut app.project.support_config.auto_placement;
+    ui.collapsing("Auto Placement", |ui| {
+        grid("auto_placement").show(ui, |ui| {
+            ui.label("Default Lift");
+            (app.project.support_config.default_lift)
+                .with::<Milimeter, _>(|x| DragValue::new(x).suffix(" mm").ui(ui));
+            ui.end_row();
+
+            ui.label("Max Angle");
+            DragValue::new(&mut config.max_angle).speed(0.01).ui(ui);
+            ui.end_row();
+
+            ui.label("Face Support Spacing");
+            DragValue::new(&mut config.face_support_spacing)
+                .suffix(" mm")
+                .speed(0.01)
+                .ui(ui);
+            ui.end_row();
+
+            ui.label("Edge Angle Delta");
+            DragValue::new(&mut config.edge_angle_delta).ui(ui);
+            ui.end_row();
+
+            ui.label("Edge Support Spacing");
+            DragValue::new(&mut config.edge_support_spacing).ui(ui);
+            ui.end_row();
+
+            ui.label("Minimum Support Spacing");
+            ui.horizontal(|ui| {
+                DragValue::new(&mut config.min_spacing).ui(ui);
+                ui.take_available_width();
+            });
+            ui.end_row();
+        });
+    });
+
+    ui.collapsing("Mesh", |ui| {
+        grid("mesh").show(ui, |ui| {
+            ui.label("Resolution");
+            DragValue::new(&mut app.project.support_config.mesh_resolution).ui(ui);
+            ui.end_row();
+        });
+    });
+
+    ui.collapsing("Raft", |ui| {
+        grid("raft").show(ui, |ui| {
+            let config = &mut app.project.support_config;
+
+            ui.label("Height");
+            config.raft_height.with::<Milimeter, _>(|x| {
+                DragValue::new(x).suffix(" mm").speed(0.1).ui(ui);
+            });
+            ui.end_row();
+
+            ui.label("Offset");
+            ui.horizontal(|ui| {
+                config.raft_offset.with::<Milimeter, _>(|x| {
                     DragValue::new(x).suffix(" mm").speed(0.1).ui(ui);
                 });
-                ui.end_row();
-
-                ui.label("Offset");
-                ui.horizontal(|ui| {
-                    config.raft_offset.with::<Milimeter, _>(|x| {
-                        DragValue::new(x).suffix(" mm").speed(0.1).ui(ui);
-                    });
-                    ui.take_available_width();
-                });
-                ui.end_row();
+                ui.take_available_width();
             });
+            ui.end_row();
         });
-    } else {
-        // place
-        ui.horizontal(|ui| {
-            ui.menu_button(concatcp!(SPARKLE, " Auto"), |ui| {
-                ui.set_width(200.0);
-
-                let mut any = false;
-                for idx in 0..app.project.models.len() {
-                    let model = &app.project.models[idx];
-                    if model.has_acceleration_structures() {
-                        any = true;
-                        if ui.button(&model.name).clicked() {
-                            generate_support(app, idx);
-                        }
-                    }
-                }
-
-                if !any {
-                    ui.label("No models have been prepared for supports.");
-                }
-            });
-        });
-
-        ui.add_space(8.0);
-        let config = &mut app.project.support_config.auto_placement;
-        ui.collapsing("Auto Placement", |ui| {
-            grid("auto_placement").show(ui, |ui| {
-                ui.label("Default Lift");
-                (app.project.support_config.default_lift)
-                    .with::<Milimeter, _>(|x| DragValue::new(x).suffix(" mm").ui(ui));
-                ui.end_row();
-
-                ui.label("Max Angle");
-                DragValue::new(&mut config.max_angle).speed(0.01).ui(ui);
-                ui.end_row();
-
-                ui.label("Face Support Spacing");
-                DragValue::new(&mut config.face_support_spacing)
-                    .suffix(" mm")
-                    .speed(0.01)
-                    .ui(ui);
-                ui.end_row();
-
-                ui.label("Edge Angle Delta");
-                DragValue::new(&mut config.edge_angle_delta).ui(ui);
-                ui.end_row();
-
-                ui.label("Edge Support Spacing");
-                DragValue::new(&mut config.edge_support_spacing).ui(ui);
-                ui.end_row();
-
-                ui.label("Minimum Support Spacing");
-                ui.horizontal(|ui| {
-                    DragValue::new(&mut config.min_spacing).ui(ui);
-                    ui.take_available_width();
-                });
-                ui.end_row();
-            });
-        });
-    }
+    });
 }
 
 fn generate_support(app: &mut App, model: usize) {

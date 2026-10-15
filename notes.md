@@ -11,8 +11,7 @@ Feel free to help out :eyes:.
 - some custom components dont work well on light mode
 - if you make changes to a project in the time that it takes for another project to load, your changes will be deleted
   - lock while loading project or saving before close!
-- don't allow starting multiple build acc structure tasks
-- fix weird supports OOB shading
+- don't allow starting multiple build acc structure tasks!
 
 ## Features
 

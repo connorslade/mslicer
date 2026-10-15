@@ -26,18 +26,17 @@ pub struct UiState {
     pub queue_reset_ui: bool,
     pub line_support_debug: Vec<[Vector3<f32>; 2]>,
     pub tool: Tool,
-    pub select_start: Option<Vec2>,
 
     // support stuff
     pub workspace: WorkspaceHover,
     pub hovered_geometry: Option<GeometryHit>,
-    pub support_mode: bool,
 
+    // selections
+    pub select_start: Option<Vec2>,
     pub selected: SelectedModel,
     pub selected_printer: SelectedPrinter,
     pub selected_supports: SelectedSupports,
     pub support_preview: Option<Mesh>,
-
     pub selected_remap_point: Option<u8>,
 
     // remote send ui

@@ -398,8 +398,10 @@ impl BaseResources {
                 let model_transform = mesh.transformation_matrix();
                 let uniform = Uniforms {
                     transform: view_projection * model_transform,
+                    model_transform: *model_transform,
                     model_color: invert_color(model.color).into(),
                     id: base.id | 1 << 31,
+                    overhang_angle: f32::from_bits(0xFFFFFFFF),
                     ..base
                 };
 
