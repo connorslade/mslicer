@@ -61,7 +61,7 @@ pub fn build_supports<'a>(
             raft_points.push(points[2].xy() + normal * r);
         }
 
-        builder.add_sphere(points[0], 0.2, p);
+        builder.add_sphere(points[0], support.tip_radius, p);
         builder.add_sphere(points[1], r, p);
         builder.add_sphere(points[2], r, p);
 

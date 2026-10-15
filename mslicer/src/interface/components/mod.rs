@@ -124,7 +124,11 @@ pub fn collapsing_toggle(
 }
 
 pub fn link_button(ui: &mut Ui, text: &str, link: &str) {
-    if ui.button((RichText::new(LINK).weak(), " ", text)).clicked() {
+    if ui
+        .button((RichText::new(LINK).weak(), " ", text))
+        .on_hover_text(link)
+        .clicked()
+    {
         ui.ctx().open_url(OpenUrl {
             url: link.to_owned(),
             new_tab: true, // doesn't matter

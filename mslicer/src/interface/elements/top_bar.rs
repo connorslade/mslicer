@@ -23,6 +23,7 @@ use crate::{
 };
 
 const LINK_WEBSITE: &str = "https://mslicer.com";
+const LINK_ZULIP: &str = "https://mslicer.zulipchat.com";
 const LINK_SOURCE_CODE: &str = "https://github.com/connorslade/mslicer";
 const LINK_REPORT_BUG: &str = "https://github.com/connorslade/mslicer/issues/new";
 
@@ -196,9 +197,10 @@ pub fn ui(app: &mut App, ctx: &Context) {
                 });
 
                 ui.menu_button(concatcp!(LIFEBUOY, " Help"), |ui| {
-                    link_button(ui, "Website", LINK_WEBSITE);
+                    link_button(ui, "Project Homepage", LINK_WEBSITE);
+                    link_button(ui, "Zulip Chat", LINK_ZULIP);
                     link_button(ui, "Source Code", LINK_SOURCE_CODE);
-                    link_button(ui, "Report Bug", LINK_REPORT_BUG);
+                    link_button(ui, "Bug Report", LINK_REPORT_BUG);
 
                     ui.separator();
                     app.config.ui.about |= ui.button("About mslicer").clicked();

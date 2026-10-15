@@ -5,9 +5,13 @@ use const_format::concatcp;
 use egui::{Align, Button, Context, DragValue, Layout, Ui, Widget};
 use egui_phosphor::regular::{LINE_SEGMENT, SELECTION_INVERSE, SPARKLE, TRASH};
 use slicer::geometry::mesh::MeshBuilder;
-use tools::supports::auto::{AutoPlacement, route_support};
+use tools::supports::auto::route_support;
 
-use crate::{core::App, interface::components::grid, task::BuildAccelerationStructures};
+use crate::{
+    core::App,
+    interface::components::grid,
+    task::{BuildAccelerationStructures, GenerateSupports},
+};
 
 pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     ui.horizontal(|ui| {
@@ -152,16 +156,13 @@ fn generate_support(app: &mut App, model: usize) {
         pos.xy().push(pos.z.max(default_lift)),
     );
 
-    let half_edge = model.half_edge.as_ref().unwrap();
-    let bvh = model.bvh.as_ref().unwrap();
+    let placement = app.project.support_config.auto_placement.clone();
+    let support = app.project.support_config.presets[0].clone();
+    let platform = app.project.slice_config.platform_size.map(|x| x.convert());
 
-    let support_placement = &app.project.support_config.auto_placement;
-    let support_preset = &app.project.support_config.presets[0];
-    let platform_size = app.project.slice_config.platform_size.map(|x| x.convert());
-
-    let generator = AutoPlacement::new(support_placement, support_preset, platform_size);
-    let supports = generator.generate_supports(&model.mesh, half_edge, bvh);
-    model.supports.replace_auto(support_preset, supports);
+    if let Some(task) = GenerateSupports::new(platform, placement, support, model) {
+        app.tasks.add(task);
+    }
 }
 
 pub fn manual_support_placement(app: &mut App, clicked: bool) {

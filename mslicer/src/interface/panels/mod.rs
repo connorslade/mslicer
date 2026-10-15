@@ -108,8 +108,11 @@ impl Panels {
 
 fn default_dock_layout(surface: &mut Tree<Tab>) {
     let [_old_node, new_node] = surface.split_left(NodeIndex::root(), 0.2, vec![Tab::Models]);
-    let [_old_node, new_node] =
-        surface.split_below(new_node, 0.4, vec![Tab::SliceConfig, Tab::Supports]);
+    let [_old_node, new_node] = surface.split_below(
+        new_node,
+        0.4,
+        vec![Tab::SliceConfig, Tab::Supports, Tab::Notes],
+    );
     surface.split_below(new_node, 0.6, vec![Tab::Workspace, Tab::RemotePrint]);
 }
 

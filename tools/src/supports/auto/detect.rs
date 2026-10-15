@@ -16,7 +16,7 @@ pub struct SupportPlacement {
     pub normal: Vector3<f32>,
 }
 
-impl<'a> AutoPlacement<'a> {
+impl AutoPlacement {
     pub fn overhanging_faces(&self, mesh: &Mesh) -> Vec<(usize, Vector3<f32>)> {
         let max_angle = self.placement.max_angle.to_radians();
         let mut overhangs = Vec::new();

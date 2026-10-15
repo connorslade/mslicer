@@ -12,11 +12,11 @@ Feel free to help out :eyes:.
 - if you make changes to a project in the time that it takes for another project to load, your changes will be deleted
   - lock while loading project or saving before close!
 - don't allow starting multiple build acc structure tasks
+- fix weird supports OOB shading
 
 ## Features
 
 - support generation
-    - for support generation pick less steep angles for the top part of the support
     - support presets, instead of having to mess with all the sliders to change the size
     - dont place supports on points touching the build plate
     - options to only generate some combination of point, edge, and face overhangs 
@@ -88,9 +88,5 @@ Features that would be cool, but are a bit out of scope for now.
 
 ---
 
-just found it. were back.
-
 - support presets and property configuration
-- generate support mesh / placement in async task
-- task cancellation mechanism
-- maybe supports and repair should go in slicer?
+- support serialization...

@@ -1,6 +1,9 @@
 use std::f32::consts::TAU;
 
-use common::units::{Milimeter, Milimeters};
+use common::{
+    progress::Progress,
+    units::{Milimeter, Milimeters},
+};
 use nalgebra::Vector3;
 use slicer::geometry::{
     mesh::{HalfEdgeMesh, Mesh, orthogonal_basis},
@@ -13,9 +16,9 @@ use crate::supports::mesh::SupportPreset;
 pub mod detect;
 pub mod quazirandom;
 
-pub struct AutoPlacement<'a> {
-    pub placement: &'a PlacementConfig,
-    pub support: &'a SupportPreset,
+pub struct AutoPlacement {
+    pub placement: PlacementConfig,
+    pub support: SupportPreset,
 
     pub bed_size: Vector3<Milimeters>,
 }
@@ -29,10 +32,10 @@ pub struct PlacementConfig {
     pub edge_angle_delta: f32,
 }
 
-impl<'a> AutoPlacement<'a> {
+impl AutoPlacement {
     pub fn new(
-        placement: &'a PlacementConfig,
-        support: &'a SupportPreset,
+        placement: PlacementConfig,
+        support: SupportPreset,
         bed_size: Vector3<Milimeters>,
     ) -> Self {
         Self {
@@ -48,6 +51,7 @@ impl<'a> AutoPlacement<'a> {
         mesh: &Mesh,
         half_edge: &HalfEdgeMesh,
         bvh: &Bvh,
+        progress: &Progress,
     ) -> Vec<[Vector3<f32>; 3]> {
         let mut overhangs = Vec::new();
         let min_dist = self.placement.min_spacing;
@@ -75,12 +79,14 @@ impl<'a> AutoPlacement<'a> {
         );
         overhangs.extend([points, faces, edges].into_iter().flatten());
 
+        progress.set_total(overhangs.len() as u64);
         let radius = (self.support.radius + self.support.margin).get::<Milimeter>();
         overhangs
             .into_iter()
             .filter_map(|x| {
                 let tip_start = x.point + x.normal * self.support.tip_length.get::<Milimeter>();
                 let mid = route_support(mesh, bvh, radius, tip_start);
+                progress.add_complete(1);
                 mid.map(|mid| [x.point, tip_start, mid])
             })
             .collect()
@@ -99,6 +105,7 @@ pub fn route_support(
     let mut momentum = Vector3::zeros();
     let beta = 0.9;
 
+    // todo: try searching through angles instead of the gradient decent
     for _ in 0..100 {
         let closest = bvh.closest(mesh, point).unwrap();
         let grad = point - mesh.transform(&closest.position);
@@ -109,11 +116,10 @@ pub fn route_support(
         if !intersect_cylinder(mesh, bvh, radius, (position, point))
             && !intersect_cylinder(mesh, bvh, radius, (point, point.xy().to_homogeneous()))
         {
-            while point.z > 0.0 && !intersect_cylinder(mesh, bvh, radius, (position, point)) {
+            while point.z > 2.0 && !intersect_cylinder(mesh, bvh, radius, (position, point)) {
                 point.z -= 1.0
             }
 
-            point.z += 1.0;
             return Some(point);
         }
     }
