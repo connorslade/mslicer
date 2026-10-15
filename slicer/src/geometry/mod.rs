@@ -50,7 +50,7 @@ pub mod primitive {
     }
 
     impl Primitive for Segment {
-        const MIN_T: Option<f32> = Some(-1.0);
+        const MIN_T: Option<f32> = Some(0.0);
         const MAX_T: Option<f32> = Some(1.0);
     }
 

@@ -1,7 +1,9 @@
+use std::f32::consts::TAU;
+
 use common::units::{Milimeter, Milimeters};
 use nalgebra::Vector3;
 use slicer::geometry::{
-    mesh::{HalfEdgeMesh, Mesh},
+    mesh::{HalfEdgeMesh, Mesh, orthogonal_basis},
     partitioning::Bvh,
 };
 use tracing::info;
@@ -73,11 +75,12 @@ impl<'a> AutoPlacement<'a> {
         );
         overhangs.extend([points, faces, edges].into_iter().flatten());
 
+        let radius = (self.support.radius + self.support.margin).get::<Milimeter>();
         overhangs
             .into_iter()
             .filter_map(|x| {
                 let tip_start = x.point + x.normal * self.support.tip_length.get::<Milimeter>();
-                let mid = route_support(mesh, bvh, tip_start);
+                let mid = route_support(mesh, bvh, radius, tip_start);
                 mid.map(|mid| [x.point, tip_start, mid])
             })
             .collect()
@@ -86,7 +89,12 @@ impl<'a> AutoPlacement<'a> {
 
 /// Returns the middle of the three points defining a support. The final point
 /// (that touches the build plate) is just this returned point projected down.
-pub fn route_support(mesh: &Mesh, bvh: &Bvh, position: Vector3<f32>) -> Option<Vector3<f32>> {
+pub fn route_support(
+    mesh: &Mesh,
+    bvh: &Bvh,
+    radius: f32,
+    position: Vector3<f32>,
+) -> Option<Vector3<f32>> {
     let mut point = position;
     let mut momentum = Vector3::zeros();
     let beta = 0.9;
@@ -98,12 +106,43 @@ pub fn route_support(mesh: &Mesh, bvh: &Bvh, position: Vector3<f32>) -> Option<V
         momentum = beta * momentum + (1.0 - beta) * grad;
         point += momentum.xy().push(momentum.z.min(0.0)).normalize() * closest.t.min(1.0);
 
-        if bvh.intersect_ray(mesh, point, -Vector3::z()).is_none() {
+        if !intersect_cylinder(mesh, bvh, radius, (position, point))
+            && !intersect_cylinder(mesh, bvh, radius, (point, point.xy().to_homogeneous()))
+        {
+            while point.z > 0.0 && !intersect_cylinder(mesh, bvh, radius, (position, point)) {
+                point.z -= 1.0
+            }
+
+            point.z += 1.0;
             return Some(point);
         }
     }
 
     None
+}
+
+fn intersect_cylinder(
+    mesh: &Mesh,
+    bvh: &Bvh,
+    radius: f32,
+    (start, end): (Vector3<f32>, Vector3<f32>),
+) -> bool {
+    let n = 4;
+
+    let [u, v] = orthogonal_basis((end - start).normalize());
+    for i in 0..n {
+        let t = i as f32 / n as f32 * TAU;
+        let offset = (u * t.cos() + v * t.sin()) * radius;
+
+        if bvh
+            .intersect_segment(mesh, start + offset, end + offset)
+            .is_some()
+        {
+            return true;
+        }
+    }
+
+    false
 }
 
 impl Default for PlacementConfig {

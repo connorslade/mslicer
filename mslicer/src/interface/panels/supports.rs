@@ -188,11 +188,16 @@ pub fn manual_support_placement(app: &mut App, clicked: bool) {
         let tip_r = config.tip_radius.get::<Milimeter>();
 
         let normal = (model.mesh).transform_normal(&model.mesh.normal(intersection.face));
+        if normal.z > 0.0 {
+            continue;
+        }
+
         let intersection = model.mesh.transform(&intersection.position);
         let start = intersection + normal * config.tip_length.get::<Milimeter>();
 
-        if let Some(middle) = route_support(&model.mesh, bvh, start) {
-            let (r, p) = (1.0, 100);
+        let radius = (config.radius + config.margin).get::<Milimeter>();
+        if let Some(middle) = route_support(&model.mesh, bvh, radius, start) {
+            let (r, p) = (config.radius.get::<Milimeter>(), 100);
             builder.add_cylinder((intersection, start), (tip_r, r), p);
             builder.add_cylinder((start, middle), (r, r), p);
             builder.add_cylinder((middle, middle.xy().push(0.0)), (r, r), p);

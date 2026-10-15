@@ -12,6 +12,8 @@ pub type FaceMap = HashMap<SupportId, Range<u32>>;
 #[derive(Clone)]
 pub struct SupportPreset {
     pub radius: Milimeters,
+    pub margin: Milimeters,
+
     pub tip_radius: Milimeters,
     pub tip_length: Milimeters,
 }
@@ -130,20 +132,23 @@ impl Default for Transform {
 impl SupportPreset {
     pub const LIGHT: Self = Self {
         radius: Milimeters::new(0.4),
+        margin: Milimeters::new(0.5),
         tip_radius: Milimeters::new(0.2),
-        tip_length: Milimeters::new(4.0),
+        tip_length: Milimeters::new(2.0),
     };
 
     pub const MDEIUM: Self = Self {
         radius: Milimeters::new(0.6),
+        margin: Milimeters::new(0.5),
         tip_radius: Milimeters::new(0.2),
-        tip_length: Milimeters::new(4.0),
+        tip_length: Milimeters::new(2.0),
     };
 
     pub const HEAVY: Self = Self {
         radius: Milimeters::new(0.8),
+        margin: Milimeters::new(0.5),
         tip_radius: Milimeters::new(0.2),
-        tip_length: Milimeters::new(4.0),
+        tip_length: Milimeters::new(2.0),
     };
 }
 
