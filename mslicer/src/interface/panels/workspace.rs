@@ -181,6 +181,17 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                 });
             ui.end_row();
 
+            ui.label("Overhangs");
+            ui.horizontal(|ui| {
+                ui.checkbox(&mut app.config.render.overhangs.0, "");
+                DragValue::new(&mut app.config.render.overhangs.1)
+                    .range(0.0..=360.0)
+                    .speed(0.1)
+                    .suffix("°")
+                    .ui(ui);
+            });
+            ui.end_row();
+
             ui.label("Normals");
             debug_renderer(ui, &mut app.config.render.normals);
             ui.end_row();

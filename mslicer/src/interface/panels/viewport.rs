@@ -262,7 +262,7 @@ fn paint_hover_overlay(ui: &mut Ui, app: &mut App, hover: GeometryHit, px: Pos2)
                             ui.label(&model.name);
                             ui.end_row();
 
-                            if detail {
+                            if detail && !hover.support {
                                 ui.label("Face");
                                 let [a, b, c] = model.mesh.face(hover.face as usize);
                                 ui.label(format!("{} ({a}, {b}, {c})", hover.face));
@@ -272,11 +272,11 @@ fn paint_hover_overlay(ui: &mut Ui, app: &mut App, hover: GeometryHit, px: Pos2)
                                 let normal = model.mesh.normal(hover.face as usize);
                                 let transformed_normal = model.mesh.transform_normal(&normal);
                                 ui.vertical(|ui| {
-                                    ui.label(format_normal(&normal));
+                                    ui.label(format_vector(&normal));
 
                                     if transformed_normal != normal {
                                         ui.horizontal(|ui| {
-                                            ui.label(format_normal(&transformed_normal));
+                                            ui.label(format_vector(&transformed_normal));
                                             ui.label("(Transformed)");
                                         });
                                     }
@@ -285,10 +285,29 @@ fn paint_hover_overlay(ui: &mut Ui, app: &mut App, hover: GeometryHit, px: Pos2)
                             }
 
                             if hover.support
-                                && let Some(support) = model.supports.support_for_face(hover.face)
+                                && let Some(id) = model.supports.support_for_face(hover.face)
+                                && let Some(support) = model.supports.get(id)
                             {
                                 ui.label("Support");
-                                ui.label(format!("#{}", support.raw()));
+                                ui.label(format!("#{}", id.raw()));
+                                ui.end_row();
+
+                                ui.label("Radius");
+                                ui.label(format!(
+                                    "{:.2}mm ({:.2}mm tip)",
+                                    support.radius, support.tip_radius
+                                ));
+                                ui.end_row();
+
+                                ui.label("Touch Point");
+                                ui.vertical(|ui| {
+                                    ui.label(format_vector(&support.points[0]));
+
+                                    if detail {
+                                        ui.label(format_vector(&support.points[1]));
+                                        ui.label(format_vector(&support.points[2]));
+                                    }
+                                });
                                 ui.end_row();
                             }
 
@@ -316,7 +335,7 @@ fn paint_hover_overlay(ui: &mut Ui, app: &mut App, hover: GeometryHit, px: Pos2)
         });
 }
 
-fn format_normal(normal: &Vector3<f32>) -> String {
+fn format_vector(normal: &Vector3<f32>) -> String {
     const SIGN: [&str; 2] = ["", "+"];
     format!(
         "‹{}{:.2}, {}{:.2}, {}{:.2}›",

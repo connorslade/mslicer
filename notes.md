@@ -19,8 +19,6 @@ Feel free to help out :eyes:.
     - support presets, instead of having to mess with all the sliders to change the size
     - dont place supports on points touching the build plate
     - options to only generate some combination of point, edge, and face overhangs 
-    - don't simplify a cylinder to a segment during intersection testing. either
-      use a different algorithm or sample multiple points around the edges.
 - put all models in the same segments1d to improve slicing times with supports?
 - save old versions of config files when being overwritten (invalid config). or
   like just ignore the broken values.

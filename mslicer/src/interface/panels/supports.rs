@@ -13,6 +13,8 @@ use crate::{
     task::{BuildAccelerationStructures, GenerateSupports},
 };
 
+const IN_DEV_WARNING: &str = "Support generation and placement is still in development. For the time being consider using RuneBrace for support placement.";
+
 pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     ui.horizontal_wrapped(|ui| {
         prepare(app, ui);
@@ -40,7 +42,9 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     let selected = &mut app.state.selected_supports;
     let selected_count = selected.count();
     if selected_count > 0 {
+        ui.add_space(4.0);
         ui.separator();
+        ui.add_space(4.0);
 
         let models = selected.model_count();
         ui.label(format!(
@@ -65,7 +69,11 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                 .then(|| selected.clear());
         });
 
+        ui.add_space(4.0);
         ui.separator();
+        ui.add_space(4.0);
+    } else {
+        ui.add_space(8.0);
     }
 
     let config = &mut app.project.support_config.auto_placement;
@@ -132,6 +140,11 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
             ui.end_row();
         });
     });
+
+    ui.add_space(4.0);
+    ui.separator();
+    ui.add_space(4.0);
+    ui.label(IN_DEV_WARNING);
 }
 
 fn generate_support(app: &mut App, model: usize) {

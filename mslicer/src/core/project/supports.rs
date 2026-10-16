@@ -40,6 +40,12 @@ impl Supports {
         self.invalidate_cache();
     }
 
+    pub fn get(&self, id: SupportId) -> Option<&Support> {
+        (self.auto.iter())
+            .chain(self.manual.iter())
+            .find(|s| s.id == id)
+    }
+
     pub fn replace_auto(&mut self, config: &SupportPreset, supports: Vec<[Vector3<f32>; 3]>) {
         self.invalidate_cache();
         self.auto = supports
