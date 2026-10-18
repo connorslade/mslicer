@@ -2,7 +2,7 @@ use std::num::NonZero;
 
 use common::units::Milimeter;
 use encase::{DynamicUniformBuffer, ShaderSize, ShaderType};
-use nalgebra::{Matrix4, Vector3};
+use nalgebra::{Matrix4, Vector2, Vector3};
 use wgpu::{
     BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayout, BindGroupLayoutDescriptor,
     BindGroupLayoutEntry, BindingResource, BindingType, BlendState, BufferBinding,
@@ -46,7 +46,7 @@ struct Uniforms {
     render_style: u32,
     overhang_angle: f32,
     id: u32,
-    selected_offset: u32,
+    selected: Vector2<u32>, // start, length
 }
 
 impl BasePass {
@@ -73,7 +73,7 @@ impl BasePass {
                     ty: BindingType::Buffer {
                         ty: BufferBindingType::Storage { read_only: true },
                         has_dynamic_offset: false,
-                        min_binding_size: NonZero::new(4),
+                        min_binding_size: NonZero::new(8),
                     },
                     count: None,
                 },
@@ -303,7 +303,7 @@ impl BaseResources {
         gcx: &Gcx,
         app: &mut App,
         layout: &BindGroupLayout,
-        mut callback: impl FnMut(&mut App, &Gcx, ModelId) -> Vec<(Uniforms, Vec<u32>)>,
+        mut callback: impl FnMut(&mut App, &Gcx, ModelId) -> Vec<(Uniforms, Vec<[u32; 2]>)>,
     ) {
         self.uniform_offsets.clear();
 
@@ -321,7 +321,7 @@ impl BaseResources {
             model.supports.get_buffers(&gcx.device);
 
             for (mut uniform, selected) in callback(app, gcx, model_id) {
-                uniform.selected_offset = selected_words.len() as u32;
+                uniform.selected = Vector2::new(selected_words.len(), selected.len()).cast();
                 selected_words.extend_from_slice(&selected);
 
                 let offset = uniform_buffer.write(&uniform);
@@ -329,7 +329,7 @@ impl BaseResources {
             }
         }
 
-        selected_words.resize(selected_words.len().max(1), 0);
+        selected_words.resize(selected_words.len().max(1), [0; 2]);
         let uniform = self.uniform.write(gcx, &uniform_buffer.into_inner());
         let selected = self.selected.write_slice(gcx, &selected_words);
 
@@ -364,16 +364,16 @@ impl BaseResources {
                 render_style,
                 overhang_angle,
                 id: model.id.raw(),
-                selected_offset: 0,
+                selected: Vector2::zeros(),
             };
 
-            let mut selected = Selected::for_model(model);
+            let mut selected = Selected::default();
             if app.state.tool == Tool::Orient
                 && let Some(hover) = app.state.hovered_geometry
                 && !hover.support
                 && hover.model == model.id
             {
-                selected.set_selected(hover.face as usize);
+                selected.set_selected(hover.face);
             }
 
             let mut out = vec![(base.clone(), selected.into_inner())];
@@ -390,7 +390,7 @@ impl BaseResources {
                     ..base
                 };
 
-                let mut selected = Selected::new(mesh.face_count());
+                let mut selected = Selected::default();
                 for support in app.state.selected_supports.for_model(model.id) {
                     selected.set_selected_range(support_faces[&support]);
                 }
@@ -429,17 +429,17 @@ impl BaseResources {
                 render_style: RenderStyle::Rendered as u32,
                 overhang_angle: f32::from_bits(0xFFFFFFFF),
                 id: 0,
-                selected_offset: selected_words.len() as u32,
+                selected: Vector2::zeros(),
             };
 
-            let selected = Selected::new(model.faces).into_inner();
+            let selected = Selected::default().into_inner();
             selected_words.extend_from_slice(&selected);
 
             let offset = uniform_buffer.write(&uniform);
             self.uniform_offsets.push(offset.unwrap() as u32);
         }
 
-        selected_words.resize(selected_words.len().max(1), 0);
+        selected_words.resize(selected_words.len().max(1), [0; 2]);
         let uniform = self.uniform.write(gcx, &uniform_buffer.into_inner());
         let selected = self.selected.write_slice(gcx, &selected_words);
 

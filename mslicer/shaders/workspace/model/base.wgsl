@@ -1,5 +1,5 @@
 @group(0) @binding(0) var<uniform> ctx: Context;
-@group(0) @binding(1) var<storage, read> selected: array<u32>;
+@group(0) @binding(1) var<storage, read> selected: array<vec2u>;
 
 const STYLE_NORMAL: u32 = 0;
 const STYLE_RANDOM: u32 = 1;
@@ -17,7 +17,7 @@ struct Context {
     render_style: u32,
     overhang_angle: f32,
     id: u32,
-    selected_offset: u32
+    selected: vec2u
 }
 
 struct VertexOutput {
@@ -81,10 +81,14 @@ fn render(is_front: bool, in: VertexOutput, index: u32, normal: vec3f) -> vec4f 
     }
 }
 
+// todo: binary search :hmm:
 fn is_selected(face: u32) -> bool {
-    let word = ctx.selected_offset + face / 32;
-    let bit = face % 32;
-    return ((selected[word] >> bit) & 0x01) != 0;
+    for (var i = ctx.selected.x; i < ctx.selected.y; i++) {
+        let range = selected[i];
+        if (face >= range.x && face < range.y) { return true; }
+    }
+
+    return false;
 }
 
 fn outside_build_volume(pos: vec3f) -> bool {
