@@ -2,10 +2,10 @@ use std::collections::HashMap;
 
 use common::units::Milimeter;
 use const_format::concatcp;
-use egui::{Button, Context, DragValue, Ui, Widget};
+use egui::{Button, ComboBox, Context, DragValue, Ui, Widget};
 use egui_phosphor::regular::{LINE_SEGMENT, SELECTION_INVERSE, SPARKLE, TRASH};
 use slicer::geometry::mesh::MeshBuilder;
-use tools::supports::auto::route_support;
+use tools::supports::{auto::route_support, mesh::SupportPreset};
 
 use crate::{
     core::App,
@@ -75,6 +75,33 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     } else {
         ui.add_space(8.0);
     }
+
+    ui.collapsing("Support", |ui| {
+        ui.label("Preset");
+        ui.horizontal(|ui| {
+            ComboBox::from_id_salt("preset")
+                .selected_text("todo")
+                .show_ui(ui, |ui| {
+                    ui.selectable_value(
+                        &mut app.project.support_config.preset,
+                        SupportPreset::LIGHT,
+                        "Light",
+                    );
+                    ui.selectable_value(
+                        &mut app.project.support_config.preset,
+                        SupportPreset::MDEIUM,
+                        "Medium",
+                    );
+                    ui.selectable_value(
+                        &mut app.project.support_config.preset,
+                        SupportPreset::HEAVY,
+                        "Heavy",
+                    );
+                });
+            ui.take_available_width();
+        });
+        ui.end_row();
+    });
 
     let config = &mut app.project.support_config.auto_placement;
     ui.collapsing("Auto Placement", |ui| {
@@ -158,7 +185,7 @@ fn generate_support(app: &mut App, model: usize) {
     );
 
     let placement = app.project.support_config.auto_placement.clone();
-    let support = app.project.support_config.presets[0].clone();
+    let support = app.project.support_config.preset.clone();
     let platform = app.project.slice_config.platform_size.map(|x| x.convert());
 
     if let Some(task) = GenerateSupports::new(platform, placement, support, model) {
@@ -186,7 +213,7 @@ pub fn manual_support_placement(app: &mut App, clicked: bool) {
             continue;
         };
 
-        let config = &app.project.support_config.presets[0];
+        let config = &app.project.support_config.preset;
         let tip_r = config.tip_radius.get::<Milimeter>();
 
         let normal = (model.mesh).transform_normal(&model.mesh.normal(intersection.face));

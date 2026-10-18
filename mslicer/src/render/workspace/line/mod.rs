@@ -278,7 +278,7 @@ impl LastModels {
             .map(|x| (x.id, *x.mesh.transformation_matrix()))
             .unzip();
 
-        let result = self.last_ids == ids && self.last_transforms == transforms;
+        let result = self.last_ids != ids || self.last_transforms != transforms;
         self.last_ids = ids;
         self.last_transforms = transforms;
 

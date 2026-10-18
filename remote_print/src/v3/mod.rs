@@ -359,8 +359,3 @@ fn uuid_v4() -> String {
 
     out
 }
-
-#[test]
-fn test() {
-    dbg!(uuid_v4());
-}

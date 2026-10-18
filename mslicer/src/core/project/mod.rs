@@ -33,7 +33,7 @@ pub struct Project {
 #[derive(Clone)]
 pub struct SupportConfig {
     pub auto_placement: PlacementConfig,
-    pub presets: Vec<SupportPreset>,
+    pub preset: SupportPreset,
     pub mesh_resolution: u32,
 
     pub default_lift: Milimeters,
@@ -168,7 +168,7 @@ impl Default for SupportConfig {
     fn default() -> Self {
         Self {
             auto_placement: PlacementConfig::default(),
-            presets: vec![SupportPreset::default()],
+            preset: SupportPreset::MDEIUM,
             mesh_resolution: 20,
 
             default_lift: Milimeters::new(5.0),

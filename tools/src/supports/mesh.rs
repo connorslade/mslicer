@@ -9,7 +9,7 @@ use crate::supports::{Support, SupportId};
 
 pub type FaceMap = HashMap<SupportId, Range<u32>>;
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub struct SupportPreset {
     pub radius: Milimeters,
     pub margin: Milimeters,

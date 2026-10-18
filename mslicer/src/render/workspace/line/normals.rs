@@ -26,9 +26,10 @@ impl NormalsDispatch {
 impl LineGenerator for NormalsDispatch {
     fn generate_lines(&mut self, app: &mut App) {
         let config = &app.config.render.normals;
-        let models = app.project.models.iter().filter(|x| x.hidden);
+        let models = app.project.models.iter().filter(|x| !x.hidden);
         if self.last_models.update(models) || config != &self.last_config {
             self.cached_lines.clear();
+            self.last_config = config.clone();
 
             if config.enabled {
                 self.cached_lines = generate_normals(&app.project.models);
