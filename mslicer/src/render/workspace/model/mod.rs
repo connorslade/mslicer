@@ -68,7 +68,6 @@ pub struct MultiStage {
     depth_target: TextureView,
     model_target: TextureView,
     normal_target: TextureView,
-    world_target: TextureView,
 
     //bind groups!
     base: BaseResources,

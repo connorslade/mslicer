@@ -83,17 +83,6 @@ impl ModelPipeline {
             view_formats: &[],
         });
 
-        let world_target = gcx.device.create_texture(&TextureDescriptor {
-            label: Some("World"),
-            size: extent,
-            mip_level_count: 1,
-            sample_count: 1,
-            dimension: TextureDimension::D2,
-            format: TextureFormat::Rgba32Float,
-            usage: TextureUsages::RENDER_ATTACHMENT | TextureUsages::TEXTURE_BINDING,
-            view_formats: &[],
-        });
-
         let occlusion_desc = TextureDescriptor {
             label: Some("Occlusion"),
             size: occlusion_extent,
@@ -114,7 +103,6 @@ impl ModelPipeline {
         let depth_target_view = depth_target.create_view(&Default::default());
         let model_target_view = model_target.create_view(&Default::default());
         let normal_target_view = normal_target.create_view(&Default::default());
-        let world_target_view = world_target.create_view(&Default::default());
 
         let sampler = &self.sampler;
         let bi_sampler = &self.filtering_sampler;
@@ -128,7 +116,6 @@ impl ModelPipeline {
             depth_target: depth_target_view,
             model_target: model_target_view,
             normal_target: normal_target_view,
-            world_target: world_target_view,
         };
 
         *self.get_target_mut(target) = Some(MultiStage {
@@ -146,7 +133,6 @@ impl ModelPipeline {
             depth_target: textures.depth_target,
             model_target: textures.model_target,
             normal_target: textures.normal_target,
-            world_target: textures.world_target,
         });
     }
 }
@@ -166,5 +152,4 @@ pub struct TextureViews {
     pub depth_target: TextureView,
     pub model_target: TextureView,
     pub normal_target: TextureView,
-    pub world_target: TextureView,
 }

@@ -116,12 +116,6 @@ impl BasePass {
                         blend: None,
                         write_mask: ColorWrites::all(),
                     }),
-                    // world space
-                    Some(ColorTargetState {
-                        format: TextureFormat::Rgba32Float,
-                        blend: None,
-                        write_mask: ColorWrites::all(),
-                    }),
                 ],
                 compilation_options: Default::default(),
             }),
@@ -186,15 +180,6 @@ impl BasePass {
                 }),
                 Some(RenderPassColorAttachment {
                     view: &multi.normal_target,
-                    resolve_target: None,
-                    ops: Operations {
-                        load: LoadOp::Clear(Color::TRANSPARENT),
-                        store: StoreOp::Store,
-                    },
-                    depth_slice: None,
-                }),
-                Some(RenderPassColorAttachment {
-                    view: &multi.world_target,
                     resolve_target: None,
                     ops: Operations {
                         load: LoadOp::Clear(Color::TRANSPARENT),

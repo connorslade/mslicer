@@ -28,6 +28,8 @@ pub struct SsaoPass {
 #[derive(ShaderType)]
 struct Uniforms {
     view: Matrix4<f32>,
+    inv_view: Matrix4<f32>,
+
     samples: u32,
     range: f32,
     bias: f32,
@@ -58,16 +60,6 @@ impl SsaoPass {
                     binding: 1,
                     visibility: ShaderStages::FRAGMENT,
                     ty: BindingType::Texture {
-                        sample_type: TextureSampleType::Float { filterable: false },
-                        view_dimension: TextureViewDimension::D2,
-                        multisampled: false,
-                    },
-                    count: None,
-                },
-                BindGroupLayoutEntry {
-                    binding: 2,
-                    visibility: ShaderStages::FRAGMENT,
-                    ty: BindingType::Texture {
                         sample_type: TextureSampleType::Depth,
                         view_dimension: TextureViewDimension::D2,
                         multisampled: false,
@@ -75,7 +67,7 @@ impl SsaoPass {
                     count: None,
                 },
                 BindGroupLayoutEntry {
-                    binding: 3,
+                    binding: 2,
                     visibility: ShaderStages::FRAGMENT,
                     ty: BindingType::Sampler(SamplerBindingType::NonFiltering),
                     count: None,
@@ -135,6 +127,8 @@ impl SsaoPass {
         let ao = &app.config.render.ambient_occlusion;
         let uniform = Uniforms {
             view: view_projection,
+            inv_view: view_projection.try_inverse().unwrap_or_default(),
+
             samples: ao.samples,
             range: ao.range,
             bias: ao.bias,
@@ -161,14 +155,10 @@ impl SsaoPass {
                 },
                 BindGroupEntry {
                     binding: 1,
-                    resource: BindingResource::TextureView(&textures.world_target),
-                },
-                BindGroupEntry {
-                    binding: 2,
                     resource: BindingResource::TextureView(&textures.depth_target),
                 },
                 BindGroupEntry {
-                    binding: 3,
+                    binding: 2,
                     resource: BindingResource::Sampler(sampler),
                 },
             ],
