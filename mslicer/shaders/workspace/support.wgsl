@@ -1,4 +1,4 @@
-@group(0) @binding(0) var<uniform> context: Context;
+@group(0) @binding(0) var<uniform> ctx: Context;
 
 struct Context {
     transform: mat4x4f,
@@ -12,11 +12,11 @@ struct VertexOutput {
 
 @vertex
 fn vert(@location(0) position: vec4f) -> VertexOutput {
-    return VertexOutput(context.transform * position, position.xyz);
+    return VertexOutput(ctx.transform * position, position.xyz);
 }
 
 @fragment
 fn frag(in: VertexOutput) -> @location(0) vec4f {
-    let intensity = blinn_phong(screen_normal(in.world_position), context.camera_direction);
+    let intensity = blinn_phong(screen_normal(in.world_position), ctx.camera_direction);
     return vec4(vec3(intensity), 1.0);
 }

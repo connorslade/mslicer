@@ -1,4 +1,4 @@
-@group(0) @binding(0) var<uniform> context: Context;
+@group(0) @binding(0) var<uniform> ctx: Context;
 @group(0) @binding(1) var<storage, read> selected: array<u32>;
 
 const STYLE_NORMAL: u32 = 0;
@@ -35,8 +35,8 @@ struct FragmentOutput {
 fn vert(@location(0) xyz: vec3f) -> VertexOutput {
     let position = vec4(xyz, 1.0);
     return VertexOutput(
-        context.transform * position,
-        (context.model_transform * position).xyz,
+        ctx.transform * position,
+        (ctx.model_transform * position).xyz,
     );
 }
 
@@ -49,13 +49,13 @@ fn frag(
     let normal = screen_normal(in.world_position);
     return FragmentOutput(
         render(is_front, in, index, normal),
-        vec2(context.id, index),
+        vec2(ctx.id, index),
         vec4(normal, 0.0)
     );
 }
 
 fn render(is_front: bool, in: VertexOutput, index: u32, normal: vec3f) -> vec4f {
-    switch context.render_style {
+    switch ctx.render_style {
         case STYLE_NORMAL: {
             return vec4f(normal * 0.5 + 0.5, 1.0);
         }
@@ -64,9 +64,9 @@ fn render(is_front: bool, in: VertexOutput, index: u32, normal: vec3f) -> vec4f 
             return vec4f(vec3f(rand(), rand(), rand()), 1.0);
         }
         case STYLE_RENDERED: {
-            var color = context.model_color;
-            if bitcast<u32>(context.overhang_angle) != 0xFFFFFFFF {
-                color = mix(color, OVERHANG_COLOR, 1.0 - smoothstep(0, context.overhang_angle, acos(-normal.z)));
+            var color = ctx.model_color;
+            if bitcast<u32>(ctx.overhang_angle) != 0xFFFFFFFF {
+                color = mix(color, OVERHANG_COLOR, 1.0 - smoothstep(0, ctx.overhang_angle, acos(-normal.z)));
             }
 
             color = select(color, SELECTED_COLOR, is_selected(index));
@@ -82,14 +82,14 @@ fn render(is_front: bool, in: VertexOutput, index: u32, normal: vec3f) -> vec4f 
 }
 
 fn is_selected(face: u32) -> bool {
-    let word = context.selected_offset + face / 32;
+    let word = ctx.selected_offset + face / 32;
     let bit = face % 32;
     return ((selected[word] >> bit) & 0x01) != 0;
 }
 
 fn outside_build_volume(pos: vec3f) -> bool {
-    let build = context.build_volume / 2.0;
+    let build = ctx.build_volume / 2.0;
     return pos.x < -build.x || pos.x > build.x
         || pos.y < -build.y || pos.y > build.y
-        || pos.z < -0.01    || pos.z > context.build_volume.z;
+        || pos.z < -0.01    || pos.z > ctx.build_volume.z;
 }

@@ -1,4 +1,4 @@
-@group(0) @binding(0) var<uniform> context: Context;
+@group(0) @binding(0) var<uniform> ctx: Context;
 @group(0) @binding(1) var<storage, read> layer: array<u32>;
 @group(0) @binding(2) var<storage, read> annotations: array<u32>;
 
@@ -44,24 +44,24 @@ fn frag(in: VertexOutput) -> @location(0) vec4f {
     let pixel = vec2(dpdx(in.position.x), dpdy(in.position.y));
     var color = vec3(0.0);
 
-    for (var i = 0u; i < context.multisample; i++) {
+    for (var i = 0u; i < ctx.multisample; i++) {
         let random = vec2(rand(), rand()) - vec2(0.5);
         color += sample(in.position + random * pixel);
     }
 
-    return vec4f(color / f32(context.multisample), 1.0);
+    return vec4f(color / f32(ctx.multisample), 1.0);
 }
 
 fn sample(position: vec2f) -> vec3f {
-    let dimensions = vec2f(context.dimensions);
-    let p = vec2(position.x * context.aspect, position.y) * dimensions.y / context.scale / 2.0;
-    let offset = rotate2(context.offset, context.rotation) * sign(context.scale);
-    let pos = vec2i(rotate2(p, context.rotation) * vec2(context.pixel_aspect, 1.0) + 0.5 * dimensions + offset);
+    let dimensions = vec2f(ctx.dimensions);
+    let p = vec2(position.x * ctx.aspect, position.y) * dimensions.y / ctx.scale / 2.0;
+    let offset = rotate2(ctx.offset, ctx.rotation) * sign(ctx.scale);
+    let pos = vec2i(rotate2(p, ctx.rotation) * vec2(ctx.pixel_aspect, 1.0) + 0.5 * dimensions + offset);
 
     let upos = vec2u(pos);
     if pos.x < 0 || pos.y < 0
-        || upos.x >= context.dimensions.x
-        || upos.y >= context.dimensions.y {
+        || upos.x >= ctx.dimensions.x
+        || upos.y >= ctx.dimensions.y {
         discard;
     }
 
@@ -76,7 +76,7 @@ struct Index {
 }
 
 fn index(pos: vec2u) -> Index {
-    let byte_idx = (pos.y * context.dimensions.x + pos.x);
+    let byte_idx = (pos.y * ctx.dimensions.x + pos.x);
     return Index(byte_idx / 4, (byte_idx % 4) * 8);
 }
 

@@ -18,7 +18,7 @@ fn frag(in: VertexOutput) -> @location(0) f32 {
 
     if ctx.samples == 0 || this_depth == 1.0 { return 1.0; }
 
-    let world_pos = clip_to_world(in.position, this_depth);
+    let world_pos = clip_to_world(ctx.inv_view, in.position, this_depth);
     let world_normal = screen_normal(world_pos);
 
     let pos_u = bitcast<vec3u>(world_pos);
@@ -38,10 +38,4 @@ fn frag(in: VertexOutput) -> @location(0) f32 {
     }
 
     return (1.0 - f32(occluded) / f32(ctx.samples));
-}
-
-fn clip_to_world(pos: vec2f, depth: f32) -> vec3f {
-    let clip = vec4(pos, depth, 1.0);
-    let world_pos = (ctx.inv_view * clip);
-    return world_pos.xyz / world_pos.w;
 }
