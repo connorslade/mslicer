@@ -4,7 +4,7 @@ use common::units::Micrometer;
 use egui::{Align, Button, ComboBox, DragValue, Layout, Ui, Widget, vec2};
 use egui_extras::{Column, TableBuilder};
 use egui_phosphor::regular::{BOUNDING_BOX, EYE, INFO, TRASH};
-use tools::printed_circuit_board::Alignment;
+use tools::misc::alignment::Alignment;
 
 use crate::{
     core::App,

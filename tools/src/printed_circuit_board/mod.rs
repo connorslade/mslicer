@@ -12,17 +12,15 @@ use gerber_parser::{
 use itertools::Itertools;
 use nalgebra::Vector2;
 
-pub use misc::Alignment;
 use polygons::Polygons;
 use slicer::{
     geometry::bounds::Bounds2D,
     slicer::raster::{self, Segment},
 };
 
-use crate::printed_circuit_board::polygons::Mode;
+use crate::{misc::alignment::Alignment, printed_circuit_board::polygons::Mode};
 
 mod gerber;
-mod misc;
 pub mod polygons;
 
 #[derive(Clone)]

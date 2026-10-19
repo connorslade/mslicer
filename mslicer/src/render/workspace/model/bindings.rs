@@ -19,7 +19,10 @@ impl ModelPipeline {
             depth_or_array_layers: 1,
         };
 
-        let occlusion_size = occlusion_size(app, size);
+        let occlusion_size = match target {
+            Target::Viewport => occlusion_size(app, size),
+            Target::Preview => size,
+        };
         let occlusion_extent = Extent3d {
             width: occlusion_size.x,
             height: occlusion_size.y,

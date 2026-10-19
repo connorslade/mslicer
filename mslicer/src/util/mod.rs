@@ -3,6 +3,11 @@ pub mod fps_tracker;
 pub mod management;
 pub mod misc;
 
+pub const IMAGE_FORMATS: &[&str] = &[
+    "avif", "jpg", "jpeg", "jfif", "png", "apng", "gif", "webp", "tif", "tiff", "tga", "dds",
+    "bmp", "ico", "hdr", "exr", "pbm", "pam", "ppm", "pgm", "ff", "qoi", "pcx",
+];
+
 #[macro_export]
 macro_rules! include_asset {
     ($name:expr) => {

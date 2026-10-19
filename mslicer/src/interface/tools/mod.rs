@@ -1,6 +1,6 @@
 use tools::{
     auto_layout::AutoLayoutAnnealing, exposure_test::ExposureTest, graphics_3d::Graphics3D,
-    height_map::HeightMap, internal_exposure_test::InternalExposureTest,
+    height_map::HeightMap, image::Image, internal_exposure_test::InternalExposureTest,
     phonograph_record::PhonographRecord, printed_circuit_board::PrintedCircuitBoard,
     sliced_diff::SlicedDiff, test_pattern::TestPattern,
 };
@@ -11,6 +11,7 @@ pub mod brep_slicer;
 pub mod exposure_test;
 pub mod graphics_3d;
 pub mod height_map;
+pub mod image;
 pub mod internal_exposure_test;
 pub mod phonograph_record;
 pub mod printed_circuit_board;
@@ -30,6 +31,7 @@ pub struct Tools {
     phonograph_record: PhonographRecord,
     sliced_diff: SlicedDiff,
     height_map: HeightMap,
+    image: Image,
 
     #[cfg(feature = "experimental")]
     sdf_slicer: experimental::sdf::SdfSlicer,

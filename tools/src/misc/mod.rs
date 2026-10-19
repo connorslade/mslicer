@@ -1,5 +1,7 @@
 use std::f64::consts::PI;
 
+pub mod alignment;
+
 /// Reference: https://en.wikipedia.org/wiki/Sagitta_(geometry)
 ///
 /// ```plain
