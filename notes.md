@@ -53,6 +53,7 @@ Feel free to help out :eyes:.
 - update mesh repair page (previously repairing non-manifold meshes)
 - ultimate slicer benchmark (slice Thingi10K dataset)
 - cleanup changelog
+- run post processors on tool generated layers
 
 ## Maybe
 

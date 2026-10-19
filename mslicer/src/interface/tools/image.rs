@@ -1,7 +1,12 @@
 use std::{fs::File, io::BufReader, sync::Arc};
 
-use egui::{Button, RichText, Ui, vec2};
+use common::units::Milimeters;
+use egui::{Button, ComboBox, DragValue, RichText, Ui, Widget, vec2};
 use image::ImageFormat;
+use tools::{
+    image::{Flip, Rotation, Sizing},
+    misc::alignment::Alignment,
+};
 
 use crate::{
     core::App,
@@ -14,7 +19,7 @@ use crate::{
     util::IMAGE_FORMATS,
 };
 
-const DESCRIPTION: &str = "todo";
+const DESCRIPTION: &str = "Generate a single layer exposure from an image file. Useful for exposing things other than resin.";
 
 pub fn open(app: &mut App) {
     app.popup
@@ -58,7 +63,73 @@ fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
 
     ui.add_space(8.0);
     grid("").show(ui, |ui| {
-        // todo
+        ui.label("Size");
+        ui.horizontal(|ui| {
+            ComboBox::from_id_salt("sizing")
+                .selected_text(tool.size.name())
+                .show_ui(ui, |ui| {
+                    let width = Milimeters::new(10.0);
+                    let height = Milimeters::new(10.0);
+
+                    for size in [
+                        Sizing::Printer,
+                        Sizing::Width(width),
+                        Sizing::Height(height),
+                        Sizing::Both { width, height },
+                    ] {
+                        ui.selectable_value(&mut tool.size, size.clone(), size.name());
+                    }
+                });
+
+            match &mut tool.size {
+                Sizing::Printer => {}
+                Sizing::Width(length) | Sizing::Height(length) => {
+                    DragValue::new(length.raw_mut()).suffix(" mm").ui(ui);
+                }
+                Sizing::Both { width, height } => {
+                    DragValue::new(width.raw_mut()).ui(ui);
+                    ui.label("×");
+                    DragValue::new(height.raw_mut()).ui(ui);
+                    ui.label("(mm)");
+                }
+            }
+            ui.take_available_width();
+        });
+        ui.end_row();
+
+        ui.label("Rotation");
+        ComboBox::from_id_salt("rotation")
+            .selected_text(tool.rotation.name())
+            .show_ui(ui, |ui| {
+                for rotation in Rotation::ALL {
+                    ui.selectable_value(&mut tool.rotation, rotation, rotation.name());
+                }
+            });
+        ui.end_row();
+
+        ui.label("Flip");
+        ComboBox::from_id_salt("flip")
+            .selected_text(tool.flip.name())
+            .show_ui(ui, |ui| {
+                for flip in Flip::ALL {
+                    ui.selectable_value(&mut tool.flip, flip, flip.name());
+                }
+            });
+        ui.end_row();
+
+        ui.label("Alignment");
+        ComboBox::from_id_salt("alignment")
+            .selected_text(tool.alignment.name())
+            .show_ui(ui, |ui| {
+                for alignment in Alignment::ALL {
+                    ui.selectable_value(&mut tool.alignment, alignment, alignment.name());
+                }
+            });
+        ui.end_row();
+
+        ui.label("Background");
+        DragValue::new(&mut tool.background).ui(ui);
+        ui.end_row();
     });
     ui.add_space(8.0);
 

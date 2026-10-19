@@ -110,6 +110,7 @@
 - Combine MeshDefective and MeshVolume into one task (MeshAnalysis)
 - Don't build acceleration structures by default
 - Use bilinear interpolation when SSAO scale is < 1
+- Image tool
 
 ## v0.9.2 &mdash; August 30th, 2026
 
