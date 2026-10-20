@@ -46,7 +46,9 @@ use crate::{
         popup::{Popup, PopupIcon, PopupManager},
     },
     render::{slice_preview::SlicePreviewRenderCallback, workspace::PreviewRenderCallback},
-    task::{FileDialog, IslandDetection, ReconstructMesh, SaveSliced, TaskManager},
+    task::{
+        FileDialog, IslandDetection, ReconstructMesh, ReconstructionMode, SaveSliced, TaskManager,
+    },
     util::management::{LazyText, LazyTextureId},
 };
 use common::{
@@ -226,17 +228,26 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                         });
 
                         if let GenericSliceResult::Raster(raster) = &mut result.inner {
+                            let widgets = ui.visuals().widgets.clone();
                             ui.menu_button(
                                 concatcp!(CUBE_TRANSPARENT, " Reconstruct Mesh"),
                                 |ui| {
-                                    for (name, subsample) in
-                                        [("Corse", 20), ("Fine", 10), ("Exact", 1)]
-                                    {
-                                        if ui.button(format!("{name} ({subsample})")).clicked() {
+                                    ui.visuals_mut().widgets = widgets;
+                                    ui.horizontal(|ui| {
+                                        ui.label("Subsample");
+                                        DragValue::new(&mut *app.state.reconstruct_subsample)
+                                            .suffix("×")
+                                            .ui(ui);
+                                    });
+                                    ui.separator();
+
+                                    for mode in ReconstructionMode::ALL {
+                                        if ui.button(mode.name()).clicked() {
                                             app.tasks.add(ReconstructMesh::new(
                                                 result.config.clone(),
                                                 raster.layers.clone(),
-                                                subsample,
+                                                mode,
+                                                *app.state.reconstruct_subsample,
                                             ));
                                         }
                                     }

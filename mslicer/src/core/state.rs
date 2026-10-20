@@ -16,6 +16,7 @@ use crate::{
     },
     interface::tools::Tools,
     render::util::MeshBuffers,
+    util::misc::DefaultNum,
 };
 
 // todo: organize this...
@@ -54,6 +55,8 @@ pub struct UiState {
 
     pub preview_mode: PreviewMode,
     pub last_preview_interact: Option<Instant>,
+
+    pub reconstruct_subsample: DefaultNum<20, u8>,
 
     pub anisotropic_aa: bool,
 
