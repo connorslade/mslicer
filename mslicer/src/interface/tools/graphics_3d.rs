@@ -3,22 +3,15 @@ use std::f32::consts::TAU;
 use egui::{Button, DragValue, Ui, Widget};
 
 use crate::{
-    core::{App, config::render::Projection},
+    core::config::render::Projection,
     generator_tool,
-    interface::{
-        components::grid,
-        popup::{Popup, PopupApp},
-    },
+    interface::{components::grid, popup::PopupApp},
 };
 
-const DESCRIPTION: &str = "peak unemployment";
+pub const NAME: &str = "3D Graphics";
+pub const DESCRIPTION: &str = "peak unemployment";
 
-pub fn open(app: &mut App) {
-    app.popup
-        .open(Popup::new_seeded("3D Graphics", interface).close_button(true));
-}
-
-fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
+pub fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
     ui.label(DESCRIPTION);
     ui.add_space(8.0);
 

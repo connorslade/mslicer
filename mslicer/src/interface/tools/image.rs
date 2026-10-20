@@ -9,24 +9,16 @@ use tools::{
 };
 
 use crate::{
-    core::App,
     generator_tool,
-    interface::{
-        components::grid,
-        popup::{Popup, PopupApp},
-    },
+    interface::{components::grid, popup::PopupApp},
     task::FileDialog,
     util::IMAGE_FORMATS,
 };
 
-const DESCRIPTION: &str = "Generate a single layer exposure from an image file. Useful for exposing things other than resin.";
+pub const NAME: &str = "Image Layer";
+pub const DESCRIPTION: &str = "Generate a single layer exposure from an image file. Useful for exposing things other than resin.";
 
-pub fn open(app: &mut App) {
-    app.popup
-        .open(Popup::new_seeded("Image", interface).close_button(true));
-}
-
-fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
+pub fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
     ui.label(DESCRIPTION);
     ui.add_space(8.0);
 

@@ -7,24 +7,16 @@ use egui_phosphor::regular::{BOUNDING_BOX, EYE, INFO, TRASH};
 use tools::misc::alignment::Alignment;
 
 use crate::{
-    core::App,
     generator_tool,
-    interface::{
-        components::grid,
-        popup::{Popup, PopupApp},
-    },
+    interface::{components::grid, popup::PopupApp},
     task::{FileDialog, MultiFileDialog},
 };
 
-const DESCRIPTION: &str = "Use your MSLA resin printer to expose UV sensitive photoresist or soldermask for PCB manufacturing.";
+pub const NAME: &str = "Printed Circuit Board";
+pub const DESCRIPTION: &str = "Use your MSLA resin printer to expose UV sensitive photoresist or soldermask for PCB manufacturing.";
 pub const DOCS_PAGE: &str = "https://mslicer.com/docs/pcb-photolighography";
 
-pub fn open(app: &mut App) {
-    app.popup
-        .open(Popup::new_seeded("Printed Circuit Board", interface).close_button(true));
-}
-
-fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
+pub fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
     ui.horizontal_wrapped(|ui| {
         ui.spacing_mut().item_spacing.x = 0.0;
 

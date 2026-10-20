@@ -6,12 +6,10 @@ use crate::{
     interface::popup::{Popup, PopupApp},
 };
 
-pub fn open(app: &mut App) {
-    app.popup
-        .open(Popup::new_seeded("SDF Slicer", interface).close_button(true));
-}
+pub const NAME: &str = "SDF Slicer";
+pub const DESCRIPTION: &str = "Slice directly from an analytic signed distance function.";
 
-fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
+pub fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
     ui.label("Slice SDFs");
     ui.add_space(8.0);
 

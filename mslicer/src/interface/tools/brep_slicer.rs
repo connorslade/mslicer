@@ -8,15 +8,11 @@ use crate::{
     task::FileDialog,
 };
 
-const DESCRIPTION: &str =
+pub const NAME: &str = "Brep Slicer";
+pub const DESCRIPTION: &str =
     "An experiment in slicing models directly from a boundary representation (BREP) like .step.";
 
-pub fn open(app: &mut App) {
-    app.popup
-        .open(Popup::new_seeded("Brep Slicer", interface).close_button(true));
-}
-
-fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
+pub fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
     ui.label(DESCRIPTION);
     ui.add_space(8.0);
 

@@ -2,22 +2,12 @@ use common::units::Milimeter;
 use egui::{Button, DragValue, Ui, Widget};
 use egui_phosphor::regular::{RULER, SQUARES_FOUR};
 
-use crate::{
-    core::App,
-    interface::{
-        components::grid,
-        popup::{Popup, PopupApp},
-    },
-};
+use crate::interface::{components::grid, popup::PopupApp};
 
-const DESCRIPTION: &str = "Generates a rectangular prism with a gradient of voxel vales across the top layer. Measuring the printed result will allow you get the value to voxel size mapping.";
+pub const NAME: &str = "Exposure Test";
+pub const DESCRIPTION: &str = "Generates a rectangular prism with a gradient of voxel vales across the top layer. Measuring the printed result will allow you get the value to voxel size mapping.";
 
-pub fn open(app: &mut App) {
-    app.popup
-        .open(Popup::new_seeded("Exposure Test", interface).close_button(true));
-}
-
-fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
+pub fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
     ui.label(DESCRIPTION);
     ui.add_space(8.0);
 

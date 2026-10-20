@@ -12,6 +12,7 @@ Feel free to help out :eyes:.
 - if you make changes to a project in the time that it takes for another project to load, your changes will be deleted
   - lock while loading project or saving before close!
 - don't allow starting multiple build acc structure tasks!
+- sliced memory usage doesn't consider arc repeated layers
 
 ## Features
 

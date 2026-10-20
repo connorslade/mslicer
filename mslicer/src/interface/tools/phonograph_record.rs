@@ -4,24 +4,16 @@ use egui_phosphor::regular::INFO;
 use tools::phonograph_record::audio::{Channels, Equalization};
 
 use crate::{
-    core::App,
-    interface::{
-        components::grid,
-        popup::{Popup, PopupApp},
-    },
+    interface::{components::grid, popup::PopupApp},
     mesh_generator_tool,
     task::FileDialog,
 };
 
-const DESCRIPTION: &str = "Generates a phonograph record mesh from an audio file.";
+pub const NAME: &str = "Phonograph Record";
+pub const DESCRIPTION: &str = "Generates a phonograph record mesh from an audio file.";
 pub const MESH_GEN_TIP: &str = "The mesh generation mode. A minimal mesh may not slice in other programs or when rotated (excluding yaw).";
 
-pub fn open(app: &mut App) {
-    app.popup
-        .open(Popup::new_seeded("Phonograph Record", interface).close_button(true));
-}
-
-fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
+pub fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
     ui.label(DESCRIPTION);
     ui.add_space(8.0);
 

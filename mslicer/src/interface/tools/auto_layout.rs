@@ -12,21 +12,14 @@ use nalgebra::{Rotation3, Scale3, Vector2, Vector3};
 use tools::auto_layout::{self, Hull, LayoutCache, Objective, Placement, Rotation};
 
 use crate::{
-    core::{App, project::model::Model},
-    interface::{
-        components::grid,
-        popup::{Popup, PopupApp},
-    },
+    core::project::model::Model,
+    interface::{components::grid, popup::PopupApp},
 };
 
-const DESCRIPTION: &str = "Automatically lays out models on the print bed. Slower than the Quick Layout, but produces better results.";
+pub const NAME: &str = "Auto Layout";
+pub const DESCRIPTION: &str = "Automatically lays out models on the print bed. Slower than the Quick Layout, but produces better results.";
 
-pub fn open(app: &mut App) {
-    app.popup
-        .open(Popup::new_seeded("Auto Layout", interface).close_button(true));
-}
-
-fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
+pub fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
     ui.label(DESCRIPTION);
     ui.add_space(8.0);
 

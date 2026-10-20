@@ -2,22 +2,14 @@ use egui::{Button, ComboBox, DragValue, Ui, Widget};
 use tools::test_pattern::Pattern;
 
 use crate::{
-    core::App,
     generator_tool,
-    interface::{
-        components::grid,
-        popup::{Popup, PopupApp},
-    },
+    interface::{components::grid, popup::PopupApp},
 };
 
-const DESCRIPTION: &str = "Generates patterns for testing and debugging purposes.";
+pub const NAME: &str = "Test Pattern";
+pub const DESCRIPTION: &str = "Generates patterns for testing and debugging purposes.";
 
-pub fn open(app: &mut App) {
-    app.popup
-        .open(Popup::new_seeded("Test Pattern", interface).close_button(true));
-}
-
-fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
+pub fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
     ui.label(DESCRIPTION);
     ui.add_space(8.0);
 

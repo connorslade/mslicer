@@ -2,22 +2,14 @@ use common::units::Milimeter;
 use egui::{Button, DragValue, Ui, Widget};
 
 use crate::{
-    core::App,
     generator_tool,
-    interface::{
-        components::grid,
-        popup::{Popup, PopupApp},
-    },
+    interface::{components::grid, popup::PopupApp},
 };
 
-const DESCRIPTION: &str = "Generates a rectangular prism with a gradient of voxel vales inside. Intended for use with translucent resins.";
+pub const NAME: &str = "Internal Exposure Test";
+pub const DESCRIPTION: &str = "Generates a rectangular prism with a gradient of voxel vales inside. Intended for use with translucent resins.";
 
-pub fn open(app: &mut App) {
-    app.popup
-        .open(Popup::new_seeded("Internal Exposure Test", interface).close_button(true));
-}
-
-fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
+pub fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
     ui.label(DESCRIPTION);
     ui.add_space(8.0);
 

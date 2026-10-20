@@ -27,6 +27,24 @@ const LINK_ZULIP: &str = "https://mslicer.zulipchat.com";
 const LINK_SOURCE_CODE: &str = "https://github.com/connorslade/mslicer";
 const LINK_REPORT_BUG: &str = "https://github.com/connorslade/mslicer/issues/new";
 
+macro_rules! tool {
+    ($app:expr, $ui:expr, $module:ident) => {
+        if $ui
+            .button(tools::$module::NAME)
+            .on_hover_text(tools::$module::DESCRIPTION)
+            .clicked()
+        {
+            $app.popup.open(
+                $crate::interface::popup::Popup::new_seeded(
+                    tools::$module::NAME,
+                    tools::$module::interface,
+                )
+                .close_button(true),
+            );
+        }
+    };
+}
+
 pub fn ui(app: &mut App, ctx: &Context) {
     shortcuts::handle(app, ctx);
 
@@ -139,44 +157,38 @@ pub fn ui(app: &mut App, ctx: &Context) {
                     ui.set_width(150.0);
                     labeled_separator(ui, "Auto Layout");
                     menu_button((ui, app, ctx), &shortcuts::LAYOUT_SHORTCUT, "Quick Layout");
-                    ui.button("Advanced Layout")
-                        .clicked()
-                        .then(|| tools::auto_layout::open(app));
-
-                    // todo: sort by mesh and pixel
-                    labeled_separator(ui, "Generators");
-                    (ui.button("Printed Circuit Board").clicked())
-                        .then(|| tools::printed_circuit_board::open(app));
-                    (ui.button("Image").clicked()).then(|| tools::image::open(app));
-                    (ui.button("Height Map").clicked()).then(|| tools::height_map::open(app));
-                    (ui.button("Test Pattern").clicked()).then(|| tools::test_pattern::open(app));
-                    ui.menu_button("Fun", |ui| {
-                        (ui.button("Phonograph Record").clicked())
-                            .then(|| tools::phonograph_record::open(app));
-                        (ui.button("3D Graphics").clicked()).then(|| tools::graphics_3d::open(app));
-                    });
+                    tool!(app, ui, auto_layout);
 
                     labeled_separator(ui, "Exposure");
-                    (ui.button("Exposure Test").clicked()).then(|| tools::exposure_test::open(app));
-                    (ui.button("Internal Exposure Test").clicked())
-                        .then(|| tools::internal_exposure_test::open(app));
+                    tool!(app, ui, printed_circuit_board);
+                    tool!(app, ui, image);
+
+                    ui.menu_button("Calibration", |ui| {
+                        tool!(app, ui, test_pattern);
+                        tool!(app, ui, exposure_test);
+                        tool!(app, ui, internal_exposure_test);
+                    });
+
+                    labeled_separator(ui, "Mesh");
+                    tool!(app, ui, height_map);
+                    ui.menu_button("Fun", |ui| {
+                        tool!(app, ui, phonograph_record);
+                        tool!(app, ui, graphics_3d);
+                    });
 
                     labeled_separator(ui, "Miscellaneous");
                     ui.button("Collect Instances")
                         .clicked()
                         .then(|| collect_instances(app));
-                    (ui.button("Sliced Diff").clicked()).then(|| tools::sliced_diff::open(app));
+                    tool!(app, ui, sliced_diff);
 
                     ui.add_enabled_ui(cfg!(feature = "experimental"), |ui| {
                         #[allow(unused)]
                         ui.menu_button("Experimental", |ui| {
                             #[cfg(feature = "experimental")]
                             {
-                                (ui.button("SDF Slicer").clicked())
-                                    .then(|| tools::sdf_slicer::open(app));
-                                #[cfg(feature = "brep")]
-                                (ui.button("BREP Slicer").clicked())
-                                    .then(|| tools::brep_slicer::open(app));
+                                tool!(app, ui, sdf_slicer);
+                                tool!(app, ui, brep_slicer);
                             }
                         })
                         .response

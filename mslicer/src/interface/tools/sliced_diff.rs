@@ -8,24 +8,17 @@ use slicer::util;
 use tools::sliced_diff::{Difference, Source, SourceId};
 
 use crate::{
-    core::{App, slice::result::GenericSliceData},
+    core::slice::result::GenericSliceData,
     generator_tool,
-    interface::{
-        components::grid,
-        popup::{Popup, PopupApp},
-    },
+    interface::{components::grid, popup::PopupApp},
     task::FileDialog,
 };
 
-const DESCRIPTION: &str =
+pub const NAME: &str = "Sliced Diff";
+pub const DESCRIPTION: &str =
     "Compares the layer data between two sliced files using your selected difference method.";
 
-pub fn open(app: &mut App) {
-    app.popup
-        .open(Popup::new_seeded("Sliced Diff", interface).close_button(true));
-}
-
-fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
+pub fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
     ui.label(DESCRIPTION);
     ui.add_space(8.0);
 
