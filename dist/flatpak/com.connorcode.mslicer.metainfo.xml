@@ -134,7 +134,7 @@
                     <li>Shift drag to select multiple models</li>
                     <li>Combine MeshDefective and MeshVolume into one task (MeshAnalysis)</li>
                     <li>Don't build acceleration structures by default</li>
-                    <li>Use bilinear interpolation when SSAO scale is < 1</li>
+                    <li>Use bilinear interpolation when SSAO scale is less than 1</li>
                     <li>Image Layer tool</li>
                     <li>Show tool descriptions on hover</li>
                 </ul>

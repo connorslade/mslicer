@@ -15,6 +15,8 @@ after releasing v0.10.0 start using feature branches.
   - lock while loading project or saving before close!
 - don't allow starting multiple build acc structure tasks!
 - sliced memory usage doesn't consider arc repeated layers
+- note word wrapping is weird...
+- use separate uniform buffers for interactive preview!!!
 
 ## Features
 
@@ -41,25 +43,18 @@ after releasing v0.10.0 start using feature branches.
 - configurable (and viewable) key binds
 - render scale!
 - only render viewport on change (will require `scene_dirty` flag)
-- temporal accumulation (w jitter), sucks but ig thats just how you do rendering these days
+- temporal accumulation (w jitter), sucks but ig that's just how you do rendering these days
+- set fov in °
+- run post processors on tool generated layers
 
 ## Documentation
 
 - getting started video guide? (i do need to update that video in the readme)
-- color internal and external links differently
+- color internal and external links differently?
 - update getting started guide
-  - changed exposure config component
-  - change AA config
-  - moved update check freq
   - Rename 'First Layers' to 'Bottom Layers'
   - note where to find quick layout spacing
-  - just go through the whole thing a lot of its probably outdated now...
-- document on generating and printing phonograph records
-- add phosphor icons in doc pages (like i did on the pcb photolithography page)
-- update mesh repair page (previously repairing non-manifold meshes)
 - ultimate slicer benchmark (slice Thingi10K dataset)
-- cleanup changelog
-- run post processors on tool generated layers
 
 ## Maybe
 
@@ -89,8 +84,3 @@ Features that would be cool, but are a bit out of scope for now.
 - optimize island detection
 - lower render resolution?
 - game style camera (arrow keys to move)
-
----
-
-- support presets and property configuration
-- support serialization...
