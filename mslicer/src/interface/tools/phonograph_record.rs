@@ -62,7 +62,9 @@ pub fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
                     .selected_text(tool.equalization.name())
                     .show_ui(ui, |ui| {
                         for eq in Equalization::ALL {
-                            ui.selectable_value(&mut tool.equalization, eq, eq.name());
+                            ui.add_enabled_ui(eq != Equalization::Riaa, |ui| {
+                                ui.selectable_value(&mut tool.equalization, eq, eq.name());
+                            });
                         }
                     });
                 ui.take_available_width();

@@ -13,7 +13,7 @@ use crate::{
     task::{BuildAccelerationStructures, GenerateSupports},
 };
 
-const IN_DEV_WARNING: &str = "Support generation and placement is still in development. For the time being consider using RuneBrace for support placement.";
+const IN_DEV_WARNING: &str = "Support generation and placement is still in development. For the time being consider using RuneBrace for support placement.\n\nAt the moment supports are not saved into the project file!";
 
 pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     ui.horizontal_wrapped(|ui| {

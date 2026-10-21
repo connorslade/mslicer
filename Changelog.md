@@ -105,7 +105,6 @@
 - Notes panel
 - Only re-calculate model bounds when they change
 - Camera 'View All' button to change the target/distance to show all visible models
-- Use 32 bit integer for run lengths
 - Shift drag to select multiple models
 - Combine MeshDefective and MeshVolume into one task (MeshAnalysis)
 - Don't build acceleration structures by default

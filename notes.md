@@ -3,6 +3,8 @@
 This is just a place for me to remember and plan features I want to add and bugs to fix.
 Feel free to help out :eyes:.
 
+after releasing v0.10.0 start using feature branches.
+
 ## Bugs
 
 - check if slicing with spacemouse button causes crash
@@ -37,6 +39,9 @@ Feel free to help out :eyes:.
 - two stage lift config!! (how have i left this unimplemented for so long!)
 - slice config presets
 - configurable (and viewable) key binds
+- render scale!
+- only render viewport on change (will require `scene_dirty` flag)
+- temporal accumulation (w jitter), sucks but ig thats just how you do rendering these days
 
 ## Documentation
 
