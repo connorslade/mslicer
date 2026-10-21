@@ -46,6 +46,100 @@
 	</screenshots>
 
 	<releases>
+        <release version="0.10.0" date="2026-10-21">
+            <description>
+     			<ul>
+                    <li>Merge lift and retract distance settings.</li>
+                    <li>Fix auto-layout's previously incorrect handling of scaled and rotated models</li>
+                    <li>Optimize auto layout (a bit) with NFP bounding box check</li>
+                    <li>Added anti-aliasing configuration dropdown</li>
+                    <li>Fix FXAA sampler</li>
+                    <li>Alow changing XY and Z antialiasing separately</li>
+                    <li>Added test pattern tool for mslicer debugging / testing</li>
+                    <li>Fix zero length runs crashing the nanodlp png encoder</li>
+                    <li>Fix NanoDLP encoder creating invalid results with horizontal dimensions not divisible by three</li>
+                    <li>Added 'Resin Usage' section to sliced sidebar which shows estimated resin usage, mass, and cost</li>
+                    <li>Added phonograph record generator</li>
+                    <li>Make max storage buffer binding size match the max buffer size</li>
+                    <li>Fix GPU RLE decompression failing on layers with a huge number of runs</li>
+                    <li>Fix potential crash in remote print</li>
+                    <li>Add file and layer property dropdowns to sliced sidebar</li>
+                    <li>Prune unnecessary triangles before slicing (very slight optimization)</li>
+                    <li>Fix first layer lift distance and speed being loaded incorrectly from .ctb files</li>
+                    <li>Support layer exposure overrides with .goo files</li>
+                    <li>Don't overwrite layers with exposure overrides by changing the global exposure config</li>
+                    <li>Fix loading of .nanodlp sliced files</li>
+                    <li>Multi-threaded nanodlp loading</li>
+                    <li>Multi-threaded output layer encoding (mainly for nanodlp where encoding is quite expensive)</li>
+                    <li>Don't block the main thread while encoding layers</li>
+                    <li>Show correct duration in sliced panel when loading a sliced file</li>
+                    <li>Allow exporting meshes</li>
+                    <li>Rasterize edges using pixel center sampling</li>
+                    <li>Add button to flip model winding order</li>
+                    <li>Combine 'Split Bodies', 'Flip Winding Order', and 'Export' into a 'Mesh' submenu</li>
+                    <li>Correctly calculate volume with non-uniform layer height</li>
+                    <li>Fix the way paths are inflated in the PCB tool</li>
+                    <li>Allow configuring max allowed circle error in PCB tool</li>
+                    <li>Don't save big meshes in history when deleted (configurable threshold)</li>
+                    <li>Show mesh memory usage</li>
+                    <li>Take mesh warning off of non-manifold but sliceable meshes</li>
+                    <li>Reorganize workspace panel</li>
+                    <li>Rename non manifold mesh to defective mesh since some kinds of non-manifold meshes will slice correctly</li>
+                    <li>Sliced file diff tool</li>
+                    <li>Mesh repair tool (fixes unwelded vertices, holes, degenerate and repeated faces, inconsistent winding order)</li>
+                    <li>Detect and report slicing defects (caused by mesh defects)</li>
+                    <li>Added more CLI debugging tools</li>
+                    <li>More robust mesh deserialization</li>
+                    <li>Experimental SDF and Boundary Representation (BREP) slicing</li>
+                    <li>Fix Variable layer height max layers and progress being reported as elephant foot fixer</li>
+                    <li>Prevent opening the same tool window multiple times</li>
+                    <li>Allow configuring quick layout min spacing</li>
+                    <li>Remote print initialize at startup option now runs an initial scan</li>
+                    <li>Rename 'First Layers' to 'Bottom Layers'</li>
+                    <li>Allow setting slice config layer counts in millimeters</li>
+                    <li>Detect clicked model with GPU model pass (No longer requires the BVH to be built)</li>
+                    <li>Support changing SSAO scale at runtime</li>
+                    <li>Support generation progress</li>
+                    <li>Show slicing speed in layers/sec and triangles/sec</li>
+                    <li>Support highlighting selected mesh sections</li>
+                    <li>Hide Auto Layout annealing settings by default</li>
+                    <li>Calculate mesh volume asynchronously (helps on models with ~ >10M faces)</li>
+                    <li>Reduce unnecessary cross-thread memory copies</li>
+                    <li>Update slicer CLI progress reporting</li>
+                    <li>Fix crash when running auto-layout with no models</li>
+                    <li>Don't make unnecessary copies of mesh when uploading to GPU</li>
+                    <li>Show memory usage breakdown and pie chart</li>
+                    <li>Open sliced panel as tab next to viewport instead of floating</li>
+                    <li>Print warning instead of crashing on remote print network failure</li>
+                    <li>Allow removing unresponsive printers (don't wait for confirmation if printer is unresponsive)</li>
+                    <li>Toolbar for selecting between regular cursor, support placement, and orient to face</li>
+                    <li>Orient to face tool. No need to fiddle with the rotation settings now!</li>
+                    <li>Reconstruct mesh with greedy RLE meshing</li>
+                    <li>Fix remote print (SDCP v1) crashing when timestamp is reported in scientific notation</li>
+                    <li>Added support for unencrypted CTBv4 files (called 'Chitu Legacy' in the UI)r/issues/40))</li>
+                    <li>Added a ton of printer presets</li>
+                    <li>Allow rotating the slice preview</li>
+                    <li>Mark on the printer presets which printers are known to work with mslicer</li>
+                    <li>Configurable preview image sizes and background color</li>
+                    <li>Button to unload sliced result</li>
+                    <li>Interactive preview image! (Drag it to change the camera view angle)</li>
+                    <li>Height map generator tool</li>
+                    <li>Fix being unable to uncheck 'Check for Updates at Startup'</li>
+                    <li>Fix anti-aliasing changing the viewport background color</li>
+                    <li>Fix some elements rendering over welcome background</li>
+                    <li>Refresh rendering stats UI</li>
+                    <li>Notes panel</li>
+                    <li>Only re-calculate model bounds when they change</li>
+                    <li>Camera 'View All' button to change the target/distance to show all visible models</li>
+                    <li>Shift drag to select multiple models</li>
+                    <li>Combine MeshDefective and MeshVolume into one task (MeshAnalysis)</li>
+                    <li>Don't build acceleration structures by default</li>
+                    <li>Use bilinear interpolation when SSAO scale is < 1</li>
+                    <li>Image Layer tool</li>
+                    <li>Show tool descriptions on hover</li>
+                </ul>
+            </description>
+        </release>
         <release version="0.9.2" date="2026-08-30">
             <description>
      			<ul>

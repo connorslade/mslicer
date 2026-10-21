@@ -1,6 +1,6 @@
 # Changelog
 
-## v0.10.0 &mdash; Coming Soon™
+## v0.10.0 &mdash; October 21st, 2026
 
 - Merge lift and retract distance settings.
   In practice they should always be the same and the setting was only supported by `.goo`

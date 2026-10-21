@@ -19,7 +19,7 @@ You can find the latest development builds on [GitHub Actions][actions-success].
 If you would rather build from source, just install the latest stable version of the [Rust toolchain][rust] and build the binaries you want (e.g., mslicer, slicer) as shown below.
 
 ```sh
-git clone https://github.com/connorslade/mslicer --branch v0.9.2
+git clone https://github.com/connorslade/mslicer --branch v0.10.0
 cd mslicer
 cargo build --release --package mslicer
 ```
