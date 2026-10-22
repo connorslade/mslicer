@@ -1,10 +1,13 @@
+use encase::{ShaderSize, ShaderType, UniformBuffer};
+use nalgebra::Vector2;
 use wgpu::{
     BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayout, BindGroupLayoutDescriptor,
-    BindGroupLayoutEntry, BindingResource, BindingType, BlendState, Buffer, ColorTargetState,
-    ColorWrites, CompareFunction, DepthStencilState, Device, FragmentState, IndexFormat,
-    MultisampleState, PipelineLayoutDescriptor, RenderPass, RenderPipeline,
-    RenderPipelineDescriptor, Sampler, SamplerBindingType, ShaderStages, TextureFormat,
-    TextureSampleType, TextureViewDimension, VertexState,
+    BindGroupLayoutEntry, BindingResource, BindingType, BlendState, Buffer, BufferBindingType,
+    BufferDescriptor, BufferUsages, ColorTargetState, ColorWrites, CompareFunction,
+    DepthStencilState, Device, FragmentState, IndexFormat, MultisampleState,
+    PipelineLayoutDescriptor, RenderPass, RenderPipeline, RenderPipelineDescriptor, Sampler,
+    SamplerBindingType, ShaderStages, TextureFormat, TextureSampleType, TextureViewDimension,
+    VertexState,
 };
 
 use crate::{
@@ -15,6 +18,12 @@ use crate::{
 pub struct CompositePass {
     pipeline: RenderPipeline,
     group_layout: BindGroupLayout,
+    uniform: Buffer,
+}
+
+#[derive(ShaderType)]
+pub struct Uniforms {
+    size: Vector2<u32>, // only send width. push constant?
 }
 
 impl CompositePass {
@@ -31,6 +40,16 @@ impl CompositePass {
                 BindGroupLayoutEntry {
                     binding: 0,
                     visibility: ShaderStages::FRAGMENT,
+                    ty: BindingType::Buffer {
+                        ty: BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                },
+                BindGroupLayoutEntry {
+                    binding: 1,
+                    visibility: ShaderStages::FRAGMENT,
                     ty: BindingType::Texture {
                         sample_type: TextureSampleType::Float { filterable: true },
                         view_dimension: TextureViewDimension::D2,
@@ -39,7 +58,7 @@ impl CompositePass {
                     count: None,
                 },
                 BindGroupLayoutEntry {
-                    binding: 1,
+                    binding: 2,
                     visibility: ShaderStages::FRAGMENT,
                     ty: BindingType::Texture {
                         sample_type: TextureSampleType::Depth,
@@ -49,7 +68,17 @@ impl CompositePass {
                     count: None,
                 },
                 BindGroupLayoutEntry {
-                    binding: 2,
+                    binding: 3,
+                    visibility: ShaderStages::FRAGMENT,
+                    ty: BindingType::Buffer {
+                        ty: BufferBindingType::Storage { read_only: false },
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                },
+                BindGroupLayoutEntry {
+                    binding: 4,
                     visibility: ShaderStages::FRAGMENT,
                     ty: BindingType::Sampler(SamplerBindingType::NonFiltering),
                     count: None,
@@ -95,9 +124,17 @@ impl CompositePass {
             cache: None,
         });
 
+        let uniform = device.create_buffer(&BufferDescriptor {
+            label: None,
+            size: Uniforms::SHADER_SIZE.get(),
+            usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+
         Self {
             pipeline,
             group_layout,
+            uniform,
         }
     }
 
@@ -113,18 +150,34 @@ impl CompositePass {
             entries: &[
                 BindGroupEntry {
                     binding: 0,
-                    resource: BindingResource::TextureView(&textures.target_a),
+                    resource: self.uniform.as_entire_binding(),
                 },
                 BindGroupEntry {
                     binding: 1,
-                    resource: BindingResource::TextureView(&textures.depth_target),
+                    resource: BindingResource::TextureView(&textures.target_a),
                 },
                 BindGroupEntry {
                     binding: 2,
+                    resource: BindingResource::TextureView(&textures.depth_target),
+                },
+                BindGroupEntry {
+                    binding: 3,
+                    resource: textures.accumulation.as_entire_binding(),
+                },
+                BindGroupEntry {
+                    binding: 4,
                     resource: BindingResource::Sampler(sampler),
                 },
             ],
         })
+    }
+
+    pub fn prepare(&mut self, gcx: &Gcx, size: Vector2<u32>) {
+        let mut buffer = UniformBuffer::new(Vec::new());
+        let uniform = Uniforms { size };
+        buffer.write(&uniform).unwrap();
+        gcx.queue
+            .write_buffer(&self.uniform, 0, &buffer.into_inner());
     }
 
     pub fn paint(&self, render_pass: &mut RenderPass, index: &Buffer, bind_group: &BindGroup) {

@@ -1,5 +1,7 @@
 # Changelog
 
+- Size render textures by viewport side not entire window
+
 ## v0.10.0 &mdash; October 21st, 2026
 
 - Merge lift and retract distance settings.

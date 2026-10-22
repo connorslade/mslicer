@@ -1,6 +1,7 @@
 use nalgebra::Vector2;
 use wgpu::{
-    Extent3d, TextureDescriptor, TextureDimension, TextureFormat, TextureUsages, TextureView,
+    Buffer, BufferUsages, Extent3d, TextureDescriptor, TextureDimension, TextureFormat,
+    TextureUsages, TextureView, wgt::BufferDescriptor,
 };
 
 use crate::{
@@ -52,6 +53,13 @@ impl ModelPipeline {
 
         let target_a = gcx.device.create_texture(&target_desc);
         let target_b = gcx.device.create_texture(&target_desc);
+
+        let accumulation = gcx.device.create_buffer(&BufferDescriptor {
+            label: Some("Accumulation"),
+            size: extent.width as u64 * extent.height as u64 * 4,
+            usage: BufferUsages::STORAGE,
+            mapped_at_creation: false,
+        });
 
         let depth_target = gcx.device.create_texture(&TextureDescriptor {
             label: Some("Depth"),
@@ -112,6 +120,7 @@ impl ModelPipeline {
         let textures = TextureViews {
             target_a: target_a_view,
             target_b: target_b_view,
+            accumulation,
 
             occlusion_target_a: occlusion_target_a_view,
             occlusion_target_b: occlusion_target_b_view,
@@ -147,6 +156,7 @@ pub fn texture_size(scale: f32, size: Vector2<u32>) -> Vector2<u32> {
 pub struct TextureViews {
     pub target_a: TextureView,
     pub target_b: TextureView,
+    pub accumulation: Buffer,
 
     pub occlusion_target_a: TextureView,
     pub occlusion_target_b: TextureView,
