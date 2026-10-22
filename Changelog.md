@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.10.1 &mdash; Coming Soon™
+
+- Fix note word wrapping
+
 ## v0.10.0 &mdash; October 21st, 2026
 
 - Merge lift and retract distance settings.

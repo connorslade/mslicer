@@ -20,6 +20,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
 
     ScrollArea::vertical().show(ui, |ui| {
         TextEdit::multiline(&mut app.project.notes)
+            .desired_width(f32::INFINITY)
             .hint_text(DESCRIPTION)
             .min_size(ui.available_size())
             .ui(ui);
