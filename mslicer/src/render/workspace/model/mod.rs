@@ -159,17 +159,18 @@ impl ModelPipeline {
         let occlusion_size = texture_size(app.config.render.ambient_occlusion.scale, size);
         let mut view_projection = app.view_projection();
 
-        if !app.state.workspace.is_moving {
+        let render = &app.config.render;
+        let taa = render.anti_aliasing.taa();
+        let passes @ [ao, _] = [
+            render.ambient_occlusion.enabled,
+            render.anti_aliasing.fxaa(),
+        ];
+
+        if taa && !app.state.workspace.is_moving {
             let jitter = Vector2::<f32>::new(random_range(-0.5..=0.5), random_range(-0.5..=0.5));
             let clip = jitter.component_div(&size.cast::<f32>()) * 2.0;
             view_projection = Matrix4::new_translation(&clip.to_homogeneous()) * view_projection;
         }
-
-        let render = &app.config.render;
-        let passes @ [ao, _] = [
-            render.ambient_occlusion.enabled,
-            render.anti_aliasing.enabled,
-        ];
 
         self.size_textures(gcx, app, Target::Viewport, size);
         let multi = self.viewport.as_mut().unwrap();
@@ -179,7 +180,7 @@ impl ModelPipeline {
         self.blur.prepare(gcx, app, occlusion_size);
         self.lighting.prepare(gcx, app, ao, None);
         self.fxaa.prepare(gcx, app, size);
-        self.composite.prepare(gcx, app, size);
+        self.composite.prepare(gcx, app, taa, size);
         self.render(encoder, app, Target::Viewport, passes, None);
 
         let multi = self.viewport.as_ref().unwrap();
@@ -215,7 +216,7 @@ impl ModelPipeline {
         self.blur.prepare(gcx, app, occlusion_size);
         self.lighting.prepare(gcx, app, true, Some(&camera));
         self.fxaa.prepare(gcx, app, size);
-        self.composite.prepare(gcx, app, size);
+        self.composite.prepare(gcx, app, false, size);
         self.render(encoder, app, Target::Preview, [true; 2], Some(background));
     }
 

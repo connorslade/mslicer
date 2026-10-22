@@ -17,7 +17,7 @@ use crate::{
     core::{
         App,
         config::{
-            render::{DebugRender, Projection, RenderStyle},
+            render::{AntiAliasMode, DebugRender, Projection, RenderStyle},
             ui::{B_PER_MIB, UpdateCheckFrequency},
         },
         state::PreviewMode,
@@ -211,6 +211,21 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
         aa.enabled,
         |ui| {
             ui.label(AA_DESC);
+
+            grid("aa").show(ui, |ui| {
+                ui.label("Mode");
+                ui.horizontal(|ui| {
+                    ComboBox::from_id_salt("aa_mode")
+                        .selected_text(aa.mode.name())
+                        .show_ui(ui, |ui| {
+                            for mode in AntiAliasMode::ALL {
+                                ui.selectable_value(&mut aa.mode, mode, mode.name());
+                            }
+                        });
+                    ui.take_available_width();
+                });
+                ui.end_row();
+            });
         },
         false,
         ui,

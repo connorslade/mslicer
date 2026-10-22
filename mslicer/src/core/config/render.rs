@@ -46,6 +46,14 @@ pub struct AmbientOcclusion {
 #[serde(default)]
 pub struct AntiAliasing {
     pub enabled: bool,
+    pub mode: AntiAliasMode,
+}
+
+#[derive(Default, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum AntiAliasMode {
+    #[default]
+    Fxaa,
+    Taa,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -87,6 +95,27 @@ impl RenderStyle {
             Self::RandomTriangle => "Triangles",
             Self::Rendered => "Rendered",
         }
+    }
+}
+
+impl AntiAliasMode {
+    pub const ALL: [Self; 2] = [Self::Fxaa, Self::Taa];
+
+    pub fn name(&self) -> &str {
+        match self {
+            AntiAliasMode::Fxaa => "FXAA",
+            AntiAliasMode::Taa => "TAA",
+        }
+    }
+}
+
+impl AntiAliasing {
+    pub fn fxaa(&self) -> bool {
+        self.enabled && self.mode == AntiAliasMode::Fxaa
+    }
+
+    pub fn taa(&self) -> bool {
+        self.enabled && self.mode == AntiAliasMode::Taa
     }
 }
 
@@ -144,7 +173,10 @@ impl Default for AmbientOcclusion {
 
 impl Default for AntiAliasing {
     fn default() -> Self {
-        Self { enabled: true }
+        Self {
+            enabled: true,
+            mode: Default::default(),
+        }
     }
 }
 

@@ -175,12 +175,12 @@ impl CompositePass {
         })
     }
 
-    pub fn prepare(&mut self, gcx: &Gcx, app: &mut App, size: Vector2<u32>) {
+    pub fn prepare(&mut self, gcx: &Gcx, app: &mut App, taa: bool, size: Vector2<u32>) {
         let mut buffer = UniformBuffer::new(Vec::new());
         let uniform = Uniforms {
             size,
             frame: 0,
-            dirty: app.state.workspace.is_moving as u32,
+            dirty: (!taa || app.state.workspace.is_moving) as u32,
         };
         buffer.write(&uniform).unwrap();
         gcx.queue
