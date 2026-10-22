@@ -179,7 +179,7 @@ impl ModelPipeline {
         self.blur.prepare(gcx, app, occlusion_size);
         self.lighting.prepare(gcx, app, ao, None);
         self.fxaa.prepare(gcx, app, size);
-        self.composite.prepare(gcx, size);
+        self.composite.prepare(gcx, app, size);
         self.render(encoder, app, Target::Viewport, passes, None);
 
         let multi = self.viewport.as_ref().unwrap();
@@ -215,7 +215,7 @@ impl ModelPipeline {
         self.blur.prepare(gcx, app, occlusion_size);
         self.lighting.prepare(gcx, app, true, Some(&camera));
         self.fxaa.prepare(gcx, app, size);
-        self.composite.prepare(gcx, size);
+        self.composite.prepare(gcx, app, size);
         self.render(encoder, app, Target::Preview, [true; 2], Some(background));
     }
 

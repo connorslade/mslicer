@@ -11,6 +11,7 @@ use wgpu::{
 };
 
 use crate::{
+    core::App,
     include_shader,
     render::{Gcx, consts::DEPTH_STENCIL_STATE, workspace::model::bindings::TextureViews},
 };
@@ -24,6 +25,8 @@ pub struct CompositePass {
 #[derive(ShaderType)]
 pub struct Uniforms {
     size: Vector2<u32>, // only send width. push constant?
+    frame: u32,
+    dirty: u32,
 }
 
 impl CompositePass {
@@ -172,9 +175,13 @@ impl CompositePass {
         })
     }
 
-    pub fn prepare(&mut self, gcx: &Gcx, size: Vector2<u32>) {
+    pub fn prepare(&mut self, gcx: &Gcx, app: &mut App, size: Vector2<u32>) {
         let mut buffer = UniformBuffer::new(Vec::new());
-        let uniform = Uniforms { size };
+        let uniform = Uniforms {
+            size,
+            frame: 0,
+            dirty: app.state.workspace.is_moving as u32,
+        };
         buffer.write(&uniform).unwrap();
         gcx.queue
             .write_buffer(&self.uniform, 0, &buffer.into_inner());
