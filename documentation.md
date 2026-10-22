@@ -1,4 +1,4 @@
-## Documentation
+# Documentation
 
 - getting started video guide? (i do need to update that video in the readme)
 - color internal and external links differently?
