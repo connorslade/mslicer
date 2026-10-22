@@ -1,5 +1,6 @@
 /target
 /working
+/notes
 .DS_Store
 
 *.stl
