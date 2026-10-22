@@ -1,5 +1,4 @@
 use common::color::SRgb;
-use egui_wgpu::ScreenDescriptor;
 use nalgebra::Vector2;
 use wgpu::{
     BindGroup, Buffer, BufferUsages, CommandEncoder, Device, Origin3d, RenderPass, Sampler,
@@ -13,7 +12,7 @@ use crate::{
         Gcx,
         consts::{FILTERING_SAMPLER, NONFILTERING_SAMPLER},
         workspace::model::{
-            bindings::occlusion_size,
+            bindings::texture_size,
             pass::{
                 base::{BasePass, BaseResources},
                 blur::BlurPass,
@@ -152,12 +151,11 @@ impl ModelPipeline {
     pub fn prepare(
         &mut self,
         gcx: &Gcx,
-        screen: &ScreenDescriptor,
         encoder: &mut CommandEncoder,
         app: &mut App,
+        size: Vector2<u32>,
     ) {
-        let size = screen.size_in_pixels.into();
-        let occlusion_size = occlusion_size(app, size);
+        let occlusion_size = texture_size(app.config.render.ambient_occlusion.scale, size);
         let view_projection = app.view_projection();
 
         let render = &app.config.render;
@@ -166,7 +164,7 @@ impl ModelPipeline {
             render.anti_aliasing.enabled,
         ];
 
-        self.size_textures(gcx, app, Target::Viewport, screen.size_in_pixels.into());
+        self.size_textures(gcx, app, Target::Viewport, size);
         let multi = self.viewport.as_mut().unwrap();
         multi.base.prepare(gcx, app, &self.base);
 
@@ -193,6 +191,7 @@ impl ModelPipeline {
             return;
         };
 
+        let occlusion_size = texture_size(app.config.render.ambient_occlusion.scale, size);
         let aspect = size.x as f32 / size.y as f32;
         let camera = interactive.camera.lock().clone();
 
@@ -205,7 +204,7 @@ impl ModelPipeline {
         multi.base.prepare_preview(gcx, app, &self.base, view);
 
         self.ssao.prepare(gcx, app, view);
-        self.blur.prepare(gcx, app, occlusion_size(app, size));
+        self.blur.prepare(gcx, app, occlusion_size);
         self.lighting.prepare(gcx, app, true, Some(&camera));
         self.fxaa.prepare(gcx, app, size);
         self.render(encoder, app, Target::Preview, [true; 2], Some(background));

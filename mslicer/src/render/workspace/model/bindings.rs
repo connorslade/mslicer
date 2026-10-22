@@ -13,15 +13,15 @@ use crate::{
 
 impl ModelPipeline {
     pub fn size_textures(&mut self, gcx: &Gcx, app: &App, target: Target, size: Vector2<u32>) {
+        let occlusion_size = match target {
+            Target::Viewport => texture_size(app.config.render.ambient_occlusion.scale, size),
+            Target::Preview => size,
+        };
+
         let extent = Extent3d {
             width: size.x,
             height: size.y,
             depth_or_array_layers: 1,
-        };
-
-        let occlusion_size = match target {
-            Target::Viewport => occlusion_size(app, size),
-            Target::Preview => size,
         };
         let occlusion_extent = Extent3d {
             width: occlusion_size.x,
@@ -140,9 +140,8 @@ impl ModelPipeline {
     }
 }
 
-pub fn occlusion_size(app: &App, size: Vector2<u32>) -> Vector2<u32> {
-    let scale = app.config.render.ambient_occlusion.scale.clamp(0.1, 1.0);
-    (size.cast::<f32>() * scale).map(|x| x.ceil() as u32)
+pub fn texture_size(scale: f32, size: Vector2<u32>) -> Vector2<u32> {
+    (size.cast::<f32>() * scale.clamp(0.1, 1.0)).map(|x| x.ceil() as u32)
 }
 
 pub struct TextureViews {

@@ -29,6 +29,7 @@ pub struct WorkspaceRenderResources {
 // todo: do i even have to say it...
 pub struct WorkspaceRenderCallback {
     pub app: *mut App,
+    pub viewport: Vector2<u32>,
 }
 
 pub struct PreviewRenderCallback {
@@ -41,15 +42,15 @@ impl CallbackTrait for WorkspaceRenderCallback {
         &self,
         _device: &Device,
         _queue: &Queue,
-        screen: &ScreenDescriptor,
+        _screen: &ScreenDescriptor,
         encoder: &mut CommandEncoder,
         resources: &mut CallbackResources,
     ) -> Vec<CommandBuffer> {
         let workspace = resources.get_mut::<WorkspaceRenderResources>().unwrap();
         let app = unsafe { &mut *self.app };
-        let gcx = app.gcx();
+        let (gcx, view) = (app.gcx(), self.viewport);
 
-        workspace.model.prepare(&gcx, screen, encoder, app);
+        workspace.model.prepare(&gcx, encoder, app, view);
         workspace.support.prepare(&gcx, app);
         workspace.solid_line.prepare(&gcx, app);
         workspace.point.prepare(&gcx, app);
