@@ -13,8 +13,6 @@ Feel free to help out :eyes:.
   - lock while loading project or saving before close!
 - don't allow starting multiple build acc structure tasks!
 - sliced memory usage doesn't consider arc repeated layers
-- note word wrapping is weird...
-- use separate uniform buffers for interactive preview!!!
 
 # Features
 

@@ -5,7 +5,6 @@ Features that would be cool, but are a bit out of scope for now.
 - figure smth out for optimizing orientation
 - improved auto layout supporting concave NFPs?
 - built-in mesh subdivision
-- render units as fractions with custom font
 - allow manually editing the pixels in slice preview?
 - 3d model packing for sls type printers?
 - optimize nanodlp loading with custom png decoder?...
@@ -24,5 +23,4 @@ Features that would be cool, but are a bit out of scope for now.
 - use convex hull to re-calc bounds after transformation
 - switch between multiple sliced files in slice preview?
 - optimize island detection
-- lower render resolution?
 - add well documented .zip and .bin output formats (closes #29)
