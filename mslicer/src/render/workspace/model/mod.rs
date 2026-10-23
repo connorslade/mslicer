@@ -230,8 +230,14 @@ impl ModelPipeline {
     // buffers to the output surface.
     pub fn paint(&self, render_pass: &mut RenderPass, _app: &mut App, target: Target) {
         let resources = &self.get_target(target).as_ref().unwrap().composite;
-        self.composite
-            .paint(render_pass, &self.post_index_buffer, resources);
+        let ignore_depth = matches!(target, Target::Preview);
+
+        self.composite.paint(
+            render_pass,
+            &self.post_index_buffer,
+            resources,
+            ignore_depth,
+        );
     }
 
     fn get_target_mut(&mut self, target: Target) -> &mut Option<MultiStage> {

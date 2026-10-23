@@ -18,6 +18,8 @@ use crate::{
 
 pub struct CompositePass {
     pipeline: RenderPipeline,
+    preview_pipeline: RenderPipeline,
+
     group_layout: BindGroupLayout,
 }
 
@@ -99,7 +101,7 @@ impl CompositePass {
             push_constant_ranges: &[],
         });
 
-        let pipeline = device.create_render_pipeline(&RenderPipelineDescriptor {
+        let pipeline_descriptor = RenderPipelineDescriptor {
             label: None,
             layout: Some(&pipeline_layout),
             vertex: VertexState {
@@ -129,10 +131,20 @@ impl CompositePass {
             },
             multiview: None,
             cache: None,
+        };
+
+        let pipeline = device.create_render_pipeline(&pipeline_descriptor);
+        let preview_pipeline = device.create_render_pipeline(&RenderPipelineDescriptor {
+            depth_stencil: Some(DepthStencilState {
+                depth_compare: CompareFunction::Always,
+                ..DEPTH_STENCIL_STATE
+            }),
+            ..pipeline_descriptor
         });
 
         Self {
             pipeline,
+            preview_pipeline,
             group_layout,
         }
     }
@@ -142,10 +154,11 @@ impl CompositePass {
         render_pass: &mut RenderPass,
         index: &Buffer,
         resources: &CompositeResources,
+        ignore_depth: bool,
     ) {
         let bind_group = resources.bind_group.as_ref().unwrap();
 
-        render_pass.set_pipeline(&self.pipeline);
+        render_pass.set_pipeline([&self.pipeline, &self.preview_pipeline][ignore_depth as usize]);
         render_pass.set_bind_group(0, bind_group, &[]);
         render_pass.set_index_buffer(index.slice(..), IndexFormat::Uint32);
         render_pass.draw_indexed(0..3, 0, 0..1);
