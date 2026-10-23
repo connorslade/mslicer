@@ -17,7 +17,7 @@ use crate::{
     core::{
         App,
         config::{
-            render::{DebugRender, Projection, RenderStyle},
+            render::{AntiAliasMode, DebugRender, Projection, RenderStyle},
             ui::{B_PER_MIB, UpdateCheckFrequency},
         },
         state::PreviewMode,
@@ -89,7 +89,8 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
             ui.end_row();
 
             ui.label("Fov");
-            ui.add(DragValue::new(&mut preview.fov).speed(0.01))
+            let mut fov = preview.fov.to_degrees();
+            ui.add(DragValue::new(&mut fov).speed(1.0).suffix("°"))
                 .being_edited(&mut edited);
             ui.end_row();
 
@@ -101,7 +102,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                 app.state.last_preview_interact = Some(Instant::now());
 
                 let mut camera = interactive.camera.lock();
-                camera.fov = preview.fov;
+                camera.fov = preview.fov.to_radians();
             }
         });
     });
@@ -137,7 +138,13 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
 
             ui.label("Fov");
             ui.horizontal(|ui| {
-                ui.add(DragValue::new(&mut app.camera.fov).speed(0.01));
+                let mut fov = app.camera.fov.to_degrees();
+                if ui
+                    .add(DragValue::new(&mut fov).speed(1.0).suffix("°"))
+                    .changed()
+                {
+                    app.camera.fov = fov.to_radians();
+                }
                 ui.take_available_width();
             });
             ui.end_row();
@@ -211,6 +218,21 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
         aa.enabled,
         |ui| {
             ui.label(AA_DESC);
+
+            grid("aa").show(ui, |ui| {
+                ui.label("Mode");
+                ui.horizontal(|ui| {
+                    ComboBox::from_id_salt("aa_mode")
+                        .selected_text(aa.mode.name())
+                        .show_ui(ui, |ui| {
+                            for mode in AntiAliasMode::ALL {
+                                ui.selectable_value(&mut aa.mode, mode, mode.name());
+                            }
+                        });
+                    ui.take_available_width();
+                });
+                ui.end_row();
+            });
         },
         false,
         ui,

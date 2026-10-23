@@ -1,27 +1,34 @@
 use nalgebra::Vector2;
 use wgpu::{
-    Extent3d, TextureDescriptor, TextureDimension, TextureFormat, TextureUsages, TextureView,
+    BufferUsages, Extent3d, TextureDescriptor, TextureDimension, TextureFormat, TextureUsages,
+    wgt::BufferDescriptor,
 };
 
 use crate::{
     core::App,
     render::{
         Gcx,
-        workspace::model::{ModelPipeline, MultiStage, Target, pass::base::BaseResources},
+        workspace::model::{
+            ModelPipeline, MultiStage, Target, TextureViews,
+            pass::{
+                base::BaseResources, blur::BlurResources, composite::CompositeResources,
+                fxaa::FxaaResources, lighting::LightingResources, ssao::SsaoResources,
+            },
+        },
     },
 };
 
 impl ModelPipeline {
     pub fn size_textures(&mut self, gcx: &Gcx, app: &App, target: Target, size: Vector2<u32>) {
+        let occlusion_size = match target {
+            Target::Viewport => texture_size(app.config.render.ambient_occlusion.scale, size),
+            Target::Preview => size,
+        };
+
         let extent = Extent3d {
             width: size.x,
             height: size.y,
             depth_or_array_layers: 1,
-        };
-
-        let occlusion_size = match target {
-            Target::Viewport => occlusion_size(app, size),
-            Target::Preview => size,
         };
         let occlusion_extent = Extent3d {
             width: occlusion_size.x,
@@ -52,6 +59,13 @@ impl ModelPipeline {
 
         let target_a = gcx.device.create_texture(&target_desc);
         let target_b = gcx.device.create_texture(&target_desc);
+
+        let accumulation = gcx.device.create_buffer(&BufferDescriptor {
+            label: Some("Accumulation"),
+            size: extent.width as u64 * extent.height as u64 * 4,
+            usage: BufferUsages::STORAGE,
+            mapped_at_creation: false,
+        });
 
         let depth_target = gcx.device.create_texture(&TextureDescriptor {
             label: Some("Depth"),
@@ -107,11 +121,10 @@ impl ModelPipeline {
         let model_target_view = model_target.create_view(&Default::default());
         let normal_target_view = normal_target.create_view(&Default::default());
 
-        let sampler = &self.sampler;
-        let bi_sampler = &self.filtering_sampler;
         let textures = TextureViews {
             target_a: target_a_view,
             target_b: target_b_view,
+            accumulation,
 
             occlusion_target_a: occlusion_target_a_view,
             occlusion_target_b: occlusion_target_b_view,
@@ -121,38 +134,37 @@ impl ModelPipeline {
             normal_target: normal_target_view,
         };
 
-        *self.get_target_mut(target) = Some(MultiStage {
-            base: BaseResources::new(&gcx.device),
-            ssao: self.ssao.recreate_bind_group(gcx, &textures, sampler),
-            blur: self.blur.recreate_bind_group(gcx, &textures, sampler),
-            lighting: (self.lighting).recreate_bind_group(gcx, &textures, bi_sampler, sampler),
-            fxaa: self.fxaa.recreate_bind_group(gcx, &textures, bi_sampler),
-            composite: self.composite.recreate_bind_group(gcx, &textures, sampler),
+        // either create or update the multi stage resources
+        if self.get_target(target).is_none() {
+            *self.get_target_mut(target) = Some(MultiStage {
+                base: BaseResources::new(gcx),
+                ssao: SsaoResources::new(gcx),
+                blur: BlurResources::new(gcx),
+                lighting: LightingResources::new(gcx),
+                fxaa: FxaaResources::new(gcx),
+                composite: CompositeResources::new(gcx),
 
-            target_a: textures.target_a,
-            target_b: textures.target_b,
-            occlusion_target_a: textures.occlusion_target_a,
-            occlusion_target_b: textures.occlusion_target_b,
-            depth_target: textures.depth_target,
-            model_target: textures.model_target,
-            normal_target: textures.normal_target,
-        });
+                textures: textures.clone(), // todo: uninit?
+            })
+        }
+
+        let multi = match target {
+            Target::Viewport => &mut self.viewport,
+            Target::Preview => &mut self.preview,
+        }
+        .as_mut()
+        .unwrap();
+
+        let (sampler, bi_sampler) = (&self.sampler, &self.filtering_sampler);
+        (multi.ssao).recreate_bind_group(gcx, &self.ssao, &textures, sampler);
+        (multi.blur).recreate_bind_group(gcx, &self.blur, &textures, sampler);
+        (multi.lighting).recreate_bind_group(gcx, &self.lighting, &textures, sampler, bi_sampler);
+        (multi.fxaa).recreate_bind_group(gcx, &self.fxaa, &textures, sampler);
+        (multi.composite).recreate_bind_group(gcx, &self.composite, &textures, sampler);
+        multi.textures = textures;
     }
 }
 
-pub fn occlusion_size(app: &App, size: Vector2<u32>) -> Vector2<u32> {
-    let scale = app.config.render.ambient_occlusion.scale.clamp(0.1, 1.0);
-    (size.cast::<f32>() * scale).map(|x| x.ceil() as u32)
-}
-
-pub struct TextureViews {
-    pub target_a: TextureView,
-    pub target_b: TextureView,
-
-    pub occlusion_target_a: TextureView,
-    pub occlusion_target_b: TextureView,
-
-    pub depth_target: TextureView,
-    pub model_target: TextureView,
-    pub normal_target: TextureView,
+pub fn texture_size(scale: f32, size: Vector2<u32>) -> Vector2<u32> {
+    (size.cast::<f32>() * scale.clamp(0.1, 1.0)).map(|x| x.ceil() as u32)
 }

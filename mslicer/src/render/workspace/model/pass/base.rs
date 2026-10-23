@@ -259,7 +259,8 @@ impl BasePass {
 }
 
 impl BaseResources {
-    pub fn new(device: &Device) -> Self {
+    pub fn new(gcx: &Gcx) -> Self {
+        let device = &gcx.device;
         let uniform = ResizingBuffer::new(device, BufferUsages::UNIFORM | BufferUsages::COPY_DST);
         let selected = ResizingBuffer::new(device, BufferUsages::STORAGE | BufferUsages::COPY_DST);
 
@@ -338,8 +339,13 @@ impl BaseResources {
         }
     }
 
-    pub fn prepare(&mut self, gcx: &Gcx, app: &mut App, pass: &BasePass) {
-        let view_projection = app.view_projection();
+    pub fn prepare(
+        &mut self,
+        gcx: &Gcx,
+        app: &mut App,
+        pass: &BasePass,
+        view_projection: Matrix4<f32>,
+    ) {
         let render_style = app.config.render.style as u32;
         let build_volume = (app.project.slice_config)
             .platform_size

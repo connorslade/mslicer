@@ -122,10 +122,10 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
     };
     painter.rect_filled(rect, 0.0, color);
 
-    painter.add(Callback::new_paint_callback(
-        rect,
-        app.get_workspace_render_callback(),
-    ));
+    let scale_factor = ui.ctx().pixels_per_point();
+    let size = (Vector2::new(rect.width(), rect.height()) * scale_factor).map(|x| x.round() as u32);
+    let callback = app.get_workspace_render_callback(size);
+    painter.add(Callback::new_paint_callback(rect, callback));
 
     paint_area_selection(painter, app, &rect, px);
     paint_basis_vectors(painter, app, &rect);
@@ -349,9 +349,13 @@ fn format_vector(normal: &Vector3<f32>) -> String {
 }
 
 impl App {
-    pub fn get_workspace_render_callback(&mut self) -> WorkspaceRenderCallback {
+    pub fn get_workspace_render_callback(
+        &mut self,
+        viewport: Vector2<u32>,
+    ) -> WorkspaceRenderCallback {
         WorkspaceRenderCallback {
             app: self as *mut _,
+            viewport,
         }
     }
 

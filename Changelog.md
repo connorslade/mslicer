@@ -3,6 +3,10 @@
 ## v0.10.1 &mdash; Coming Soon™
 
 - Fix note word wrapping
+- Size render textures by viewport side not entire window
+- Fix rendering when both viewport and interactive preview are visible
+- Support HiDPI viewport rendering
+- Set FOV in degrees
 
 ## v0.10.0 &mdash; October 21st, 2026
 
