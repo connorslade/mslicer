@@ -723,7 +723,9 @@ fn sidebar(operation: &SliceOperation, result: &mut SliceResult, app: SidebarApp
             if let Some(interactive) = &operation.interactive_previews
                 && app.state.preview_mode == PreviewMode::Interactive
             {
-                let size = app.config.render.preview.size;
+                let scale_factor = ui.ctx().pixels_per_point();
+                let size = (app.config.render.preview.size.cast::<f32>() * scale_factor)
+                    .map(|x| x.round() as u32);
                 let large_aspect = size.x as f32 / size.y as f32;
                 let (response, painter) =
                     ui.allocate_painter(vec2(available, available / large_aspect), Sense::all());

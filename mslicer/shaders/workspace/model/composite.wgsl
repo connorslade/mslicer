@@ -21,7 +21,7 @@ fn frag(in: VertexOutput) -> FragmentOutput {
     var color = textureSample(texture, texture_sampler, uv);
     let depth = textureSample(depth, texture_sampler, uv);
 
-    let px = vec2u(in.frag_coord.xy);
+    let px = min(vec2u(uv * vec2f(ctx.size)), ctx.size - 1u);
     let idx = ctx.size.x * px.y + px.x;
 
     if ctx.dirty == 0 {

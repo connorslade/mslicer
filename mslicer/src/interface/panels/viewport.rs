@@ -122,7 +122,8 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
     };
     painter.rect_filled(rect, 0.0, color);
 
-    let size = Vector2::new(rect.width(), rect.height()).map(|x| x.round() as u32);
+    let scale_factor = ui.ctx().pixels_per_point();
+    let size = (Vector2::new(rect.width(), rect.height()) * scale_factor).map(|x| x.round() as u32);
     let callback = app.get_workspace_render_callback(size);
     painter.add(Callback::new_paint_callback(rect, callback));
 

@@ -2,6 +2,7 @@
 
 - Size render textures by viewport side not entire window
 - Fix rendering when both viewport and interactive preview are visible
+- Support HiDPI viewport rendering
 
 ## v0.10.0 &mdash; October 21st, 2026
 
