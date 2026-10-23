@@ -26,7 +26,7 @@ fn frag(in: VertexOutput) -> FragmentOutput {
 
     if ctx.dirty == 0 {
         let accm = unpack4x8unorm(accumulation[idx]);
-        color = mix(color, accm, 0.9); // dont use 0.5!!
+        color = mix(accm, color, 1.0 / f32(ctx.frame + 1));
     }
 
     accumulation[idx] = pack4x8unorm(color);

@@ -99,7 +99,7 @@ impl RenderStyle {
 }
 
 impl AntiAliasMode {
-    pub const ALL: [Self; 2] = [Self::Fxaa, Self::Taa];
+    pub const ALL: [Self; 1] = [Self::Fxaa]; //, Self::Taa];
 
     pub fn name(&self) -> &str {
         match self {

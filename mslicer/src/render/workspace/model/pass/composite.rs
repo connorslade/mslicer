@@ -26,6 +26,7 @@ pub struct CompositePass {
 pub struct CompositeResources {
     uniform: Buffer,
     bind_group: Option<BindGroup>,
+    frame: u32,
 }
 
 #[derive(ShaderType)]
@@ -177,6 +178,7 @@ impl CompositeResources {
         Self {
             uniform,
             bind_group: None,
+            frame: 0,
         }
     }
 
@@ -217,11 +219,16 @@ impl CompositeResources {
     }
 
     pub fn prepare(&mut self, gcx: &Gcx, app: &mut App, taa: bool, size: Vector2<u32>) {
+        let dirty = !taa || app.state.workspace.is_moving;
+
+        self.frame += 1;
+        dirty.then(|| self.frame = 0);
+
         let mut buffer = UniformBuffer::new(Vec::new());
         let uniform = Uniforms {
             size,
-            frame: 0,
-            dirty: (!taa || app.state.workspace.is_moving) as u32,
+            frame: self.frame,
+            dirty: dirty as u32,
         };
         buffer.write(&uniform).unwrap();
         gcx.queue
