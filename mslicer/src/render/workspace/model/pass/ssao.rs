@@ -15,14 +15,18 @@ use crate::{
     include_shader,
     render::{
         Gcx,
-        workspace::model::{MultiStage, bindings::TextureViews},
+        workspace::model::{MultiStage, TextureViews},
     },
 };
 
 pub struct SsaoPass {
     pipeline: RenderPipeline,
     group_layout: BindGroupLayout,
+}
+
+pub struct SsaoResources {
     uniform: Buffer,
+    bind_group: Option<BindGroup>,
 }
 
 #[derive(ShaderType)]
@@ -107,71 +111,15 @@ impl SsaoPass {
             cache: None,
         });
 
-        let uniform = device.create_buffer(&BufferDescriptor {
-            label: None,
-            size: Uniforms::SHADER_SIZE.get(),
-            usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
-            mapped_at_creation: false,
-        });
-
         Self {
             pipeline,
             group_layout,
-            uniform,
         }
     }
 
-    pub fn prepare(&mut self, gcx: &Gcx, app: &mut App, view_projection: Matrix4<f32>) {
-        let mut buffer = UniformBuffer::new(Vec::new());
+    pub fn paint(&self, encoder: &mut CommandEncoder, multi: &MultiStage, index: &Buffer) {
+        let bind_group = multi.ssao.bind_group.as_ref().unwrap();
 
-        let ao = &app.config.render.ambient_occlusion;
-        let uniform = Uniforms {
-            view: view_projection,
-            inv_view: view_projection.try_inverse().unwrap_or_default(),
-
-            samples: ao.samples,
-            range: ao.range,
-            bias: ao.bias,
-        };
-
-        buffer.write(&uniform).unwrap();
-        gcx.queue
-            .write_buffer(&self.uniform, 0, &buffer.into_inner());
-    }
-
-    pub fn recreate_bind_group(
-        &mut self,
-        gcx: &Gcx,
-        textures: &TextureViews,
-        sampler: &Sampler,
-    ) -> BindGroup {
-        gcx.device.create_bind_group(&BindGroupDescriptor {
-            label: None,
-            layout: &self.group_layout,
-            entries: &[
-                BindGroupEntry {
-                    binding: 0,
-                    resource: self.uniform.as_entire_binding(),
-                },
-                BindGroupEntry {
-                    binding: 1,
-                    resource: BindingResource::TextureView(&textures.depth_target),
-                },
-                BindGroupEntry {
-                    binding: 2,
-                    resource: BindingResource::Sampler(sampler),
-                },
-            ],
-        })
-    }
-
-    pub fn paint(
-        &self,
-        encoder: &mut CommandEncoder,
-        multi: &MultiStage,
-        index: &Buffer,
-        bind_group: &BindGroup,
-    ) {
         let mut render_pass = encoder.begin_render_pass(&RenderPassDescriptor {
             label: Some("SSAO"),
             color_attachments: &[Some(RenderPassColorAttachment {
@@ -192,5 +140,67 @@ impl SsaoPass {
         render_pass.set_bind_group(0, bind_group, &[]);
         render_pass.set_index_buffer(index.slice(..), IndexFormat::Uint32);
         render_pass.draw_indexed(0..3, 0, 0..1);
+    }
+}
+
+impl SsaoResources {
+    pub fn new(gcx: &Gcx) -> Self {
+        let uniform = gcx.device.create_buffer(&BufferDescriptor {
+            label: None,
+            size: Uniforms::SHADER_SIZE.get(),
+            usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+
+        Self {
+            uniform,
+            bind_group: None,
+        }
+    }
+
+    pub fn recreate_bind_group(
+        &mut self,
+        gcx: &Gcx,
+        pass: &SsaoPass,
+        textures: &TextureViews,
+        sampler: &Sampler,
+    ) {
+        let bind_group = gcx.device.create_bind_group(&BindGroupDescriptor {
+            label: None,
+            layout: &pass.group_layout,
+            entries: &[
+                BindGroupEntry {
+                    binding: 0,
+                    resource: self.uniform.as_entire_binding(),
+                },
+                BindGroupEntry {
+                    binding: 1,
+                    resource: BindingResource::TextureView(&textures.depth_target),
+                },
+                BindGroupEntry {
+                    binding: 2,
+                    resource: BindingResource::Sampler(sampler),
+                },
+            ],
+        });
+        self.bind_group.replace(bind_group);
+    }
+
+    pub fn prepare(&mut self, gcx: &Gcx, app: &mut App, view_projection: Matrix4<f32>) {
+        let mut buffer = UniformBuffer::new(Vec::new());
+
+        let ao = &app.config.render.ambient_occlusion;
+        let uniform = Uniforms {
+            view: view_projection,
+            inv_view: view_projection.try_inverse().unwrap_or_default(),
+
+            samples: ao.samples,
+            range: ao.range,
+            bias: ao.bias,
+        };
+
+        buffer.write(&uniform).unwrap();
+        gcx.queue
+            .write_buffer(&self.uniform, 0, &buffer.into_inner());
     }
 }

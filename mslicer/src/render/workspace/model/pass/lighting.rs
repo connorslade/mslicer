@@ -17,14 +17,18 @@ use crate::{
     render::{
         Gcx,
         camera::Camera,
-        workspace::model::{MultiStage, bindings::TextureViews},
+        workspace::model::{MultiStage, TextureViews},
     },
 };
 
 pub struct LightingPass {
     pipeline: RenderPipeline,
     group_layout: BindGroupLayout,
+}
+
+pub struct LightingResources {
     uniform: Buffer,
+    bind_group: Option<BindGroup>,
 }
 
 #[derive(ShaderType)]
@@ -131,7 +135,48 @@ impl LightingPass {
             cache: None,
         });
 
-        let uniform = device.create_buffer(&BufferDescriptor {
+        Self {
+            pipeline,
+            group_layout,
+        }
+    }
+
+    pub fn paint(
+        &self,
+        encoder: &mut CommandEncoder,
+        multi: &MultiStage,
+        index: &Buffer,
+        background: Option<SRgb<f32>>,
+    ) {
+        let bind_group = multi.lighting.bind_group.as_ref().unwrap();
+
+        let clear = background.map(srgb_to_color).unwrap_or(Color::TRANSPARENT);
+        let mut render_pass = encoder.begin_render_pass(&RenderPassDescriptor {
+            label: Some("Lighting"),
+            color_attachments: &[Some(RenderPassColorAttachment {
+                view: &multi.target_b,
+                resolve_target: None,
+                ops: Operations {
+                    load: LoadOp::Clear(clear),
+                    store: StoreOp::Store,
+                },
+                depth_slice: None,
+            })],
+            depth_stencil_attachment: None,
+            timestamp_writes: None,
+            occlusion_query_set: None,
+        });
+
+        render_pass.set_pipeline(&self.pipeline);
+        render_pass.set_bind_group(0, bind_group, &[]);
+        render_pass.set_index_buffer(index.slice(..), IndexFormat::Uint32);
+        render_pass.draw_indexed(0..3, 0, 0..1);
+    }
+}
+
+impl LightingResources {
+    pub fn new(gcx: &Gcx) -> Self {
+        let uniform = gcx.device.create_buffer(&BufferDescriptor {
             label: None,
             size: Uniforms::SHADER_SIZE.get(),
             usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
@@ -139,36 +184,22 @@ impl LightingPass {
         });
 
         Self {
-            pipeline,
-            group_layout,
             uniform,
+            bind_group: None,
         }
-    }
-
-    pub fn prepare(&mut self, gcx: &Gcx, app: &mut App, ao: bool, camera: Option<&Camera>) {
-        let mut buffer = UniformBuffer::new(Vec::new());
-
-        let camera = camera.unwrap_or(&app.camera);
-        let uniform = Uniforms {
-            camera_position: camera.position(camera.distance),
-            flags: ao as u32,
-        };
-
-        buffer.write(&uniform).unwrap();
-        gcx.queue
-            .write_buffer(&self.uniform, 0, &buffer.into_inner());
     }
 
     pub fn recreate_bind_group(
         &mut self,
         gcx: &Gcx,
+        pass: &LightingPass,
         textures: &TextureViews,
-        bi_sampler: &Sampler,
         sampler: &Sampler,
-    ) -> BindGroup {
-        gcx.device.create_bind_group(&BindGroupDescriptor {
+        bi_sampler: &Sampler,
+    ) {
+        let bind_group = gcx.device.create_bind_group(&BindGroupDescriptor {
             label: None,
-            layout: &self.group_layout,
+            layout: &pass.group_layout,
             entries: &[
                 BindGroupEntry {
                     binding: 0,
@@ -195,38 +226,22 @@ impl LightingPass {
                     resource: BindingResource::Sampler(bi_sampler),
                 },
             ],
-        })
+        });
+        self.bind_group.replace(bind_group);
     }
 
-    pub fn paint(
-        &self,
-        encoder: &mut CommandEncoder,
-        multi: &MultiStage,
-        index: &Buffer,
-        background: Option<SRgb<f32>>,
-        bind_group: &BindGroup,
-    ) {
-        let clear = background.map(srgb_to_color).unwrap_or(Color::TRANSPARENT);
-        let mut render_pass = encoder.begin_render_pass(&RenderPassDescriptor {
-            label: Some("Lighting"),
-            color_attachments: &[Some(RenderPassColorAttachment {
-                view: &multi.target_b,
-                resolve_target: None,
-                ops: Operations {
-                    load: LoadOp::Clear(clear),
-                    store: StoreOp::Store,
-                },
-                depth_slice: None,
-            })],
-            depth_stencil_attachment: None,
-            timestamp_writes: None,
-            occlusion_query_set: None,
-        });
+    pub fn prepare(&mut self, gcx: &Gcx, app: &mut App, ao: bool, camera: Option<&Camera>) {
+        let mut buffer = UniformBuffer::new(Vec::new());
 
-        render_pass.set_pipeline(&self.pipeline);
-        render_pass.set_bind_group(0, bind_group, &[]);
-        render_pass.set_index_buffer(index.slice(..), IndexFormat::Uint32);
-        render_pass.draw_indexed(0..3, 0, 0..1);
+        let camera = camera.unwrap_or(&app.camera);
+        let uniform = Uniforms {
+            camera_position: camera.position(camera.distance),
+            flags: ao as u32,
+        };
+
+        buffer.write(&uniform).unwrap();
+        gcx.queue
+            .write_buffer(&self.uniform, 0, &buffer.into_inner());
     }
 }
 

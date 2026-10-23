@@ -1,8 +1,10 @@
+use std::ops::Deref;
+
 use common::color::SRgb;
 use nalgebra::{Matrix4, Vector2};
 use rand::random_range;
 use wgpu::{
-    BindGroup, Buffer, BufferUsages, CommandEncoder, Device, Origin3d, RenderPass, Sampler,
+    Buffer, BufferUsages, CommandEncoder, Device, Origin3d, RenderPass, Sampler,
     TexelCopyTextureInfo, TextureAspect, TextureFormat, TextureView,
     util::{BufferInitDescriptor, DeviceExt},
 };
@@ -16,11 +18,11 @@ use crate::{
             bindings::texture_size,
             pass::{
                 base::{BasePass, BaseResources},
-                blur::BlurPass,
-                composite::CompositePass,
-                fxaa::FxaaPass,
-                lighting::LightingPass,
-                ssao::SsaoPass,
+                blur::{BlurPass, BlurResources},
+                composite::{CompositePass, CompositeResources},
+                fxaa::{FxaaPass, FxaaResources},
+                lighting::{LightingPass, LightingResources},
+                ssao::{SsaoPass, SsaoResources},
             },
             pick::ModelPicker,
         },
@@ -58,24 +60,29 @@ pub enum Target {
 }
 
 pub struct MultiStage {
-    target_a: TextureView,
-    target_b: TextureView,
-
-    occlusion_target_a: TextureView,
-    occlusion_target_b: TextureView,
-
-    // g buffer
-    depth_target: TextureView,
-    model_target: TextureView,
-    normal_target: TextureView,
+    textures: TextureViews,
 
     //bind groups!
     base: BaseResources,
-    ssao: BindGroup,
-    blur: BindGroup,
-    lighting: BindGroup,
-    fxaa: BindGroup,
-    composite: BindGroup,
+    ssao: SsaoResources,
+    blur: BlurResources,
+    lighting: LightingResources,
+    fxaa: FxaaResources,
+    composite: CompositeResources,
+}
+
+#[derive(Clone)]
+pub struct TextureViews {
+    pub target_a: TextureView,
+    pub target_b: TextureView,
+    pub accumulation: Buffer,
+
+    pub occlusion_target_a: TextureView,
+    pub occlusion_target_b: TextureView,
+
+    pub depth_target: TextureView,
+    pub model_target: TextureView,
+    pub normal_target: TextureView,
 }
 
 impl ModelPipeline {
@@ -122,14 +129,13 @@ impl ModelPipeline {
             Target::Preview => self.base.paint_preview(encoder, app, multi),
         }
         if ssao {
-            self.ssao.paint(encoder, multi, index, &multi.ssao);
-            self.blur.paint(encoder, multi, index, &multi.blur);
+            self.ssao.paint(encoder, multi, index);
+            self.blur.paint(encoder, multi, index);
         }
 
-        self.lighting
-            .paint(encoder, multi, index, background, &multi.lighting);
+        self.lighting.paint(encoder, multi, index, background);
         if fxaa {
-            self.fxaa.paint(encoder, multi, index, &multi.fxaa);
+            self.fxaa.paint(encoder, multi, index);
         } else {
             encoder.copy_texture_to_texture(
                 TexelCopyTextureInfo {
@@ -176,11 +182,11 @@ impl ModelPipeline {
         let multi = self.viewport.as_mut().unwrap();
         multi.base.prepare(gcx, app, &self.base, view_projection);
 
-        self.ssao.prepare(gcx, app, view_projection);
-        self.blur.prepare(gcx, app, occlusion_size);
-        self.lighting.prepare(gcx, app, ao, None);
-        self.fxaa.prepare(gcx, app, size);
-        self.composite.prepare(gcx, app, taa, size);
+        multi.ssao.prepare(gcx, app, view_projection);
+        multi.blur.prepare(gcx, app, occlusion_size);
+        multi.lighting.prepare(gcx, app, ao, None);
+        multi.fxaa.prepare(gcx, app, size);
+        multi.composite.prepare(gcx, app, taa, size);
         self.render(encoder, app, Target::Viewport, passes, None);
 
         let multi = self.viewport.as_ref().unwrap();
@@ -212,20 +218,20 @@ impl ModelPipeline {
         let multi = self.preview.as_mut().unwrap();
         multi.base.prepare_preview(gcx, app, &self.base, view);
 
-        self.ssao.prepare(gcx, app, view);
-        self.blur.prepare(gcx, app, occlusion_size);
-        self.lighting.prepare(gcx, app, true, Some(&camera));
-        self.fxaa.prepare(gcx, app, size);
-        self.composite.prepare(gcx, app, false, size);
+        multi.ssao.prepare(gcx, app, view);
+        multi.blur.prepare(gcx, app, occlusion_size);
+        multi.lighting.prepare(gcx, app, true, Some(&camera));
+        multi.fxaa.prepare(gcx, app, size);
+        multi.composite.prepare(gcx, app, false, size);
         self.render(encoder, app, Target::Preview, [true; 2], Some(background));
     }
 
     // Runs the post-processing pipeline, copying the data from the intermediary
     // buffers to the output surface.
     pub fn paint(&self, render_pass: &mut RenderPass, _app: &mut App, target: Target) {
-        let bindings = &self.get_target(target).as_ref().unwrap().composite;
+        let resources = &self.get_target(target).as_ref().unwrap().composite;
         self.composite
-            .paint(render_pass, &self.post_index_buffer, bindings);
+            .paint(render_pass, &self.post_index_buffer, resources);
     }
 
     fn get_target_mut(&mut self, target: Target) -> &mut Option<MultiStage> {
@@ -240,5 +246,13 @@ impl ModelPipeline {
             Target::Viewport => &self.viewport,
             Target::Preview => &self.preview,
         }
+    }
+}
+
+impl Deref for MultiStage {
+    type Target = TextureViews;
+
+    fn deref(&self) -> &Self::Target {
+        &self.textures
     }
 }

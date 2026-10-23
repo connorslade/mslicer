@@ -259,7 +259,8 @@ impl BasePass {
 }
 
 impl BaseResources {
-    pub fn new(device: &Device) -> Self {
+    pub fn new(gcx: &Gcx) -> Self {
+        let device = &gcx.device;
         let uniform = ResizingBuffer::new(device, BufferUsages::UNIFORM | BufferUsages::COPY_DST);
         let selected = ResizingBuffer::new(device, BufferUsages::STORAGE | BufferUsages::COPY_DST);
 

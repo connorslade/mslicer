@@ -13,13 +13,17 @@ use wgpu::{
 use crate::{
     core::App,
     include_shader,
-    render::{Gcx, consts::DEPTH_STENCIL_STATE, workspace::model::bindings::TextureViews},
+    render::{Gcx, consts::DEPTH_STENCIL_STATE, workspace::model::TextureViews},
 };
 
 pub struct CompositePass {
     pipeline: RenderPipeline,
     group_layout: BindGroupLayout,
+}
+
+pub struct CompositeResources {
     uniform: Buffer,
+    bind_group: Option<BindGroup>,
 }
 
 #[derive(ShaderType)]
@@ -127,7 +131,30 @@ impl CompositePass {
             cache: None,
         });
 
-        let uniform = device.create_buffer(&BufferDescriptor {
+        Self {
+            pipeline,
+            group_layout,
+        }
+    }
+
+    pub fn paint(
+        &self,
+        render_pass: &mut RenderPass,
+        index: &Buffer,
+        resources: &CompositeResources,
+    ) {
+        let bind_group = resources.bind_group.as_ref().unwrap();
+
+        render_pass.set_pipeline(&self.pipeline);
+        render_pass.set_bind_group(0, bind_group, &[]);
+        render_pass.set_index_buffer(index.slice(..), IndexFormat::Uint32);
+        render_pass.draw_indexed(0..3, 0, 0..1);
+    }
+}
+
+impl CompositeResources {
+    pub fn new(gcx: &Gcx) -> Self {
+        let uniform = gcx.device.create_buffer(&BufferDescriptor {
             label: None,
             size: Uniforms::SHADER_SIZE.get(),
             usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
@@ -135,21 +162,21 @@ impl CompositePass {
         });
 
         Self {
-            pipeline,
-            group_layout,
             uniform,
+            bind_group: None,
         }
     }
 
     pub fn recreate_bind_group(
         &mut self,
         gcx: &Gcx,
+        pass: &CompositePass,
         textures: &TextureViews,
         sampler: &Sampler,
-    ) -> BindGroup {
-        gcx.device.create_bind_group(&BindGroupDescriptor {
+    ) {
+        let bind_group = gcx.device.create_bind_group(&BindGroupDescriptor {
             label: None,
-            layout: &self.group_layout,
+            layout: &pass.group_layout,
             entries: &[
                 BindGroupEntry {
                     binding: 0,
@@ -172,7 +199,8 @@ impl CompositePass {
                     resource: BindingResource::Sampler(sampler),
                 },
             ],
-        })
+        });
+        self.bind_group.replace(bind_group);
     }
 
     pub fn prepare(&mut self, gcx: &Gcx, app: &mut App, taa: bool, size: Vector2<u32>) {
@@ -185,12 +213,5 @@ impl CompositePass {
         buffer.write(&uniform).unwrap();
         gcx.queue
             .write_buffer(&self.uniform, 0, &buffer.into_inner());
-    }
-
-    pub fn paint(&self, render_pass: &mut RenderPass, index: &Buffer, bind_group: &BindGroup) {
-        render_pass.set_pipeline(&self.pipeline);
-        render_pass.set_bind_group(0, bind_group, &[]);
-        render_pass.set_index_buffer(index.slice(..), IndexFormat::Uint32);
-        render_pass.draw_indexed(0..3, 0, 0..1);
     }
 }
