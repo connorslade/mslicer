@@ -7,6 +7,8 @@
 - Fix rendering when both viewport and interactive preview are visible
 - Support HiDPI viewport rendering
 - Set FOV in degrees
+- Fix color attachment byte limit ([#45](https://github.com/connorslade/mslicer/issues/45))
+- Fix sliced memory usage not considering arc repeated layers
 
 ## v0.10.0 &mdash; October 21st, 2026
 

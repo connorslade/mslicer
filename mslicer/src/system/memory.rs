@@ -2,10 +2,13 @@ use std::{
     alloc::{GlobalAlloc, Layout, System},
     collections::HashMap,
     mem,
-    sync::atomic::{AtomicUsize, Ordering},
+    sync::{
+        Arc,
+        atomic::{AtomicUsize, Ordering},
+    },
 };
 
-use common::{container::Run, slice::Layer};
+use common::container::Run;
 use nalgebra::Vector2;
 
 use crate::core::{App, slice::result::GenericSliceResult};
@@ -72,9 +75,15 @@ impl MemoryBreakdown {
             && let Some(result) = slice_operation.result().as_mut()
         {
             match &result.inner {
-                GenericSliceResult::Raster(raster) => (raster.layers.iter())
-                    .map(|x| x.data.capacity() * mem::size_of::<Run>() + mem::size_of::<Layer>())
-                    .sum(),
+                GenericSliceResult::Raster(raster) => {
+                    let mut layer_sizes = HashMap::new();
+                    for layer in raster.layers.iter() {
+                        let size = layer.data.capacity() * mem::size_of::<Run>();
+                        layer_sizes.insert(Arc::as_ptr(&layer.data), size);
+                    }
+
+                    layer_sizes.values().sum()
+                }
                 GenericSliceResult::Vector(vector) => (vector.layers.iter())
                     .flat_map(|x| x.iter())
                     .map(|x| x.capacity() * mem::size_of::<Vector2<f32>>())
