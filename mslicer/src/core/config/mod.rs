@@ -10,12 +10,15 @@ use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use tracing::{info, warn};
 
-use crate::core::config::{
-    peripherals::{RemotePrintConfig, SpacenavConfig},
-    printers::Printer,
-    render::RenderConfig,
-    sliced::SlicedConfig,
-    ui::UiConfig,
+use crate::{
+    core::config::{
+        peripherals::{RemotePrintConfig, SpacenavConfig},
+        printers::Printer,
+        render::RenderConfig,
+        sliced::SlicedConfig,
+        ui::UiConfig,
+    },
+    interface::keybinds::Keybinds,
 };
 
 pub mod peripherals;
@@ -33,6 +36,7 @@ pub struct Config {
     pub spacenav: SpacenavConfig,
     pub remote_print: RemotePrintConfig,
     pub default_slice_config: SliceConfig,
+    pub keybinds: Keybinds,
 
     pub recent_projects: Vec<PathBuf>,
     pub printers: Vec<Printer>,
@@ -95,6 +99,7 @@ impl Default for Config {
             spacenav: Default::default(),
             remote_print: Default::default(),
             default_slice_config: Default::default(),
+            keybinds: Default::default(),
 
             recent_projects: Vec::new(),
             printers: vec![Printer::new(

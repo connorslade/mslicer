@@ -438,6 +438,11 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
         .header_response
         .on_hover_text("Only supported on Linux systems at the moment.");
 
+    ui.collapsing("Keybinds", |ui| {
+        ui.visuals_mut().collapsing_header_frame = false;
+        app.config.keybinds.ui(ui);
+    });
+
     ui.add_space(8.0);
     ui.heading("Stats");
 

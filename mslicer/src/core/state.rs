@@ -14,7 +14,7 @@ use crate::{
         project::model::{Model, ModelId},
         selected::{SelectedModel, SelectedPrinter, SelectedSupports},
     },
-    interface::tools::Tools,
+    interface::{keybinds::Keybind, tools::Tools},
     render::util::MeshBuffers,
     util::misc::DefaultNum,
 };
@@ -153,6 +153,14 @@ impl PreviewMode {
 
 impl Tool {
     pub const ALL: [Self; 3] = [Self::Select, Self::Support, Self::Orient];
+
+    pub fn keybind(&self) -> Keybind {
+        match self {
+            Tool::Select => Keybind::ToolSelect,
+            Tool::Support => Keybind::ToolSupport,
+            Tool::Orient => Keybind::ToolOrient,
+        }
+    }
 
     pub fn icon(&self) -> &str {
         match self {

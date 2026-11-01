@@ -1,6 +1,6 @@
 use egui::{
-    Align2, Area, Button, Color32, Context, Frame, Id, Key, Order, Painter, PointerButton, Pos2,
-    Rect, RichText, Sense, Stroke, StrokeKind, Theme, Ui, Vec2, Widget, pos2, vec2,
+    Align2, Area, Button, Color32, Context, Frame, Id, Order, Painter, PointerButton, Pos2, Rect,
+    RichText, Sense, Stroke, StrokeKind, Theme, Ui, Vec2, Widget, pos2, vec2,
 };
 use egui_phosphor::regular::{INFO, MAGNIFYING_GLASS};
 use egui_wgpu::Callback;
@@ -21,8 +21,6 @@ use crate::{
     task::BuildAccelerationStructures,
 };
 
-#[rustfmt::skip]
-const NUMBER_KEYS: [Key; 10] = [Key::Num0, Key::Num1, Key::Num2, Key::Num3, Key::Num4, Key::Num5, Key::Num6, Key::Num7, Key::Num8, Key::Num9];
 const CANT_SUPPORT: &str =
     "Supports can't yet be placed. Click to initialize acceleration structures.";
 const TOGGLE_HOVER_TIP: &str = "Toggle hover overlay.\nShift click to toggle detailed view.";
@@ -173,8 +171,7 @@ fn paint_toolbar(app: &mut App, ctx: &Context, rect: &Rect) {
                         let button = (button(tool.icon()).selected(tool == app.state.tool).ui(ui))
                             .on_hover_text(format!("{}\nShortcut: {}", tool.name(), i + 1));
 
-                        let shortcut = ui.input(|x| x.key_pressed(NUMBER_KEYS[i + 1]))
-                            && !ui.ctx().wants_keyboard_input();
+                        let shortcut = app.config.keybinds.consume(ui, tool.keybind());
                         (button.clicked() || shortcut).then(|| app.state.tool = tool);
                     }
 

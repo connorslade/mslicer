@@ -7,6 +7,7 @@ use crate::{core::App, interface::panels::Tabs};
 
 pub mod components;
 pub mod elements;
+pub mod keybinds;
 pub mod panels;
 pub mod popup;
 pub mod shortcuts;
