@@ -221,9 +221,10 @@ pub fn ui(app: &mut App, ctx: &Context) {
                 });
 
                 ui.add_enabled_ui(!app.is_slicing(), |ui| {
+                    let shortcut = app.config.keybinds.get(shortcuts::SLICE_SHORTCUT.keybind);
                     let slice_button = ui.add(
                         Button::new(concatcp!(STACK, " Slice"))
-                            .shortcut_text(ctx.format_shortcut(&shortcuts::SLICE_SHORTCUT)),
+                            .shortcut_text(ctx.format_shortcut(&shortcut)),
                     );
                     slice_button.clicked().then(|| app.slice());
                 });
@@ -342,7 +343,8 @@ fn tasks_button(app: &mut App, ctx: &Context, ui: &mut Ui) {
 }
 
 fn menu_button((ui, app, ctx): (&mut Ui, &mut App, &Context), shortcut: &Shortcut, text: &str) {
-    let button = Button::new(text).shortcut_text(ctx.format_shortcut(shortcut));
+    let button = Button::new(text)
+        .shortcut_text(ctx.format_shortcut(&app.config.keybinds.get(shortcut.keybind)));
     if ui.add(button).clicked() {
         (shortcut.callback)(app, ctx);
         ui.close();

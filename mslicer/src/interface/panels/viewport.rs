@@ -171,7 +171,7 @@ fn paint_toolbar(app: &mut App, ctx: &Context, rect: &Rect) {
                         let button = (button(tool.icon()).selected(tool == app.state.tool).ui(ui))
                             .on_hover_text(format!("{}\nShortcut: {}", tool.name(), i + 1));
 
-                        let shortcut = app.config.keybinds.consume(ui, tool.keybind());
+                        let shortcut = app.config.keybinds.consume(ui.ctx(), tool.keybind());
                         (button.clicked() || shortcut).then(|| app.state.tool = tool);
                     }
 

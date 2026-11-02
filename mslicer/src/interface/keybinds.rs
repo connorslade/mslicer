@@ -3,43 +3,82 @@ use serde::{Deserialize, Serialize};
 
 use crate::interface::components::grid;
 
-#[derive(Clone, Serialize, Deserialize)]
-pub struct Keybinds {
-    #[serde(skip)]
-    editing: Option<Keybind>,
+macro_rules! keybinds {
+    ($(($field:ident, $keybind:ident, $name:expr) => ($modif:expr, $key:expr)),*) => {
+        #[derive(Clone, Serialize, Deserialize)]
+        pub struct Keybinds {
+            #[serde(skip)]
+            editing: Option<Keybind>,
 
-    tool_pointer: KeyboardShortcut,
-    tool_support: KeyboardShortcut,
-    tool_orient: KeyboardShortcut,
+            $($field: KeyboardShortcut),*
+        }
+
+        #[derive(Clone, Copy, PartialEq, Eq)]
+        pub enum Keybind {
+            $($keybind),*
+        }
+
+        impl Keybinds {
+            pub fn get(&self, key: Keybind) -> KeyboardShortcut {
+                match key {
+                    $(Keybind::$keybind => self.$field),*
+                }
+            }
+
+            pub fn get_mut(&mut self, key: Keybind) -> &mut KeyboardShortcut {
+                match key {
+                    $(Keybind::$keybind => &mut self.$field),*
+                }
+            }
+        }
+
+        impl Keybind {
+            pub fn name(&self) -> &str {
+                match self {
+                    $(Self::$keybind => $name),*
+                }
+            }
+        }
+
+        impl Default for Keybinds {
+            fn default() -> Self {
+                Self {
+                    editing: None,
+
+                    $($field: KeyboardShortcut::new($modif, $key)),*
+                }
+            }
+        }
+
+    };
 }
 
-#[derive(Clone, Copy, PartialEq, Eq)]
-pub enum Keybind {
-    ToolPointer,
-    ToolSupport,
-    ToolOrient,
-}
+const COMMAND_SHIFT: Modifiers = Modifiers::COMMAND.plus(Modifiers::SHIFT);
+
+keybinds![
+    (tool_pointer, ToolPointer, "Tool Pointer") => (Modifiers::NONE, Key::Num1),
+    (tool_support, ToolSupport, "Tool Support") => (Modifiers::NONE, Key::Num2),
+    (tool_orient, ToolOrient, "Tool Orient") => (Modifiers::NONE, Key::Num3),
+    (import_model, ImportModel, "Import Model") => (Modifiers::COMMAND, Key::I),
+    (import_sliced, ImportSliced, "Import Sliced") => (COMMAND_SHIFT, Key::I),
+    (load_teapot, LoadTeapot, "Load Teapot") => (Modifiers::COMMAND, Key::T),
+    (save_project, SaveProject, "Save Project") => (Modifiers::COMMAND, Key::S),
+    (save_as_project, SaveAsProject, "Save As Project") => (COMMAND_SHIFT, Key::S),
+    (new_project, NewProject, "New Project") => (Modifiers::COMMAND, Key::N),
+    (load_project, LoadProject, "Load Project") => (Modifiers::COMMAND, Key::O),
+    (quit, Quit, "Quit") => (Modifiers::COMMAND, Key::Q),
+    (slice, Slice, "Slice") => (Modifiers::COMMAND, Key::R),
+    (undo, Undo, "Undo") => (Modifiers::COMMAND, Key::Z),
+    (redo, Redo, "Redo") => (Modifiers::COMMAND, Key::Y),
+    (layout, Layout, "Layout") => (Modifiers::COMMAND, Key::L),
+    (select_all, SelectAll, "Select All") => (Modifiers::COMMAND, Key::A),
+    (select_none, SelectNone, "Select None") => (COMMAND_SHIFT, Key::D)
+];
 
 impl Keybinds {
-    pub fn consume(&self, ui: &Ui, key: Keybind) -> bool {
+    pub fn consume(&self, ctx: &Context, key: Keybind) -> bool {
         let shortcut = self.get(key);
-        !ui.ctx().wants_keyboard_input() && ui.input_mut(|i| i.consume_shortcut(&shortcut))
-    }
-
-    pub fn get(&self, key: Keybind) -> KeyboardShortcut {
-        match key {
-            Keybind::ToolPointer => self.tool_pointer,
-            Keybind::ToolSupport => self.tool_support,
-            Keybind::ToolOrient => self.tool_orient,
-        }
-    }
-
-    pub fn get_mut(&mut self, key: Keybind) -> &mut KeyboardShortcut {
-        match key {
-            Keybind::ToolPointer => &mut self.tool_pointer,
-            Keybind::ToolSupport => &mut self.tool_support,
-            Keybind::ToolOrient => &mut self.tool_orient,
-        }
+        !ctx.wants_keyboard_input() && ctx.input_mut(|i| i.consume_shortcut(&shortcut))
     }
 
     pub fn update(&mut self, ctx: &Context) {
@@ -86,25 +125,38 @@ impl Keybinds {
         ui.end_row();
     }
 
-    pub fn ui(&mut self, ui: &mut Ui) {
-        ui.collapsing("Tools", |ui| {
-            grid("tools").show(ui, |ui| {
-                self.shortcut_row(ui, "Pointer", Keybind::ToolPointer);
-                self.shortcut_row(ui, "Support", Keybind::ToolSupport);
-                self.shortcut_row(ui, "Orient", Keybind::ToolOrient);
-            })
+    fn shortcut_section(&mut self, ui: &mut Ui, name: &str, binds: &[Keybind]) {
+        ui.collapsing(name, |ui| {
+            grid(name).show(ui, |ui| {
+                for bind in binds {
+                    self.shortcut_row(ui, bind.name(), *bind);
+                }
+            });
         });
     }
-}
 
-impl Default for Keybinds {
-    fn default() -> Self {
-        Self {
-            editing: None,
-
-            tool_pointer: KeyboardShortcut::new(Modifiers::NONE, Key::Num1),
-            tool_support: KeyboardShortcut::new(Modifiers::NONE, Key::Num2),
-            tool_orient: KeyboardShortcut::new(Modifiers::NONE, Key::Num3),
-        }
+    pub fn ui(&mut self, ui: &mut Ui) {
+        use Keybind::*;
+        self.shortcut_section(ui, "Tools", &[ToolPointer, ToolSupport, ToolOrient]);
+        self.shortcut_section(
+            ui,
+            "Shortcuts",
+            &[
+                ImportModel,
+                ImportSliced,
+                LoadTeapot,
+                SaveProject,
+                SaveAsProject,
+                NewProject,
+                LoadProject,
+                Quit,
+                Slice,
+                Undo,
+                Redo,
+                Layout,
+                SelectAll,
+                SelectNone,
+            ],
+        );
     }
 }

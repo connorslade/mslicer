@@ -1,31 +1,27 @@
-use std::ops::Deref;
-
 use common::units::Milimeter;
-use egui::{Context, Key, KeyboardShortcut, Modifiers, ViewportCommand};
+use egui::{Context, ViewportCommand};
 
 use crate::{
     core::{App, project::Project},
     include_asset,
-    interface::popup::confirm_unsaved,
+    interface::{keybinds::Keybind, popup::confirm_unsaved},
     task::{AutoLayout, FileDialog, LoadSliced, MeshLoad, MultiFileDialog},
 };
 
-const COMMAND_SHIFT: Modifiers = Modifiers::COMMAND.plus(Modifiers::SHIFT);
-
-pub const IMPORT_MODEL_SHORTCUT: Shortcut = Shortcut::new(Key::I, import_model);
-pub const IMPORT_SLICED_SHORTCUT: Shortcut = Shortcut::new(Key::I, load_sliced).command_shift();
-pub const LOAD_TEAPOT_SHORTCUT: Shortcut = Shortcut::new(Key::T, import_teapot);
-pub const SAVE_PROJECT_SHORTCUT: Shortcut = Shortcut::new(Key::S, save);
-pub const SAVE_AS_PROJECT_SHORTCUT: Shortcut = Shortcut::new(Key::S, save_as).command_shift();
-pub const NEW_PROJECT_SHORTCUT: Shortcut = Shortcut::new(Key::N, new);
-pub const LOAD_PROJECT_SHORTCUT: Shortcut = Shortcut::new(Key::O, load);
-pub const QUIT_SHORTCUT: Shortcut = Shortcut::new(Key::Q, quit);
-pub const SLICE_SHORTCUT: Shortcut = Shortcut::new(Key::R, slice);
-pub const UNDO_SHORTCUT: Shortcut = Shortcut::new(Key::Z, undo);
-pub const REDO_SHORTCUT: Shortcut = Shortcut::new(Key::Y, redo);
-pub const LAYOUT_SHORTCUT: Shortcut = Shortcut::new(Key::L, quick_layout);
-pub const SELECT_ALL_SHORTCUT: Shortcut = Shortcut::new(Key::A, select_all).input_exclusive();
-pub const SELECT_NONE_SHORTCUT: Shortcut = Shortcut::new(Key::D, select_none).command_shift();
+pub const IMPORT_MODEL_SHORTCUT: Shortcut = Shortcut::new(Keybind::ImportModel, import_model);
+pub const IMPORT_SLICED_SHORTCUT: Shortcut = Shortcut::new(Keybind::ImportSliced, load_sliced);
+pub const LOAD_TEAPOT_SHORTCUT: Shortcut = Shortcut::new(Keybind::LoadTeapot, import_teapot);
+pub const SAVE_PROJECT_SHORTCUT: Shortcut = Shortcut::new(Keybind::SaveProject, save);
+pub const SAVE_AS_PROJECT_SHORTCUT: Shortcut = Shortcut::new(Keybind::SaveAsProject, save_as);
+pub const NEW_PROJECT_SHORTCUT: Shortcut = Shortcut::new(Keybind::NewProject, new);
+pub const LOAD_PROJECT_SHORTCUT: Shortcut = Shortcut::new(Keybind::LoadProject, load);
+pub const QUIT_SHORTCUT: Shortcut = Shortcut::new(Keybind::Quit, quit);
+pub const SLICE_SHORTCUT: Shortcut = Shortcut::new(Keybind::Slice, slice);
+pub const UNDO_SHORTCUT: Shortcut = Shortcut::new(Keybind::Undo, undo);
+pub const REDO_SHORTCUT: Shortcut = Shortcut::new(Keybind::Redo, redo);
+pub const LAYOUT_SHORTCUT: Shortcut = Shortcut::new(Keybind::Layout, quick_layout);
+pub const SELECT_ALL_SHORTCUT: Shortcut = Shortcut::new(Keybind::SelectAll, select_all);
+pub const SELECT_NONE_SHORTCUT: Shortcut = Shortcut::new(Keybind::SelectNone, select_none);
 
 const SHORTCUTS: &[Shortcut] = &[
     IMPORT_SLICED_SHORTCUT,
@@ -48,55 +44,19 @@ type ShortcutCallback = fn(&mut App, &Context);
 
 #[derive(Clone, Copy)]
 pub struct Shortcut {
-    keys: KeyboardShortcut,
-    pub(crate) callback: ShortcutCallback,
-    input_exclusive: bool,
+    pub keybind: Keybind,
+    pub callback: ShortcutCallback,
 }
 
 impl Shortcut {
-    const fn new(key: Key, callback: ShortcutCallback) -> Self {
-        Self {
-            keys: KeyboardShortcut::new(Modifiers::COMMAND, key),
-            callback,
-            input_exclusive: false,
-        }
-    }
-
-    const fn modifier(self, modifiers: Modifiers) -> Self {
-        Self {
-            keys: KeyboardShortcut::new(modifiers, self.keys.logical_key),
-            ..self
-        }
-    }
-
-    const fn command_shift(self) -> Self {
-        self.modifier(COMMAND_SHIFT)
-    }
-
-    const fn input_exclusive(self) -> Self {
-        Self {
-            input_exclusive: true,
-            ..self
-        }
-    }
-}
-
-impl Deref for Shortcut {
-    type Target = KeyboardShortcut;
-
-    fn deref(&self) -> &Self::Target {
-        &self.keys
+    const fn new(keybind: Keybind, callback: ShortcutCallback) -> Self {
+        Self { keybind, callback }
     }
 }
 
 pub fn handle(app: &mut App, ctx: &Context) {
-    let text_field_focused = ctx.wants_keyboard_input();
     for shortcut in SHORTCUTS {
-        if shortcut.input_exclusive && text_field_focused {
-            continue;
-        }
-
-        if ctx.input_mut(|x| x.consume_shortcut(shortcut)) {
+        if app.config.keybinds.consume(ctx, shortcut.keybind) {
             (shortcut.callback)(app, ctx);
             break;
         }
