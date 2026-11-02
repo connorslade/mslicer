@@ -9,6 +9,8 @@
 - Set FOV in degrees
 - Fix color attachment byte limit ([#45](https://github.com/connorslade/mslicer/issues/45))
 - Fix sliced memory usage not considering arc repeated layers
+- Fix crash when deleting selected custom printer
+- Always open sliced panel next to viewport
 
 ## v0.10.0 &mdash; October 21st, 2026
 

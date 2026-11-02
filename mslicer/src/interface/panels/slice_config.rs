@@ -1,4 +1,4 @@
-use std::borrow::Cow;
+use std::{borrow::Cow, cmp::Ordering};
 
 use const_format::concatcp;
 use egui::{Color32, ComboBox, Context, DragValue, Grid, Ui, Widget, emath::OrderedFloat};
@@ -576,6 +576,14 @@ fn edit_presets(app: &mut PopupApp, ui: &mut Ui) -> bool {
 
                 if let Some(delete) = delete {
                     app.config.printers.remove(delete);
+
+                    if let SelectedPrinter::Custom(i) = app.state.selected_printer {
+                        app.state.selected_printer = match i.cmp(&delete) {
+                            Ordering::Equal => SelectedPrinter::Project,
+                            Ordering::Greater => SelectedPrinter::Custom(i - 1),
+                            Ordering::Less => SelectedPrinter::Custom(i),
+                        };
+                    }
                 }
             });
     }

@@ -58,7 +58,10 @@ impl Panels {
         if let Some(panel) = self.find_tab(&tab) {
             self.set_active_tab(panel);
         } else {
-            self.main_surface_mut().push_to_first_leaf(tab);
+            let node = self.find_tab(&Tab::Viewport).unwrap().1;
+            let surface = self.main_surface_mut();
+            surface.set_focused_node(node);
+            surface.push_to_focused_leaf(tab);
         }
     }
 
