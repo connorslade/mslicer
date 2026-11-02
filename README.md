@@ -19,7 +19,7 @@ You can find the latest development builds on [GitHub Actions][actions-success].
 If you would rather build from source, just install the latest stable version of the [Rust toolchain][rust] and build the binaries you want (e.g., mslicer, slicer) as shown below.
 
 ```sh
-git clone https://github.com/connorslade/mslicer --branch v0.10.0
+git clone https://github.com/connorslade/mslicer --branch v0.10.1
 cd mslicer
 cargo build --release --package mslicer
 ```
@@ -35,14 +35,15 @@ It might be a good idea to look through the getting started guide at least!
 
 - [Getting Started][getting-started] &mdash; Everything you need to know about mslicer (start here)
 - [Printer Compatibility][printer-compatibility] &mdash; Printers that are known to work with mslicer
-- [Support Placement][support-placement] &mdash; Recommended method for adding supports to models before printing
-- [Repairing Non-Manifold Meshes][non-manifold-meshes] &mdash; What to do if you get the non-manifold mesh warning
+- [Support Placement][support-placement] &mdash; Recommended method for adding supports to models
+- [Defective Meshes][defective-meshes] &mdash; What to do if you get the defective mesh warning
 - [Release Notes][release-notes] &mdash; Overview of the biggest changes in a release
 
 And here are some documents on some more niche use cases.
 
 - [PCB Photolithography][pcb-photolighography] &mdash; Exposing photoresist and solder mask with an MSLA printer
 - [3D Printing Phonograph Records][phonograph-record] &mdash; Using the power of modern technology to make really bad phonograph records
+- [Cyanotypes][cyanotypes] &mdash; 2D printing with a 3D printer… for some reason
 
 ## Related Projects
 
@@ -72,10 +73,11 @@ And here are some documents on some more niche use cases.
 [getting-started]: https://mslicer.com/docs/getting-started
 [printer-compatibility]: https://mslicer.com/docs/printer-compatibility
 [support-placement]: https://mslicer.com/docs/support-placement
-[non-manifold-meshes]: https://mslicer.com/docs/non-manifold-meshes
+[defective-meshes]: https://mslicer.com/docs/defective-meshes
 [release-notes]: https://mslicer.com/docs/release-notes
 [pcb-photolighography]: https://mslicer.com/docs/pcb-photolighography
 [phonograph-record]: https://mslicer.com/docs/phonograph-record
+[cyanotypes]: https://mslicer.com/docs/cyanotypes
 
 [rust]: https://rustup.rs
 [msla-thumbs]: https://github.com/connorslade/msla-thumbs

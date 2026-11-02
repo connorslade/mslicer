@@ -1,6 +1,6 @@
 # Changelog
 
-## v0.10.1 &mdash; Coming Soon™
+## v0.10.1 &mdash; November 2nd, 2026
 
 - Fix note word wrapping
 - Size render textures by viewport side not entire window

@@ -46,6 +46,22 @@
 	</screenshots>
 
 	<releases>
+        <release version="0.10.1" date="2026-11-02">
+            <description>
+           	    <ul>
+                    <li>Fix note word wrapping</li>
+                    <li>Size render textures by viewport side not entire window</li>
+                    <li>Fix rendering when both viewport and interactive preview are visible</li>
+                    <li>Support HiDPI viewport rendering</li>
+                    <li>Set FOV in degrees</li>
+                    <li>Fix color attachment byte limit</li>
+                    <li>Fix sliced memory usage not considering arc repeated layers</li>
+                    <li>Fix crash when deleting selected custom printer</li>
+                    <li>Always open sliced panel next to viewport</li>
+                    <li>Allow viewing and editing keybinds</li>
+     			</ul>
+            </description>
+        </release>
         <release version="0.10.0" date="2026-10-21">
             <description>
      			<ul>
