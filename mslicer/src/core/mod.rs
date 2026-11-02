@@ -147,6 +147,7 @@ impl eframe::App for App {
         self.set_title(ctx);
         save_before_close(self, ctx);
 
+        self.config.keybinds.update(ctx);
         self.project.update();
         self.panels.update(ctx.viewport_rect().width());
         self.fps.update();
