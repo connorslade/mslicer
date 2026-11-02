@@ -26,10 +26,8 @@ use crate::{
     },
     interface::{
         components::{being_edited, dragger, grid, history_tracked_model},
-        panels::models::{
-            ALIGN_SHORTCUT, COLLECT_SHORTCUT, DELETE_SHORTCUT, DUPLICATE_SHORTCUT, RENAME_SHORTCUT,
-            SPLIT_SHORTCUT, UiAction, shortcut,
-        },
+        keybinds::Keybind,
+        panels::models::{UiAction, shortcut},
     },
     task::{FileDialog, FlipWinding, MeshRepair, MeshSave, ReloadModel, SplitBodies},
 };
@@ -146,6 +144,7 @@ pub fn model_properties(
     action: &mut UiAction,
     i: usize,
 ) {
+    let kb = &app.config.keybinds;
     let model = &mut app.project.models[i];
 
     let platform = &app.project.slice_config.platform_size;
@@ -153,24 +152,30 @@ pub fn model_properties(
 
     ui.horizontal_wrapped(|ui| {
         if shortcut(
+            kb,
             ui.button(concatcp!(CURSOR_TEXT, " Rename")),
-            RENAME_SHORTCUT,
+            Keybind::Rename,
         ) {
             model.ui.rename = RenameState::Starting;
         }
 
-        if shortcut(ui.button(concatcp!(TRASH, " Delete")), DELETE_SHORTCUT) {
+        if shortcut(kb, ui.button(concatcp!(TRASH, " Delete")), Keybind::Delete) {
             *action = UiAction::Remove(i);
             app.state.selected.clear();
         }
 
-        if shortcut(ui.button(concatcp!(COPY, " Duplicate")), DUPLICATE_SHORTCUT) {
+        if shortcut(
+            kb,
+            ui.button(concatcp!(COPY, " Duplicate")),
+            Keybind::Duplicate,
+        ) {
             *action = UiAction::Duplicate(i);
         }
 
         if shortcut(
+            kb,
             ui.button(concatcp!(FOLDER_DASHED, " Collect")),
-            COLLECT_SHORTCUT,
+            Keybind::Collect,
         ) {
             let collection = Collection::new_unnamed();
             model.collection = Some(collection.id);
@@ -178,8 +183,9 @@ pub fn model_properties(
         }
 
         if shortcut(
+            kb,
             ui.button(concatcp!(ARROW_LINE_DOWN, " Align to Bed")),
-            ALIGN_SHORTCUT,
+            Keybind::Align,
         ) {
             let old_pos = model.mesh.position();
             app.history.track_model(id, ModelAction::Position(old_pos));
@@ -210,8 +216,9 @@ pub fn model_properties(
 
         ui.menu_button(concatcp!(CUBE, " Mesh"), |ui| {
             if shortcut(
+                kb,
                 ui.button(concatcp!(SUBTRACT_SQUARE, " Split Bodies")),
-                SPLIT_SHORTCUT,
+                Keybind::Split,
             ) {
                 app.tasks.add(SplitBodies::new(model));
             }

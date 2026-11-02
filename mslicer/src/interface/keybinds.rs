@@ -56,9 +56,19 @@ macro_rules! keybinds {
 const COMMAND_SHIFT: Modifiers = Modifiers::COMMAND.plus(Modifiers::SHIFT);
 
 keybinds![
-    (tool_pointer, ToolPointer, "Tool Pointer") => (Modifiers::NONE, Key::Num1),
-    (tool_support, ToolSupport, "Tool Support") => (Modifiers::NONE, Key::Num2),
-    (tool_orient, ToolOrient, "Tool Orient") => (Modifiers::NONE, Key::Num3),
+    (pointer, Pointer, "Pointer") => (Modifiers::NONE, Key::Num1),
+    (support, Support, "Support") => (Modifiers::NONE, Key::Num2),
+    (orient, Orient, "Orient") => (Modifiers::NONE, Key::Num3),
+
+    (delete, Delete, "Delete") => (Modifiers::NONE, Key::D),
+    (collect, Collect, "Collect") => (Modifiers::NONE, Key::G),
+    (duplicate, Duplicate, "Duplicate") => (Modifiers::NONE, Key::C),
+    (rename, Rename, "Rename") => (Modifiers::NONE, Key::R),
+    (hide, Hide, "Hide") => (Modifiers::NONE, Key::H),
+    (select, Select, "Select") => (Modifiers::NONE, Key::S),
+    (align, Align, "Align") => (Modifiers::NONE, Key::A),
+    (split, Split, "Split") => (Modifiers::NONE, Key::F),
+
     (import_model, ImportModel, "Import Model") => (Modifiers::COMMAND, Key::I),
     (import_sliced, ImportSliced, "Import Sliced") => (COMMAND_SHIFT, Key::I),
     (load_teapot, LoadTeapot, "Load Teapot") => (Modifiers::COMMAND, Key::T),
@@ -135,28 +145,15 @@ impl Keybinds {
         });
     }
 
+    #[rustfmt::skip]
     pub fn ui(&mut self, ui: &mut Ui) {
         use Keybind::*;
-        self.shortcut_section(ui, "Tools", &[ToolPointer, ToolSupport, ToolOrient]);
-        self.shortcut_section(
-            ui,
-            "Shortcuts",
-            &[
-                ImportModel,
-                ImportSliced,
-                LoadTeapot,
-                SaveProject,
-                SaveAsProject,
-                NewProject,
-                LoadProject,
-                Quit,
-                Slice,
-                Undo,
-                Redo,
-                Layout,
-                SelectAll,
-                SelectNone,
-            ],
-        );
+
+        self.shortcut_section(ui, "General", &[ImportModel, ImportSliced,
+            LoadTeapot, SaveProject, SaveAsProject, NewProject, LoadProject,
+            Quit, Slice, Undo, Redo, Layout, SelectAll, SelectNone]);
+        self.shortcut_section(ui, "Tools", &[Pointer, Support, Orient]);
+        self.shortcut_section(ui, "Selection", &[Delete, Collect, Duplicate,
+            Rename, Hide, Select, Align, Split]);
     }
 }

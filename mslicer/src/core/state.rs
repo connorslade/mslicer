@@ -156,9 +156,9 @@ impl Tool {
 
     pub fn keybind(&self) -> Keybind {
         match self {
-            Tool::Select => Keybind::ToolPointer,
-            Tool::Support => Keybind::ToolSupport,
-            Tool::Orient => Keybind::ToolOrient,
+            Tool::Select => Keybind::Pointer,
+            Tool::Support => Keybind::Support,
+            Tool::Orient => Keybind::Orient,
         }
     }
 

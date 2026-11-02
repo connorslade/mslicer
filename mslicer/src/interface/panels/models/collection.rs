@@ -13,10 +13,8 @@ use crate::{
     },
     interface::{
         components::being_edited,
-        panels::models::{
-            DELETE_SHORTCUT, DraggedModel, HIDE_SHORTCUT, RENAME_SHORTCUT, SELECT_SHORTCUT,
-            model::model_entry, shortcut,
-        },
+        keybinds::Keybind,
+        panels::models::{DraggedModel, model::model_entry, shortcut},
     },
 };
 
@@ -133,15 +131,17 @@ pub fn collection_entry(
 
 pub fn collection_properties(app: &mut App, ui: &mut Ui, id: CollectionId) {
     ui.horizontal_wrapped(|ui| {
+        let kb = &app.config.keybinds;
         if shortcut(
+            kb,
             ui.button(concatcp!(CURSOR_TEXT, " Rename")),
-            RENAME_SHORTCUT,
+            Keybind::Rename,
         ) && let Some(collection) = app.project.collection(id)
         {
             collection.rename = RenameState::Starting;
         }
 
-        if shortcut(ui.button(concatcp!(TRASH, " Delete")), DELETE_SHORTCUT) {
+        if shortcut(kb, ui.button(concatcp!(TRASH, " Delete")), Keybind::Delete) {
             app.state.selected.clear();
 
             for model in app.project.models.iter_mut() {
@@ -167,15 +167,16 @@ pub fn collection_properties(app: &mut App, ui: &mut Ui, id: CollectionId) {
             concatcp!(EYE_SLASH, " Hide All"),
             concatcp!(EYE, " Show All"),
         ][hidden as usize];
-        if shortcut(ui.button(text), HIDE_SHORTCUT) {
+        if shortcut(kb, ui.button(text), Keybind::Hide) {
             (app.project.models.iter_mut())
                 .filter(|x| x.collection == Some(id))
                 .for_each(|m| m.hidden = !hidden);
         }
 
         if shortcut(
+            kb,
             ui.button(concatcp!(SELECTION, " Select Models")),
-            SELECT_SHORTCUT,
+            Keybind::Select,
         ) {
             (app.project.models.iter())
                 .filter(|x| x.collection == Some(id))

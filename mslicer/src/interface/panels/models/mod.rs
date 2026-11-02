@@ -2,7 +2,7 @@ use std::{collections::HashMap, f32};
 
 use const_format::concatcp;
 use egui::{
-    Color32, Context, DragAndDrop, Frame, Key, Response, ScrollArea, Sense, Stroke, StrokeKind,
+    Color32, Context, DragAndDrop, Frame, Response, ScrollArea, Sense, Stroke, StrokeKind,
     TopBottomPanel, Ui, Vec2,
 };
 use egui_phosphor::regular::{COPY, FOLDER_DASHED, LINE_SEGMENT, TRASH};
@@ -13,24 +13,18 @@ use crate::{
         history::{Action, ModelAction},
         project::Collection,
     },
-    interface::panels::models::{
-        collection::{collection, collection_entry, collection_properties},
-        model::model_properties,
+    interface::{
+        keybinds::{Keybind, Keybinds},
+        panels::models::{
+            collection::{collection, collection_entry, collection_properties},
+            model::model_properties,
+        },
     },
     task::BuildAccelerationStructures,
 };
 
 mod collection;
 mod model;
-
-const DELETE_SHORTCUT: Key = Key::D;
-const COLLECT_SHORTCUT: Key = Key::G;
-const DUPLICATE_SHORTCUT: Key = Key::C;
-const RENAME_SHORTCUT: Key = Key::R;
-const HIDE_SHORTCUT: Key = Key::H;
-const SELECT_SHORTCUT: Key = Key::S;
-const ALIGN_SHORTCUT: Key = Key::A;
-const SPLIT_SHORTCUT: Key = Key::F;
 
 enum UiAction {
     None,
@@ -180,18 +174,21 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
     });
 }
 
-fn shortcut(response: Response, key: Key) -> bool {
+fn shortcut(keybinds: &Keybinds, response: Response, keybind: Keybind) -> bool {
+    let ctx = response.ctx.clone();
+
     let response = response.on_hover_ui(|ui| {
-        ui.label(format!("Shortcut: {}", key.symbol_or_name()));
+        let shortcut = &keybinds.get(keybind);
+        ui.label(format!("Shortcut: {}", ctx.format_shortcut(shortcut)));
     });
 
-    response.clicked()
-        || (!response.ctx.wants_keyboard_input() && response.ctx.input(|i| i.key_pressed(key)))
+    response.clicked() || keybinds.consume(&ctx, keybind)
 }
 
 fn selection_properties(app: &mut App, ui: &mut Ui) {
     ui.horizontal_wrapped(|ui| {
-        if shortcut(ui.button(concatcp!(TRASH, " Delete")), DELETE_SHORTCUT) {
+        let kb = &app.config.keybinds;
+        if shortcut(kb, ui.button(concatcp!(TRASH, " Delete")), Keybind::Delete) {
             let selected = app.state.selected.selected_models().collect::<Vec<_>>();
             for id in selected {
                 if let Some(index) = app.project.models.iter().position(|x| x.id == id) {
@@ -203,8 +200,9 @@ fn selection_properties(app: &mut App, ui: &mut Ui) {
         }
 
         if shortcut(
+            kb,
             ui.button(concatcp!(FOLDER_DASHED, " Collect")),
-            COLLECT_SHORTCUT,
+            Keybind::Collect,
         ) {
             let collection = Collection::new_unnamed();
 
@@ -222,7 +220,11 @@ fn selection_properties(app: &mut App, ui: &mut Ui) {
             app.project.collections.push(collection);
         }
 
-        if shortcut(ui.button(concatcp!(COPY, " Duplicate")), DUPLICATE_SHORTCUT) {
+        if shortcut(
+            kb,
+            ui.button(concatcp!(COPY, " Duplicate")),
+            Keybind::Duplicate,
+        ) {
             for id in app.state.selected.selected_models() {
                 if let Some(model) = app.project.models.iter().find(|x| x.id == id) {
                     let new = model.clone();
