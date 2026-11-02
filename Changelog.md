@@ -11,6 +11,7 @@
 - Fix sliced memory usage not considering arc repeated layers
 - Fix crash when deleting selected custom printer
 - Always open sliced panel next to viewport
+- Allow viewing and editing keybinds
 
 ## v0.10.0 &mdash; October 21st, 2026
 
