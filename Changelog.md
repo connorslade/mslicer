@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.10.2 &mdash Coming Soon
+
+- Fixed blocking file uploads over SDCP v3
+
 ## v0.10.1 &mdash; November 2nd, 2026
 
 - Fix note word wrapping

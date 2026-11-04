@@ -231,63 +231,16 @@ impl RemotePrintV3 {
         let ip = client.ip;
         drop(clients);
 
-        let result = self.upload_chunks(mainboard, ip, &data, &filename);
+        let mainboard = mainboard.to_owned();
+        thread::spawn(clone!([{ self.clients } as clients], move || {
+            let result = upload_chunks(&clients, &mainboard, ip, &data, &filename);
 
-        let mut clients = self.clients.lock();
-        if let Some(client) = clients.get_mut(mainboard) {
-            client.transfer_info.status =
-                [FileTransferStatus::Error, FileTransferStatus::Done][result.is_ok() as usize];
-        }
-
-        result
-    }
-
-    fn upload_chunks(
-        &self,
-        mainboard: &str,
-        ip: Ipv4Addr,
-        data: &[u8],
-        filename: &str,
-    ) -> Result<()> {
-        const CHUNK_SIZE: usize = 1024 * 1024;
-
-        let md5 = format!("{:x}", md5::compute(data));
-        let uuid = uuid_v4();
-        let total_size = data.len();
-        let total_size_str = total_size.to_string();
-        let url = format!("http://{ip}:3030/uploadFile/upload");
-
-        let mut offset = 0;
-        while offset < total_size {
-            let end = (offset + CHUNK_SIZE).min(total_size);
-            let chunk = &data[offset..end];
-            let offset_str = offset.to_string();
-
-            let file = Part::bytes(chunk)
-                .file_name(filename)
-                .mime_str("application/octet-stream")?;
-            let form = Form::new()
-                .text("S-File-MD5", &md5)
-                .text("Check", "1")
-                .text("Offset", &offset_str)
-                .text("Uuid", &uuid)
-                .text("TotalSize", &total_size_str)
-                .part("File", file);
-
-            let mut response = ureq::post(&url).send(form)?;
-            let body = response.body_mut().read_to_string()?;
-            let upload = serde_json::from_str::<UploadResponse>(&body)?;
-            if !upload.success {
-                let messages = &upload.messages;
-                bail!("Printer rejected file chunk at offset {offset}: {messages:?}");
+            let mut clients = clients.lock();
+            if let Some(client) = clients.get_mut(&mainboard) {
+                client.transfer_info.status =
+                    [FileTransferStatus::Error, FileTransferStatus::Done][result.is_ok() as usize];
             }
-
-            offset = end;
-            if let Some(client) = self.clients.lock().get_mut(mainboard) {
-                client.transfer_info.download_offset = offset as u32;
-                client.transfer_info.check_offset = offset as u32;
-            }
-        }
+        }));
 
         Ok(())
     }
@@ -342,6 +295,56 @@ impl Client {
             was_printing: false,
         }
     }
+}
+
+fn upload_chunks(
+    clients: &Mutex<HashMap<String, Client>>,
+    mainboard: &str,
+    ip: Ipv4Addr,
+    data: &[u8],
+    filename: &str,
+) -> Result<()> {
+    const CHUNK_SIZE: usize = 1024 * 1024;
+
+    let md5 = format!("{:x}", md5::compute(data));
+    let uuid = uuid_v4();
+    let total_size = data.len();
+    let total_size_str = total_size.to_string();
+    let url = format!("http://{ip}:3030/uploadFile/upload");
+
+    let mut offset = 0;
+    while offset < total_size {
+        let end = (offset + CHUNK_SIZE).min(total_size);
+        let chunk = &data[offset..end];
+        let offset_str = offset.to_string();
+
+        let file = Part::bytes(chunk)
+            .file_name(filename)
+            .mime_str("application/octet-stream")?;
+        let form = Form::new()
+            .text("S-File-MD5", &md5)
+            .text("Check", "1")
+            .text("Offset", &offset_str)
+            .text("Uuid", &uuid)
+            .text("TotalSize", &total_size_str)
+            .part("File", file);
+
+        let mut response = ureq::post(&url).send(form)?;
+        let body = response.body_mut().read_to_string()?;
+        let upload = serde_json::from_str::<UploadResponse>(&body)?;
+        if !upload.success {
+            let messages = &upload.messages;
+            bail!("Printer rejected file chunk at offset {offset}: {messages:?}");
+        }
+
+        offset = end;
+        if let Some(client) = clients.lock().get_mut(mainboard) {
+            client.transfer_info.download_offset = offset as u32;
+            client.transfer_info.check_offset = offset as u32;
+        }
+    }
+
+    Ok(())
 }
 
 fn uuid_v4() -> String {
