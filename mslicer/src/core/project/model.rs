@@ -27,6 +27,7 @@ pub struct Model {
     pub collection: Option<CollectionId>,
 
     pub mesh: Mesh,
+    pub default_bounds: Bounds3D,
     pub bounds: Bounds3D,
     pub bvh: Option<Arc<Bvh>>,
     pub half_edge: Option<Arc<HalfEdgeMesh>>,
@@ -34,6 +35,7 @@ pub struct Model {
     base_volume: Option<CubicMilimeters>,
 
     pub unit: MeshUnit,
+    pub origin: OriginMode,
     pub color: LinearRgb<f32>,
     pub exposure: u8,
     pub hidden: bool,
@@ -68,8 +70,16 @@ pub enum MeshUnit {
     Custom(f32),
 }
 
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub enum OriginMode {
+    Inherent,
+    Center2D,
+    Center3D,
+}
+
 impl Model {
     pub fn from_mesh(mesh: Mesh) -> Self {
+        let bounds = Bounds3D::from_mesh(&mesh);
         Self {
             name: String::new(),
             id: ModelId::new(),
@@ -79,10 +89,12 @@ impl Model {
             bvh: None,
             half_edge: None,
             supports: Supports::default(),
-            bounds: Bounds3D::from_mesh(&mesh),
+            default_bounds: bounds.clone(),
+            bounds,
             mesh,
 
             unit: MeshUnit::Millimeters,
+            origin: OriginMode::Inherent,
             color: LinearRgb::splat(1.0),
             hidden: false,
             exposure: 255,
@@ -182,6 +194,7 @@ impl Model {
         self.half_edge = None;
         self.buffers = None;
         self.update_oob(platform);
+        self.default_bounds = self.bounds.clone();
     }
 
     pub fn set_base_volume(&mut self, volume: CubicMilimeters) {
@@ -307,6 +320,26 @@ impl MeshUnit {
     }
 }
 
+impl OriginMode {
+    pub const ALL: [Self; 3] = [Self::Inherent, Self::Center2D, Self::Center3D];
+
+    pub fn name(&self) -> &str {
+        match self {
+            OriginMode::Inherent => "Inherent",
+            OriginMode::Center2D => "Center 2D",
+            OriginMode::Center3D => "Center 3D",
+        }
+    }
+
+    pub fn offset(&self, bounds: &Bounds3D) -> Vector3<f32> {
+        match self {
+            OriginMode::Inherent => Vector3::zeros(),
+            OriginMode::Center2D => -bounds.center().xy().push(bounds.min.z),
+            OriginMode::Center3D => -bounds.center(),
+        }
+    }
+}
+
 impl Clone for Model {
     fn clone(&self) -> Self {
         Self {
@@ -315,6 +348,7 @@ impl Clone for Model {
             collection: self.collection,
 
             mesh: self.mesh.clone(),
+            default_bounds: self.default_bounds.clone(),
             bounds: self.bounds.clone(),
             bvh: self.bvh.clone(),
             half_edge: self.half_edge.clone(),
@@ -322,6 +356,7 @@ impl Clone for Model {
             base_volume: self.base_volume,
 
             unit: self.unit,
+            origin: self.origin,
             color: self.color,
             hidden: self.hidden,
             ui: self.ui.clone(),

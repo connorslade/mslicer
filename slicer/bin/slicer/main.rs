@@ -130,7 +130,7 @@ fn load_mesh<T: Read + Seek + Send + 'static>(reader: T, format: &str) -> Result
     let des = ReaderDeserializer::new(reader);
     let format = mesh_format::Format::from_extension(format).context("Unknown mesh extension.")?;
     let mesh = mesh_format::load_mesh(des, format, &Progress::new())?;
-    Ok(Mesh::new_boxed_centered(mesh.verts, mesh.faces))
+    Ok(Mesh::new_boxed(mesh.verts, mesh.faces))
 }
 
 fn is_oob(bounds: &Bounds3D, slice_config: &SliceConfig) -> bool {

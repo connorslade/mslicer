@@ -21,7 +21,7 @@ use crate::{
         history::ModelAction,
         project::{
             Collection, RenameState,
-            model::{MeshUnit, MeshWarnings},
+            model::{MeshUnit, MeshWarnings, OriginMode},
         },
     },
     interface::{
@@ -260,12 +260,15 @@ pub fn model_properties(
             grid("model_props_grid").show(ui, |ui| {
                 ui.label("Position");
                 ui.horizontal(|ui| {
-                    let mut position = model.mesh.position();
+                    let origin = model.origin.offset(&model.default_bounds);
+                    let mut position = model.mesh.position() - origin;
                     let editing = dragger::vec3(ui, position.as_mut(), |x| x);
                     history_tracked_model(
                         (editing, ui, &mut app.history),
                         (id, || ModelAction::Position(model.mesh.position())),
                     );
+
+                    let position = position + origin;
                     (editing && model.mesh.position() != position)
                         .then(|| model.set_position(platform, position));
                     ui.take_available_width();
@@ -341,7 +344,7 @@ pub fn model_properties(
     ui.collapsing("Miscellaneous", |ui| {
         grid("model_props_grid").show(ui, |ui| {
             ui.horizontal(|ui| {
-                ui.label("Mesh Units");
+                ui.label("Mesh Unit");
                 ui.label(INFO).on_hover_text(UNIT_TIP);
             });
             ui.horizontal(|ui| {
@@ -365,7 +368,24 @@ pub fn model_properties(
                     model.set_scale(&app.project.slice_config.platform_size, scale);
                 }
             });
+            ui.end_row();
 
+            ui.label("Mesh Origin");
+            let last_origin = model.origin;
+            ComboBox::from_id_salt("origin")
+                .selected_text(model.origin.name())
+                .show_ui(ui, |ui| {
+                    for origin in OriginMode::ALL {
+                        ui.selectable_value(&mut model.origin, origin, origin.name());
+                    }
+                });
+
+            // Remove offset from previous origin setting and apply the new one
+            if last_origin != model.origin {
+                let pos = model.mesh.position() - last_origin.offset(&model.default_bounds)
+                    + model.origin.offset(&model.default_bounds);
+                model.mesh.set_position(pos);
+            }
             ui.end_row();
 
             ui.label("Exposure");

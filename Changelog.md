@@ -3,6 +3,7 @@
 ## v0.10.2 &mdash Coming Soon
 
 - Fixed blocking file uploads over SDCP v3
+- Configurable model origins
 
 ## v0.10.1 &mdash; November 2nd, 2026
 

@@ -23,7 +23,7 @@ fn slicer(model: &[u8]) -> Slicer {
     let des = SliceDeserializer::new(model);
     let mesh = mesh_format::load_mesh(des, Format::Stl, &Progress::new()).unwrap();
 
-    let mesh = Mesh::new_boxed_centered(mesh.verts, mesh.faces);
+    let mesh = Mesh::new_boxed(mesh.verts, mesh.faces);
     let bounds = Bounds3D::from_verts(mesh.vertices());
 
     Slicer::new(

@@ -7,7 +7,6 @@ use serde::{Deserialize, Serialize};
 mod builder;
 mod half_edge;
 
-use crate::geometry::bounds::Bounds3D;
 pub use {
     builder::{MeshBuilder, orthogonal_basis},
     half_edge::{HalfEdge, HalfEdgeMesh},
@@ -51,21 +50,11 @@ impl Mesh {
         }
     }
 
-    pub fn new_centered(mut vertices: Vec<Vector3<f32>>, faces: Vec<[u32; 3]>) -> Self {
-        center_vertices(&mut vertices);
-        Self::new(vertices, faces)
-    }
-
     pub fn new_boxed(vertices: Box<[Vector3<f32>]>, faces: Box<[[u32; 3]]>) -> Self {
         Self {
             inner: Arc::new(MeshInner { vertices, faces }),
             ..Default::default()
         }
-    }
-
-    pub fn new_boxed_centered(mut vertices: Box<[Vector3<f32>]>, faces: Box<[[u32; 3]]>) -> Self {
-        center_vertices(&mut vertices);
-        Self::new_boxed(vertices, faces)
     }
 
     pub fn from_inner(inner: Arc<MeshInner>) -> Self {
@@ -275,13 +264,4 @@ impl Default for Mesh {
             rotation: Vector3::repeat(0.0),
         }
     }
-}
-
-/// Moves the model to have its origin at its center point.
-fn center_vertices(vertices: &mut [Vector3<f32>]) {
-    let bounds = Bounds3D::from_verts(vertices);
-    let center = bounds.center();
-
-    let offset = Vector3::new(center.x, center.y, bounds.min.z);
-    vertices.iter_mut().for_each(|v| *v -= offset);
 }
