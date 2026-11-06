@@ -12,7 +12,11 @@ Feel free to help out :eyes:.
 - if you make changes to a project in the time that it takes for another project to load, your changes will be deleted
   - lock while loading project or saving before close!
 - don't allow starting multiple build acc structure tasks!
-- sliced memory usage doesn't consider arc repeated layers
+- image layer: attempt to subtract with overflow
+- image load task so you dont just see nothing happen after loading an image
+- clicking on tools menu moves it above any floating windows
+- trying to load a broken image file crashes the whole program
+- limit sliced panel min width
 
 # Features
 
@@ -28,6 +32,6 @@ Feel free to help out :eyes:.
   - exposure remap
 - two stage lift config!! (how have i left this unimplemented for so long!)
 - slice config presets
-- configurable (and viewable) key binds
-- set fov in °
 - run post processors on tool generated layers
+- interpolate remote print eta?
+- exposure remapping with eq or lut
