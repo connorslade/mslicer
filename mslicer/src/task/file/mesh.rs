@@ -86,6 +86,10 @@ impl Task for MeshLoad {
                 mesh.face_count()
             );
 
+            if let Some(path) = self.file.as_ref() {
+                app.config.ui.recents.add_recent(path.to_path_buf());
+            }
+
             let mut model = Model::from_mesh(mesh)
                 .with_name(mem::take(&mut self.name))
                 .width_file(self.file.take())

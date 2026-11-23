@@ -88,7 +88,7 @@ impl ProjectSave {
 impl Task for ProjectLoad {
     fn poll(&mut self, app: &mut TaskApp) -> PollResult {
         (self.handle.poll(app, "Failed to Load Project")).into_poll_result(|project| {
-            app.config.add_recent_project(self.path.to_path_buf());
+            app.config.ui.recents.add_recent(self.path.to_path_buf());
             *app.project = project;
             app.history.clear();
             app.state.anisotropic_aa = app.project.slice_config.supersample.is_anisotropic();
@@ -128,7 +128,7 @@ impl Task for ProjectLoad {
 impl Task for ProjectSave {
     fn poll(&mut self, app: &mut TaskApp) -> PollResult {
         (self.handle.poll(app, "Failed to Save Project")).into_poll_result(|_| {
-            app.config.add_recent_project(self.path.to_path_buf());
+            app.config.ui.recents.add_recent(self.path.to_path_buf());
             if let Some(callback) = self.callback.take() {
                 PollResult::complete().with_tasks(callback(app))
             } else {

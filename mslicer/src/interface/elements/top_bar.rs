@@ -1,25 +1,28 @@
-use std::collections::HashMap;
 use std::f32::consts::TAU;
+use std::{collections::HashMap, path::PathBuf};
 
+use chrono::Utc;
+use common::{misc::human_duration, units::Seconds};
 use const_format::concatcp;
 use egui::{
     Align, Align2, Button, Context, FontId, Frame, Grid, Id, Layout, PopupAnchor, ProgressBar,
     Stroke, StrokeKind, TopBottomPanel, Ui, vec2,
 };
-use egui_phosphor::regular::{CARDS, FILE_TEXT, GIT_DIFF, HAMMER, HOURGLASS, LIFEBUOY, STACK};
+use egui_phosphor::regular::{
+    ARROW_SQUARE_IN, CARDS, FILE_TEXT, GIT_DIFF, HAMMER, HOURGLASS, LIFEBUOY, PUSH_PIN, STACK, X,
+};
 
+use crate::system::arguments::OpenInto;
 #[cfg(windows)]
 use crate::system::windows::launch_install;
 use crate::{
-    core::{App, project::Collection},
+    core::{App, config::ui::RecentFile, project::Collection},
     interface::{
         components::{labeled_separator, link_button},
         panels::Tab,
-        popup::confirm_unsaved,
         shortcuts::{self, Shortcut},
         tools,
     },
-    task::ProjectLoad,
 };
 
 const LINK_WEBSITE: &str = "https://mslicer.com";
@@ -82,23 +85,42 @@ pub fn ui(app: &mut App, ctx: &Context) {
                     labeled_separator(ui, "Project");
                     menu_button((ui, app, ctx), &shortcuts::NEW_PROJECT_SHORTCUT, "New");
                     menu_button((ui, app, ctx), &shortcuts::LOAD_PROJECT_SHORTCUT, "Open");
-                    ui.add_enabled_ui(!app.config.recent_projects.is_empty(), |ui| {
+                    ui.add_enabled_ui(!app.config.ui.recents.is_empty(), |ui| {
+                        let mut action = None;
                         ui.menu_button("Recent", |ui| {
-                            let mut load = None;
-                            for path in app.config.recent_projects.iter() {
-                                let name = path.file_name().unwrap().to_string_lossy();
-                                if ui.button(name).clicked() {
-                                    ui.close();
-                                    load = Some(path.clone());
-                                }
+                            ui.set_width(250.0);
+                            let recents = &app.config.ui.recents;
+
+                            if !recents.pinned.is_empty() {
+                                labeled_separator(ui, "Pinned");
+                                (recents.pinned.iter())
+                                    .for_each(|r| recent_button(ui, &mut action, r));
                             }
 
-                            if let Some(path) = load {
-                                confirm_unsaved(app, move |_app| {
-                                    vec![Box::new(ProjectLoad::new(path.to_path_buf()))]
-                                });
+                            if !recents.projects.is_empty() {
+                                labeled_separator(ui, "Projects");
+                                (recents.projects.iter())
+                                    .for_each(|r| recent_button(ui, &mut action, r));
+                            }
+
+                            if !recents.other.is_empty() {
+                                labeled_separator(ui, "Other");
+                                (recents.other.iter())
+                                    .for_each(|r| recent_button(ui, &mut action, r));
                             }
                         });
+
+                        if let Some((action, path)) = action {
+                            match action {
+                                RecentAction::Open => {
+                                    let mut open = OpenInto::default();
+                                    open.insert(path.to_path_buf());
+                                    open.start(app);
+                                }
+                                RecentAction::Remove => app.config.ui.recents.remove(&path),
+                                RecentAction::Pin => app.config.ui.recents.toggle_pin(path),
+                            }
+                        }
                     });
                     menu_button((ui, app, ctx), &shortcuts::SAVE_PROJECT_SHORTCUT, "Save");
                     ui.add_enabled_ui(app.project.path.is_some(), |ui| {
@@ -340,6 +362,36 @@ fn tasks_button(app: &mut App, ctx: &Context, ui: &mut Ui) {
                     }
                 });
         });
+}
+
+enum RecentAction {
+    Open,
+    Remove,
+    Pin,
+}
+
+fn recent_button(ui: &mut Ui, action: &mut Option<(RecentAction, PathBuf)>, file: &RecentFile) {
+    let response = ui
+        .menu_button(file.name(), |ui| {
+            ui.horizontal(|ui| {
+                ui.set_width(150.0);
+
+                (ui.button(ARROW_SQUARE_IN).on_hover_text("Open").clicked())
+                    .then(|| *action = Some((RecentAction::Open, file.path.clone())));
+                (ui.button(X).on_hover_text("Remove recent").clicked())
+                    .then(|| *action = Some((RecentAction::Remove, file.path.clone())));
+                (ui.button(PUSH_PIN).on_hover_text("Toggle pin").clicked())
+                    .then(|| *action = Some((RecentAction::Pin, file.path.clone())));
+            });
+
+            let duration = Utc::now() - file.date;
+            let duration = human_duration(Seconds::new(duration.as_seconds_f32()).convert());
+
+            ui.label(format!("Last used {duration} ago"));
+        })
+        .response;
+
+    (response.clicked()).then(|| *action = Some((RecentAction::Open, file.path.clone())));
 }
 
 fn menu_button((ui, app, ctx): (&mut Ui, &mut App, &Context), shortcut: &Shortcut, text: &str) {

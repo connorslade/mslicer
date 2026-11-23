@@ -1,4 +1,4 @@
-use std::{fs::File, path::PathBuf, sync::Arc};
+use std::{fs::File, mem, path::PathBuf, sync::Arc};
 
 use clone_macro::clone;
 use common::{
@@ -64,6 +64,8 @@ impl Task for SaveSliced {
 pub struct LoadSliced {
     progress: Progress,
     operation: Option<SliceOperation>,
+    path: PathBuf,
+
     handle: TaskThread<(SliceConfig, Vec<Layer>, Vec<RgbaImage>)>,
 }
 
@@ -76,7 +78,7 @@ impl LoadSliced {
             None,
         );
 
-        let handle = TaskThread::spawn(clone!([progress], move || {
+        let handle = TaskThread::spawn(clone!([path, progress], move || {
             let ext = path.extension().unwrap().to_string_lossy();
             let format = RasterFormat::from_extension(&ext).unwrap();
 
@@ -88,6 +90,8 @@ impl LoadSliced {
         Self {
             progress,
             operation: Some(operation),
+            path,
+
             handle,
         }
     }
@@ -98,6 +102,8 @@ impl Task for LoadSliced {
         self.handle
             .poll(app, "Failed to Load Sliced File")
             .into_poll_result(|(config, layers, image)| {
+                app.config.ui.recents.add_recent(mem::take(&mut self.path));
+
                 let operation = self.operation.take().unwrap();
                 operation.add_raster_result(config, layers, None);
                 (image.into_iter()).for_each(|x| operation.add_preview(x));
@@ -113,7 +119,8 @@ impl Task for LoadSliced {
     fn status(&self) -> Option<TaskStatus<'_>> {
         Some(TaskStatus {
             name: "Load Sliced".into(),
-            details: None,
+            details: (self.path.file_name())
+                .map(|name| format!("Loading {}", name.to_string_lossy())),
             progress: self.progress.progress(),
         })
     }

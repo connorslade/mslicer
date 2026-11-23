@@ -4,6 +4,10 @@
 
 - Fixed blocking file uploads over SDCP v3
 - Rename slice config settings (slice height to layer height, normal layers to layer exposure)
+- Improved recent file list
+  - Automatically remove broken links
+  - Track model/sliced files in addition to projects
+  - Allow pinning recents
 
 ## v0.10.1 &mdash; November 2nd, 2026
 

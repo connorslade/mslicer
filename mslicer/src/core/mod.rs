@@ -93,6 +93,7 @@ impl App {
             },
         };
 
+        this.config.ui.recents.remove_broken();
         update_check_if_scheduled(&mut this);
         if !this.remote_print.is_initialized() && this.config.remote_print.init_at_startup {
             panels::remote_print::initialize(&mut this);

@@ -1,12 +1,8 @@
-use std::{
-    fs, iter,
-    path::{Path, PathBuf},
-};
+use std::{fs, path::Path};
 
 use anyhow::Result;
 use common::slice::SliceConfig;
 
-use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use tracing::{info, warn};
 
@@ -38,7 +34,6 @@ pub struct Config {
     pub default_slice_config: SliceConfig,
     pub keybinds: Keybinds,
 
-    pub recent_projects: Vec<PathBuf>,
     pub printers: Vec<Printer>,
     #[cfg(windows)]
     pub portable: bool,
@@ -80,16 +75,6 @@ impl Config {
     }
 }
 
-impl Config {
-    pub fn add_recent_project(&mut self, path: PathBuf) {
-        self.recent_projects = iter::once(path)
-            .chain(self.recent_projects.iter().cloned())
-            .unique()
-            .take(5)
-            .collect()
-    }
-}
-
 impl Default for Config {
     fn default() -> Self {
         Self {
@@ -101,7 +86,6 @@ impl Default for Config {
             default_slice_config: Default::default(),
             keybinds: Default::default(),
 
-            recent_projects: Vec::new(),
             printers: vec![Printer::new(
                 "Custom Printer",
                 [11_520, 5_120],

@@ -56,6 +56,7 @@ impl Task for ReloadModel {
 
             let platform_size = app.project.slice_config.platform_size;
             if let Some(model) = app.project.model(self.model) {
+                app.config.ui.recents.add_recent(self.path.to_path_buf());
                 model.replace_mesh(mesh, Some(mem::take(&mut self.path)), &platform_size);
                 PollResult::complete().with_task(MeshAnalysis::new(model))
             } else {

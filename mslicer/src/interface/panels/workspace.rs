@@ -363,6 +363,12 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                 });
             ui.end_row();
 
+            ui.label("Max Recents");
+            DragValue::new(&mut app.config.ui.recents.max)
+                .range(1..=u8::MAX)
+                .ui(ui);
+            ui.end_row();
+
             ui.horizontal(|ui| {
                 ui.label("Max History Mesh");
                 ui.label(INFO).on_hover_text(MAX_HISTORY_MESH_TIP);
