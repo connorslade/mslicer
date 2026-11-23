@@ -1,5 +1,6 @@
 use std::{fs, net::Ipv4Addr, str::FromStr, sync::Arc, time::Duration};
 
+use anyhow::Result;
 use chrono::{DateTime, Utc};
 use clone_macro::clone;
 use common::{misc::human_duration, slice::format::RasterFormat, units::Miliseconds};
@@ -33,12 +34,11 @@ const WEBHOOK_DESCRIPTION: &str =
     "Once a print is finished, a webhook (HTTP POST) can be sent to a service of your choice.";
 
 enum Action {
-    None,
-    Remove(String),
-    UploadFile { mainboard_id: String },
-    Pause(String),
-    Resume(String),
-    Stop(String),
+    Remove,
+    UploadFile,
+    Pause,
+    Resume,
+    Stop,
 }
 
 pub(crate) fn initialize(app: &mut App) {
@@ -89,7 +89,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
             }
         });
     } else {
-        let mut action = Action::None;
+        let mut action = None;
 
         ui.heading("Printers");
         let clients = app.remote_print.clients();
@@ -98,13 +98,11 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
         for client in clients.iter() {
             ui.with_layout(Layout::right_to_left(Align::Min), |ui| {
                 if ui.button(TRASH_SIMPLE).on_hover_text("Delate").clicked() {
-                    action = Action::Remove(client.mainboard.clone());
+                    action = Some((Action::Remove, client.mainboard.clone()));
                 }
 
                 if ui.button(UPLOAD_SIMPLE).on_hover_text("Upload").clicked() {
-                    action = Action::UploadFile {
-                        mainboard_id: client.mainboard.clone(),
-                    };
+                    action = Some((Action::UploadFile, client.mainboard.clone()));
                 }
 
                 let mut job = LayoutJob::default();
@@ -154,17 +152,19 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
                                 }
 
                                 if paused {
-                                    (ui.button(concatcp!(PLAY, " Resume")).clicked())
-                                        .then(|| action = Action::Resume(client.mainboard.clone()));
+                                    (ui.button(concatcp!(PLAY, " Resume")).clicked()).then(|| {
+                                        action = Some((Action::Resume, client.mainboard.clone()))
+                                    });
                                 } else if printing {
-                                    if client.protocol_version == ProtocolVersion::V3 {
-                                        (ui.button(concatcp!(PAUSE, " Pause")).clicked()).then(
-                                            || action = Action::Pause(client.mainboard.clone()),
-                                        );
+                                    if client.protocol_version == ProtocolVersion::V3
+                                        && ui.button(concatcp!(PAUSE, " Pause")).clicked()
+                                    {
+                                        action = Some((Action::Pause, client.mainboard.clone()));
                                     }
 
-                                    (ui.button(concatcp!(STOP, " Stop")).clicked())
-                                        .then(|| action = Action::Stop(client.mainboard.clone()));
+                                    (ui.button(concatcp!(STOP, " Stop")).clicked()).then(|| {
+                                        action = Some((Action::Stop, client.mainboard.clone()))
+                                    });
                                 }
                             });
                         }
@@ -304,18 +304,16 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
             },
         );
 
-        if let Err(e) = match action {
-            Action::Remove(c) => app.remote_print.remove_printer(&c),
-            Action::UploadFile { mainboard_id } => {
-                upload_file(app, mainboard_id);
-                Ok(())
+        if let Some((action, mainboard)) = action {
+            if let Err(e) = match action {
+                Action::Remove => app.remote_print.remove_printer(&mainboard),
+                Action::UploadFile => upload_file(app, mainboard),
+                Action::Pause => app.remote_print.pause_print(&mainboard),
+                Action::Resume => app.remote_print.resume_print(&mainboard),
+                Action::Stop => app.remote_print.stop_print(&mainboard),
+            } {
+                warn!("Failed to execute action: {e:?}");
             }
-            Action::Pause(c) => app.remote_print.pause_print(&c),
-            Action::Resume(c) => app.remote_print.resume_print(&c),
-            Action::Stop(c) => app.remote_print.stop_print(&c),
-            Action::None => Ok(()),
-        } {
-            warn!("Failed to execute action: {e:?}");
         }
     }
 
@@ -439,7 +437,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, ctx: &Context) {
     });
 }
 
-fn upload_file(app: &mut App, mainboard_id: String) {
+fn upload_file(app: &mut App, mainboard_id: String) -> Result<()> {
     if let Some(file) = FileDialog::new()
         .add_filter("Sliced Model", &["goo", "ctb"])
         .pick_file()
@@ -454,16 +452,17 @@ fn upload_file(app: &mut App, mainboard_id: String) {
                 PopupIcon::Error,
                 "Unreconized file format. Only .goo and .ctb are supported.",
             ));
-            return;
+            return Ok(());
         };
 
         info!("Uploading local file {file:?} to printer `{mainboard_id}`");
-        let data = Arc::new(fs::read(&file).unwrap());
+        let data = Arc::new(fs::read(&file)?);
 
         let file_name = file.file_name().unwrap().to_string_lossy();
         let file_name = file_name.rsplit_once('.').map(|x| x.0).unwrap_or_default();
         app.remote_print
-            .upload(&mainboard_id, data, file_name.to_owned(), format)
-            .unwrap();
+            .upload(&mainboard_id, data, file_name.to_owned(), format)?;
     }
+
+    Ok(())
 }
