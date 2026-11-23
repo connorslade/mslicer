@@ -12,9 +12,6 @@ use egui_phosphor::regular::{
     ARROW_SQUARE_IN, CARDS, FILE_TEXT, GIT_DIFF, HAMMER, HOURGLASS, LIFEBUOY, PUSH_PIN, STACK, X,
 };
 
-use crate::system::arguments::OpenInto;
-#[cfg(windows)]
-use crate::system::windows::launch_install;
 use crate::{
     core::{App, config::ui::RecentFile, project::Collection},
     interface::{
@@ -23,7 +20,10 @@ use crate::{
         shortcuts::{self, Shortcut},
         tools,
     },
+    system::arguments::OpenInto,
 };
+#[cfg(windows)]
+use crate::{interface::popup::confirm_unsaved, system::windows::launch_install};
 
 const LINK_WEBSITE: &str = "https://mslicer.com";
 const LINK_ZULIP: &str = "https://mslicer.zulipchat.com";
