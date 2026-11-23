@@ -40,8 +40,8 @@ use common::{
 };
 
 const VALIDATED_TIP: &str = "This printer has been tested and verified to work with with mslicer.";
-const ANTI_ALIAS_TIP: &str = "Uses supersampling anti-aliasing (SSAA) to pick grayscale values that more accurately represent the actual model geometry. The actual value of this setting is the number of effective samples per voxel.";
-const TRANSITION_LAYER_TIP: &str = "Transition layers interpolate between the first exposure settings and the normal exposure settings.";
+const ANTI_ALIAS_TIP: &str = "Uses supersample anti-aliasing (SSAA) to pick grayscale values that more accurately represent the actual model geometry. The value of this setting is the number of effective samples per voxel.";
+const TRANSITION_LAYER_TIP: &str = "Transition layers interpolate between the bottom exposure settings and the normal exposure settings.";
 
 pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     ui.add_enabled_ui(
@@ -93,7 +93,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
 
             if ui.button(PENCIL).clicked() {
                 app.popup
-                    .open(Popup::new("Edit Your Printer Presets", edit_presets).close_button(true));
+                    .open(Popup::new("Edit Printer Presets", edit_presets).close_button(true));
             }
         });
         ui.end_row();
@@ -165,7 +165,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
                 .for_each(|model| model.update_oob(&slice_config.platform_size));
         }
 
-        ui.label("Slice Height");
+        ui.label("Layer Height");
         ui.horizontal(|ui| {
             let old_slice_height = slice_config.slice_height;
             let mut editing = false;
@@ -272,7 +272,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     });
 
     ui.add_space(8.0);
-    ui.collapsing("Normal Layers", |ui| {
+    ui.collapsing("Layer Exposure", |ui| {
         let editing = exposure_config(ui, &mut slice_config.exposure_config);
         history_tracked_value(
             (editing, ui, &mut app.history),
@@ -282,7 +282,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
         );
     });
 
-    ui.collapsing("First Layers", |ui| {
+    ui.collapsing("Bottom Exposure", |ui| {
         let editing = exposure_config(ui, &mut slice_config.first_exposure_config);
         history_tracked_value(
             (editing, ui, &mut app.history),
@@ -337,7 +337,7 @@ pub fn ui(app: &mut App, ui: &mut Ui, _ctx: &Context) {
     let old_elephant_foot_fixer = post_processing.elephant_foot_fixer.clone();
     let mut editing = false;
     post_processing.elephant_foot_fixer.enabled = collapsing_toggle(
-        "Elephant Foot Fixer",
+        "Elephant Foot Fixer (Deprecated)",
         old_elephant_foot_fixer.enabled,
         |ui| editing = elephant_foot_fixer(&mut post_processing.elephant_foot_fixer, ui),
         false,

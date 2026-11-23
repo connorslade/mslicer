@@ -3,6 +3,7 @@
 ## v0.10.2 &mdash Coming Soon
 
 - Fixed blocking file uploads over SDCP v3
+- Rename slice config settings (slice height to layer height, normal layers to layer exposure)
 
 ## v0.10.1 &mdash; November 2nd, 2026
 
