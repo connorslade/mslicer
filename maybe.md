@@ -14,9 +14,6 @@ Features that would be cool, but are a bit out of scope for now.
 - slice b-rep?
   - at what point of mesh resolution is polygon intersection slower 
   - plot voxel error across different triangulations
-- scripting???
-- dont make 'Saturn 3 Ultra' the default profile
-  - add an unselected option to force users to pick the right printer?
 - custom post processor with dyn libs?
   - https://github.com/rodrimati1992/abi_stable_crates
   - https://github.com/ZettaScaleLabs/stabby

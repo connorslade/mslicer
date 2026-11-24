@@ -6,3 +6,5 @@
 - update getting started guide
   - Rename 'First Layers' to 'Bottom Layers'
   - note where to find quick layout spacing
+- mention remote print support sdcp 1!
+- mention no AI (not integrated nor used for code)
